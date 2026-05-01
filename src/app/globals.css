@@ -1,0 +1,170 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* Traverse Hospitality brand colors */
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(215 28% 17%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(215 28% 17%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(215 28% 17%);
+  --color-primary: hsl(243 36% 12%);
+  --color-primary-foreground: hsl(0 0% 100%);
+  --color-secondary: hsl(210 20% 98%);
+  --color-secondary-foreground: hsl(215 28% 17%);
+  --color-muted: hsl(210 20% 98%);
+  --color-muted-foreground: hsl(210 5% 35%);
+  --color-accent: hsl(215 21% 27%);
+  --color-accent-foreground: hsl(0 0% 100%);
+  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-destructive-foreground: hsl(0 0% 98%);
+  --color-border: hsl(214 32% 91%);
+  --color-input: hsl(214 32% 91%);
+  --color-ring: hsl(243 36% 12%);
+  --color-warm: hsl(243 36% 12%);
+  --color-warm-foreground: hsl(0 0% 100%);
+  --color-teal: hsl(243 36% 12%);
+  --color-teal-foreground: hsl(0 0% 100%);
+  --color-chart-1: hsl(215 28% 17%);
+  --color-chart-2: hsl(243 36% 12%);
+  --color-chart-3: hsl(215 21% 27%);
+  --color-chart-4: hsl(210 5% 35%);
+  --color-chart-5: hsl(214 32% 91%);
+  --radius: 0.5rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --font-sans: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  --animate-fade-in: fade-in 0.3s ease-out forwards;
+  --animate-slide-up: slide-up 0.25s ease-out;
+  --animate-shimmer: shimmer 5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  --animate-gradient-flow: gradient-flow 4s linear infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-120%) skewX(-15deg);
+  }
+  100% {
+    transform: translateX(120%) skewX(-15deg);
+  }
+}
+
+@keyframes gradient-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Override rdp gradient backgrounds on property detail calendars only */
+.rdp-no-gradient.rdp-range_start,
+.rdp-no-gradient.rdp-range_end,
+.rdp-no-gradient.rdp-range_middle {
+  background: none !important;
+}
+
+/* Make selected range start/end date buttons circular */
+button[data-range-start="true"],
+button[data-range-end="true"],
+button[data-selected-single="true"] {
+  max-width: var(--cell-size) !important;
+  max-height: var(--cell-size) !important;
+  margin: 0 auto !important;
+  border-radius: 9999px !important;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUpCard {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideUpCard {
+  animation: slideUpCard 0.3s ease-out;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}

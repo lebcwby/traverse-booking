@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://www.stayportland.com/sitemap/static.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.stayportland.com/sitemap/landing-pages.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.stayportland.com/sitemap/guides.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.stayportland.com/sitemap/neighborhoods.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.stayportland.com/sitemap/stays.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.stayportland.com/sitemap/events.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.stayportland.com/sitemap/blog.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.stayportland.com/sitemap/properties.xml</loc>
+  </sitemap>
+</sitemapindex>

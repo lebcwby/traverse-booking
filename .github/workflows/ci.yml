@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL != '' && secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co' }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY != '' && secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'public-anon-key-placeholder' }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY != '' && secrets.SUPABASE_SERVICE_ROLE_KEY || 'service-role-key-placeholder' }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL != '' && secrets.DATABASE_URL || 'postgresql://postgres:postgres@127.0.0.1:5432/postgres' }}
+      POSTGRES_URL: ${{ secrets.POSTGRES_URL != '' && secrets.POSTGRES_URL || 'postgresql://postgres:postgres@127.0.0.1:5432/postgres' }}
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY != '' && secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder' }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY != '' && secrets.STRIPE_SECRET_KEY || 'sk_test_placeholder' }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET != '' && secrets.STRIPE_WEBHOOK_SECRET || 'whsec_placeholder' }}
+      PENDING_CHECKOUT_LOOKUP_SECRET: ${{ secrets.PENDING_CHECKOUT_LOOKUP_SECRET != '' && secrets.PENDING_CHECKOUT_LOOKUP_SECRET || 'pending-checkout-placeholder' }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET != '' && secrets.CRON_SECRET || 'cron-secret-placeholder' }}
+      GUESTY_BEAPI_CLIENT_ID: ${{ secrets.GUESTY_BEAPI_CLIENT_ID != '' && secrets.GUESTY_BEAPI_CLIENT_ID || 'guesty-beapi-client-id' }}
+      GUESTY_BEAPI_CLIENT_SECRET: ${{ secrets.GUESTY_BEAPI_CLIENT_SECRET != '' && secrets.GUESTY_BEAPI_CLIENT_SECRET || 'guesty-beapi-client-secret' }}
+      GUESTY_CLIENT_ID: ${{ secrets.GUESTY_CLIENT_ID != '' && secrets.GUESTY_CLIENT_ID || 'guesty-openapi-client-id' }}
+      GUESTY_CLIENT_SECRET: ${{ secrets.GUESTY_CLIENT_SECRET != '' && secrets.GUESTY_CLIENT_SECRET || 'guesty-openapi-client-secret' }}
+      NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN != '' && secrets.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.mapbox-placeholder' }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY != '' && secrets.RESEND_API_KEY || 're_placeholder' }}
+      META_PIXEL_ID: ${{ secrets.META_PIXEL_ID != '' && secrets.META_PIXEL_ID || '1234567890' }}
+      META_CAPI_TOKEN: ${{ secrets.META_CAPI_TOKEN != '' && secrets.META_CAPI_TOKEN || 'meta-capi-token-placeholder' }}
+      NEXT_PUBLIC_GA4_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_GA4_MEASUREMENT_ID != '' && secrets.NEXT_PUBLIC_GA4_MEASUREMENT_ID || 'G-TESTMEASURE' }}
+      GA4_MP_API_SECRET: ${{ secrets.GA4_MP_API_SECRET != '' && secrets.GA4_MP_API_SECRET || 'ga4-mp-secret-placeholder' }}
+      KLAVIYO_PRIVATE_KEY: ${{ secrets.KLAVIYO_PRIVATE_KEY != '' && secrets.KLAVIYO_PRIVATE_KEY || 'klaviyo-private-key-placeholder' }}
+      GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL != '' && secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL || 'ci@example.com' }}
+      GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY != '' && secrets.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || '-----BEGIN PRIVATE KEY-----\\nci\\n-----END PRIVATE KEY-----\\n' }}
+      GMAIL_USER_EMAIL: ${{ secrets.GMAIL_USER_EMAIL != '' && secrets.GMAIL_USER_EMAIL || 'hello@stayportland.com' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Typecheck
+        run: npm run typecheck
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test
+
+      # Build is handled by Vercel on deploy — skipped in CI because
+      # static page prerendering requires a real database connection
+      # that isn't available in the GitHub Actions runner.

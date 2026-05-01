@@ -1,0 +1,43 @@
+# Stay Portland
+
+> Portland's local vacation rental booking platform. Book direct — no fees, lowest price guaranteed.
+
+## What We Do
+
+Stay Portland offers 500+ design-forward vacation rental homes across Portland, Oregon. Guests book directly through stayportland.com with no booking fees — saving 10-15% compared to Airbnb or VRBO.
+
+## Key Pages
+
+- Homepage: https://stayportland.com
+- Browse Properties: https://stayportland.com/properties
+- Contact: https://stayportland.com/contact
+
+## How Booking Works
+
+1. Browse properties at /properties (filter by dates, guests, neighborhood)
+2. Select a property to see photos, amenities, and availability
+3. Choose dates and number of guests for an instant quote
+4. Book securely with a credit card — no account required
+
+## Why Stay Portland
+
+- **No booking fees**: Book direct and skip the 10-15% service fees charged by Airbnb and VRBO
+- **Lowest price guarantee**: Our direct rates are always the lowest available
+- **Hotel-quality comfort**: Professionally cleaned homes with premium linens and amenities
+- **Locally curated**: Every home is hand-selected and styled with Portland character
+- **Walkable neighborhoods**: Properties in Division St, Alberta Arts, Hawthorne, Pearl District, Mississippi, Kerns, and more
+
+## Property Highlights
+
+- 500+ homes across Portland's best neighborhoods
+- Studios to 5+ bedroom houses
+- Pet-friendly options available
+- Full kitchens, fast Wi-Fi, and dedicated workspaces in most homes
+
+## Contact
+
+Visit https://stayportland.com/contact to reach the Stay Portland team.
+
+## Extended Info
+
+For more detailed information, see: https://stayportland.com/llms-full.txt

@@ -1,0 +1,223 @@
+// Blog post metadata — used by both the index page and dynamic route
+export interface BlogPost {
+  slug: string;
+  oldSlug: string;
+  title: string;
+  excerpt: string;
+  date: string;
+  author: string;
+  category: string;
+  market: "crested-butte" | "leadville" | "company" | "owners";
+  image: string;
+}
+
+export const BLOG_POSTS: BlogPost[] = [
+  {
+    slug: "grand-lodge-traverse-vs-vail-resorts",
+    oldSlug: "grand-lodge-crested-butte-condos-traverse-vs-vail-resorts-what-s-the-difference",
+    title: "Grand Lodge Crested Butte Condos: Traverse vs. Vail Resorts — What's the Difference?",
+    excerpt: "A side-by-side comparison of booking a Grand Lodge condo through Traverse Hospitality vs. Vail Resorts — pricing, services, and what you actually get.",
+    date: "2026-04-27",
+    author: "Traverse",
+    category: "Crested Butte",
+    market: "crested-butte",
+    image: "https://booktraverse.com/wp-content/uploads/2026/04/Grand-Lodge-28.jpg",
+  },
+  {
+    slug: "pet-friendly-crested-butte-grand-lodge-153",
+    oldSlug: "pet-friendly-crested-butte-condo-grand-lodge-studio-153-walk-to-the-lifts-pool-hot-tub",
+    title: "Pet-Friendly Crested Butte Condo: Grand Lodge Studio 153 — Walk to the Lifts, Pool & Hot Tub",
+    excerpt: "Crested Butte has a way of getting under your skin. Studio 153 at the Grand Lodge lets you bring your dog along for the ride.",
+    date: "2026-04-15",
+    author: "Natasha Lacque",
+    category: "Crested Butte",
+    market: "crested-butte",
+    image: "https://booktraverse.com/wp-content/uploads/2026/04/153-living-room.jpg",
+  },
+  {
+    slug: "leadville-complete-visitors-guide",
+    oldSlug: "leadville-colorado-the-complete-visitor-s-guide-2026-2",
+    title: "Leadville, Colorado: The Complete Visitor's Guide (2026)",
+    excerpt: "Everything you need to know before visiting America's highest city — where to stay, what to do, and how to make the most of your trip.",
+    date: "2026-04-10",
+    author: "Traverse",
+    category: "Leadville",
+    market: "leadville",
+    image: "https://booktraverse.com/wp-content/uploads/2026/04/IMG_2741.jpg",
+  },
+  {
+    slug: "budget-friendly-ski-vacation-leadville",
+    oldSlug: "budget-friendly-ski-vacation-affordable-leadville-rentals-near-top-resorts",
+    title: "Budget-Friendly Ski Vacation: Affordable Leadville Rentals Near Top Resorts",
+    excerpt: "Ski Vail and Copper Mountain for 40-60% less on lodging by staying in Leadville — Colorado's best-kept secret for affordable ski trips.",
+    date: "2024-10-16",
+    author: "Traverse",
+    category: "Leadville",
+    market: "leadville",
+    image: "https://booktraverse.com/wp-content/uploads/2024/10/Budget-Friendly-Ski-Vacation-Affordable-Leadville-Rentals-Near-Top-Resorts.jpeg",
+  },
+  {
+    slug: "cozy-winter-rentals-leadville",
+    oldSlug: "10-cozy-vacation-rentals-in-leadville-for-the-ultimate-winter-getaway",
+    title: "10 Cozy Vacation Rentals in Leadville for the Ultimate Winter Getaway",
+    excerpt: "As the snow begins to blanket the Rocky Mountains, there's no better time to plan your winter escape to Leadville.",
+    date: "2024-10-03",
+    author: "Traverse",
+    category: "Leadville",
+    market: "leadville",
+    image: "https://booktraverse.com/wp-content/uploads/2024/10/10-Cozy-Vacation-Rentals-in-Leadville-for-the-Ultimate-Winter-Getaway.webp",
+  },
+  {
+    slug: "christmas-getaway-leadville",
+    oldSlug: "ultimate-guide-to-a-cozy-christmas-2024-getaway-in-leadville-top-vacation-rentals-for-families",
+    title: "Ultimate Guide to a Cozy Christmas Getaway in Leadville: Top Vacation Rentals for Families",
+    excerpt: "Imagine waking up on Christmas morning to a blanket of pristine snow outside your window, the majestic Rocky Mountains standing tall in the distance.",
+    date: "2024-09-23",
+    author: "Traverse",
+    category: "Leadville",
+    market: "leadville",
+    image: "https://booktraverse.com/wp-content/uploads/2024/09/christmas.webp",
+  },
+  {
+    slug: "fall-adventures-leadville-hiking-biking",
+    oldSlug: "thrilling-fall-adventures-vacation-rentals-near-leadvilles-best-hiking-and-biking-trails",
+    title: "Thrilling Fall Adventures: Vacation Rentals Near Leadville's Best Hiking and Biking Trails",
+    excerpt: "As the aspen leaves turn to gold and the crisp mountain air rolls in, Leadville transforms into an adventure seeker's paradise.",
+    date: "2024-09-20",
+    author: "Traverse",
+    category: "Leadville",
+    market: "leadville",
+    image: "https://booktraverse.com/wp-content/uploads/2024/09/leadville-foliage.webp",
+  },
+  {
+    slug: "top-5-winter-ski-rentals-leadville",
+    oldSlug: "top-5-cozy-vacation-rentals-in-leadville-for-winter-ski-enthusiasts",
+    title: "Top 5 Cozy Vacation Rentals in Leadville for Winter Ski Enthusiasts",
+    excerpt: "Nestled in the heart of the Colorado Rockies, Leadville stands as the perfect basecamp for ski season.",
+    date: "2024-09-18",
+    author: "Traverse",
+    category: "Leadville",
+    market: "leadville",
+    image: "https://booktraverse.com/wp-content/uploads/2024/09/skiing.jpeg",
+  },
+  {
+    slug: "thanksgiving-leadville-family-rentals",
+    oldSlug: "thanksgiving-in-leadville-family-friendly-vacation-rentals-for-a-mountain-holiday-getaway",
+    title: "Thanksgiving in Leadville: Family-Friendly Vacation Rentals for a Mountain Holiday Getaway",
+    excerpt: "As the leaves turn golden and the first snowflakes begin to fall, Leadville offers the perfect setting for a family Thanksgiving.",
+    date: "2024-09-15",
+    author: "Traverse",
+    category: "Leadville",
+    market: "leadville",
+    image: "https://booktraverse.com/wp-content/uploads/2024/09/leadville-thanksgiving.webp",
+  },
+  {
+    slug: "romantic-getaways-leadville",
+    oldSlug: "romantic-getaways-in-leadville-cozy-vacation-rentals-for-two",
+    title: "Romantic Getaways in Leadville: Cozy Vacation Rentals for Two",
+    excerpt: "Nestled in the heart of the Colorado Rockies, Leadville offers an enchanting backdrop for a romantic escape.",
+    date: "2024-08-05",
+    author: "Traverse",
+    category: "Leadville",
+    market: "leadville",
+    image: "https://booktraverse.com/wp-content/uploads/2024/09/romantic-getaways-leadville-cozy-vacation-rentals-two.jpg",
+  },
+  {
+    slug: "labor-day-leadville",
+    oldSlug: "10-reasons-to-book-a-leadville-vacation-rental-for-labor-day-weekend",
+    title: "10 Reasons to Book a Leadville Vacation Rental for Labor Day Weekend",
+    excerpt: "From Boom Days to mountain biking, here's why Leadville is the perfect Labor Day destination.",
+    date: "2024-08-01",
+    author: "Traverse",
+    category: "Leadville",
+    market: "leadville",
+    image: "https://booktraverse.com/wp-content/uploads/2024/09/labor-day-weekend.jpg",
+  },
+  {
+    slug: "solo-to-group-getaways-leadville",
+    oldSlug: "from-solo-retreats-to-group-getaways-sizing-up-leadvilles-vacation-rental-options",
+    title: "From Solo Retreats to Group Getaways: Sizing Up Leadville's Vacation Rental Options",
+    excerpt: "Whether you're traveling alone or with 20 friends, here's how to find the right Leadville rental for your group size.",
+    date: "2024-07-20",
+    author: "Traverse",
+    category: "Leadville",
+    market: "leadville",
+    image: "https://booktraverse.com/wp-content/uploads/2024/09/from-solo-retreats-to-group-getaways-sizing-up-leadvilles-vacation-rental-options.jpg",
+  },
+  {
+    slug: "top-10-leadville-vacation-rentals",
+    oldSlug: "top-10-airbnb-properties-in-leadville-co",
+    title: "Top 10 Vacation Rentals in Leadville, Colorado",
+    excerpt: "The team's favorite listings in town — from the Mountain Hideaway (sleeps 20) to cozy 1-bedroom cabins.",
+    date: "2024-06-15",
+    author: "Traverse",
+    category: "Leadville",
+    market: "leadville",
+    image: "https://booktraverse.com/wp-content/uploads/2022/08/1-7.jpg",
+  },
+  {
+    slug: "ski-resorts-near-leadville",
+    oldSlug: "top-7-ski-resorts-that-are-less-than-an-hour-drive-from-leadville-colorado",
+    title: "Top 7 Ski Resorts Less Than an Hour from Leadville, Colorado",
+    excerpt: "From Ski Cooper (15 min) to Vail (50 min) — every ski resort within striking distance of Leadville.",
+    date: "2024-03-10",
+    author: "Traverse",
+    category: "Leadville",
+    market: "leadville",
+    image: "https://booktraverse.com/wp-content/uploads/2024/09/skiing.jpeg",
+  },
+  {
+    slug: "introducing-traverse-hospitality",
+    oldSlug: "introducing-traverse-hospitality-a-new-chapter-in-our-journey",
+    title: "Introducing Traverse Hospitality: A New Chapter in Our Journey",
+    excerpt: "Why we rebranded from High Rocky Homes to Traverse Hospitality — and what it means for our guests and owners.",
+    date: "2023-12-12",
+    author: "Traverse",
+    category: "Company",
+    market: "company",
+    image: "",
+  },
+  {
+    slug: "vacation-rental-interior-design-tips",
+    oldSlug: "dos-and-donts-of-vacation-rental-interior-design",
+    title: "Dos and Don'ts of Vacation Rental Interior Design",
+    excerpt: "How to design a vacation rental that looks great, wears well, and earns five-star reviews.",
+    date: "2023-10-15",
+    author: "Traverse",
+    category: "For Owners",
+    market: "owners",
+    image: "",
+  },
+  {
+    slug: "pros-and-cons-online-reviews",
+    oldSlug: "pros-and-cons-of-online-reviews",
+    title: "Pros and Cons of Online Reviews for Vacation Rental Owners",
+    excerpt: "How online reviews can help or hurt your rental business — and how to ensure they work in your favor.",
+    date: "2023-09-01",
+    author: "Traverse",
+    category: "For Owners",
+    market: "owners",
+    image: "",
+  },
+  {
+    slug: "historic-houses-leadville",
+    oldSlug: "historic-houses-in-leadville",
+    title: "Historic Houses in Leadville: Stay in a Piece of Colorado History",
+    excerpt: "From the Governor's Mansion to the Mayor's Manor — the stories behind Leadville's most historic vacation rentals.",
+    date: "2021-09-22",
+    author: "Traverse",
+    category: "Leadville",
+    market: "leadville",
+    image: "",
+  },
+];
+
+// Get a post by its new slug
+export function getPost(slug: string): BlogPost | undefined {
+  return BLOG_POSTS.find((p) => p.slug === slug);
+}
+
+// Get posts by market
+export function getPostsByMarket(market: BlogPost["market"]): BlogPost[] {
+  return BLOG_POSTS.filter((p) => p.market === market);
+}

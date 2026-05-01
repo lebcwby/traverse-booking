@@ -1,0 +1,57 @@
+/* Plan page overrides — imported statically in plan/layout.tsx so they're
+   available during SSR. Scoped with :has() on a data attribute rendered
+   in the SSR markup, so the rules apply on first paint — no flash. */
+
+body:has([data-plan-chrome]) > footer,
+body:has([data-plan-chrome]) > nav,
+body:has([data-plan-chrome]) > header,
+body:has([data-plan-chrome]) #mobile-bottom-nav,
+body:has([data-plan-chrome]) > [class*="mobile-bottom-nav"],
+body:has([data-plan-chrome]) [data-conduit-widget],
+body:has([data-plan-chrome]) conduit-widget,
+body:has([data-plan-chrome]) conduit-chat-trigger,
+body:has([data-plan-chrome]) #conduit-chat-root,
+body:has([data-plan-chrome]) [aria-label="Open chat"] {
+  display: none !important;
+}
+body:has([data-plan-chrome]) > main {
+  min-height: 0 !important;
+  padding-bottom: 0 !important;
+  /* Plan workspace owns its own top bar — full viewport on every breakpoint */
+  height: 100dvh !important;
+  overflow: hidden !important;
+}
+
+@media print {
+  body:has([data-plan-chrome]) {
+    overflow: visible !important;
+  }
+  body:has([data-plan-chrome]) > main > div {
+    position: static !important;
+    height: auto !important;
+    z-index: auto !important;
+  }
+  [data-plan-chat] {
+    display: none !important;
+  }
+  [data-plan-itinerary] {
+    overflow: visible !important;
+    flex: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  [data-plan-save] {
+    display: none !important;
+  }
+  [data-plan-day-card] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  [data-plan-map],
+  [data-plan-properties] {
+    display: none !important;
+  }
+  [data-plan-timeline-grid] {
+    display: block !important;
+  }
+}

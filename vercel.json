@@ -1,0 +1,38 @@
+{
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "staging": true
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/featured/refresh",
+      "schedule": "15 */6 * * *"
+    },
+    {
+      "path": "/api/pricing-cache/refresh",
+      "schedule": "30 */4 * * *"
+    },
+    {
+      "path": "/api/cron/record-payments",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/recover-checkouts",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/refresh-occupancy",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/reconcile-cancellation-refunds",
+      "schedule": "20 * * * *"
+    },
+    {
+      "path": "/api/wheelhouse/sync",
+      "schedule": "20 5 * * *"
+    }
+  ]
+}

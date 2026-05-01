@@ -1,0 +1,167 @@
+/* Blog post content styles */
+.blog-content {
+  font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.8;
+  color: #334155;
+}
+
+.blog-content h2 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-top: 48px;
+  margin-bottom: 16px;
+  line-height: 1.25;
+}
+
+.blog-content h3 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-top: 36px;
+  margin-bottom: 12px;
+  line-height: 1.3;
+}
+
+.blog-content h4 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-top: 28px;
+  margin-bottom: 10px;
+}
+
+.blog-content p {
+  margin-bottom: 20px;
+}
+
+.blog-content img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin: 32px 0;
+}
+
+.blog-content a {
+  color: #14142b;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: #cbd5e1;
+  transition: text-decoration-color 0.2s;
+}
+
+.blog-content a:hover {
+  text-decoration-color: #14142b;
+}
+
+.blog-content ul,
+.blog-content ol {
+  margin: 20px 0;
+  padding-left: 28px;
+}
+
+.blog-content li {
+  margin-bottom: 10px;
+  padding-left: 6px;
+}
+
+.blog-content blockquote {
+  border-left: 3px solid #14142b;
+  padding: 16px 24px;
+  margin: 28px 0;
+  background: #f9fafb;
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  color: #545b5f;
+}
+
+.blog-content strong {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.blog-content hr {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 40px 0;
+}
+
+.blog-content figure {
+  margin: 32px 0;
+}
+
+.blog-content figcaption {
+  font-size: 13px;
+  color: #545b5f;
+  text-align: center;
+  margin-top: 8px;
+}
+
+.blog-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 28px 0;
+  font-size: 15px;
+}
+
+.blog-content th {
+  background: #f9fafb;
+  font-weight: 600;
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 2px solid #e2e8f0;
+  color: #1e293b;
+}
+
+.blog-content td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.blog-content tr:hover td {
+  background: #f9fafb;
+}
+
+/* Remove the "Recent Posts" sidebar content that leaked through */
+.blog-content .recent-posts,
+.blog-content .widget_recent_entries,
+.blog-content .wp-block-latest-posts {
+  display: none;
+}
+
+/* Hide WordPress sidebar widgets that leaked into content */
+.blog-content aside,
+.blog-content .widget,
+.blog-content .sidebar,
+.blog-content .wp-block-latest-posts,
+.blog-content .recent-posts,
+.blog-content .widget_recent_entries,
+.blog-content h2:last-of-type ~ *,
+.blog-content [class*="recent"],
+.blog-content [class*="widget"] {
+  display: none !important;
+}
+/* Drop cap on first paragraph */
+.blog-content > p:first-of-type::first-letter {
+  float: left;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 3.4em;
+  font-weight: 700;
+  line-height: 0.8;
+  margin-right: 8px;
+  margin-top: 6px;
+  color: #14142b;
+}
+/* Hide the first image if it's the featured image (already shown in hero) */
+.blog-content > img:first-child,
+.blog-content > p:first-of-type > img:first-child,
+.blog-content > figure:first-child,
+.blog-content > div:first-child > img:first-child {
+  display: none;
+}
