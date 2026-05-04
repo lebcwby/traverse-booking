@@ -52,7 +52,7 @@ function buildCsp() {
       "data:",
       "blob:",
       "https://assets.guesty.com",
-     { protocol: "https", hostname: "guesty-listing-images.s3.amazonaws.com" },
+      "https://guesty-listing-images.s3.amazonaws.com",
       "https://images.unsplash.com",
       ...(supabaseOrigin ? [supabaseOrigin] : []),
       "https://lh3.googleusercontent.com",
