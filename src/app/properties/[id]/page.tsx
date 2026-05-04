@@ -407,12 +407,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   ]);
 
   const b = beapiListing as Record<string, unknown> | null;
-  const resolvedListing = listing || (b ? {
-    guesty_id: (b._id || b.id || id.split("-").pop()) as string,
-    title: (b.title as string) || null,
-    nickname: (b.nickname as string) || null,
-    picture: ((b.pictures as Array<{original: string}>)?.[0]?.original) || null,
-  } as typeof listing : null);
+const fallbackListing = b ? {
+  guesty_id: (b._id || b.id || id.split("-").pop()) as string,
+  title: (b.title as string) || null,
+  nickname: (b.nickname as string) || null,
+  picture: ((b.pictures as Array<{original: string}>)?.[0]?.original) || null,
+} : null;
+const resolvedListing = listing ?? fallbackListing;
   if (!resolvedListing) return {};
 
   const listingName = resolvedListing.title || resolvedListing.nickname || "Vacation Rental";
