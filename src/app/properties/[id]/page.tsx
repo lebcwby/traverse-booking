@@ -420,6 +420,7 @@ const fallbackListing = b ? {
   tags: (b.tags as string[]) ?? null,
   amenities: (b.amenities as string[]) ?? null,
 } : null;
+  const resolvedListing = listing ?? fallbackListing;
   if (!resolvedListing) return {};
 
   const listingName = resolvedListing.title || resolvedListing.nickname || "Vacation Rental";
