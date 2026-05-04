@@ -412,8 +412,14 @@ const fallbackListing = b ? {
   title: (b.title as string) || null,
   nickname: (b.nickname as string) || null,
   picture: ((b.pictures as Array<{original: string}>)?.[0]?.original) || null,
+  bedrooms: (b.bedrooms as number) ?? null,
+  accommodates: (b.accommodates as number) ?? null,
+  prices: b.prices
+    ? { basePrice: ((b.prices as Record<string, unknown>).basePrice as number) ?? 0 }
+    : null,
+  tags: (b.tags as string[]) ?? null,
+  amenities: (b.amenities as string[]) ?? null,
 } : null;
-const resolvedListing = listing ?? fallbackListing;
   if (!resolvedListing) return {};
 
   const listingName = resolvedListing.title || resolvedListing.nickname || "Vacation Rental";
