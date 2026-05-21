@@ -8,8 +8,10 @@ import { useDateRange } from "./date-range-context";
 import { MobileCalendarModal } from "./mobile-calendar-modal";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
+import { extractTaxBreakdown } from "@/lib/quote-response";
 import { trackCheckAvailability, trackClickBookNow } from "@/lib/tracking";
 import { PricingBadgeCompact } from "./pricing-badge";
+import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 
 interface QuoteResponse {
   _id: string;
@@ -31,6 +33,15 @@ interface QuoteResponse {
           subTotalPrice: number;
           hostPayout: number;
           totalTaxes: number;
+          // BEAPI's per-line breakdown — used to derive taxBreakdown for the
+          // /book PriceBreakdown dropdown via extractTaxBreakdown.
+          invoiceItems?: Array<{
+            title: string;
+            amount: number;
+            type?: string;
+            normalType?: string;
+            isTax?: boolean;
+          }>;
         };
       };
       days: Array<{
@@ -47,20 +58,26 @@ interface QuoteResponse {
 export function MobileBottomBar({
   listingId,
   listingTitle,
+  listingNickname,
   basePrice,
   pointofsale,
   picture,
+  bedrooms,
   maxGuests,
+  city,
   cancellationPolicy,
   reviewRating,
   reviewCount,
 }: {
   listingId: string;
   listingTitle: string;
+  listingNickname?: string | null;
   basePrice: number;
   pointofsale?: string;
   picture?: string | null;
+  bedrooms?: number | null;
   maxGuests?: number;
+  city?: string | null;
   cancellationPolicy?: string;
   reviewRating?: number;
   reviewCount?: number;
@@ -228,7 +245,12 @@ export function MobileBottomBar({
           cleaning: rp.ratePlan.money.fareCleaning,
           taxes: rp.ratePlan.money.totalTaxes,
           total: rp.ratePlan.money.hostPayout,
-          invoiceItems: [],
+          // Forward the real invoiceItems (was hardcoded to [] which silently
+          // dropped the per-tax breakdown on the mobile path) and pre-compute
+          // taxBreakdown so the /book PriceBreakdown dropdown renders when
+          // checkout reads from sessionStorage.
+          invoiceItems: rp.ratePlan.money.invoiceItems ?? [],
+          taxBreakdown: extractTaxBreakdown(rp.ratePlan.money.invoiceItems),
           days: rp.days,
         },
         promotion: q.promotions,
@@ -349,7 +371,8 @@ export function MobileBottomBar({
             <div className="shrink-0 w-[48%] flex flex-col items-center">
               <Button
                 onClick={handleReserve}
-                className="relative w-full overflow-hidden rounded-full bg-accent text-accent-foreground hover:bg-accent/90 py-6 text-base font-semibold after:absolute after:inset-0 after:animate-shimmer after:bg-gradient-to-r after:from-transparent after:via-white/20 after:via-50% after:to-transparent"
+                variant="accent"
+                className="relative w-full overflow-hidden rounded-full py-6 text-base font-semibold after:absolute after:inset-0 after:animate-shimmer after:bg-gradient-to-r after:from-transparent after:via-white/20 after:via-50% after:to-transparent"
               >
                 Reserve
               </Button>
@@ -361,7 +384,8 @@ export function MobileBottomBar({
             <div className="shrink-0 w-[48%]">
               <Button
                 disabled
-                className="w-full rounded-full bg-accent/60 text-accent-foreground py-6 text-base font-semibold"
+                variant="accent"
+                className="w-full rounded-full py-6 text-base font-semibold"
               >
                 <Loader2 className="h-4 w-4 animate-spin mr-1" />
                 Loading...
@@ -370,7 +394,8 @@ export function MobileBottomBar({
           ) : (
             <Button
               onClick={() => setCalendarOpen(true)}
-              className="shrink-0 w-[48%] rounded-full bg-accent text-accent-foreground hover:bg-accent/90 py-6 text-base font-semibold"
+              variant="accent"
+              className="shrink-0 w-[48%] rounded-full py-6 text-base font-semibold"
             >
               Select dates
             </Button>
@@ -476,10 +501,34 @@ export function MobileBottomBar({
             {/* Reserve button */}
             <Button
               onClick={handleReserve}
-              className="relative mt-6 w-full overflow-hidden rounded-full bg-accent text-accent-foreground hover:bg-accent/90 py-6 text-base font-semibold after:absolute after:inset-0 after:animate-shimmer after:bg-gradient-to-r after:from-transparent after:via-white/20 after:via-50% after:to-transparent"
+              variant="accent"
+              className="relative mt-6 w-full overflow-hidden rounded-full py-6 text-base font-semibold after:absolute after:inset-0 after:animate-shimmer after:bg-gradient-to-r after:from-transparent after:via-white/20 after:via-50% after:to-transparent"
             >
               Reserve
             </Button>
+            {/* Add to group booking — secondary CTA for guests collecting
+                multiple stays. Only meaningful with dates selected (which
+                is always true inside this expanded panel). */}
+            <div className="mt-3">
+              <AddToCartButton
+                listingId={listingId}
+                listingTitle={listingTitle}
+                listingNickname={listingNickname ?? null}
+                listingPicture={picture ?? null}
+                bedrooms={bedrooms ?? null}
+                accommodates={maxGuests ?? null}
+                city={city ?? null}
+                checkIn={
+                  dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : null
+                }
+                checkOut={
+                  dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : null
+                }
+                guests={guests}
+                nightlyPriceSnapshot={basePrice}
+                onAdded={() => setPriceDetailsOpen(false)}
+              />
+            </div>
           </div>
         </div>
       )}

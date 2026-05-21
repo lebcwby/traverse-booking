@@ -73,7 +73,7 @@ function humanizeTaxLabel(raw: string): string {
  * `normalType` codes (TOT, ST, COT). Returns null when no tax items found
  * so the breakdown UI can fall back to the flat `taxes` total.
  */
-function extractTaxBreakdown(
+export function extractTaxBreakdown(
   invoiceItems: unknown[] | undefined
 ): QuoteTaxLineItem[] | undefined {
   if (!Array.isArray(invoiceItems)) return undefined;

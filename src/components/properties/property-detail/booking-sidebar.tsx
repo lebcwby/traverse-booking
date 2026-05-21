@@ -23,6 +23,7 @@ import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import type { DayButton as DayButtonType } from "react-day-picker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
+import { extractTaxBreakdown } from "@/lib/quote-response";
 import Image from "next/image";
 import { PricingBadge } from "./pricing-badge";
 import {
@@ -32,6 +33,7 @@ import {
 } from "@/lib/tracking";
 import { getEmailCaptureAttribution } from "@/lib/attribution";
 import { RareFindBadge } from "./rare-find-badge";
+import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 
 interface InvoiceItem {
   title: string;
@@ -91,44 +93,26 @@ interface CalendarDay {
   ctd: boolean;
 }
 
-/** Days before check-in that free cancellation ends, by policy type. */
-function cancellationDaysBefore(policy: string | undefined): number | null {
-  switch (policy) {
-    case "flexible":
-      return 1;
-    case "semi_flexible":
-      return 2;
-    case "moderate":
-      return 5;
-    case "firm":
-      return 30;
-    case "strict":
-      return 60;
-    default:
-      return null;
-  }
-}
-
 /**
- * Build a cancellation label. When a check-in date is available, returns a
- * concrete date like Airbnb does ("Free cancellation before Apr 8"). Otherwise
- * falls back to a generic description.
+ * Traverse Direct uses a UNIFIED cancellation policy across every property:
+ * full refund up to 14 days before check-in; non-refundable within 14 days.
+ * BEAPI's per-listing terms.cancellation enums (strict, moderate, firm, etc.)
+ * reflect what's set on OTA channels (Airbnb/VRBO) — those don't apply to
+ * direct bookings, so we ignore the per-listing policy and always show the
+ * unified 14-day window. Single source of truth: /cancellation page.
  */
+const TRAVERSE_DIRECT_CANCEL_DAYS = 14;
+
 function getCancellationLabel(
-  policy: string | undefined,
+  _policy: string | undefined,
   checkIn?: Date | null
 ): string {
-  const days = cancellationDaysBefore(policy);
-  if (days === null) return "";
   if (checkIn) {
-    const deadline = addDays(checkIn, -days);
-    // If the deadline is in the past, the free window has already closed
+    const deadline = addDays(checkIn, -TRAVERSE_DIRECT_CANCEL_DAYS);
     if (deadline <= new Date()) return "";
     return `Free cancellation before ${format(deadline, "MMM d")}`;
   }
-  // No dates selected yet — short generic that fits one line
-  if (days <= 2) return "Free cancellation · select dates for details";
-  return `Free cancellation up to ${days} days before check-in`;
+  return `Free cancellation up to ${TRAVERSE_DIRECT_CANCEL_DAYS} days before check-in`;
 }
 
 export function BookingSidebar({
@@ -602,6 +586,12 @@ export function BookingSidebar({
       taxes: money.totalTaxes,
       total: money.hostPayout,
       invoiceItems: money.invoiceItems,
+      // Per-tax breakdown surfaced to the checkout PriceBreakdown dropdown.
+      // Has to be computed here (not on /book) because the "Book Now" path
+      // caches this pricing object in sessionStorage, and /book reads from
+      // cache without re-fetching. Without this, fresh searches lose the
+      // tax breakdown until the cache expires.
+      taxBreakdown: extractTaxBreakdown(money.invoiceItems),
       days,
     };
   }, [quote]);
@@ -762,7 +752,7 @@ export function BookingSidebar({
             Bedrooms: bedrooms ?? "",
             Bathrooms: bathrooms ?? "",
             Sleeps: accommodates ?? "",
-            City: city || "Portland, Oregon",
+            City: city || "Colorado",
             Amenities: topAmenities,
             Listing_URL: listingUrl,
           },
@@ -1231,7 +1221,8 @@ export function BookingSidebar({
         <Button
           onClick={pricing ? handleBookNow : checkAvailability}
           disabled={!dateRange?.from || !dateRange?.to || loading}
-          className="relative w-full overflow-hidden rounded-full bg-accent py-6 text-base font-semibold text-accent-foreground hover:bg-accent/90 after:absolute after:inset-0 after:animate-shimmer after:bg-gradient-to-r after:from-transparent after:via-white/20 after:via-50% after:to-transparent"
+          variant="accent"
+          className="relative w-full overflow-hidden rounded-full py-6 text-base font-semibold after:absolute after:inset-0 after:animate-shimmer after:bg-gradient-to-r after:from-transparent after:via-white/20 after:via-50% after:to-transparent"
           size="lg"
         >
           {loading ? (
@@ -1248,6 +1239,23 @@ export function BookingSidebar({
             You won&apos;t be charged yet.
           </p>
         )}
+
+        {/* Group-booking add-to-cart — appears next to Reserve so guests
+            building a multi-listing booking can collect listings into a
+            single cart. Disabled until dates are picked. The button itself
+            handles "already in cart" state. */}
+        <AddToCartButton
+          listingId={listingId}
+          listingTitle={listingTitle}
+          listingPicture={picture ?? null}
+          bedrooms={bedrooms ?? null}
+          accommodates={accommodates ?? null}
+          city={city ?? null}
+          checkIn={dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : null}
+          checkOut={dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : null}
+          guests={Math.max(1, guests)}
+          nightlyPriceSnapshot={basePrice ?? null}
+        />
 
         {pricing && (
           <div className="border-t pt-3">
