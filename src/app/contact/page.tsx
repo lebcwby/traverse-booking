@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, MapPin, Phone, Send, MessageCircle, Home } from "lucide-react";
+import { Mail, MapPin, Phone, Send, Home } from "lucide-react";
 import Link from "next/link";
 import { TrackedContactLink } from "@/components/analytics/tracked-contact-link";
-import { openConduitWidget } from "@/components/conduit-widget";
 import { trackContactSubmit, identifyUser } from "@/lib/tracking";
 import { getEmailCaptureAttribution } from "@/lib/attribution";
 
@@ -60,23 +59,23 @@ export default function ContactPage() {
 
       {/* Instant help note */}
       <div className="mt-6 flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
-        <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+        <Phone className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
         <p className="text-sm text-foreground">
-          <span className="font-medium">Need help right now?</span>{" "}
-          <span className="md:hidden">
-            Tap the <span className="font-semibold">Help</span> button at the
-            bottom of your screen for instant support.
-          </span>
-          <span className="hidden md:inline">
-            <button
-              type="button"
-              onClick={() => openConduitWidget({ trigger: "contact_page" })}
-              className="font-semibold text-primary underline underline-offset-2 hover:text-primary/80"
-            >
-              Click here to chat with us
-            </button>{" "}
-            using the widget in the bottom-right corner for instant support.
-          </span>
+          <span className="font-medium">Need help right now?</span> Call{" "}
+          <a
+            href="tel:+17207592013"
+            className="font-semibold text-primary underline underline-offset-2 hover:text-primary/80"
+          >
+            (720) 759-2013
+          </a>{" "}
+          or email{" "}
+          <a
+            href="mailto:bookings@traversehospitality.com"
+            className="font-semibold text-primary underline underline-offset-2 hover:text-primary/80"
+          >
+            bookings@traversehospitality.com
+          </a>{" "}
+          for the fastest response.
         </p>
       </div>
 
@@ -87,13 +86,13 @@ export default function ContactPage() {
           <div>
             <p className="text-sm text-foreground">
               <span className="font-medium">
-                Own a vacation rental in Portland?
+                Own a vacation rental in Colorado?
               </span>{" "}
-              List your property on Book Traverse and get direct bookings — no
-              OTA commissions.
+              List your property with Traverse Hospitality — full-service
+              management across Crested Butte, Leadville, Vail, and more.
             </p>
             <Link
-              href="/list-your-property"
+              href="/property-management"
               className="mt-3 mx-auto block w-1/2 rounded-full bg-accent px-6 py-2 text-center text-sm font-semibold text-accent-foreground transition-colors hover:bg-accent/90"
             >
               Learn More
@@ -110,10 +109,10 @@ export default function ContactPage() {
             <div>
               <p className="text-sm font-medium text-foreground">Email</p>
               <TrackedContactLink
-                href="mailto:hello@booktraverse.com"
+                href="mailto:bookings@traversehospitality.com"
                 className="text-sm text-muted-foreground hover:text-primary"
               >
-                hello@booktraverse.com
+                bookings@traversehospitality.com
               </TrackedContactLink>
             </div>
           </div>
@@ -122,10 +121,10 @@ export default function ContactPage() {
             <div>
               <p className="text-sm font-medium text-foreground">Phone</p>
               <TrackedContactLink
-                href="tel:+19713624726"
+                href="tel:+17207592013"
                 className="text-sm text-muted-foreground hover:text-primary"
               >
-                (971) 362-4726
+                (720) 759-2013
               </TrackedContactLink>
             </div>
           </div>
@@ -133,7 +132,9 @@ export default function ContactPage() {
             <MapPin className="mt-0.5 h-5 w-5 text-primary" />
             <div>
               <p className="text-sm font-medium text-foreground">Location</p>
-              <p className="text-sm text-muted-foreground">Portland, Oregon</p>
+              <p className="text-sm text-muted-foreground">
+                Leadville &amp; Crested Butte, Colorado
+              </p>
             </div>
           </div>
         </div>
@@ -232,7 +233,7 @@ export default function ContactPage() {
               className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary"
             />
             <span className="text-sm text-muted-foreground">
-              Also send me Portland travel deals and tips
+              Also send me Colorado travel deals and tips
             </span>
           </label>
 
