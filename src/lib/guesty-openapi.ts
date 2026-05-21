@@ -171,6 +171,58 @@ export async function getOpenAPIReservation(reservationId: string) {
   return openapiFetch(`/v1/reservations/${reservationId}`);
 }
 
+/**
+ * Fetch one page of all listings from Guesty OpenAPI.
+ *
+ * Endpoint: GET /v1/listings?fields=<comma-separated>&limit=<n>&skip=<n>
+ * Used by review sync to enumerate every listing (active + inactive)
+ * since the local `listings` table on booktraverse.com is empty by design
+ * (the app fetches listings from BEAPI on-the-fly rather than caching).
+ */
+export async function getOpenAPIListingsPage(params: {
+  fields?: string;
+  limit?: number;
+  skip?: number;
+  active?: boolean;
+}) {
+  const qs = new URLSearchParams({
+    fields: params.fields ?? "_id title nickname",
+    limit: String(params.limit ?? 100),
+    skip: String(params.skip ?? 0),
+    ...(params.active !== undefined && {
+      active: String(params.active),
+    }),
+  }).toString();
+  return openapiFetch(`/v1/listings?${qs}`);
+}
+
+/**
+ * Fetch one page of reviews for a listing from Guesty OpenAPI.
+ *
+ * Endpoint: GET /v1/reviews?listingId=<id>&limit=<n>&skip=<n>
+ * Used by `src/lib/guesty-reviews-sync.ts` to backfill + nightly sync the
+ * `reviews` table on booktraverse.com from Guesty's ~10-year review history.
+ */
+export async function getReviewsPage(params: {
+  listingId?: string;
+  limit?: number;
+  skip?: number;
+}) {
+  const limit = params.limit ?? 100;
+  const skip = params.skip ?? 0;
+  const sp = new URLSearchParams({
+    limit: String(limit),
+    skip: String(skip),
+  });
+  if (params.listingId) {
+    // Guesty OpenAPI accepts the listing filter as `listingId` query param
+    // for `/v1/reviews`. (Verified during 2026-05-19 sync work — see
+    // src/app/api/admin/reviews-sync/route.ts ?action=inspect.)
+    sp.set("listingId", params.listingId);
+  }
+  return openapiFetch(`/v1/reviews?${sp.toString()}`);
+}
+
 export async function cancelOpenAPIReservation(reservationId: string) {
   return openapiFetch(`/v1/reservations/${reservationId}`, {
     method: "PUT",
@@ -236,9 +288,82 @@ export async function recordPayment(
   );
 }
 
+/**
+ * Detects Guesty's "amount > balance" error response.
+ *
+ * IMPORTANT — historical bug (fixed 2026-05-16):
+ * The error string `"Payment amount can't be greater than balance due"` is
+ * emitted by Guesty in TWO different real-world cases:
+ *
+ *   (a) The balance is already 0 — the payment was previously recorded
+ *       (e.g. by an earlier retry or by a duplicate webhook). Safe to
+ *       treat as success.
+ *
+ *   (b) We're sending a HIGHER amount than the actual outstanding balance.
+ *       This is NOT "already settled" — it's an amount mismatch. Silently
+ *       treating it as success means the payment is never recorded in
+ *       Guesty AND no alert fires.
+ *
+ * Case (b) silently dropped every direct booking with a captured-amount /
+ * Guesty-balance mismatch (e.g. $3.71 fee delta) until the first organic
+ * booking exposed it. See `resolveAmountVsBalance` below for the
+ * differentiating logic — always pair this string check with that helper.
+ */
 export function isAlreadySettledPaymentError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   return message.includes("Payment amount can't be greater than balance due");
+}
+
+/**
+ * Disambiguate the "amount > balance" error by fetching the reservation's
+ * actual balance from Guesty.
+ *
+ *   - If balance is 0 → genuinely already settled; return { settled: true }
+ *   - If balance > 0 → caller should retry recordPayment with that amount;
+ *     this helper performs the retry and returns the resolution
+ *
+ * Callers should emit an alert when `mismatch` is true so the team can
+ * reconcile the captured-amount vs. Guesty-balance delta in Stripe.
+ */
+export async function resolveAmountVsBalance(
+  reservationId: string,
+  originalAmount: number,
+  paymentIntentId: string
+): Promise<
+  | { settled: true; mismatch: false }
+  | {
+      settled: true;
+      mismatch: true;
+      originalAmount: number;
+      balanceAmount: number;
+      delta: number;
+    }
+> {
+  const reservation = (await getOpenAPIReservation(reservationId)) as
+    | { money?: { balanceDue?: number; totalPaid?: number } }
+    | null;
+  const balanceDue = Number(reservation?.money?.balanceDue ?? 0);
+
+  // Case (a): balance is 0 — payment was already recorded by a prior call.
+  if (balanceDue <= 0.001) {
+    return { settled: true, mismatch: false };
+  }
+
+  // Case (b): balance is non-zero but our amount was rejected. Retry with
+  // Guesty's actual balance. If THIS fails, propagate — caller falls
+  // through to normal retry/alert.
+  await recordPayment(reservationId, balanceDue, paymentIntentId, {
+    retries: 1,
+    timeoutMs: 10000,
+  });
+
+  return {
+    settled: true,
+    mismatch: true,
+    originalAmount,
+    balanceAmount: balanceDue,
+    delta: Number((originalAmount - balanceDue).toFixed(2)),
+  };
 }
 
 export function isTestModePaymentIntentError(error: unknown) {
