@@ -3,7 +3,9 @@ import {
   recordPayment,
   addInvoiceItem,
   isAlreadySettledPaymentError,
+  resolveAmountVsBalance,
 } from "@/lib/guesty-openapi";
+import { toE164US } from "@/lib/phone";
 import {
   createReservationInstant,
   getQuote,
@@ -22,14 +24,18 @@ import {
 } from "@/lib/server-tracking";
 import { createServerSupabaseClient } from "@/lib/supabase-auth-server";
 import { getPool, withAdvisoryLock } from "@/lib/db";
-import { getSelectedUpsells, getUpsellTotal } from "@/lib/upsells";
+import {
+  getSelectedUpsells,
+  getUpsellTotal,
+  resolvePetFeePerPet,
+} from "@/lib/upsells";
 import { getEffectiveServerConsent } from "@/lib/consent";
 import {
   markPendingCheckoutCompleted,
   markPendingCheckoutError,
   type PendingCheckoutRecord,
 } from "@/lib/pending-checkouts";
-import { getListing } from "@/lib/supabase";
+import { getListingWithBeapiFallback } from "@/lib/listing-utils";
 import { sendAccountCreationEmail } from "@/lib/emails/account-creation-email";
 import {
   lookupFirstTouchAttribution,
@@ -112,14 +118,66 @@ export async function recordPaymentWithIndexingRetry(
       return;
     } catch (err) {
       if (isAlreadySettledPaymentError(err)) {
-        return;
+        // Guesty's "amount > balance" error has two real meanings:
+        //   (a) balance is 0 — already settled, safe to skip
+        //   (b) we sent a higher amount than actual balance — must retry
+        // Disambiguate by fetching Guesty's actual balance. See
+        // resolveAmountVsBalance comment in src/lib/guesty-openapi.ts.
+        try {
+          const resolution = await resolveAmountVsBalance(
+            reservationId,
+            chargedAmount,
+            paymentIntentId
+          );
+          if (resolution.mismatch) {
+            // Real amount mismatch detected. Stripe captured one amount but
+            // Guesty's invoice/quote had a different balance. The payment
+            // IS now recorded (for Guesty's balance amount); the delta lives
+            // only in Stripe. Send an alert so the team can investigate
+            // where the gap is coming from (upsell? fee? rounding?).
+            const stripeUrl = buildStripeDashboardPaymentUrl(paymentIntentId);
+            await sendAlert(
+              `Payment amount mismatch — Stripe $${resolution.originalAmount.toFixed(2)} vs Guesty $${resolution.balanceAmount.toFixed(2)}`,
+              [
+                "<p>The payment was recorded successfully in Guesty, but the amount Stripe captured did not match Guesty's outstanding balance.</p>",
+                "<p>Guesty's books are correct (the balance is now $0). The delta below is revenue that lives in Stripe but isn't reflected on the Guesty invoice — usually an unsynced upsell, a fee, or a rounding artifact.</p>",
+                renderAlertDetails([
+                  ["Reservation", reservationId],
+                  ["PaymentIntent", paymentIntentId],
+                  [
+                    "Stripe captured",
+                    `$${resolution.originalAmount.toFixed(2)}`,
+                  ],
+                  [
+                    "Guesty balance (now recorded)",
+                    `$${resolution.balanceAmount.toFixed(2)}`,
+                  ],
+                  [
+                    "Delta (extra in Stripe)",
+                    `$${resolution.delta.toFixed(2)}`,
+                  ],
+                ]),
+                renderAlertLinks([
+                  { label: "Stripe payment", url: stripeUrl },
+                ]),
+              ].join(""),
+              `amount-mismatch-${reservationId}`
+            );
+          }
+          return;
+        } catch (resolveErr) {
+          // Couldn't fetch balance or couldn't retry-record with balance.
+          // Fall through to the normal retry/backoff loop.
+          lastError = resolveErr;
+        }
+      } else {
+        lastError = err;
       }
-      lastError = err;
       const delay = PAYMENT_RECORD_BACKOFFS_MS[attempt];
       if (delay === undefined) break;
       console.warn(
         `[Reservation] recordPayment attempt ${attempt + 1} failed, retrying in ${delay}ms:`,
-        err instanceof Error ? err.message : err
+        lastError instanceof Error ? lastError.message : lastError
       );
       await new Promise((r) => setTimeout(r, delay));
     }
@@ -157,9 +215,13 @@ function isLikelyTestBooking(email: string, checkIn?: string): boolean {
   return false;
 }
 
-function getRequestedExtrasAmountCents(upsells: string[], petCount: number) {
+function getRequestedExtrasAmountCents(
+  upsells: string[],
+  petCount: number,
+  petFeePerPet: number
+) {
   const upsellAmount = getUpsellTotal(upsells.filter((id) => id !== "pet-fee"));
-  const petFeeAmount = petCount > 0 ? petCount * 99 : 0;
+  const petFeeAmount = petCount > 0 ? petCount * petFeePerPet : 0;
   return Math.round((upsellAmount + petFeeAmount) * 100);
 }
 
@@ -187,7 +249,7 @@ async function getAuthoritativeQuoteContext(quoteId: string) {
     throw new Error("No valid rate plan found for quote");
   }
   const listingId = quote.unitTypeId as string;
-  const listing = await getListing(listingId).catch(() => null);
+  const listing = await getListingWithBeapiFallback(listingId);
   const money = rp.ratePlan.money || {};
 
   return {
@@ -197,6 +259,7 @@ async function getAuthoritativeQuoteContext(quoteId: string) {
     trackingDefaults: {
       listingId,
       listingTitle: listing?.nickname || listing?.title || "",
+      listingNickname: listing?.nickname || null,
       picture: listing?.picture || listing?.pictures?.[0] || null,
       propertyType: listing?.property_type || null,
       city: listing?.address?.city || null,
@@ -280,6 +343,9 @@ async function finalizeReservationLocked(
     listingTitle:
       input.tracking?.listingTitle ||
       quoteContext.trackingDefaults.listingTitle,
+    listingNickname:
+      input.tracking?.listingNickname ??
+      quoteContext.trackingDefaults.listingNickname,
     picture: input.tracking?.picture ?? quoteContext.trackingDefaults.picture,
     propertyType:
       input.tracking?.propertyType ??
@@ -312,7 +378,11 @@ async function finalizeReservationLocked(
             firstName: guest.firstName,
             lastName: guest.lastName,
             email: guest.email,
-            phone: guest.phone || "",
+            // Guesty silently drops non-E.164 phone numbers — bare 10 digits
+            // ("5082371715") result in an empty guest.phone field on the
+            // reservation. Convert to "+15082371715" so SMS, profile lookup,
+            // and ops contact info actually work. See src/lib/phone.ts.
+            phone: toE164US(guest.phone),
           },
           policy: {
             privacy: {
@@ -399,7 +469,7 @@ async function finalizeReservationLocked(
       .update(customerId, {
         email: guest.email || undefined,
         name: [guest.firstName, guest.lastName].filter(Boolean).join(" "),
-        phone: guest.phone || undefined,
+        phone: toE164US(guest.phone) || undefined,
         metadata: {
           confirmationCode: String(confirmationCode || ""),
           guestyReservationId: reservationId,
@@ -442,9 +512,16 @@ async function finalizeReservationLocked(
       paymentIntent.metadata.baseAmountCents || "0",
       10
     );
+    // Per-listing per-pet rate is captured at PI creation; fall back to the
+    // account-fee default if the PI was created before this metadata field
+    // existed (mid-deploy in-flight checkouts).
+    const petFeePerPet = resolvePetFeePerPet(
+      Number.parseFloat(paymentIntent.metadata.petFeePerPet || "") || null
+    );
     const requestedExtrasAmountCents = getRequestedExtrasAmountCents(
       upsells,
-      petCount
+      petCount,
+      petFeePerPet
     );
     const expectedChargedAmountCents =
       baseAmountCents > 0 ? baseAmountCents + requestedExtrasAmountCents : null;
@@ -513,7 +590,7 @@ async function finalizeReservationLocked(
       }
 
       if (petCount > 0) {
-        const petFeeAmount = petCount * 99;
+        const petFeeAmount = petCount * petFeePerPet;
         const petTitle =
           petCount > 1 ? `Pet Fee (${petCount} pets)` : "Pet Fee";
         try {
@@ -569,8 +646,8 @@ async function finalizeReservationLocked(
 
   try {
     await pool.query(
-      `INSERT INTO reservations (guesty_id, confirmation_code, listing_id, guest_id, status, source, check_in, check_out, guests_count, guest, money, last_synced_at, stripe_payment_intent_id, user_id, payment_recorded_at)
-       VALUES ($1, $2, $3, $4, $5, 'BE-API', $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      `INSERT INTO reservations (guesty_id, confirmation_code, listing_id, guest_id, status, source, check_in, check_out, guests_count, guest, money, last_synced_at, stripe_payment_intent_id, user_id, payment_recorded_at, listing_title, listing_photo)
+       VALUES ($1, $2, $3, $4, $5, 'BE-API', $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
        ON CONFLICT (guesty_id) DO UPDATE SET
          status = EXCLUDED.status,
          confirmation_code = EXCLUDED.confirmation_code,
@@ -579,6 +656,8 @@ async function finalizeReservationLocked(
          stripe_payment_intent_id = COALESCE(reservations.stripe_payment_intent_id, EXCLUDED.stripe_payment_intent_id),
          user_id = COALESCE(reservations.user_id, EXCLUDED.user_id),
          payment_recorded_at = COALESCE(reservations.payment_recorded_at, EXCLUDED.payment_recorded_at),
+         listing_title = COALESCE(reservations.listing_title, EXCLUDED.listing_title),
+         listing_photo = COALESCE(reservations.listing_photo, EXCLUDED.listing_photo),
          last_synced_at = $11`,
       [
         reservationId,
@@ -602,6 +681,8 @@ async function finalizeReservationLocked(
         paymentIntentId,
         userId,
         null,
+        tracking.listingTitle || null,
+        tracking.picture || null,
       ]
     );
     reservationStoredLocally = true;
@@ -713,11 +794,21 @@ async function finalizeReservationLocked(
       : undefined;
 
   if (tracking && !isLikelyTestBooking(guest.email, tracking.checkIn)) {
-    trackBookingServerSide(
+    // MUST await — without it, the Stripe webhook returns 200 and Vercel
+    // freezes the lambda before the GA4 / Meta CAPI / Google Ads fetches
+    // land. That silently drops every BE-API purchase from GA4 (see
+    // missing GY-zBMnaYA8 / GY-dmwm6uVF on 2026-05-23). The cart path
+    // already awaits in checkout-coordinator.ts. Webhook latency cost is
+    // ~100-300ms for the parallel uploads, acceptable for Stripe.
+    await trackBookingServerSide(
       {
         reservationId,
+        confirmationCode: confirmationCode
+          ? String(confirmationCode)
+          : null,
         listingId: tracking.listingId,
         listingTitle: tracking.listingTitle,
+        listingNickname: tracking.listingNickname,
         checkIn: tracking.checkIn,
         checkOut: tracking.checkOut,
         guests: tracking.guests,
@@ -787,6 +878,7 @@ async function finalizeReservationLocked(
       listingPhoto: tracking.picture || null,
       checkIn: tracking.checkIn || "",
       checkOut: tracking.checkOut || "",
+      confirmationCode: confirmationCode ? String(confirmationCode) : null,
     }).catch((err) => console.error("[AccountCreationEmail] Error:", err));
   }
 
