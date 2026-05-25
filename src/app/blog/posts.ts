@@ -13,6 +13,17 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "what-to-pack-colorado-mountain-trip",
+    oldSlug: "what-to-pack-colorado-mountain-trip",
+    title: "What to Pack for a Colorado Mountain Trip",
+    excerpt: "Heading to Crested Butte, Leadville, or Vail? This practical packing guide covers every layer, altitude essential, and piece of gear you need — plus what you can safely leave at home.",
+    date: "2026-05-15",
+    author: "Traverse Hospitality",
+    category: "Travel Tips",
+    market: "company",
+    image: "",
+  },
+  {
     slug: "grand-lodge-traverse-vs-vail-resorts",
     oldSlug: "grand-lodge-crested-butte-condos-traverse-vs-vail-resorts-what-s-the-difference",
     title: "Grand Lodge Crested Butte Condos: Traverse vs. Vail Resorts — What's the Difference?",
