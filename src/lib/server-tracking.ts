@@ -44,8 +44,15 @@ interface TrackingOptions {
 
 interface BookingEventData {
   reservationId: string;
+  /** Human-readable Guesty confirmation code (e.g. "GY-rNZRDKkN").
+   *  Used as transaction_id when available so GA4 + Google Ads reports show
+   *  the friendly code instead of the long hex `_id`. Falls back to
+   *  reservationId. Added 2026-05-17. */
+  confirmationCode?: string | null;
   listingId: string;
   listingTitle: string;
+  /** Internal short name — populates GA4 Item variant column. */
+  listingNickname?: string | null;
   checkIn: string;
   checkOut: string;
   guests: number;
@@ -497,7 +504,7 @@ export async function sendKlaviyoEvent(
   }
 }
 
-const KLAVIYO_EMAIL_LIST_ID = "Xeckfg";
+const KLAVIYO_EMAIL_LIST_ID = "S9Ezba";
 
 export async function subscribeToKlaviyoList(profile: {
   email: string;
@@ -678,6 +685,38 @@ export async function trackWishlistServerSide(
   );
 }
 
+/**
+ * Multi-listing cart "Add to Cart" — fired when AddToCartButton click adds a
+ * listing to the group-booking cart. Mirrors the wishlist pattern (Meta CAPI
+ * deduped via shared eventId; client also fires fbq + GA4 + Klaviyo).
+ */
+export async function trackAddToCartServerSide(
+  data: AddPaymentInfoData,
+  options?: TrackingOptions
+) {
+  if (options?.consent?.marketing === false) return;
+  await sendMetaEvent(
+    "AddToCart",
+    data.eventId,
+    data.url,
+    {
+      content_type: "hotel",
+      content_ids: [data.listingId],
+      content_name: data.listingTitle,
+      ...(typeof data.total === "number" && data.total > 0 && { value: data.total }),
+      currency: data.currency || "USD",
+      ...(data.checkIn && { checkin_date: data.checkIn }),
+      ...(data.checkOut && { checkout_date: data.checkOut }),
+      ...(typeof data.guests === "number" && { num_adults: data.guests }),
+      region: "Oregon",
+      country: "US",
+    },
+    data.attribution,
+    data.guest,
+    data.context
+  );
+}
+
 export async function trackAddPaymentInfoServerSide(
   data: AddPaymentInfoData,
   options?: TrackingOptions
@@ -746,6 +785,9 @@ export async function trackBookingServerSide(
   options?: TrackingOptions
 ) {
   const jobs: Promise<unknown>[] = [];
+  // Prefer the human-readable confirmation code (e.g. "GY-rNZRDKkN") as the
+  // transaction_id sent to GA4. Falls back to the Guesty Mongo _id.
+  const transactionId = data.confirmationCode || data.reservationId;
 
   if (options?.consent?.marketing !== false) {
     jobs.push(
@@ -818,13 +860,16 @@ export async function trackBookingServerSide(
       sendGA4Event(
         "purchase",
         {
-          transaction_id: data.reservationId,
+          transaction_id: transactionId,
           value: data.total,
           currency: data.currency || "USD",
           items: [
             {
               item_id: data.listingId,
               item_name: data.listingTitle,
+              ...(data.listingNickname && {
+                item_variant: data.listingNickname,
+              }),
               price: data.total,
               quantity: 1,
             },
