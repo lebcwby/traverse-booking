@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     title: "Portland Neighborhoods Map — Explore Where to Stay",
     description:
       "Interactive map of Portland's best neighborhoods. See restaurants, bars, and vacation rentals across Hawthorne, Alberta, NW 23rd, and more.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
   },
 };
 

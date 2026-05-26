@@ -51,7 +51,7 @@ export async function generateMetadata({
         publishedTime: article.publishedAt,
         modifiedTime: article.updatedAt,
         authors: ["Book Traverse"],
-        images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+        images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
       },
       twitter: {
         card: "summary_large_image",
@@ -76,7 +76,7 @@ export async function generateMetadata({
         authors: ["Book Traverse"],
         images: post.featured_image_url
           ? [{ url: post.featured_image_url }]
-          : [{ url: "/og-image.png", width: 1200, height: 630 }],
+          : [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
       },
       alternates: { canonical: `/guide/${post.slug}` },
     };
@@ -974,11 +974,11 @@ export default async function GuideArticlePage({
       <section className="bg-primary py-14">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
           <h2 className="text-2xl font-bold text-white sm:text-3xl">
-            Book Your Portland Stay
+            Book Your Colorado Stay
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-base text-white/70">
-            275+ vacation rentals across Portland&apos;s best neighborhoods.
-            Book direct — no service fees, lowest price guaranteed.
+            180+ vacation rentals across six Colorado mountain markets.
+            Book direct — no booking fees, save 10–15% vs. Airbnb.
           </p>
           <Link
             href="/properties"

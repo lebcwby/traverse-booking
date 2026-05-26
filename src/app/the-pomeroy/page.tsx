@@ -37,14 +37,14 @@ export const metadata: Metadata = {
       "The Pomeroy offers boutique suites in a historic NW 23rd Ave building in Portland, Oregon. 1-6 bedroom configurations, pet-friendly, self check-in. Book direct and save.",
     url: "https://www.booktraverse.com/the-pomeroy",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "The Pomeroy | Boutique Suites on NW 23rd — Portland, Oregon",
     description:
       "The Pomeroy offers boutique suites in a historic NW 23rd Ave building in Portland, Oregon. 1-6 bedroom configurations, pet-friendly, self check-in. Book direct and save.",
-    images: ["/og-image.png"],
+    images: ["/og-image-v2.png"],
   },
   alternates: {
     canonical: "https://www.booktraverse.com/the-pomeroy",
@@ -149,7 +149,7 @@ export default async function ThePomeroyPage() {
       postalCode: "97210",
       addressCountry: "US",
     },
-    telephone: "+1-971-362-4726",
+    telephone: "+1-720-759-2013",
     priceRange: "$119 - $699",
     amenityFeature: AMENITIES.map((a) => ({
       "@type": "LocationFeatureSpecification",

@@ -33,9 +33,9 @@ export function getOrganizationSchema(aggregateRating?: {
       addressCountry: "US",
     },
     areaServed: { "@type": "City", name: "Portland" },
-    telephone: "+1-971-362-4726",
-    email: "hello@booktraverse.com",
-    image: `${SITE_URL}/og-image.png`,
+    telephone: "+1-720-759-2013",
+    email: "bookings@traversehospitality.com",
+    image: `${SITE_URL}/og-image-v2.png`,
     sameAs: [
       "https://www.instagram.com/booktraverse",
       "https://www.facebook.com/booktraverse",

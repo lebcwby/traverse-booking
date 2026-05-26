@@ -19,7 +19,7 @@ export const metadata: Metadata = {
       "A local's guide to Portland — best neighborhoods, restaurants, breweries, parks, and things to do. Written by locals who manage 275+ homes across the city.",
     url: "https://www.booktraverse.com/guide",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
   },
 };
 
@@ -120,7 +120,7 @@ export default async function GuidePage() {
             to eat, and what not to miss.
           </p>
           <p className="mt-3 text-sm font-medium text-accent">
-            No Fees. Lowest Price Guaranteed.
+            No Booking Fees · Save 10–15% vs. Airbnb.
           </p>
         </div>
       </section>

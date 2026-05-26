@@ -29,7 +29,7 @@ export async function generateMetadata({
       description: page.meta_description,
       url: `https://www.booktraverse.com/stays/${page.slug}`,
       type: "website",
-      images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+      images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
     },
     alternates: { canonical: `/stays/${page.slug}` },
   };

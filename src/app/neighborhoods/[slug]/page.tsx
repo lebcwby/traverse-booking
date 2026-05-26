@@ -44,7 +44,7 @@ export async function generateMetadata({
       description: page.meta_description,
       url: `https://www.booktraverse.com/neighborhoods/${page.slug}`,
       type: "website",
-      images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+      images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
     },
     twitter: {
       card: "summary_large_image",

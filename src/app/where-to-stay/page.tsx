@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     title: "Where to Stay in Portland — Neighborhood Guide",
     description:
       "Skip the downtown hotels. Find the perfect Portland neighborhood for your trip — from Hawthorne to Alberta to NW 23rd.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
   },
 };
 

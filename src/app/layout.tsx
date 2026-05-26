@@ -6,12 +6,11 @@ import Script from "next/script";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { CartProvider } from "@/lib/cart/cart-store";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { ConsentManager } from "@/components/analytics/consent-manager";
 import { MetaPageViewTracker } from "@/components/layout/meta-page-view-tracker";
 import { QualifiedEngagementTracker } from "@/components/layout/qualified-engagement-tracker";
-import { ConduitWidget } from "@/components/conduit-widget";
-import { ChatTrigger } from "@/components/chat/chat-trigger";
 import { getGoogleAdsId } from "@/lib/google-ads-public";
 import { readAnonymousMatching } from "@/lib/anonymous-matching-server";
 
@@ -30,11 +29,12 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.booktraverse.com"),
   title: {
-    default: "Portland Vacation Rentals | Book Traverse — Book Direct & Save",
-    template: "%s | Book Traverse",
+    default:
+      "Colorado Vacation Rentals | Traverse Hospitality — Book Direct & Save",
+    template: "%s | Traverse Hospitality",
   },
   description:
-    "Portland's local vacation rental company. Browse 275+ homes in Portland, Oregon — pet-friendly, luxury, family, and extended stays. No booking fees. Book direct and save.",
+    "Colorado's locally managed vacation rental company. Browse 180+ homes in Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes. No booking fees — book direct and save 10–15% vs. Airbnb and VRBO.",
   icons: null,
   manifest: "/site.webmanifest",
   verification: {
@@ -42,11 +42,11 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    siteName: "Book Traverse",
+    siteName: "Traverse Hospitality",
     locale: "en_US",
     description:
-      "Portland's local vacation rental company. Browse 275+ homes in Portland, Oregon — pet-friendly, luxury, family, and extended stays. No booking fees. Book direct and save.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+      "Colorado's locally managed vacation rental company. Browse 180+ homes in Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes. No booking fees — book direct and save 10–15% vs. Airbnb and VRBO.",
+    images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
@@ -67,7 +67,9 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Favicon — white P on rich gold (#e4a028) */}
+        {/* Favicon — Traverse blue diamonds on transparent background.
+            Regenerate via `npx tsx scripts/regenerate-favicons.ts` after
+            updating /public/book-traverse-icon.png. */}
         <link
           rel="icon"
           href="/favicon-light-32.png"
@@ -122,6 +124,48 @@ export default async function RootLayout({
           strategy="beforeInteractive"
           nonce={nonce}
         />
+        {/*
+          GA4 config — placed as a synchronous inline script so it queues in
+          dataLayer BEFORE React hydration. If this runs afterInteractive, the
+          config command arrives AFTER useEffect fires view_item/add_to_cart,
+          and gtag.js drops those events because no GA4 property is configured
+          yet when it replays the queue. By queuing config early (before any
+          useEffect), gtag.js sees: consent → js → config → view_item → …
+          and all custom events are correctly attributed to G-C5098JP52V.
+          gtag.js itself still loads afterInteractive to avoid blocking LCP.
+        */}
+        <script
+          id="google-tag-config"
+          nonce={nonce}
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              window.gtag = window.gtag || function () {
+                window.dataLayer.push(arguments);
+              };
+
+              var ignoreReferrer = [
+                "checkout.stripe.com",
+                "buy.stripe.com",
+                "hooks.stripe.com",
+                "booking.guesty.com",
+              ].some(function (domain) {
+                return document.referrer.indexOf(domain) !== -1;
+              });
+
+              window.gtag("js", new Date());
+              window.gtag("config", "${GA_MEASUREMENT_ID}", {
+                send_page_view: true,
+                cookie_domain: "booktraverse.com",
+                linker: { domains: ${JSON.stringify(GOOGLE_LINKER_DOMAINS)} },
+                ignore_referrer: ignoreReferrer,
+              });
+              window.gtag("config", "${GOOGLE_ADS_ID}", {
+                allow_enhanced_conversions: true,
+              });
+            `,
+          }}
+        />
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:text-primary-foreground focus:shadow-lg"
@@ -148,10 +192,16 @@ export default async function RootLayout({
           />
         </noscript>
 
-        <Header />
-        <main id="main-content" className="min-h-screen pb-16 lg:pb-0">
-          {children}
-        </main>
+        {/* CartProvider wraps Header (so the cart icon + drawer can read state)
+            and {children} (so AddToCartButton on property pages can write).
+            Footer + MobileBottomNav don't read cart state, so leaving them
+            outside is fine and keeps the provider tree narrow. */}
+        <CartProvider>
+          <Header />
+          <main id="main-content" className="min-h-screen pb-16 lg:pb-0">
+            {children}
+          </main>
+        </CartProvider>
         <Footer />
         <Suspense>
           <MobileBottomNav />
@@ -225,55 +275,17 @@ export default async function RootLayout({
           arguments-style dataLayer entries from window.gtag() calls.
           Without this script, all custom GA4 events are silently dropped.
 
-          send_page_view: true — fires page_view immediately on load.
-          GTM is deferred (requestIdleCallback, 3.5s timeout) so fast
-          bouncers leave before GTM fires its page_view, causing GA4
-          to record "(not set)" for landingPage. This fix ensures the
-          landing page is captured even for quick bounces.
-          NOTE: GTM enhanced measurement also fires page_view — disable
-          the "Page views" trigger in GTM to avoid double-counting.
+          Loaded afterInteractive to avoid blocking LCP. The config command
+          (send_page_view, linker, etc.) is issued in the synchronous
+          google-tag-config inline script above, so by the time gtag.js
+          replays the dataLayer, config is already queued before any
+          view_item / add_to_cart events fired by React useEffect hooks.
         */}
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
           strategy="afterInteractive"
           nonce={nonce}
         />
-        <Script
-          id="google-tag-config"
-          strategy="afterInteractive"
-          nonce={nonce}
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              window.gtag = window.gtag || function () {
-                window.dataLayer.push(arguments);
-              };
-
-              var ignoreReferrer = [
-                "checkout.stripe.com",
-                "buy.stripe.com",
-                "hooks.stripe.com",
-                "booking.guesty.com",
-              ].some(function (domain) {
-                return document.referrer.indexOf(domain) !== -1;
-              });
-
-              window.gtag("js", new Date());
-              window.gtag("config", "${GA_MEASUREMENT_ID}", {
-                send_page_view: true,
-                cookie_domain: "booktraverse.com",
-                linker: { domains: ${JSON.stringify(GOOGLE_LINKER_DOMAINS)} },
-                ignore_referrer: ignoreReferrer,
-              });
-              window.gtag("config", "${GOOGLE_ADS_ID}", {
-                allow_enhanced_conversions: true,
-              });
-            `,
-          }}
-        />
-
-        <ConduitWidget />
-        <ChatTrigger />
 
         <ConsentManager />
         <Suspense fallback={null}>

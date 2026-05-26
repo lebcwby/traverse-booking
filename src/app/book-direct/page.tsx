@@ -29,7 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description: page.meta_description,
       url: "https://www.booktraverse.com/book-direct",
       type: "website",
-      images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+      images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
     },
     alternates: { canonical: "/book-direct" },
   };

@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     title: "Book Traverse Reviews — 7,700+ Verified Guest Reviews",
     description:
       "87% 5-star reviews from 7,700+ verified guests. Read real Portland vacation rental reviews from Airbnb, VRBO & direct bookings.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
   },
 };
 
@@ -299,8 +299,8 @@ export default async function ReviewsPage() {
     "@id": "https://www.booktraverse.com/#organization",
     name: "Book Traverse",
     url: "https://www.booktraverse.com",
-    image: "https://www.booktraverse.com/og-image.png",
-    telephone: "+1-971-362-4726",
+    image: "https://www.booktraverse.com/og-image-v2.png",
+    telephone: "+1-720-759-2013",
     address: {
       "@type": "PostalAddress",
       addressLocality: "Portland",
@@ -636,17 +636,17 @@ export default async function ReviewsPage() {
                     </span>{" "}
                     &mdash;{" "}
                     <a
-                      href="tel:+19713624726"
+                      href="tel:+17207592013"
                       className="text-primary hover:underline"
                     >
-                      (971) 362-4726
+                      (720) 759-2013
                     </a>{" "}
                     or{" "}
                     <a
-                      href="mailto:hello@booktraverse.com"
+                      href="mailto:bookings@traversehospitality.com"
                       className="text-primary hover:underline"
                     >
-                      hello@booktraverse.com
+                      bookings@traversehospitality.com
                     </a>
                   </p>
                 </div>

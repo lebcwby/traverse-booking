@@ -29,7 +29,7 @@ export async function generateMetadata({
       description: page.meta_description,
       url: `https://www.booktraverse.com/events/${page.slug}`,
       type: "website",
-      images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+      images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
     },
     alternates: { canonical: `/events/${page.slug}` },
   };
@@ -109,7 +109,7 @@ export default async function EventPage({
           </h2>
           <p className="mb-6 text-muted-foreground">
             Browse vacation rentals near {page.event_name}. Book direct with
-            Book Traverse — no service fees, best price guaranteed.
+            Traverse — no booking fees, save 10–15% vs. Airbnb.
           </p>
           <Link
             href="/properties"
