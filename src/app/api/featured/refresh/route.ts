@@ -10,10 +10,6 @@ import { format, addDays } from "date-fns";
 
 export const maxDuration = 300;
 
-const supabase = createClient(
-  process.env.SHARED_SUPABASE_URL!,
-  process.env.SHARED_SUPABASE_SERVICE_ROLE_KEY!
-);
 
 // --- Scoring weights (0-100 composite) ---
 const W_REVIEW_QUALITY = 0.3;
@@ -116,6 +112,11 @@ function applyDiversity(scored: ScoredListing[]): ScoredListing[] {
 }
 
 export async function GET(request: Request) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
