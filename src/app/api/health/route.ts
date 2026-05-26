@@ -17,8 +17,8 @@ function isAuthorized(request: Request): boolean {
 }
 
 export async function GET(request: Request) {
-  const url = process.env.SHARED_SUPABASE_URL;
-  const key = process.env.SHARED_SUPABASE_SERVICE_ROLE_KEY;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) {
     return NextResponse.json({ status: "error" }, { status: 500 });

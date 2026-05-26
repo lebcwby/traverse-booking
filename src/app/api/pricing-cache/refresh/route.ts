@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import {
   searchListings,
   getListingCalendar,
@@ -9,11 +9,6 @@ import {
 import { format, addDays } from "date-fns";
 
 export const maxDuration = 300;
-
-const supabase = createClient(
-  process.env.SHARED_SUPABASE_URL!,
-  process.env.SHARED_SUPABASE_SERVICE_ROLE_KEY!
-);
 
 interface PricingCacheEntry {
   guesty_id: string;
@@ -61,6 +56,8 @@ export async function GET(request: Request) {
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const supabase = getSupabaseAdmin();
 
   try {
     // Phase 1: Fetch all BEAPI listings (paginated)
