@@ -70,25 +70,28 @@ export default async function RootLayout({
         {/* Favicon — Traverse blue diamonds on transparent background.
             Regenerate via `npx tsx scripts/regenerate-favicons.ts` after
             updating /public/book-traverse-icon.png. */}
+        {/* ?v=2 cache-bust forces Slack/iMessage/social/browser favicon
+            caches to refetch after the Stay-Portland→Traverse icon swap.
+            Bump on any future icon regen. */}
         <link
           rel="icon"
-          href="/favicon-light-32.png"
+          href="/favicon-light-32.png?v=2"
           sizes="32x32"
           type="image/png"
         />
         <link
           rel="icon"
-          href="/favicon-light-48.png"
+          href="/favicon-light-48.png?v=2"
           sizes="48x48"
           type="image/png"
         />
         <link
           rel="icon"
-          href="/icon-light-192.png"
+          href="/icon-light-192.png?v=2"
           sizes="192x192"
           type="image/png"
         />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
         <link
           rel="preload"
           as="image"
