@@ -93,7 +93,7 @@ export async function GET(request: Request) {
   if (idParam) {
     const { data, error } = await supabase
       .from("sp_pois")
-      .select("id, name, photo_url, town, category")
+      .select("id, name, photo_url, neighborhood, category")
       .eq("id", idParam)
       .maybeSingle();
     if (error || !data) {
@@ -106,7 +106,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       id: data.id,
       name: data.name,
-      town: data.town,
+      neighborhood: data.neighborhood,
       category: data.category,
       hasPhotoUrl: !!data.photo_url,
       keyFingerprint: data.photo_url
@@ -126,7 +126,7 @@ export async function GET(request: Request) {
     .not("photo_url", "is", null);
   const sampleResp = await supabase
     .from("sp_pois")
-    .select("id, name, photo_url, town")
+    .select("id, name, photo_url, neighborhood")
     .not("photo_url", "is", null)
     .limit(1);
 
@@ -144,11 +144,13 @@ export async function GET(request: Request) {
           ? totalResp.count - withPhotoResp.count
           : null,
     },
+    // Surface any query errors so we don't silently miss schema drift.
+    sampleQueryError: sampleResp.error?.message ?? null,
     sample: sample
       ? {
           id: sample.id,
           name: sample.name,
-          town: sample.town,
+          neighborhood: sample.neighborhood,
           keyFingerprint: keyFingerprint(sample.photo_url),
           upstreamProbe: probe,
         }
