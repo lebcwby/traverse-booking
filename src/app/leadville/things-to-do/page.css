@@ -1,0 +1,235 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap");
+
+:root {
+  --ink: #1e293b;
+  --ink-deep: #14142b;
+  --ink-soft: #334155;
+  --ink-mute: #545b5f;
+  --paper: #ffffff;
+  --paper-off: #f9fafb;
+  --line: #e2e8f0;
+}
+
+.traverse-page * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+.traverse-page {
+  font-family: "Inter", sans-serif;
+  font-weight: 400;
+  background: var(--paper);
+  color: var(--ink-soft);
+  line-height: 1.65;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+.traverse-page h1,
+.traverse-page h2 {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+/* HERO (lighter than the building pages — more guidey) */
+.ttd-hero {
+  position: relative;
+  min-height: 56vh;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+.ttd-hero-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 40%;
+  filter: brightness(0.7);
+}
+.ttd-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(20, 20, 43, 0.55) 0%,
+    rgba(20, 20, 43, 0.18) 50%,
+    rgba(20, 20, 43, 0) 100%
+  );
+}
+.ttd-hero-inner {
+  position: relative;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 32px 64px;
+  width: 100%;
+  color: #fff;
+}
+.ttd-hero-inner .eyebrow {
+  font-family: "Inter", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ttd-hero-inner .eyebrow::before {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.4);
+}
+.ttd-hero-inner h1 {
+  font-size: clamp(38px, 6vw, 72px);
+  margin-bottom: 20px;
+  max-width: 16ch;
+  color: #fff;
+}
+.ttd-hero-inner h1 em {
+  font-style: normal;
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 400;
+}
+.ttd-hero-inner .hero-lede {
+  font-size: clamp(16px, 1.4vw, 19px);
+  max-width: 60ch;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.6;
+  font-weight: 300;
+}
+
+/* CARDS */
+.ttd-section {
+  padding: 96px 32px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.ttd-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+}
+.ttd-card {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+.ttd-card--reverse {
+  grid-template-columns: 1fr 1.05fr;
+}
+.ttd-card--reverse .ttd-card-img {
+  order: 2;
+}
+.ttd-card--reverse .ttd-card-body {
+  order: 1;
+}
+@media (max-width: 900px) {
+  .ttd-card,
+  .ttd-card--reverse {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .ttd-card--reverse .ttd-card-img {
+    order: 0;
+  }
+  .ttd-card--reverse .ttd-card-body {
+    order: 1;
+  }
+}
+.ttd-card-img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--paper-off);
+  border-radius: 4px;
+}
+.ttd-card-body {
+  padding: 0 28px;
+}
+.ttd-tag {
+  display: inline-block;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--ink-mute);
+  margin-bottom: 14px;
+}
+.ttd-card-body h2 {
+  font-size: clamp(28px, 3.4vw, 40px);
+  margin-bottom: 20px;
+  color: var(--ink);
+}
+.ttd-card-body p {
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--ink-soft);
+  margin-bottom: 24px;
+}
+.ttd-link {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--ink);
+  border-bottom: 2px solid var(--ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  transition: opacity 0.2s;
+}
+.ttd-link:hover {
+  opacity: 0.7;
+}
+
+/* CTA BAND */
+.ttd-cta-band {
+  background: var(--ink-deep);
+  color: #fff;
+  padding: 80px 32px;
+  text-align: center;
+}
+.ttd-cta-inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.ttd-cta-band h2 {
+  color: #fff;
+  font-size: clamp(28px, 3.6vw, 44px);
+  margin-bottom: 16px;
+}
+.ttd-cta-band p {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 17px;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+.btn {
+  display: inline-block;
+  padding: 16px 32px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.btn-primary {
+  background: #fff;
+  color: var(--ink-deep);
+}
+.btn-primary:hover {
+  background: var(--paper-off);
+  transform: translateY(-2px);
+}
