@@ -246,7 +246,7 @@ function EmptyHero() {
         <Sparkles className="h-5 w-5 text-white" />
       </div>
       <h2 className="mt-5 text-xl font-semibold text-neutral-900">
-        Your Portland trip starts here
+        Your Colorado trip starts here
       </h2>
       <p className="mt-2 max-w-sm text-sm text-neutral-600">
         Tell us when you&rsquo;re visiting and what you&rsquo;re into.
@@ -299,7 +299,7 @@ function BookingCTA({ itinerary }: { itinerary: Itinerary }) {
         itinerary.dates.checkIn,
         itinerary.dates.checkOut
       )}`
-    : "See my Portland rentals";
+    : "See my Colorado rentals";
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -311,7 +311,7 @@ function BookingCTA({ itinerary }: { itinerary: Itinerary }) {
         <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
       </Link>
       <p className="text-[11px] text-neutral-500">
-        No booking fees · Best price guaranteed
+        No booking fees · Free cancel 14 days out
       </p>
     </div>
   );
