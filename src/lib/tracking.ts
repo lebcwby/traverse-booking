@@ -308,11 +308,11 @@ export function trackViewedListing(data: {
             // Hotel/travel vertical params — Meta uses these for catalog
             // matching and hotel-specific bidding. Book Traverse is OR-only,
             // so region and country are constants per fire.
-            region: "Oregon",
+            region: "Colorado",
             country: "US",
             ...(data.city && {
               city: data.city,
-              destination: `${data.city}, Oregon, USA`,
+              destination: `${data.city}, Colorado, USA`,
             }),
           },
           { eventID: eventId }
@@ -548,7 +548,7 @@ export function trackStartedCheckout(data: {
             checkin_date: data.checkIn,
             checkout_date: data.checkOut,
             num_adults: data.guests,
-            region: "Oregon",
+            region: "Colorado",
             country: "US",
           },
           { eventID: eventId }
@@ -697,7 +697,7 @@ export function trackInitiateCheckoutEnriched(data: {
           checkin_date: data.checkIn,
           checkout_date: data.checkOut,
           num_adults: data.guests,
-          region: "Oregon",
+          region: "Colorado",
           country: "US",
         },
         { eventID: eventId }
@@ -845,8 +845,8 @@ export function trackBookingCompleted(data: {
         checkout_date: data.checkOut,
         num_adults: data.guests,
         // Hotel/travel vertical params — improves catalog matching and
-        // travel-vertical EMQ. SP is Oregon-only.
-        region: "Oregon",
+        // travel-vertical EMQ. Traverse is Colorado-only.
+        region: "Colorado",
         country: "US",
       },
       { eventID: eventId }
@@ -1010,10 +1010,10 @@ export function trackSearch(data: {
             checkin_date: data.checkIn || defaultCheckIn,
             checkout_date: data.checkOut || defaultCheckOut,
             destination: data.city
-              ? `${data.city}, Oregon, USA`
-              : "Portland, Oregon, USA",
-            city: data.city || "Portland",
-            region: "Oregon",
+              ? `${data.city}, Colorado, USA`
+              : "Crested Butte, Colorado, USA",
+            city: data.city || "Crested Butte",
+            region: "Colorado",
             country: "US",
             num_adults: data.guests || 2,
             currency: "USD",

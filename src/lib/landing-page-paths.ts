@@ -1,25 +1,18 @@
-const LANDING_PAGE_CANONICAL_PATHS = {
-  "pearl-district": "/neighborhoods/pearl-district",
-  alberta: "/neighborhoods/alberta-arts-district",
-  "hawthorne-belmont": "/neighborhoods/hawthorne-belmont",
-  mississippi: "/neighborhoods/mississippi-avenue",
-  "nw-23rd": "/neighborhoods/nob-hill",
-  "sellwood-moreland": "/neighborhoods/sellwood",
-  "northeast-portland": "/neighborhoods/ne-portland",
-  "southeast-portland": "/neighborhoods/se-portland",
-  "northwest-portland": "/neighborhoods/nw-portland",
-  "north-portland": "/neighborhoods/north-portland",
-  "corporate-housing": "/stays/corporate-housing-portland",
-  "travel-nurse-housing": "/stays/travel-nurse-housing-portland",
-  "relocation-housing": "/stays/relocation-housing-portland",
-  "extended-stay": "/stays/extended-book-traverse",
-} as const satisfies Record<string, string>;
+// Landing-page slug → canonical path map + retirement registry.
+//
+// The Portland-era landing slugs below are all 301-redirected to /properties
+// via next.config.ts. They are intentionally kept in LANDING_PAGES (in
+// landing-pages.ts) for historical reasons but should NOT be surfaced to
+// users — search suggestions, sitemap, and any UI that lists landing pages
+// must skip anything in RETIRED_LANDING_SLUGS.
+
+const LANDING_PAGE_CANONICAL_PATHS: Record<string, string> = {
+  // (Kept for legacy code paths — every entry below 301-redirects to
+  // /properties via next.config.ts. Do not link from new UI.)
+};
 
 export function getLandingPagePath(slug: string): string {
-  const canonicalPath =
-    LANDING_PAGE_CANONICAL_PATHS[
-      slug as keyof typeof LANDING_PAGE_CANONICAL_PATHS
-    ];
+  const canonicalPath = LANDING_PAGE_CANONICAL_PATHS[slug];
   return canonicalPath ?? `/s/${slug}`;
 }
 
@@ -29,4 +22,59 @@ export function getLandingPageUrl(slug: string): string {
 
 export function landingPageHasCanonicalOverride(slug: string): boolean {
   return Object.hasOwn(LANDING_PAGE_CANONICAL_PATHS, slug);
+}
+
+/**
+ * Slugs from the Portland-era LANDING_PAGES array that have been retired:
+ * every one is 301-redirected to /properties via next.config.ts. Keep this
+ * list in sync with the redirects block.
+ *
+ * Surfaces:
+ *   - sitemap.ts (exclude from /sitemap/landing-pages.xml)
+ *   - api/search-suggestions (don't surface in autocomplete dropdown)
+ *   - any future LANDING_PAGES iterator that renders UI
+ */
+export const RETIRED_LANDING_SLUGS: ReadonlySet<string> = new Set([
+  "luxury",
+  "budget-friendly",
+  "short-term-rentals",
+  "airbnb-alternative",
+  "top-rated",
+  "monthly-rentals",
+  "northeast-portland",
+  "southeast-portland",
+  "northwest-portland",
+  "north-portland",
+  "mt-hood",
+  "alberta",
+  "hawthorne-belmont",
+  "pearl-district",
+  "mississippi",
+  "nw-23rd",
+  "sellwood-moreland",
+  "1-bedroom",
+  "2-bedroom",
+  "3-bedroom",
+  "4-bedroom-plus",
+  "near-ohsu",
+  "near-moda-center",
+  "near-portland-airport",
+  "near-providence-park",
+  "near-convention-center",
+  "near-lloyd-center",
+  "downtown-portland",
+  "corporate-housing",
+  "furnished-apartments",
+  "travel-nurse-housing",
+  "relocation-housing",
+  "walkable",
+  "free-parking",
+  "portland-accommodations",
+  "downtown-portland-stays",
+  "best-portland-stays",
+  "backyard",
+]);
+
+export function isRetiredLandingSlug(slug: string): boolean {
+  return RETIRED_LANDING_SLUGS.has(slug);
 }

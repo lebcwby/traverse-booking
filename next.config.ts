@@ -313,6 +313,15 @@ const nextConfig: NextConfig = {
       { source: "/s/portland-accommodations", destination: "/properties", permanent: true },
       { source: "/s/downtown-portland-stays", destination: "/properties", permanent: true },
       { source: "/s/best-portland-stays", destination: "/properties", permanent: true },
+      // /reviews stays — kept as a Colorado-rebrand-friendly page. The
+      // following three were Portland-template content pages that we couldn't
+      // cheaply rewrite for Colorado. Redirect to better Colorado equivalents.
+      { source: "/where-to-stay", destination: "/properties", permanent: true },
+      { source: "/book-direct", destination: "/", permanent: true },
+      { source: "/guide", destination: "/plan", permanent: true },
+      // Portland-styled "extended-stay" landing-page body retired 2026-05-27;
+      // dedicated Colorado long-stay landing page TBD.
+      { source: "/s/extended-stay", destination: "/properties", permanent: true },
       // ─── End Portland retirement ───────────────────────────────────────
 
       // ─── /guide/portland-* — Stay Portland template leftovers (2026-05-14) ─

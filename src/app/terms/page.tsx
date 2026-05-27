@@ -48,7 +48,7 @@ export default function TermsPage() {
             3. Check-In & Check-Out
           </h2>
           <p className="mt-2">
-            Standard check-in time is 4:00 PM and check-out time is 11:00 AM
+            Standard check-in time is 4:00 PM and check-out time is 10:00 AM
             local time unless otherwise communicated. Early check-in or late
             check-out may be available upon request and is not guaranteed. You
             will receive detailed access instructions prior to your arrival.
@@ -124,8 +124,8 @@ export default function TermsPage() {
           </h2>
           <p className="mt-2">
             These terms shall be governed by and construed in accordance with
-            the laws of the State of Oregon, without regard to its conflict of
-            law provisions.
+            the laws of the State of Colorado, without regard to its conflict
+            of law provisions.
           </p>
         </section>
 
@@ -134,10 +134,10 @@ export default function TermsPage() {
           <p className="mt-2">
             If you have any questions about these terms, please contact us at{" "}
             <TrackedContactLink
-              href="mailto:hello@booktraverse.com"
+              href="mailto:bookings@traversehospitality.com"
               className="text-primary hover:underline"
             >
-              hello@booktraverse.com
+              bookings@traversehospitality.com
             </TrackedContactLink>
             .
           </p>

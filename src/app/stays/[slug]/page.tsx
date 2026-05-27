@@ -97,8 +97,8 @@ export default async function UseCasePage({
             Find Your Perfect {page.use_case} Rental
           </h2>
           <p className="mb-6 text-muted-foreground">
-            Browse our full collection of Portland vacation rentals. Book direct
-            — no service fees, guaranteed best price.
+            Browse our full collection of Colorado vacation rentals. Book
+            direct — no service fees, guaranteed best price.
           </p>
           <Link
             href="/properties"

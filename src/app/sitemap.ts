@@ -2,16 +2,18 @@ import type { MetadataRoute } from "next";
 import { getListings } from "@/lib/supabase";
 import { getListingSlug } from "@/lib/utils";
 import { getAllSlugs } from "@/lib/landing-pages";
-import { landingPageHasCanonicalOverride } from "@/lib/landing-page-paths";
-import { getAllGuideSlugs } from "@/lib/guide-content";
+import {
+  landingPageHasCanonicalOverride,
+  isRetiredLandingSlug,
+} from "@/lib/landing-page-paths";
 import {
   getAllNeighborhoodSlugs,
   getAllUseCaseSlugs,
   getAllEventSlugs,
   getAllBlogSlugs,
 } from "@/lib/seo-content";
-import { allRecommendSlugs } from "@/lib/plan/recommend-slug-map";
 import { shouldSkipCiSupabaseFetches } from "@/lib/build-environment";
+
 
 // Generate sitemap index with segments
 export async function generateSitemaps() {
@@ -47,16 +49,6 @@ export default async function sitemap(props: {
         priority: 0.9,
       },
       {
-        url: "https://www.booktraverse.com/neighborhoods",
-        changeFrequency: "monthly",
-        priority: 0.8,
-      },
-      {
-        url: "https://www.booktraverse.com/portland-neighborhoods",
-        changeFrequency: "monthly",
-        priority: 0.8,
-      },
-      {
         url: "https://www.booktraverse.com/reviews",
         changeFrequency: "weekly",
         priority: 0.8,
@@ -67,59 +59,19 @@ export default async function sitemap(props: {
         priority: 0.8,
       },
       {
-        url: "https://www.booktraverse.com/portland-recommendations",
-        changeFrequency: "weekly",
-        priority: 0.8,
-      },
-      ...allRecommendSlugs().map((entry) => ({
-        url: `https://www.booktraverse.com/portland-recommendations/${entry.slug}`,
-        changeFrequency: "weekly" as const,
-        priority: 0.8,
-      })),
-      {
-        url: "https://www.booktraverse.com/plan/portland-food-itinerary",
-        changeFrequency: "weekly",
-        priority: 0.8,
-      },
-      {
-        url: "https://www.booktraverse.com/plan/portland-outdoors-itinerary",
-        changeFrequency: "weekly",
-        priority: 0.8,
-      },
-      {
-        url: "https://www.booktraverse.com/plan/portland-neighborhoods-tour",
-        changeFrequency: "weekly",
-        priority: 0.8,
-      },
-      {
-        url: "https://www.booktraverse.com/plan/portland-weekend-itinerary",
-        changeFrequency: "weekly",
-        priority: 0.8,
-      },
-      {
-        url: "https://www.booktraverse.com/plan/portland-with-kids-itinerary",
-        changeFrequency: "weekly",
-        priority: 0.8,
-      },
-      {
-        url: "https://www.booktraverse.com/portland-apartments-vs-hotels",
+        url: "https://www.booktraverse.com/property-management",
         changeFrequency: "monthly",
-        priority: 0.7,
+        priority: 0.8,
       },
       {
-        url: "https://www.booktraverse.com/portland-homes-vs-hotels",
-        changeFrequency: "monthly",
-        priority: 0.7,
+        url: "https://www.booktraverse.com/crested-butte",
+        changeFrequency: "weekly",
+        priority: 0.85,
       },
       {
-        url: "https://www.booktraverse.com/book-direct",
-        changeFrequency: "monthly",
-        priority: 0.7,
-      },
-      {
-        url: "https://www.booktraverse.com/the-pomeroy",
-        changeFrequency: "monthly",
-        priority: 0.7,
+        url: "https://www.booktraverse.com/leadville",
+        changeFrequency: "weekly",
+        priority: 0.85,
       },
       {
         url: "https://www.booktraverse.com/contact",
@@ -155,7 +107,10 @@ export default async function sitemap(props: {
 
   if (id === "landing-pages") {
     return getAllSlugs()
-      .filter((slug) => !landingPageHasCanonicalOverride(slug))
+      .filter(
+        (slug) =>
+          !landingPageHasCanonicalOverride(slug) && !isRetiredLandingSlug(slug)
+      )
       .map((slug) => ({
         url: `https://www.booktraverse.com/s/${slug}`,
         changeFrequency: "weekly" as const,
@@ -164,18 +119,9 @@ export default async function sitemap(props: {
   }
 
   if (id === "guides") {
-    return [
-      {
-        url: "https://www.booktraverse.com/guide",
-        changeFrequency: "weekly" as const,
-        priority: 0.8,
-      },
-      ...getAllGuideSlugs().map((slug) => ({
-        url: `https://www.booktraverse.com/guide/${slug}`,
-        changeFrequency: "monthly" as const,
-        priority: 0.7,
-      })),
-    ];
+    // /guide root + legacy /guide/portland-* slugs are all redirect-only as of
+    // 2026-05-27 (see next.config.ts). Emit nothing so they de-index.
+    return [];
   }
 
   if (id === "neighborhoods") {
