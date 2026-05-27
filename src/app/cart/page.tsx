@@ -242,21 +242,38 @@ function CartLineCard({
   const lineTotal = result?.quote?.hostPayout ?? null;
   const errored = result?.ok === false;
 
-  // Map BEAPI error substrings to friendly copy — same heuristic the
-  // single-listing booking sidebar uses.
+  // Prefer the stable `code` returned by /api/quotes/batch (see
+  // src/lib/beapi-error.ts) so the cart UI doesn't substring-sniff raw
+  // BEAPI text. Substring fallbacks remain only to cover deploys that
+  // haven't shipped the classified-error contract yet.
   const friendlyError = useMemo(() => {
     if (!errored) return null;
+    const code = (result as { code?: string } | null)?.code ?? "";
     const msg = result?.error ?? "";
-    if (/LISTING_IS_NOT_AVAILABLE|not applicable/i.test(msg)) {
+    if (
+      code === "DATES_UNAVAILABLE" ||
+      /LISTING_IS_NOT_AVAILABLE|not applicable/i.test(msg)
+    ) {
       return "These dates are no longer available for this listing.";
     }
-    if (/checkInDateLocalized|checkOutDateLocalized/i.test(msg)) {
+    if (
+      code === "INVALID_DATES" ||
+      /checkInDateLocalized|checkOutDateLocalized/i.test(msg)
+    ) {
       return "These dates aren't valid — try a different range.";
     }
-    if (/WRONG_REQUEST_PARAMETERS/i.test(msg)) {
+    if (
+      code === "INVALID_REQUEST" ||
+      /WRONG_REQUEST_PARAMETERS/i.test(msg)
+    ) {
       return "Something went wrong with this listing — please try different dates.";
     }
-    return "Couldn't price this listing. Try refreshing or adjusting dates.";
+    // For any other classified code, the server-rendered message is already
+    // sanitized — surface it directly. Falls back to a generic line if the
+    // server returned nothing.
+    return (
+      msg || "Couldn't price this listing. Try refreshing or adjusting dates."
+    );
   }, [errored, result]);
 
   return (

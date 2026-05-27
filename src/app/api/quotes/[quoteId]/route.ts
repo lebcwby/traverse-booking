@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getQuote } from "@/lib/guesty-beapi";
 import { buildNormalizedQuoteResponse } from "@/lib/quote-response";
-import { getListing } from "@/lib/supabase";
+import { getListingWithBeapiFallback } from "@/lib/listing-utils";
+import { classifyBeapiError } from "@/lib/beapi-error";
 
 export async function GET(
   request: NextRequest,
@@ -10,14 +11,17 @@ export async function GET(
   try {
     const { quoteId } = await params;
     const q = await getQuote(quoteId);
-    const listing = await getListing(q.unitTypeId).catch(() => null);
+    const listing = await getListingWithBeapiFallback(q.unitTypeId);
     return NextResponse.json(buildNormalizedQuoteResponse(q, listing));
   } catch (error) {
+    // Raw BEAPI error stays in server logs only — never returned to the
+    // browser (would leak field names like `unitTypeId` and Mongo ids).
+    console.error("[QuotesGet] Error:", error);
+
+    const classified = classifyBeapiError(error);
     return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Failed to fetch quote",
-      },
-      { status: 500 }
+      { error: classified.message, code: classified.code },
+      { status: classified.status }
     );
   }
 }

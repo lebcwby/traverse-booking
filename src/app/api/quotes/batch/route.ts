@@ -12,6 +12,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createQuote } from "@/lib/guesty-beapi";
+import { classifyBeapiError, type BeapiErrorCode } from "@/lib/beapi-error";
 
 interface BatchQuoteLine {
   /** Cart-line id from the client; echoed back so the client can correlate. */
@@ -47,11 +48,14 @@ interface BatchQuoteLineResult {
   lineId: string;
   ok: boolean;
   quote?: PublicQuoteSummary;
-  /** Trimmed BEAPI error string when ok=false. The cart UI sniffs this for
-   * substrings like LISTING_IS_NOT_AVAILABLE / WRONG_REQUEST_PARAMETERS to
-   * pick a friendly message — same pattern the single-listing booking
-   * sidebar already uses. */
+  /** Sanitized, user-facing error string when ok=false. Raw BEAPI text is
+   * NEVER forwarded — `classifyBeapiError` strips internal field names and
+   * Guesty-internal error codes before returning the line. */
   error?: string;
+  /** Stable error code the cart UI can switch on (e.g. DATES_UNAVAILABLE)
+   * instead of substring-sniffing the message. See `src/lib/beapi-error.ts`
+   * for the full union. */
+  code?: BeapiErrorCode;
 }
 
 interface BatchQuoteResponse {
@@ -195,15 +199,23 @@ export async function POST(req: NextRequest) {
           return {
             lineId: line.lineId,
             ok: false,
-            error: "Quote returned without rate plan data",
+            error: "Couldn't price this listing — please try again.",
+            code: "UNKNOWN",
           };
         }
         return { lineId: line.lineId, ok: true, quote: summary };
       } catch (e) {
+        // Raw BEAPI error stays in server logs only (e.g. for Sentry).
+        console.error(
+          `[QuotesBatch] Quote failed for line ${line.lineId}:`,
+          e
+        );
+        const classified = classifyBeapiError(e);
         return {
           lineId: line.lineId,
           ok: false,
-          error: e instanceof Error ? e.message : String(e),
+          error: classified.message,
+          code: classified.code,
         };
       }
     })

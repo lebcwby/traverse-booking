@@ -529,8 +529,13 @@ export function BookingSidebar({
           throw new Error("Please wait a moment and try again.");
         }
         const data = await res.json();
-        const msg = data.error || "";
+        // Prefer the stable `code` from /api/quotes (see src/lib/beapi-error.ts).
+        // Fall back to substring-sniffing `msg` only for older deploys that
+        // haven't shipped the classified-error contract yet.
+        const code: string = data.code || "";
+        const msg: string = data.error || "";
         if (
+          code === "DATES_UNAVAILABLE" ||
           msg.includes("LISTING_IS_NOT_AVAILABLE") ||
           msg.includes("not applicable")
         ) {
@@ -539,15 +544,21 @@ export function BookingSidebar({
           return;
         }
         if (
+          code === "INVALID_DATES" ||
           msg.includes("checkOutDateLocalized") ||
           msg.includes("checkInDateLocalized")
         ) {
           throw new Error("Please select valid check-in and check-out dates.");
         }
-        if (msg.includes("WRONG_REQUEST_PARAMETERS")) {
+        if (
+          code === "INVALID_REQUEST" ||
+          msg.includes("WRONG_REQUEST_PARAMETERS")
+        ) {
           throw new Error("Something went wrong. Please try different dates.");
         }
-        throw new Error("Unable to get pricing. Please try again.");
+        // For any other classified code, trust the server-rendered message
+        // (already sanitized by classifyBeapiError) over our hard-coded one.
+        throw new Error(msg || "Unable to get pricing. Please try again.");
       }
 
       const data: QuoteResponse = await res.json();
