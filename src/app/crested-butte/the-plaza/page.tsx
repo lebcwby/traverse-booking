@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { pageContent, schemaBlocks } from "./content";
+import { NoFeesHeader } from "@/components/no-fees/no-fees-header";
+import { NoFeesHeroSection } from "@/components/no-fees/no-fees-hero-section";
+import "../../no-fees/no-fees.css";
 import "./page.css";
 
 export const metadata: Metadata = {
@@ -10,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <>
+    <div data-no-fees-layout="hide-chrome">
       {schemaBlocks.map((schema: Record<string, unknown>, i: number) => (
         <script
           key={i}
@@ -18,10 +21,23 @@ export default function Page() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
         />
       ))}
+      <NoFeesHeader />
+      <NoFeesHeroSection
+        bgImage="https://assets.guesty.com/image/upload/h_600/v1756514170/production/55935b4b5d6bcf0e0084abd6/cerpq3hoexjezuum0b4j.jpg"
+        eyebrow="11 Snowmass Road · Mt. Crested Butte, CO 81225"
+        title="The Plaza Condominiums."
+        titleEm="Space to spread out."
+        lede="Spacious 2 and 3-bedroom ski-in condos at the base of Crested Butte Mountain Resort — 100 yards from the Silver Queen lift. Full kitchens, fireplaces, hot tubs, Iron Horse Tap on-site, and the Traverse Hospitality office right at the entrance. From $95/night."
+        lockedDestination={{
+          tag: "The Plaza Crested Butte",
+          label: "The Plaza",
+        }}
+        directionsHref="#location"
+      />
       <div
         className="traverse-page"
         dangerouslySetInnerHTML={{ __html: pageContent }}
       />
-    </>
+    </div>
   );
 }

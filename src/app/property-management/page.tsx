@@ -209,7 +209,7 @@ export default function PropertyManagementPage() {
           attribute so the rest of the page keeps Tailwind styling intact.
           NOTE: do not set `contain` here — it isolates the header's stacking context
           and clips the absolutely-positioned nav dropdowns under the next section. */}
-      <div data-no-fees-layout={true} className="relative z-50">
+      <div data-no-fees-layout="hide-chrome" className="relative z-50">
         <NoFeesHeader phoneOverride={B2B_PHONE} />
       </div>
       <div className="bg-background">

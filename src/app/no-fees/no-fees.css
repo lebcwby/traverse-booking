@@ -1,11 +1,16 @@
-/* ============ Hide site chrome from root layout on /no-fees ============ */
-body:has([data-no-fees-layout]) > header,
-body:has([data-no-fees-layout]) > footer,
-body:has([data-no-fees-layout]) > nav[aria-label="Mobile"],
-body:has([data-no-fees-layout]) .mobile-bottom-nav {
+/* ============ Hide site chrome (global header/footer/mobile nav) only on
+   pages that opt in via data-no-fees-layout="hide-chrome". Hub pages and
+   /property-management use this. Plain data-no-fees-layout (any other
+   value, or just `true`) still gets the design-token styling below but
+   keeps the global chrome — used for sub-pages that want the brand
+   typography without taking over the header. ============ */
+body:has([data-no-fees-layout="hide-chrome"]) > header,
+body:has([data-no-fees-layout="hide-chrome"]) > footer,
+body:has([data-no-fees-layout="hide-chrome"]) > nav[aria-label="Mobile"],
+body:has([data-no-fees-layout="hide-chrome"]) .mobile-bottom-nav {
   display: none !important;
 }
-body:has([data-no-fees-layout]) > main {
+body:has([data-no-fees-layout="hide-chrome"]) > main {
   min-height: 0 !important;
   padding-bottom: 0 !important;
 }

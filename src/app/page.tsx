@@ -201,7 +201,7 @@ const FEATURED = [
 
 export default function HomePage() {
   return (
-    <div data-no-fees-layout={true} className={`${jakarta.variable} ${inter.variable}`}>
+    <div data-no-fees-layout="hide-chrome" className={`${jakarta.variable} ${inter.variable}`}>
       {/* JSON-LD */}
       <script
         type="application/ld+json"
