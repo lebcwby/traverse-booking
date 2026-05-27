@@ -515,7 +515,7 @@ function ReviewsDialog({
             )}
             <p className="mt-1 text-sm text-muted-foreground max-w-[260px]">
               {favoriteTier === "bridge"
-                ? "Guests love this place. One of the highest-rated stays in Portland."
+                ? "Guests love this place. One of the highest-rated stays in our Colorado portfolio."
                 : favoriteTier === "rose"
                   ? "A guest favorite for comfort, location, and overall experience."
                   : isTraverseFavorite
@@ -690,7 +690,7 @@ export function ReviewsSection({
               </p>
               <p className="mt-0.5 text-sm text-muted-foreground">
                 {favoriteTier === "bridge"
-                  ? "Guests love this place. One of the highest-rated stays in Portland."
+                  ? "Guests love this place. One of the highest-rated stays in our Colorado portfolio."
                   : favoriteTier === "rose"
                     ? "A guest favorite for comfort, location, and overall experience."
                     : "Well-reviewed by guests — consistently rated above average."}
@@ -747,7 +747,7 @@ export function ReviewsSection({
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {favoriteTier === "bridge"
-                  ? "One of the highest-rated in Portland"
+                  ? "One of the highest-rated in Colorado"
                   : favoriteTier === "rose"
                     ? "A guest favorite for comfort and location"
                     : "Consistently rated above average"}

@@ -19,7 +19,7 @@ interface InlineSearchFormProps {
 }
 
 export function InlineSearchForm({
-  location = "Portland, Oregon",
+  location = "Crested Butte, Colorado",
   defaultAdults = 2,
   extraParams,
 }: InlineSearchFormProps) {

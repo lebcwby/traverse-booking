@@ -91,11 +91,10 @@ export function PpcLandingPage({ config }: { config: PpcPageConfig }) {
 
   return (
     <>
-      {/* Hide site chrome on mobile — PPC-only experience */}
-      {/* Hide site chrome on PPC pages: header on mobile, footer + Conduit on all breakpoints */}
+      {/* Hide site chrome on PPC pages: header on mobile, footer on all breakpoints */}
       <style
         dangerouslySetInnerHTML={{
-          __html: `@media(max-width:767px){header{display:none!important}}footer,.conduit-widget{display:none!important}main{padding-bottom:0!important}`,
+          __html: `@media(max-width:767px){header{display:none!important}}footer{display:none!important}main{padding-bottom:0!important}`,
         }}
       />
 
@@ -117,7 +116,7 @@ export function PpcLandingPage({ config }: { config: PpcPageConfig }) {
               >
                 <Image
                   src={config.heroImage}
-                  alt={`Portland, Oregon — ${config.h1}`}
+                  alt={`Colorado mountains — ${config.h1}`}
                   fill
                   className="object-cover"
                   sizes="63vw"
@@ -138,7 +137,7 @@ export function PpcLandingPage({ config }: { config: PpcPageConfig }) {
                   </p>
                   <div className="mt-6">
                     <InlineSearchForm
-                      location={config.searchLocation || "Portland, Oregon"}
+                      location={config.searchLocation || "Crested Butte, Colorado"}
                       extraParams={config.searchExtraParams}
                     />
                   </div>
@@ -154,7 +153,7 @@ export function PpcLandingPage({ config }: { config: PpcPageConfig }) {
           <div className="relative mx-4 aspect-[16/9] overflow-hidden rounded-xl">
             <Image
               src={config.heroImage}
-              alt={`Portland, Oregon — ${config.h1}`}
+              alt={`Colorado mountains — ${config.h1}`}
               fill
               className="object-cover"
               sizes="100vw"
@@ -172,7 +171,7 @@ export function PpcLandingPage({ config }: { config: PpcPageConfig }) {
             </p>
             <div className="mt-5">
               <InlineSearchForm
-                location={config.searchLocation || "Portland, Oregon"}
+                location={config.searchLocation || "Crested Butte, Colorado"}
                 extraParams={config.searchExtraParams}
               />
             </div>

@@ -232,7 +232,7 @@ function buildPrintableHtml(it: Itinerary, pois: Map<string, Poi>): string {
     ${notesHtml}
 
     <div class="footer">
-      <div style="color: #525252; font-size: 15px; margin-bottom: 16px;">Ready to book your Portland stay?</div>
+      <div style="color: #525252; font-size: 15px; margin-bottom: 16px;">Ready to book your Colorado stay?</div>
       <a href="https://www.booktraverse.com/properties${
         it.dates.isTentative
           ? ""

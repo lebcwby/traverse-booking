@@ -1,12 +1,12 @@
 import { Star } from "lucide-react";
 
 export function StatBar({
-  propertyLabel = "Properties across Portland",
+  propertyLabel = "Properties across Colorado",
 }: {
   propertyLabel?: string;
 }) {
   const stats = [
-    { value: "275+", label: propertyLabel },
+    { value: "189", label: propertyLabel },
     { value: "80,000+", label: "Guests hosted" },
     { value: "4.8", label: "Star average", icon: true },
     { value: "35%", label: "Guests return" },

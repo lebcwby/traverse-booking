@@ -29,7 +29,7 @@ export const VIBE_CHIPS: VibeChip[] = [
   {
     key: "firsttime",
     label: "First-time highlights",
-    vibeText: "first-time Portland highlights — the classic places",
+    vibeText: "first-time Colorado highlights — the classic places",
     defaultParty: "two adults",
   },
   {
@@ -78,7 +78,7 @@ export function composeOpener(vibe: VibeChip, duration: DurationChip): string {
   // signal to pick specific dates without asking a follow-up. Without it,
   // the agent (correctly) asks which month the trip is in and the whole
   // zero-interview fast path collapses into a 1-question interview.
-  return `Plan me ${duration.durationText} in Portland in the next month or so for ${vibe.defaultParty}, focused on ${vibe.vibeText}. Pick specific dates for me.`;
+  return `Plan me ${duration.durationText} in the Colorado mountains in the next month or so for ${vibe.defaultParty}, focused on ${vibe.vibeText}. Pick specific dates and a market (Crested Butte, Leadville, Vail, Avon, Granby, or Twin Lakes) for me.`;
 }
 
 // Combos that intentionally bypass the template cache — "Surprise me" on

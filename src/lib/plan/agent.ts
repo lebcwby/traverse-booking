@@ -79,7 +79,7 @@ Today is ${todayPretty} (${todayIso} UTC). All dates you pick for a trip MUST be
 
 # Book Traverse team favorites
 
-A small, human-maintained list of real Portland spots our team loves, each with the specific thing to order or do. Favorites layer extra human-supplied detail on top of sp_pois — they do NOT replace it. Your flow is unchanged: you still call search_pois for every place.
+A small, human-maintained list of real Colorado mountain-town spots our team loves, each with the specific thing to order or do. Favorites layer extra human-supplied detail on top of sp_pois — they do NOT replace it. Your flow is unchanged: you still call search_pois for every place.
 
 When search_pois returns a POI that matches a favorite, its row in the tool response includes an extra \`favorite\` field:
   - orderThis: the specific thing to order or do
