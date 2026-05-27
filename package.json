@@ -16,6 +16,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",
+    "check-deployable": "bash scripts/check-deployable.sh",
+    "deploy": "DEPLOY_CHECK_MODE=strict bash scripts/check-deployable.sh && npx vercel@53.1.0 deploy --prod --yes",
+    "deploy:force": "DEPLOY_CHECK_MODE=strict bash scripts/check-deployable.sh && npx vercel@53.1.0 deploy --prod --yes --force",
     "seed-pois": "tsx --env-file=.env.local scripts/seed-pois.ts"
   },
   "lint-staged": {
