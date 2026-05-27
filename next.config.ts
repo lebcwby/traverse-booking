@@ -129,6 +129,8 @@ function buildCsp() {
       "https://*.hubapi.com",
       "https://*.hsforms.com",
       "https://*.hsforms.net",
+      // Lead form POSTs from /property-management to the Traverse team app.
+      "https://team.traversehospitality.com",
     ],
     "frame-src": [
       // Stripe — PaymentElement and ExpressCheckout iframes

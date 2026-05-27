@@ -112,6 +112,8 @@ const CONNECT_SOURCES = [
   "https://*.hubapi.com",
   "https://*.hsforms.com",
   "https://*.hsforms.net",
+  // Lead form POSTs from /property-management to the Traverse team app.
+  "https://team.traversehospitality.com",
 ];
 
 const FRAME_SOURCES = [
