@@ -1,11 +1,11 @@
 {
-  "name": "Stay Portland",
-  "short_name": "Stay Portland",
-  "description": "Portland's local vacation rental company. Book direct and save.",
+  "name": "Traverse Hospitality",
+  "short_name": "Traverse",
+  "description": "Colorado's locally managed vacation rental company. Crested Butte, Leadville, Vail, Avon, Granby & Twin Lakes.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#faf8f5",
-  "theme_color": "#e4a028",
+  "theme_color": "#14142b",
   "icons": [
     {
       "src": "/favicon-48x48.png",
