@@ -10,6 +10,7 @@ import { notFound } from "next/navigation";
 import type { UIMessage } from "ai";
 import { PlanClient } from "@/components/plan/plan-client";
 import { StaticPlanPage } from "@/components/plan/static-plan-page";
+import { NoFeesHeader } from "@/components/no-fees/no-fees-header";
 import { TripPlanSchema } from "@/components/plan/trip-plan-schema";
 import { getPlanSlug, allPlanSlugs } from "@/lib/plan/slug-map";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
@@ -63,9 +64,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
   // UUID case — noindex persisted user plans.
   return {
-    title: "Your Portland Trip",
+    title: "Your Colorado Trip",
     description:
-      "Your saved Portland itinerary — built with the Book Traverse Trip Planner.",
+      "Your saved Colorado itinerary — built with the Book Traverse Trip Planner.",
     robots: { index: false, follow: true },
   };
 }
@@ -147,6 +148,13 @@ export default async function PlanByIdPage({ params }: Props) {
           itinerary={loaded.itinerary}
           poisById={loaded.poisById}
         />
+        {/* Wrap header in data-no-fees-layout so plan.css's body-level
+            header-hiding rule (`body:has([data-plan-chrome]) > header`) does
+            NOT match — and so the global Tailwind cascade is unaffected on
+            the rest of this static page. */}
+        <div data-no-fees-layout className="relative z-50">
+          <NoFeesHeader />
+        </div>
         <StaticPlanPage
           entry={entry}
           itinerary={loaded.itinerary}
