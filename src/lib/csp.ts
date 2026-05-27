@@ -22,8 +22,13 @@ const SCRIPT_SOURCES = [
   "https://googleads.g.doubleclick.net",
   "https://beacon.beyondpricing.com",
   "https://pay.guesty.com",
-  "https://base.conduit.ai",
   "https://bat.bing.com",
+  "https://js.hsforms.net",
+  "https://js-na2.hsforms.net",
+  "https://*.hsforms.net",
+  "https://*.hsforms.com",
+  "https://*.hubspot.com",
+  "https://*.hsappstatic.net",
 ];
 
 const STYLE_SOURCES = [
@@ -32,7 +37,9 @@ const STYLE_SOURCES = [
   "https://api.mapbox.com",
   "https://fonts.googleapis.com",
   "https://static.klaviyo.com",
-  "https://base.conduit.ai",
+  "https://*.hsforms.net",
+  "https://*.hsforms.com",
+  "https://*.hubspot.com",
 ];
 
 const IMG_SOURCES = [
@@ -42,6 +49,7 @@ const IMG_SOURCES = [
   "https://assets.guesty.com",
   "https://images.unsplash.com",
   "https://lh3.googleusercontent.com",
+  "https://places.googleapis.com",
   "https://www.google-analytics.com",
   "https://www.facebook.com",
   "https://api.mapbox.com",
@@ -55,8 +63,11 @@ const IMG_SOURCES = [
   "https://d3k81ch9hvuctc.cloudfront.net",
   "https://bat.bing.com",
   "https://*.bing.com",
-  "https://*.conduit.ai",
   "https://*.convex.cloud",
+  "https://*.hubspot.com",
+  "https://*.hsforms.com",
+  "https://*.hsforms.net",
+  "https://*.hubspotusercontent-na2.net",
 ];
 
 const CONNECT_SOURCES = [
@@ -73,33 +84,58 @@ const CONNECT_SOURCES = [
   "https://a.klaviyo.com",
   "https://fast.a.klaviyo.com",
   "https://static-forms.klaviyo.com",
+  // Stripe — full set required for PaymentElement + ExpressCheckout in live mode
   "https://api.stripe.com",
   "https://q.stripe.com",
   "https://r.stripe.com",
+  "https://m.stripe.com",
   "https://m.stripe.network",
+  "https://*.stripe.com",
+  "https://errors.stripe.com",
+  "wss://ppm.stripe.com",
+  "https://ppm.stripe.com",
   "https://www.googletagmanager.com",
   "https://beacon.beyondpricing.com",
   "https://api.beacon.beyondpricing.com",
   "https://pay.guesty.com",
   "https://stats.g.doubleclick.net",
   "https://googleads.g.doubleclick.net",
-  "https://base.conduit.ai",
-  "https://*.conduit.ai",
   "wss://*.convex.cloud",
   "https://bat.bing.com",
   "https://*.bing.com",
   "https://*.msn.com",
   "https://api64.ipify.org",
+  "https://www.googleadservices.com",
+  "https://forms.hubspot.com",
+  "https://api.hubapi.com",
+  "https://*.hubspot.com",
+  "https://*.hubapi.com",
+  "https://*.hsforms.com",
+  "https://*.hsforms.net",
 ];
 
 const FRAME_SOURCES = [
+  // Stripe — PaymentElement and ExpressCheckout create iframes from these origins
   "https://js.stripe.com",
   "https://hooks.stripe.com",
+  "https://m.stripe.com",
+  "https://*.stripe.com",
+  // Google Pay iframe loaded by Stripe's ExpressCheckoutElement
+  "https://pay.google.com",
   "https://www.googletagmanager.com",
   "https://pay.guesty.com",
   "https://beacon.beyondpricing.com",
-  "https://base.conduit.ai",
-  "https://*.conduit.ai",
+  "https://*.hsforms.com",
+  "https://*.hsforms.net",
+  "https://*.hubspot.com",
+  // Referral form iframe on /referrals-form — Traverse internal team app.
+  "https://team.traversehospitality.com",
+  // Google Maps embed (building hub pages — Grand Lodge, The Plaza, Lodge at
+  // Mountaineer Square).
+  "https://www.google.com",
+  "https://maps.google.com",
+  // Facebook pixel iframe injected by GTM on conversion pages
+  "https://www.facebook.com",
 ];
 
 const SENSITIVE_CSP_PATH_PREFIXES = [
@@ -154,7 +190,7 @@ export function buildSensitiveContentSecurityPolicy({
     "worker-src": ["'self'", "blob:"],
     "object-src": ["'none'"],
     "base-uri": ["'self'"],
-    "form-action": ["'self'"],
+    "form-action": ["'self'", "https://www.facebook.com"],
     "frame-ancestors": ["'none'"],
     "manifest-src": ["'self'"],
     ...(isProduction ? { "upgrade-insecure-requests": [] } : {}),
