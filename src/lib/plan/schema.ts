@@ -59,13 +59,22 @@ export const ItineraryItemSchema = z.object({
     ),
 });
 
-export const ItineraryDaySchema = z.object({
-  dayNumber: z.number().int().min(1),
-  label: z
-    .string()
-    .describe("Short header like 'Friday — arrive & explore the Pearl'"),
-  items: z.array(ItineraryItemSchema).min(2),
-});
+export const ItineraryDaySchema = z
+  .object({
+    dayNumber: z.number().int().min(1),
+    label: z
+      .string()
+      .describe("Short header like 'Friday — arrive & explore the Pearl'"),
+    items: z.array(ItineraryItemSchema).min(2),
+  })
+  .refine(
+    (day) => day.items.some((item) => item.timeSlot === "midday"),
+    {
+      message:
+        "Every day must include at least one midday item — that's lunch (category=restaurant). Without lunch the day jumps from morning straight to afternoon/evening, which the system prompt forbids. Add a midday restaurant for this day and re-emit generate_itinerary.",
+      path: ["items"],
+    }
+  );
 
 export const ItinerarySchema = z.object({
   title: z.string().describe("Headline for the trip, ~6-10 words"),

@@ -48,6 +48,12 @@ export const searchListingsTool = tool({
       .min(1)
       .optional()
       .describe("Minimum bedroom count, if the user stated a preference"),
+    pets: z
+      .boolean()
+      .optional()
+      .describe(
+        "Pass true when the user is bringing a pet (dog, cat, etc.). Filters BEAPI to only pet-friendly listings — required for trips with animals, otherwise the search may return zero matches even when pet-friendly stays are available."
+      ),
     limit: z
       .number()
       .int()
@@ -63,6 +69,7 @@ export const searchListingsTool = tool({
         checkOut: input.checkOut,
         minOccupancy: input.guests,
         numberOfBedrooms: input.bedrooms,
+        petsAllowed: input.pets,
         limit: input.limit ?? 6,
       })) as BeapiSearchResponse;
 
