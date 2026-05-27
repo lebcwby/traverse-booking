@@ -257,7 +257,6 @@ export async function preloadPoiCandidates(
       const budget = Math.max(quota * 4, 16);
       const { data, error } = await query.limit(budget);
       if (error) {
-        // eslint-disable-next-line no-console
         console.error(`[preload] ${category} query failed:`, error.message);
         return { category, rows: [] };
       }

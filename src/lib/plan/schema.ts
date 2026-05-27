@@ -25,6 +25,11 @@ export type Vibe = z.infer<typeof VibeSchema>;
 export const ItineraryPartySchema = z.object({
   adults: z.number().int().min(1).max(20),
   kids: z.number().int().min(0).max(20).optional(),
+  // Number of pets traveling. When > 0, /api/plan/listings filters BEAPI
+  // to pet-friendly rentals only — without this, the sidebar can surface
+  // non-pet-friendly listings on a pet trip, leading to a frustrating
+  // "looks great until I click" experience.
+  pets: z.number().int().min(0).max(10).optional(),
   vibe: VibeSchema,
 });
 
