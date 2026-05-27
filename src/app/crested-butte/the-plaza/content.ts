@@ -1,21 +1,9 @@
-export const pageContent = `<header class="hero-full">
-  <div class="hero-bg" style="background-image:url('https://assets.guesty.com/image/upload/h_600/v1756514170/production/55935b4b5d6bcf0e0084abd6/cerpq3hoexjezuum0b4j.jpg');"></div>
-  <div class="hero-overlay"></div>
-  <div class="hero-inner">
-    <div class="eyebrow">11 Snowmass Road · Mt. Crested Butte, CO 81225</div>
-    <h1>The Plaza Condominiums. <em>Space to spread out.</em></h1>
-    <p class="hero-lede">Spacious 2 and 3-bedroom ski-in condos at the base of Crested Butte Mountain Resort — 100 yards from the Silver Queen lift. Full kitchens, fireplaces, hot tubs, Iron Horse Tap on-site, and the Traverse Hospitality office right at the entrance. From $95/night.</p>
-    <div class="hero-cta">
-      <a href="https://reservations.booktraverse.com/en/properties?city=Crested+Butte&country=United+States&minOccupancy=1&tags=The+Plaza+Crested+Butte" class="btn btn-primary">Browse Available Units</a>
-      <a href="#location" class="btn btn-ghost-light">Get Directions</a>
-    </div>
-  </div>
-</header>
+export const pageContent = `
 
 <!-- ══════ QUICK FACTS ══════ -->
 <section class="facts">
   <div class="facts-inner">
-    <div class="fact"><span class="fact-num">13</span><span class="fact-label">Traverse-managed condos — 2BR and 3BR suites</span></div>
+    <div class="fact"><span class="fact-num">14</span><span class="fact-label">Traverse-managed condos — 2BR and 3BR suites</span></div>
     <div class="fact"><span class="fact-num">100</span><span class="fact-label">Yards to the Silver Queen lift</span></div>
     <div class="fact"><span class="fact-num">6–8</span><span class="fact-label">Guests per unit — built for families & groups</span></div>
     <div class="fact"><span class="fact-num">$95</span><span class="fact-label">Per night starting price</span></div>
@@ -116,7 +104,7 @@ export const pageContent = `<header class="hero-full">
     <div style="margin-bottom:64px;">
       <span class="section-tag">Traverse-Managed Units</span>
       <h2 style="font-size:clamp(34px,4.5vw,52px);margin-top:14px;">Our collection at the Plaza.</h2>
-      <p style="max-width:60ch;margin-top:16px;font-size:16px;color:var(--ink-soft);">We manage 13 individually owned condos in the building — spacious 2 and 3-bedroom suites built for families and groups. From $95/night.</p>
+      <p style="max-width:60ch;margin-top:16px;font-size:16px;color:var(--ink-soft);">We manage 14 individually owned condos in the building — spacious 2 and 3-bedroom suites built for families and groups. From $95/night.</p>
     </div>
 
     <div class="unit-grid">
@@ -135,7 +123,7 @@ export const pageContent = `<header class="hero-full">
           <p>Fully loaded mountainside condo with three king bedrooms and three full bathrooms. Premium finishes throughout — the most spacious and upscale option in our Plaza collection.</p>
           <div class="unit-footer">
             <span class="unit-price">$325 <small>/night</small></span>
-            <a href="https://reservations.booktraverse.com/en/properties/68c9d18e59b18500123a3883" class="unit-link">Book →</a>
+            <a href="/properties/68c9d18e59b18500123a3883" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -154,7 +142,7 @@ export const pageContent = `<header class="hero-full">
           <p>Beautifully appointed three-bedroom condo with contemporary finishes. Full kitchen, fireplace, balcony, and in-unit washer/dryer. Steps to the lifts.</p>
           <div class="unit-footer">
             <span class="unit-price">$95 <small>/night</small></span>
-            <a href="https://reservations.booktraverse.com/en/properties/68c05fdbf48561001117e177" class="unit-link">Book →</a>
+            <a href="/properties/68c05fdbf48561001117e177" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -172,7 +160,7 @@ export const pageContent = `<header class="hero-full">
           <p>Fully renovated two-bedroom condo with modern finishes. Free garage parking, access to pickleball and tennis courts, and all building amenities.</p>
           <div class="unit-footer">
             <span class="unit-price">$150 <small>/night</small></span>
-            <a href="https://reservations.booktraverse.com/en/properties/6978020fedadf50014a2ac03" class="unit-link">Book →</a>
+            <a href="/properties/6978020fedadf50014a2ac03" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -191,7 +179,7 @@ export const pageContent = `<header class="hero-full">
           <p>Two-bedroom condo with stunning valley and mountain views. Full kitchen, fireplace, balcony, and washer/dryer. One of our most popular Plaza units.</p>
           <div class="unit-footer">
             <span class="unit-price">$95 <small>/night</small></span>
-            <a href="https://reservations.booktraverse.com/en/properties/68772cc34b0b0000109cc6c5" class="unit-link">Book →</a>
+            <a href="/properties/68772cc34b0b0000109cc6c5" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -210,7 +198,7 @@ export const pageContent = `<header class="hero-full">
           <p>Beautiful condo with mountain views, full kitchen, fireplace, and all the comforts of home. Close to the lifts and on the free bus route.</p>
           <div class="unit-footer">
             <span class="unit-price">$95 <small>/night</small></span>
-            <a href="https://reservations.booktraverse.com/en/properties/68fb07a72f5f3a0012d790fc" class="unit-link">Book →</a>
+            <a href="/properties/68fb07a72f5f3a0012d790fc" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -229,7 +217,7 @@ export const pageContent = `<header class="hero-full">
           <p>Two-bedroom condo a 3-minute walk from the lifts. Access to pickleball, tennis, hot tubs, sauna, and steam room. Family-friendly with full kitchen and in-unit laundry.</p>
           <div class="unit-footer">
             <span class="unit-price">$95 <small>/night</small></span>
-            <a href="https://reservations.booktraverse.com/en/properties/691521fd6bc2bd00132eba6f" class="unit-link">Book →</a>
+            <a href="/properties/691521fd6bc2bd00132eba6f" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -237,7 +225,7 @@ export const pageContent = `<header class="hero-full">
     </div>
 
     <div class="all-units-cta">
-      <a href="https://reservations.booktraverse.com/en/properties?city=Crested+Butte&country=United+States&minOccupancy=1&tags=The+Plaza+Crested+Butte" class="btn" style="background:var(--ink-deep);color:#fff;">View All 13 Plaza Units →</a>
+      <a href="/properties?city=Crested+Butte&country=United+States&minOccupancy=1&tag=The+Plaza+Crested+Butte" class="btn" style="background:var(--ink-deep);color:#fff;">View All 14 Plaza Units →</a>
     </div>
   </div>
 </section>
@@ -249,15 +237,11 @@ export const pageContent = `<header class="hero-full">
     <h2 style="font-size:clamp(28px,3.5vw,40px);margin-top:14px;">Search dates and book directly.</h2>
     <p style="max-width:55ch;margin-top:12px;font-size:15px;color:var(--ink-mute);">Real-time pricing and availability for all Traverse-managed units at the Plaza. Select your dates to see what's open.</p>
   </div>
-  <div style="border:1px solid var(--line);background:var(--paper);overflow:hidden;">
-    <iframe
-      src="https://reservations.booktraverse.com/en/properties?city=Crested+Butte&country=United+States&minOccupancy=1&tags=The+Plaza+Crested+Butte"
-      style="width:100%;height:900px;border:none;display:block;"
-      loading="lazy"
-      title="Browse and book Plaza Condominiums units — live availability and pricing"
-    ></iframe>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;">
+    <a href="/properties?city=Crested+Butte&country=United+States&tag=The+Plaza+Crested+Butte" class="btn btn-primary">Browse Plaza Units &amp; Dates →</a>
+    <a href="/crested-butte" class="btn" style="background:var(--paper-off);color:var(--ink-deep);border:1px solid var(--line);">All Crested Butte Rentals</a>
   </div>
-  <p style="margin-top:16px;font-size:13px;color:var(--ink-mute);text-align:center;">Prices, ratings, and availability update in real time. Powered by Traverse Hospitality's booking engine.</p>
+  <p style="margin-top:16px;font-size:13px;color:var(--ink-mute);">Prices, ratings, and availability update in real time. Powered by Traverse Hospitality's booking engine.</p>
 </section>
 <section class="section" id="dining">
   <div style="margin-bottom:64px;">
@@ -280,6 +264,30 @@ export const pageContent = `<header class="hero-full">
       <h3>Around the Base & Downtown</h3>
       <div class="dining-label">Walk or Free Shuttle</div>
       <p>The base area is a short walk — Coffee Lab, Hefe's, A Bar Above, and Highlife Crust & Crafts at the Grand Lodge. For the full restaurant scene, the free shuttle to downtown Crested Butte's Elk Avenue runs every 15–20 minutes from a stop right at the building.</p>
+    </article>
+  </div>
+</section>
+
+<!-- ══════ BUILDING MANAGEMENT ══════ -->
+<section class="section" id="building-management">
+  <div style="margin-bottom:48px;max-width:780px;">
+    <span class="section-tag">Building Management</span>
+    <h2 style="font-size:clamp(34px,4.5vw,52px);margin-top:14px;">Who runs the building.</h2>
+    <p style="margin-top:20px;font-size:16px;color:var(--ink-soft);">The Plaza Condominiums (also known as Plaza at Wood Creek) is a condominium-hotel: the building itself — common areas, hot tubs, sauna, steam room, tennis &amp; pickleball courts, parking, exterior, HOA — is managed by <a href="https://toadpropertymanagement.com/clients/plaza-at-wood-creek-condos/" target="_blank" rel="noopener">Toad Property Management</a>, a local Crested Butte firm specializing in HOA and association management. Individual units are owned privately and rented through professional operators like Traverse Hospitality. If you're an owner looking for HOA documents, building announcements, or contact info for the property manager, Toad's Plaza page is the right place to start.</p>
+  </div>
+
+  <div class="dining-grid">
+    <article class="dining-card">
+      <h3>Plaza at Wood Creek Condos</h3>
+      <div class="dining-label">11 Snowmass Road · Mt. Crested Butte</div>
+      <p>HOA-managed by Toad Property Management — including pool/hot-tub/sauna upkeep, exterior maintenance, parking, and ownership communications.</p>
+      <p style="margin-top:14px;"><a href="https://toadpropertymanagement.com/clients/plaza-at-wood-creek-condos/" target="_blank" rel="noopener">Toad — Plaza at Wood Creek →</a></p>
+    </article>
+    <article class="dining-card">
+      <h3>Owner Resources</h3>
+      <div class="dining-label">Considering Traverse for your unit?</div>
+      <p>If you own a Plaza condo and want full-service short-term rental management — pricing, marketing, guest comms, cleaning, and 24/7 support — Traverse manages a number of Plaza units alongside Toad's HOA service.</p>
+      <p style="margin-top:14px;"><a href="/property-management">Learn about Traverse rental management →</a></p>
     </article>
   </div>
 </section>
@@ -368,10 +376,10 @@ export const pageContent = `<header class="hero-full">
 <!-- ══════ CTA ══════ -->
 <section class="cta-band">
   <h2>Stay at the Plaza with Traverse</h2>
-  <p>13 spacious condos for families and groups, locally managed, starting from $95/night. Book direct — no platform markups.</p>
-  <a href="https://reservations.booktraverse.com/en/properties?city=Crested+Butte&country=United+States&minOccupancy=1&tags=The+Plaza+Crested+Butte" class="btn btn-primary">Search Available Dates</a>
+  <p>14 spacious condos for families and groups, locally managed, starting from $95/night. Book direct — no platform markups.</p>
+  <a href="/properties?city=Crested+Butte&country=United+States&minOccupancy=1&tag=The+Plaza+Crested+Butte" class="btn btn-primary">Search Available Dates</a>
 </section>
 
 `;
 
-export const schemaBlocks = [{"@context": "https://schema.org", "@type": "Organization", "@id": "https://booktraverse.com/#organization", "name": "Traverse Hospitality", "alternateName": ["Traverse Crested Butte", "Traverse Leadville", "High Rocky Homes", "Leadville Vacation Homes"], "disambiguatingDescription": "Traverse Hospitality (formerly High Rocky Homes, rebranded 2024) is a Colorado-based short-term vacation rental property management company founded in 2016. Traverse manages over 100 vacation rental listings with primary markets in Crested Butte, Colorado and Leadville, Colorado, and additional operations in Vail, Avon, Granby, and Twin Lakes.", "url": "https://booktraverse.com", "logo": {"@type": "ImageObject", "url": "https://booktraverse.com/wp-content/uploads/2022/08/traverselogo-1024x246.webp", "width": 1024, "height": 246}, "telephone": "+1-720-759-2013", "email": "info@booktraverse.com", "foundingDate": "2016", "slogan": "Modern Property Management", "description": "Traverse Hospitality is a Colorado-based vacation rental property management company offering full-service short-term rental management, dynamic pricing, professional marketing, housekeeping, maintenance, and 24/7 guest support. Our two primary markets are Crested Butte and Leadville, Colorado.", "founder": [{"@type": "Person", "name": "Nadim Tannous", "jobTitle": "Co-Founder & Chief Technical Officer"}, {"@type": "Person", "name": "Alex Haler", "jobTitle": "Co-Founder & Chief Executive Officer"}], "address": {"@type": "PostalAddress", "addressLocality": "Leadville", "addressRegion": "CO", "postalCode": "80461", "addressCountry": "US"}, "areaServed": [{"@type": "City", "name": "Crested Butte", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Mt. Crested Butte", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Leadville", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Twin Lakes", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Vail", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Avon", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Granby", "containedInPlace": {"@type": "State", "name": "Colorado"}}], "knowsAbout": ["Short-term rental property management", "Vacation rental management", "Airbnb management", "VRBO management", "Crested Butte Colorado vacation rentals", "Leadville Colorado vacation rentals", "Colorado mountain vacation rentals", "Grand Lodge Crested Butte", "Dynamic pricing for vacation rentals"], "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.9", "bestRating": "5", "ratingCount": "214", "reviewCount": "214"}, "sameAs": ["https://traversehospitality.com", "https://www.leadvillevacationhomes.com", "https://www.thegrandlodgeatcb.com", "https://www.crestedbutteskirentals.com", "https://www.governorsmansion.net", "https://www.mountainhideaway.com", "https://www.instagram.com/traversehospitality/", "https://www.facebook.com/traversehospitality/", "https://www.linkedin.com/company/traversehospitality", "https://www.tripadvisor.com/Hotel_Review-g33377-d483065-Reviews-The_Grand_Lodge_by_Traverse_Hospitality-Crested_Butte_Colorado.html", "https://www.wikidata.org/wiki/Q139544827"]}, {"@context": "https://schema.org", "@type": "LodgingBusiness", "@id": "https://www.booktraverse.com/crested-butte/the-plaza/#property", "name": "The Plaza Condominiums", "alternateName": ["The Plaza at Woodcreek", "Plaza Condominiums Crested Butte", "The Plaza Crested Butte"], "description": "Spacious condominium complex at the base of Crested Butte Mountain Resort, approximately 100 yards from the Silver Queen lift. Features 2 and 3-bedroom suites with full kitchens, fireplaces, and balconies. On-site amenities include indoor/outdoor hot tubs, sauna, steam room, the Iron Horse Tap restaurant, and tennis and pickleball courts.", "url": "https://www.booktraverse.com/crested-butte/the-plaza/", "telephone": "+1-970-438-2241", "priceRange": "$$", "checkinTime": "16:00", "checkoutTime": "10:00", "petsAllowed": false, "smokingAllowed": false, "address": {"@type": "PostalAddress", "streetAddress": "11 Snowmass Road", "addressLocality": "Mount Crested Butte", "addressRegion": "CO", "postalCode": "81225", "addressCountry": "US"}, "geo": {"@type": "GeoCoordinates", "latitude": 38.899, "longitude": -106.967}, "amenityFeature": [{"@type": "LocationFeatureSpecification", "name": "Indoor Hot Tub", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Outdoor Hot Tub", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Sauna", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Steam Room", "value": true}, {"@type": "LocationFeatureSpecification", "name": "On-Site Restaurant (Iron Horse Tap)", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Tennis Court", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Pickleball Court", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Free Covered Parking", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Free WiFi", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Full Kitchens in All Units", "value": true}, {"@type": "LocationFeatureSpecification", "name": "In-Unit Washer & Dryer", "value": true}]}, {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.booktraverse.com/"}, {"@type": "ListItem", "position": 2, "name": "Crested Butte", "item": "https://www.booktraverse.com/crested-butte/"}, {"@type": "ListItem", "position": 3, "name": "The Plaza Condominiums", "item": "https://www.booktraverse.com/crested-butte/the-plaza/"}]}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Where is the Plaza Condominiums in Crested Butte?", "acceptedAnswer": {"@type": "Answer", "text": "11 Snowmass Road, Mount Crested Butte, CO 81225 \u2014 near the base of Crested Butte Mountain Resort, approximately 100 yards from the Silver Queen lift and near the West Wall lift."}}, {"@type": "Question", "name": "How close is the Plaza to the ski lifts?", "acceptedAnswer": {"@type": "Answer", "text": "About 100 yards from the Silver Queen lift \u2014 roughly a 3-minute walk. Also near the West Wall lift. The free bus route stops right at the building."}}, {"@type": "Question", "name": "Does the Plaza have a pool?", "acceptedAnswer": {"@type": "Answer", "text": "No pool, but the Plaza has indoor and outdoor hot tubs, a sauna, and a steam room \u2014 all currently operational."}}, {"@type": "Question", "name": "Is there a restaurant at the Plaza?", "acceptedAnswer": {"@type": "Answer", "text": "Yes \u2014 the Iron Horse Tap is on-site, serving burgers, pub food made from locally sourced ingredients, and Colorado craft beers on tap."}}, {"@type": "Question", "name": "Does the Plaza have a front desk?", "acceptedAnswer": {"@type": "Answer", "text": "No staffed front desk \u2014 the Plaza is self check-in. However, the Traverse Hospitality office is located at the entrance of the building, providing local management support for guests staying in Traverse-managed units."}}, {"@type": "Question", "name": "Is the Plaza pet friendly?", "acceptedAnswer": {"@type": "Answer", "text": "No. Pets are not allowed at the Plaza Condominiums. For pet-friendly options in Crested Butte, check our Grand Lodge listings."}}, {"@type": "Question", "name": "Does the Plaza have air conditioning?", "acceptedAnswer": {"@type": "Answer", "text": "No. Like most Crested Butte properties at this elevation (9,375 ft), the Plaza uses fans and opening windows. Summer nights are typically cool. For A/C, consider the Lodge at Mountaineer Square."}}, {"@type": "Question", "name": "What size are the condos at the Plaza?", "acceptedAnswer": {"@type": "Answer", "text": "The Plaza offers spacious 2-bedroom/2-bath and 3-bedroom/3-bath condos, most sleeping 6-8 guests. All units include full kitchens, fireplaces, balconies, and in-unit washer/dryers. These are among the largest slope-side condos at Crested Butte."}}, {"@type": "Question", "name": "Is parking free at the Plaza?", "acceptedAnswer": {"@type": "Answer", "text": "Yes \u2014 free covered parking is included for guests. No paid garage like Mountaineer Square \u2014 just park and go."}}, {"@type": "Question", "name": "Does the Plaza have pickleball or tennis courts?", "acceptedAnswer": {"@type": "Answer", "text": "Yes \u2014 the Plaza has both tennis and pickleball courts on-site, plus outdoor grills and a picnic area."}}]}];
+export const schemaBlocks = [{"@context": "https://schema.org", "@type": "Organization", "@id": "https://booktraverse.com/#organization", "name": "Traverse Hospitality", "alternateName": ["Traverse Crested Butte", "Traverse Leadville", "High Rocky Homes", "Leadville Vacation Homes"], "disambiguatingDescription": "Traverse Hospitality (formerly High Rocky Homes, rebranded 2024) is a Colorado-based short-term vacation rental property management company founded in 2016. Traverse manages over 100 vacation rental listings with primary markets in Crested Butte, Colorado and Leadville, Colorado, and additional operations in Vail, Avon, Granby, and Twin Lakes.", "url": "https://booktraverse.com", "logo": {"@type": "ImageObject", "url": "https://www.booktraverse.com/book-traverse-wordmark-dark.png", "width": 1024, "height": 246}, "telephone": "+1-720-759-2013", "email": "bookings@traversehospitality.com", "foundingDate": "2016", "slogan": "Modern Property Management", "description": "Traverse Hospitality is a Colorado-based vacation rental property management company offering full-service short-term rental management, dynamic pricing, professional marketing, housekeeping, maintenance, and 24/7 guest support. Our two primary markets are Crested Butte and Leadville, Colorado.", "founder": [{"@type": "Person", "name": "Nadim Tannous", "jobTitle": "Co-Founder & Chief Technical Officer"}, {"@type": "Person", "name": "Alex Haler", "jobTitle": "Co-Founder & Chief Executive Officer"}], "address": {"@type": "PostalAddress", "addressLocality": "Leadville", "addressRegion": "CO", "postalCode": "80461", "addressCountry": "US"}, "areaServed": [{"@type": "City", "name": "Crested Butte", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Mt. Crested Butte", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Leadville", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Twin Lakes", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Vail", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Avon", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Granby", "containedInPlace": {"@type": "State", "name": "Colorado"}}], "knowsAbout": ["Short-term rental property management", "Vacation rental management", "Airbnb management", "VRBO management", "Crested Butte Colorado vacation rentals", "Leadville Colorado vacation rentals", "Colorado mountain vacation rentals", "Grand Lodge Crested Butte", "Dynamic pricing for vacation rentals"], "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.9", "bestRating": "5", "ratingCount": "214", "reviewCount": "214"}, "sameAs": ["https://traversehospitality.com", "https://www.leadvillevacationhomes.com", "https://www.thegrandlodgeatcb.com", "https://www.crestedbutteskirentals.com", "https://www.governorsmansion.net", "https://www.mountainhideaway.com", "https://www.instagram.com/traversehospitality/", "https://www.facebook.com/traversehospitality/", "https://www.linkedin.com/company/traversehospitality", "https://www.tripadvisor.com/Hotel_Review-g33377-d483065-Reviews-The_Grand_Lodge_by_Traverse_Hospitality-Crested_Butte_Colorado.html", "https://www.wikidata.org/wiki/Q139544827"]}, {"@context": "https://schema.org", "@type": "LodgingBusiness", "@id": "https://www.booktraverse.com/crested-butte/the-plaza/#property", "name": "The Plaza Condominiums", "alternateName": ["The Plaza at Woodcreek", "Plaza Condominiums Crested Butte", "The Plaza Crested Butte"], "description": "Spacious condominium complex at the base of Crested Butte Mountain Resort, approximately 100 yards from the Silver Queen lift. Features 2 and 3-bedroom suites with full kitchens, fireplaces, and balconies. On-site amenities include indoor/outdoor hot tubs, sauna, steam room, the Iron Horse Tap restaurant, and tennis and pickleball courts.", "url": "https://www.booktraverse.com/crested-butte/the-plaza/", "telephone": "+1-970-438-2241", "priceRange": "$$", "checkinTime": "16:00", "checkoutTime": "10:00", "petsAllowed": false, "smokingAllowed": false, "address": {"@type": "PostalAddress", "streetAddress": "11 Snowmass Road", "addressLocality": "Mount Crested Butte", "addressRegion": "CO", "postalCode": "81225", "addressCountry": "US"}, "geo": {"@type": "GeoCoordinates", "latitude": 38.899, "longitude": -106.967}, "amenityFeature": [{"@type": "LocationFeatureSpecification", "name": "Indoor Hot Tub", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Outdoor Hot Tub", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Sauna", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Steam Room", "value": true}, {"@type": "LocationFeatureSpecification", "name": "On-Site Restaurant (Iron Horse Tap)", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Tennis Court", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Pickleball Court", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Free Covered Parking", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Free WiFi", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Full Kitchens in All Units", "value": true}, {"@type": "LocationFeatureSpecification", "name": "In-Unit Washer & Dryer", "value": true}]}, {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.booktraverse.com/"}, {"@type": "ListItem", "position": 2, "name": "Crested Butte", "item": "https://www.booktraverse.com/crested-butte/"}, {"@type": "ListItem", "position": 3, "name": "The Plaza Condominiums", "item": "https://www.booktraverse.com/crested-butte/the-plaza/"}]}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Where is the Plaza Condominiums in Crested Butte?", "acceptedAnswer": {"@type": "Answer", "text": "11 Snowmass Road, Mount Crested Butte, CO 81225 \u2014 near the base of Crested Butte Mountain Resort, approximately 100 yards from the Silver Queen lift and near the West Wall lift."}}, {"@type": "Question", "name": "How close is the Plaza to the ski lifts?", "acceptedAnswer": {"@type": "Answer", "text": "About 100 yards from the Silver Queen lift \u2014 roughly a 3-minute walk. Also near the West Wall lift. The free bus route stops right at the building."}}, {"@type": "Question", "name": "Does the Plaza have a pool?", "acceptedAnswer": {"@type": "Answer", "text": "No pool, but the Plaza has indoor and outdoor hot tubs, a sauna, and a steam room \u2014 all currently operational."}}, {"@type": "Question", "name": "Is there a restaurant at the Plaza?", "acceptedAnswer": {"@type": "Answer", "text": "Yes \u2014 the Iron Horse Tap is on-site, serving burgers, pub food made from locally sourced ingredients, and Colorado craft beers on tap."}}, {"@type": "Question", "name": "Does the Plaza have a front desk?", "acceptedAnswer": {"@type": "Answer", "text": "No staffed front desk \u2014 the Plaza is self check-in. However, the Traverse Hospitality office is located at the entrance of the building, providing local management support for guests staying in Traverse-managed units."}}, {"@type": "Question", "name": "Is the Plaza pet friendly?", "acceptedAnswer": {"@type": "Answer", "text": "No. Pets are not allowed at the Plaza Condominiums. For pet-friendly options in Crested Butte, check our Grand Lodge listings."}}, {"@type": "Question", "name": "Does the Plaza have air conditioning?", "acceptedAnswer": {"@type": "Answer", "text": "No. Like most Crested Butte properties at this elevation (9,375 ft), the Plaza uses fans and opening windows. Summer nights are typically cool. For A/C, consider the Lodge at Mountaineer Square."}}, {"@type": "Question", "name": "What size are the condos at the Plaza?", "acceptedAnswer": {"@type": "Answer", "text": "The Plaza offers spacious 2-bedroom/2-bath and 3-bedroom/3-bath condos, most sleeping 6-8 guests. All units include full kitchens, fireplaces, balconies, and in-unit washer/dryers. These are among the largest slope-side condos at Crested Butte."}}, {"@type": "Question", "name": "Is parking free at the Plaza?", "acceptedAnswer": {"@type": "Answer", "text": "Yes \u2014 free covered parking is included for guests. No paid garage like Mountaineer Square \u2014 just park and go."}}, {"@type": "Question", "name": "Does the Plaza have pickleball or tennis courts?", "acceptedAnswer": {"@type": "Answer", "text": "Yes \u2014 the Plaza has both tennis and pickleball courts on-site, plus outdoor grills and a picnic area."}}]}];

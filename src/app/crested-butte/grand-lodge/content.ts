@@ -1,16 +1,4 @@
-export const pageContent = `<header class="hero-full">
-  <div class="hero-bg" style="background-image:url('https://assets.guesty.com/image/upload/v1733288825/production/55935b4b5d6bcf0e0084abd6/asquumcidfz8caddn1al.jpg');"></div>
-  <div class="hero-overlay"></div>
-  <div class="hero-inner">
-    <div class="eyebrow">6 Emmons Loop · Mt. Crested Butte, CO 81225</div>
-    <h1>The Grand Lodge <em>Crested Butte.</em></h1>
-    <p class="hero-lede">A slope-side condominium building at the foot of Crested Butte Mountain Resort — 200 yards from the Silver Queen Gondola. Heated pool, hot tub, steam room, on-site breakfast & lunch, and 50+ Traverse-managed units starting from $95/night.</p>
-    <div class="hero-cta">
-      <a href="https://reservations.booktraverse.com/en/properties?minOccupancy=1&tags=The+Grand+Lodge+Crested+Butte" class="btn btn-primary">Browse Available Units</a>
-      <a href="#location" class="btn btn-ghost-light">Get Directions</a>
-    </div>
-  </div>
-</header>
+export const pageContent = `
 
 <!-- ══════ QUICK FACTS ══════ -->
 <section class="facts">
@@ -137,7 +125,7 @@ export const pageContent = `<header class="hero-full">
           <p>Impeccably renovated third-floor studio with modern finishes. Access to the best pool and hot tub in Crested Butte. King bed + murphy bed.</p>
           <div class="unit-footer">
             <span class="unit-price">$95 <small>/night</small></span>
-            <a href="https://reservations.booktraverse.com/en/properties/65382f07ae647a0047f41f91" class="unit-link">Book →</a>
+            <a href="/properties/65382f07ae647a0047f41f91" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -157,7 +145,7 @@ export const pageContent = `<header class="hero-full">
           <p>Freshly remodeled top-floor studio with mountain views and the quiet you want after a day on the slopes. King bed + murphy bed.</p>
           <div class="unit-footer">
             <span class="unit-price">$95 <small>/night</small></span>
-            <a href="https://reservations.booktraverse.com/en/properties/63697e42142d570046bc355a" class="unit-link">Book →</a>
+            <a href="/properties/63697e42142d570046bc355a" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -177,7 +165,7 @@ export const pageContent = `<header class="hero-full">
           <p>Renovated 4th-floor condo with updated finishes. Walk to lifts in minutes. King bed + murphy bed, full kitchenette.</p>
           <div class="unit-footer">
             <span class="unit-price">$95 <small>/night</small></span>
-            <a href="https://reservations.booktraverse.com/en/properties/674923ff406c3c0011730b81" class="unit-link">Book →</a>
+            <a href="/properties/674923ff406c3c0011730b81" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -197,7 +185,7 @@ export const pageContent = `<header class="hero-full">
           <p>Remodeled Grand Lodge top-floor room with the best elevation in the building. King bed + murphy bed, full kitchenette, ski-in/ski-out.</p>
           <div class="unit-footer">
             <span class="unit-price">$95 <small>/night</small></span>
-            <a href="https://reservations.booktraverse.com/en/properties/6744cca967fa82001068a0f4" class="unit-link">Book →</a>
+            <a href="/properties/6744cca967fa82001068a0f4" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -217,7 +205,7 @@ export const pageContent = `<header class="hero-full">
           <p>Two adjoining 4th-floor rooms — the only 2-bedroom option at the Grand Lodge. Perfect for families or groups who want space without splitting up. 100 yards from the lifts.</p>
           <div class="unit-footer">
             <span class="unit-price">$95 <small>/night</small></span>
-            <a href="https://reservations.booktraverse.com/en/properties/674923f210822a0012d226a9" class="unit-link">Book →</a>
+            <a href="/properties/674923f210822a0012d226a9" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -237,7 +225,7 @@ export const pageContent = `<header class="hero-full">
           <p>Spacious first-floor studio that welcomes well-behaved dogs. King bed + murphy bed, kitchenette, direct access to pool and hot tub.</p>
           <div class="unit-footer">
             <span class="unit-price">$95 <small>/night</small></span>
-            <a href="https://reservations.booktraverse.com/en/properties/6744cc2707c0f70010a52101" class="unit-link">Book →</a>
+            <a href="/properties/6744cc2707c0f70010a52101" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -257,7 +245,7 @@ export const pageContent = `<header class="hero-full">
           <p>Grand Lodge 415 — a ski-in/ski-out studio 100 yards from the lifts. 100 reviews averaging 4.8 stars. One of the highest-rated units in the building.</p>
           <div class="unit-footer">
             <span class="unit-price">$95 <small>/night</small></span>
-            <a href="https://reservations.booktraverse.com/en/properties/62db4548f2b643003320b23f" class="unit-link">Book →</a>
+            <a href="/properties/62db4548f2b643003320b23f" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -277,7 +265,7 @@ export const pageContent = `<header class="hero-full">
           <p>One of very few true one-bedroom condos in the Grand Lodge — separate bedroom, living area, and two full bathrooms. More space than a standard studio.</p>
           <div class="unit-footer">
             <span class="unit-price">$95 <small>/night</small></span>
-            <a href="https://reservations.booktraverse.com/en/properties/61b9047ca29fca0036e4e895" class="unit-link">Book →</a>
+            <a href="/properties/61b9047ca29fca0036e4e895" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -285,7 +273,7 @@ export const pageContent = `<header class="hero-full">
     </div>
 
     <div class="all-units-cta">
-      <a href="https://reservations.booktraverse.com/en/properties?minOccupancy=1&tags=The+Grand+Lodge+Crested+Butte" class="btn" style="background:var(--ink-deep);color:#fff;">View All 47 Grand Lodge Units →</a>
+      <a href="/properties?minOccupancy=1&tag=The+Grand+Lodge+Crested+Butte" class="btn" style="background:var(--ink-deep);color:#fff;">View All 49 Grand Lodge Units →</a>
     </div>
   </div>
 </section>
@@ -307,6 +295,30 @@ export const pageContent = `<header class="hero-full">
       <h3>Around the Base Area</h3>
       <div class="dining-label">Within a 3-Minute Walk</div>
       <p>Coffee Lab for specialty coffee and breakfast, Hefe's for Mexican and margaritas, A Bar Above for drinks and après-ski — all a short walk from the Grand Lodge across the plaza. Downtown Crested Butte is 2.5 miles away via the free shuttle.</p>
+    </article>
+  </div>
+</section>
+
+<!-- ══════ BUILDING MANAGEMENT ══════ -->
+<section class="section" id="building-management">
+  <div style="margin-bottom:48px;max-width:780px;">
+    <span class="section-tag">Building Management</span>
+    <h2 style="font-size:clamp(34px,4.5vw,52px);margin-top:14px;">Who runs the building.</h2>
+    <p style="margin-top:20px;font-size:16px;color:var(--ink-soft);">The Grand Lodge is a condominium-hotel: the building itself — common areas, pool, hot tub, parking, exterior, HOA — is managed by <a href="https://toadpropertymanagement.com/clients/grand-lodge-east/" target="_blank" rel="noopener">Toad Property Management</a>, a local Crested Butte firm specializing in HOA and association management. Individual units are owned privately and rented through professional operators like Traverse Hospitality. If you're an owner looking for HOA documents, building announcements, or contact info for the property manager, the Toad pages below are the right place to start.</p>
+  </div>
+
+  <div class="dining-grid">
+    <article class="dining-card">
+      <h3>Grand Lodge East Tower</h3>
+      <div class="dining-label">Built 1993 · 6 Emmons Loop</div>
+      <p>The original tower opened in 1993 — home to the heated indoor/outdoor pool, hot tub, steam room, and lobby. HOA-managed by Toad Property Management.</p>
+      <p style="margin-top:14px;"><a href="https://toadpropertymanagement.com/clients/grand-lodge-east/" target="_blank" rel="noopener">Toad — Grand Lodge East →</a></p>
+    </article>
+    <article class="dining-card">
+      <h3>Grand Lodge West Tower</h3>
+      <div class="dining-label">Built 2000 · 6 Emmons Loop</div>
+      <p>Added in 2000, expanding the building's footprint. Same shared amenities, same condo-hotel ownership model. HOA-managed by Toad Property Management.</p>
+      <p style="margin-top:14px;"><a href="https://toadpropertymanagement.com/clients/grand-lodge-west/" target="_blank" rel="noopener">Toad — Grand Lodge West →</a></p>
     </article>
   </div>
 </section>
@@ -395,9 +407,9 @@ export const pageContent = `<header class="hero-full">
 <section class="cta-band">
   <h2>Stay at the Grand Lodge with Traverse</h2>
   <p>50+ individually owned units, locally managed, starting from $95/night. Book direct — no platform markups.</p>
-  <a href="https://reservations.booktraverse.com/en/properties?minOccupancy=1&tags=The+Grand+Lodge+Crested+Butte" class="btn btn-primary">Search Available Dates</a>
+  <a href="/properties?minOccupancy=1&tag=The+Grand+Lodge+Crested+Butte" class="btn btn-primary">Search Available Dates</a>
 </section>
 
 `;
 
-export const schemaBlocks = [{"@context": "https://schema.org", "@type": "Organization", "@id": "https://booktraverse.com/#organization", "name": "Traverse Hospitality", "alternateName": ["Traverse Crested Butte", "Traverse Leadville", "High Rocky Homes", "Leadville Vacation Homes"], "disambiguatingDescription": "Traverse Hospitality (formerly High Rocky Homes, rebranded 2024) is a Colorado-based short-term vacation rental property management company founded in 2016. Traverse manages over 100 vacation rental listings with primary markets in Crested Butte, Colorado and Leadville, Colorado, and additional operations in Vail, Avon, Granby, and Twin Lakes.", "url": "https://booktraverse.com", "logo": {"@type": "ImageObject", "url": "https://booktraverse.com/wp-content/uploads/2022/08/traverselogo-1024x246.webp", "width": 1024, "height": 246}, "telephone": "+1-720-759-2013", "email": "info@booktraverse.com", "foundingDate": "2016", "slogan": "Modern Property Management", "description": "Traverse Hospitality is a Colorado-based vacation rental property management company offering full-service short-term rental management, dynamic pricing, professional marketing, housekeeping, maintenance, and 24/7 guest support. Our two primary markets are Crested Butte and Leadville, Colorado.", "founder": [{"@type": "Person", "name": "Nadim Tannous", "jobTitle": "Co-Founder & Chief Technical Officer"}, {"@type": "Person", "name": "Alex Haler", "jobTitle": "Co-Founder & Chief Executive Officer"}], "address": {"@type": "PostalAddress", "addressLocality": "Leadville", "addressRegion": "CO", "postalCode": "80461", "addressCountry": "US"}, "areaServed": [{"@type": "City", "name": "Crested Butte", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Mt. Crested Butte", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Leadville", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Twin Lakes", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Vail", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Avon", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Granby", "containedInPlace": {"@type": "State", "name": "Colorado"}}], "knowsAbout": ["Short-term rental property management", "Vacation rental management", "Airbnb management", "VRBO management", "Crested Butte Colorado vacation rentals", "Leadville Colorado vacation rentals", "Colorado mountain vacation rentals", "Grand Lodge Crested Butte", "Dynamic pricing for vacation rentals"], "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.9", "bestRating": "5", "ratingCount": "214", "reviewCount": "214"}, "sameAs": ["https://traversehospitality.com", "https://www.leadvillevacationhomes.com", "https://www.thegrandlodgeatcb.com", "https://www.crestedbutteskirentals.com", "https://www.governorsmansion.net", "https://www.mountainhideaway.com", "https://www.instagram.com/traversehospitality/", "https://www.facebook.com/traversehospitality/", "https://www.linkedin.com/company/traversehospitality", "https://www.tripadvisor.com/Hotel_Review-g33377-d483065-Reviews-The_Grand_Lodge_by_Traverse_Hospitality-Crested_Butte_Colorado.html", "https://www.wikidata.org/wiki/Q139544827"]}, {"@context": "https://schema.org", "@type": "Hotel", "@id": "https://www.booktraverse.com/crested-butte/grand-lodge/#hotel", "name": "The Grand Lodge Crested Butte", "alternateName": ["Grand Lodge Mt. Crested Butte", "Grand Lodge Condominiums Crested Butte"], "description": "Slope-side condominium building at the base of Crested Butte Mountain Resort, located 200 yards from the Silver Queen Gondola. Originally opened in 1993 as a Sheraton, converted to individually owned condominiums in 2004. Units managed by Traverse Hospitality.", "url": "https://www.booktraverse.com/crested-butte/grand-lodge/", "telephone": "+1-970-438-2241", "priceRange": "$$", "checkinTime": "16:00", "checkoutTime": "10:00", "petsAllowed": true, "smokingAllowed": false, "numberOfRooms": "226", "address": {"@type": "PostalAddress", "streetAddress": "6 Emmons Loop", "addressLocality": "Mount Crested Butte", "addressRegion": "CO", "postalCode": "81225", "addressCountry": "US"}, "geo": {"@type": "GeoCoordinates", "latitude": 38.8997, "longitude": -106.9656}, "hasMap": "https://www.google.com/maps/place/6+Emmons+Loop,+Mt+Crested+Butte,+CO+81225", "amenityFeature": [{"@type": "LocationFeatureSpecification", "name": "Indoor/Outdoor Heated Pool", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Outdoor Hot Tub", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Steam Room", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Fitness Center", "value": true}, {"@type": "LocationFeatureSpecification", "name": "On-Site Breakfast & Lunch", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Free WiFi", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Free Parking with EV Charging (1 spot per reservation)", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Pet Friendly (select rooms)", "value": true}]}, {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.booktraverse.com/"}, {"@type": "ListItem", "position": 2, "name": "Crested Butte", "item": "https://www.booktraverse.com/crested-butte/"}, {"@type": "ListItem", "position": 3, "name": "The Grand Lodge", "item": "https://www.booktraverse.com/crested-butte/grand-lodge/"}]}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Where is the Grand Lodge Crested Butte?", "acceptedAnswer": {"@type": "Answer", "text": "6 Emmons Loop, Mount Crested Butte, CO 81225 \u2014 200 yards from the Silver Queen Gondola and Red Lady Express chairlifts at the base of Crested Butte Mountain Resort."}}, {"@type": "Question", "name": "Does the Grand Lodge have a pool?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Heated indoor/outdoor pool, outdoor hot tub, steam room, and poolside fire pit on the first floor of the East wing."}}, {"@type": "Question", "name": "Is the Grand Lodge pet friendly?", "acceptedAnswer": {"@type": "Answer", "text": "Select units allow pets. Pet-friendly inventory is limited \u2014 reserve in advance. A pet fee of approximately $30 per stay applies, max 2 pets per room."}}, {"@type": "Question", "name": "Does the Grand Lodge have air conditioning?", "acceptedAnswer": {"@type": "Answer", "text": "No. Rooms have ceiling fans, box fans, and opening windows. At 9,375 ft elevation, summer nights are typically cool."}}, {"@type": "Question", "name": "When was the Grand Lodge built?", "acceptedAnswer": {"@type": "Answer", "text": "East tower built in 1993, West tower added in 2000. Converted from a Sheraton hotel to a condominium-hotel in 2004."}}, {"@type": "Question", "name": "How much do Grand Lodge units cost per night?", "acceptedAnswer": {"@type": "Answer", "text": "Traverse-managed units at the Grand Lodge start from $95 per night for studios. Rates vary by season \u2014 peak ski season and holidays are highest; shoulder seasons (April-May, October-November) offer the best value."}}]}];
+export const schemaBlocks = [{"@context": "https://schema.org", "@type": "Organization", "@id": "https://booktraverse.com/#organization", "name": "Traverse Hospitality", "alternateName": ["Traverse Crested Butte", "Traverse Leadville", "High Rocky Homes", "Leadville Vacation Homes"], "disambiguatingDescription": "Traverse Hospitality (formerly High Rocky Homes, rebranded 2024) is a Colorado-based short-term vacation rental property management company founded in 2016. Traverse manages over 100 vacation rental listings with primary markets in Crested Butte, Colorado and Leadville, Colorado, and additional operations in Vail, Avon, Granby, and Twin Lakes.", "url": "https://booktraverse.com", "logo": {"@type": "ImageObject", "url": "https://www.booktraverse.com/book-traverse-wordmark-dark.png", "width": 1024, "height": 246}, "telephone": "+1-720-759-2013", "email": "bookings@traversehospitality.com", "foundingDate": "2016", "slogan": "Modern Property Management", "description": "Traverse Hospitality is a Colorado-based vacation rental property management company offering full-service short-term rental management, dynamic pricing, professional marketing, housekeeping, maintenance, and 24/7 guest support. Our two primary markets are Crested Butte and Leadville, Colorado.", "founder": [{"@type": "Person", "name": "Nadim Tannous", "jobTitle": "Co-Founder & Chief Technical Officer"}, {"@type": "Person", "name": "Alex Haler", "jobTitle": "Co-Founder & Chief Executive Officer"}], "address": {"@type": "PostalAddress", "addressLocality": "Leadville", "addressRegion": "CO", "postalCode": "80461", "addressCountry": "US"}, "areaServed": [{"@type": "City", "name": "Crested Butte", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Mt. Crested Butte", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Leadville", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Twin Lakes", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Vail", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Avon", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Granby", "containedInPlace": {"@type": "State", "name": "Colorado"}}], "knowsAbout": ["Short-term rental property management", "Vacation rental management", "Airbnb management", "VRBO management", "Crested Butte Colorado vacation rentals", "Leadville Colorado vacation rentals", "Colorado mountain vacation rentals", "Grand Lodge Crested Butte", "Dynamic pricing for vacation rentals"], "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.9", "bestRating": "5", "ratingCount": "214", "reviewCount": "214"}, "sameAs": ["https://traversehospitality.com", "https://www.leadvillevacationhomes.com", "https://www.thegrandlodgeatcb.com", "https://www.crestedbutteskirentals.com", "https://www.governorsmansion.net", "https://www.mountainhideaway.com", "https://www.instagram.com/traversehospitality/", "https://www.facebook.com/traversehospitality/", "https://www.linkedin.com/company/traversehospitality", "https://www.tripadvisor.com/Hotel_Review-g33377-d483065-Reviews-The_Grand_Lodge_by_Traverse_Hospitality-Crested_Butte_Colorado.html", "https://www.wikidata.org/wiki/Q139544827"]}, {"@context": "https://schema.org", "@type": "Hotel", "@id": "https://www.booktraverse.com/crested-butte/grand-lodge/#hotel", "name": "The Grand Lodge Crested Butte", "alternateName": ["Grand Lodge Mt. Crested Butte", "Grand Lodge Condominiums Crested Butte"], "description": "Slope-side condominium building at the base of Crested Butte Mountain Resort, located 200 yards from the Silver Queen Gondola. Originally opened in 1993 as a Sheraton, converted to individually owned condominiums in 2004. Units managed by Traverse Hospitality.", "url": "https://www.booktraverse.com/crested-butte/grand-lodge/", "telephone": "+1-970-438-2241", "priceRange": "$$", "checkinTime": "16:00", "checkoutTime": "10:00", "petsAllowed": true, "smokingAllowed": false, "numberOfRooms": "226", "address": {"@type": "PostalAddress", "streetAddress": "6 Emmons Loop", "addressLocality": "Mount Crested Butte", "addressRegion": "CO", "postalCode": "81225", "addressCountry": "US"}, "geo": {"@type": "GeoCoordinates", "latitude": 38.8997, "longitude": -106.9656}, "hasMap": "https://www.google.com/maps/place/6+Emmons+Loop,+Mt+Crested+Butte,+CO+81225", "amenityFeature": [{"@type": "LocationFeatureSpecification", "name": "Indoor/Outdoor Heated Pool", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Outdoor Hot Tub", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Steam Room", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Fitness Center", "value": true}, {"@type": "LocationFeatureSpecification", "name": "On-Site Breakfast & Lunch", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Free WiFi", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Free Parking with EV Charging (1 spot per reservation)", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Pet Friendly (select rooms)", "value": true}]}, {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.booktraverse.com/"}, {"@type": "ListItem", "position": 2, "name": "Crested Butte", "item": "https://www.booktraverse.com/crested-butte/"}, {"@type": "ListItem", "position": 3, "name": "The Grand Lodge", "item": "https://www.booktraverse.com/crested-butte/grand-lodge/"}]}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Where is the Grand Lodge Crested Butte?", "acceptedAnswer": {"@type": "Answer", "text": "6 Emmons Loop, Mount Crested Butte, CO 81225 \u2014 200 yards from the Silver Queen Gondola and Red Lady Express chairlifts at the base of Crested Butte Mountain Resort."}}, {"@type": "Question", "name": "Does the Grand Lodge have a pool?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Heated indoor/outdoor pool, outdoor hot tub, steam room, and poolside fire pit on the first floor of the East wing."}}, {"@type": "Question", "name": "Is the Grand Lodge pet friendly?", "acceptedAnswer": {"@type": "Answer", "text": "Select units allow pets. Pet-friendly inventory is limited \u2014 reserve in advance. A pet fee of approximately $30 per stay applies, max 2 pets per room."}}, {"@type": "Question", "name": "Does the Grand Lodge have air conditioning?", "acceptedAnswer": {"@type": "Answer", "text": "No. Rooms have ceiling fans, box fans, and opening windows. At 9,375 ft elevation, summer nights are typically cool."}}, {"@type": "Question", "name": "When was the Grand Lodge built?", "acceptedAnswer": {"@type": "Answer", "text": "East tower built in 1993, West tower added in 2000. Converted from a Sheraton hotel to a condominium-hotel in 2004."}}, {"@type": "Question", "name": "How much do Grand Lodge units cost per night?", "acceptedAnswer": {"@type": "Answer", "text": "Traverse-managed units at the Grand Lodge start from $95 per night for studios. Rates vary by season \u2014 peak ski season and holidays are highest; shoulder seasons (April-May, October-November) offer the best value."}}]}];
