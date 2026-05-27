@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase-auth";
+import { HeaderCartButton } from "@/components/cart/header-cart-button";
 
 type NavMenu = {
   label: string;
@@ -11,8 +12,8 @@ type NavMenu = {
 
 const RENTALS_MENU: NavMenu["items"] = [
   { href: "/properties", label: "Browse All Properties" },
-  { href: "/properties?includeAmenities=HOT_TUB", label: "Hot Tub Rentals" },
-  { href: "/properties?petsAllowed=true", label: "Pet Friendly" },
+  { href: "/properties?amenities=HOT_TUB", label: "Hot Tub Rentals" },
+  { href: "/properties?pets=true", label: "Pet Friendly" },
   { href: "/properties?maxPrice=100", label: "Starting under $100/night" },
 ];
 
@@ -28,12 +29,14 @@ const CB_MENU: NavMenu["items"] = [
 
 const LV_MENU: NavMenu["items"] = [
   { href: "/leadville", label: "All Leadville Rentals" },
-  { href: "/properties?city=Leadville&tags=Grand+West+Village+Resort", label: "Grand West Village" },
-  { href: "/properties?city=Leadville&tags=OSV", label: "Old St Vincents" },
-  { href: "/properties?city=Leadville&tags=cabin", label: "Cabin Rentals" },
+  { href: "/properties?city=Leadville&tag=Grand+West+Village+Resort", label: "Grand West Village" },
+  { href: "/properties?city=Leadville&tag=OSV", label: "Old St Vincents" },
+  { href: "/properties?city=Leadville&tag=cabin", label: "Cabin Rentals" },
   { href: "/leadville/things-to-do", label: "Things to Do" },
-  { href: "/leadville/weather", label: "Weather" },
-  { href: "/leadville/getting-here", label: "Getting Here" },
+  // Twin Lakes is a sub-market of Leadville (15 min south, shares trailheads
+  // and is part of the same Lake County). Surface it as a related-stay
+  // option within the Leadville dropdown rather than as a top-level entry.
+  { href: "/twin-lakes", label: "Twin Lakes" },
 ];
 
 const GUIDES_MENU: NavMenu["items"] = [
@@ -45,13 +48,19 @@ const GUIDES_MENU: NavMenu["items"] = [
 
 const OWNERS_MENU: NavMenu["items"] = [
   { href: "/property-management", label: "Property Management" },
-  { href: "/list-your-property", label: "List Your Property" },
-  { href: "https://booktraverse.com/owners-portal/", label: "Owner Portal ↗", external: true },
+  { href: "https://dashboard.traversehospitality.com", label: "Owner Portal ↗", external: true },
 ];
 
 type MenuKey = "rentals" | "cb" | "lv" | "guides" | "owners" | null;
 
-export function NoFeesHeader() {
+interface NoFeesHeaderProps {
+  /** Override the default B2C phone number with a B2B-specific one (e.g. on /property-management). */
+  phoneOverride?: { tel: string; display: string };
+}
+
+export function NoFeesHeader({ phoneOverride }: NoFeesHeaderProps = {}) {
+  const phoneTel = phoneOverride?.tel ?? "+17207592013";
+  const phoneDisplay = phoneOverride?.display ?? "(720) 759-2013";
   const [openMenu, setOpenMenu] = useState<MenuKey>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
@@ -165,8 +174,9 @@ export function NoFeesHeader() {
           </nav>
 
           <div className="header-actions">
+            <HeaderCartButton className="icon-link" />
             <a
-              href="tel:+17207592013"
+              href={`tel:${phoneTel}`}
               className="icon-link"
               aria-label="Call us"
               style={{ fontSize: "13px", fontWeight: 600, letterSpacing: "0.02em" }}
@@ -183,7 +193,7 @@ export function NoFeesHeader() {
               >
                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
               </svg>
-              <span>(720) 759-2013</span>
+              <span>{phoneDisplay}</span>
             </a>
             {email ? (
               <Link
@@ -294,13 +304,13 @@ export function NoFeesHeader() {
           <Link href="/leadville" onClick={() => setMobileOpen(false)}>
             All Leadville Rentals
           </Link>
-          <Link href="/properties?city=Leadville&tags=Grand+West+Village+Resort" onClick={() => setMobileOpen(false)}>
+          <Link href="/properties?city=Leadville&tag=Grand+West+Village+Resort" onClick={() => setMobileOpen(false)}>
             Grand West Village
           </Link>
-          <Link href="/properties?city=Leadville&tags=OSV" onClick={() => setMobileOpen(false)}>
+          <Link href="/properties?city=Leadville&tag=OSV" onClick={() => setMobileOpen(false)}>
             Old St Vincents
           </Link>
-          <Link href="/properties?city=Leadville&tags=cabin" onClick={() => setMobileOpen(false)}>
+          <Link href="/properties?city=Leadville&tag=cabin" onClick={() => setMobileOpen(false)}>
             Cabin Rentals
           </Link>
 
@@ -330,8 +340,8 @@ export function NoFeesHeader() {
           )}
         </nav>
         <div style={{ padding: "16px 0", fontSize: "14px" }}>
-          <a href="tel:+17207592013" style={{ color: "inherit", textDecoration: "none" }}>
-            📞 (720) 759-2013
+          <a href={`tel:${phoneTel}`} style={{ color: "inherit", textDecoration: "none" }}>
+            📞 {phoneDisplay}
           </a>
         </div>
         <a
