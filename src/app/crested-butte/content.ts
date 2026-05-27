@@ -1,140 +1,4 @@
-export const pageContent = `<header class="hero-full">
-
-      
-
-    
-
-    
-
-      
-
-        
-<div class="hero-bg" style="background-image:url('https://images.unsplash.com/photo-1548587143-bca6f138db28?w=1800&q=80');"></div>
-
-      
-
-    
-
-    
-
-      
-
-        
-<div class="hero-overlay"></div>
-
-      
-
-    
-
-    
-
-      
-
-        
-<div class="hero-inner">
-
-      
-
-    
-
-    
-
-      
-
-        
-<div class="eyebrow">Gunnison County · Elevation 9,375 ft</div>
-
-      
-
-    
-
-    
-
-      
-
-        
-<h1>Crested Butte, <em>Colorado.</em></h1>
-
-      
-
-    
-
-    
-
-      
-
-        
-<p class="hero-lede">A historic mining town turned alpine retreat — steep terrain, summer wildflowers, and a downtown that hasn't lost its soul. Traverse manages slope-side condos and locally rooted vacation rentals at the base of the mountain.</p>
-
-      
-
-    
-
-    
-
-      
-
-        
-<div class="hero-cta">
-
-      
-
-    
-
-    
-
-      
-
-        
-<a href="
-https://reservations.booktraverse.com/en/properties?minOccupancy=1
-" class="btn btn-primary">Browse Available Rentals</a>
-
-      
-
-    
-
-    
-
-      
-
-        
-<a href="
-/crested-butte/guides/where-to-stay/
-" class="btn btn-ghost-light">Where to Stay Guide</a>
-
-      
-
-    
-
-    
-
-      
-
-        
-</div>
-
-      
-
-    
-
-    
-
-      
-
-        
-</div>
-
-      
-
-    
-
-    
-
-      
-
-        
-</header>
+export const pageContent = `
 
       
 
@@ -2012,7 +1876,7 @@ allowfullscreen></iframe>
 
         
 <a href="
-/crested-butte/guides/pet-friendly/
+/properties?city=Crested+Butte&country=United+States&pets=true
 " class="guide-card"><small>Lodging</small><span>Pet-friendly rentals</span></a>
 
       
@@ -2546,7 +2410,7 @@ https://booktraverse.com/crested-butte-property-management/
 
         
 <a href="
-https://reservations.booktraverse.com/en/properties?minOccupancy=1
+/properties?minOccupancy=1
 " class="btn btn-primary">Search Available Dates</a>
 
       
