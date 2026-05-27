@@ -163,10 +163,24 @@ export function PropertiesLayout({
     });
   }, []);
 
-  // Filter listings to only those visible on the map
-  const visibleListings = visibleIds
+  // Filter listings to only those visible on the map.
+  //
+  // Defensive: when the `listings` prop changes (URL/filter change → new
+  // server response), the prior visibleIds set still holds map-viewport
+  // ids from the OLD listings. The useEffect below clears visibleIds, but
+  // the first render after the prop change happens BEFORE that effect
+  // fires — so visibleIds.has(...) matches none of the new listings and
+  // we'd render an empty grid for one frame ("No properties found" flash
+  // when changing the location dropdown). Falling back to the full
+  // listings array when the filter wipes everything avoids the flash.
+  // The map's next viewport change repopulates visibleIds with current
+  // ids; if the user genuinely panned off all listings, we'd rather show
+  // them everything than a "no results" panel.
+  const filteredByMap = visibleIds
     ? listings.filter((l) => visibleIds.has(l.guesty_id))
     : listings;
+  const visibleListings =
+    visibleIds && filteredByMap.length === 0 ? listings : filteredByMap;
   visibleListingsRef.current = visibleListings;
 
   // Reset visibleIds when the listings prop changes (new search)
