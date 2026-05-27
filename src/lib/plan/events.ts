@@ -5,10 +5,21 @@
 // events when the guest's check-in/check-out window overlaps a known annual
 // event (Leadville Trail 100, Crested Butte Wildflower Festival, etc.).
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+// Lazy supabase client. Reading env vars at module top-level breaks Next's
+// route-preflight pass during `next build` when the vars aren't present in
+// shell (CI without .env, fresh clone, etc.). Same pattern as
+// getSupabaseAdmin() in src/lib/supabase-admin.ts.
+let _client: SupabaseClient | null = null;
+function getSupabaseForEvents(): SupabaseClient | null {
+  if (_client) return _client;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  _client = createClient(url, key);
+  return _client;
+}
 
 export type Town =
   | "Crested Butte"
@@ -86,8 +97,8 @@ export async function getEventsForStay(opts: {
   checkIn: string; // 'YYYY-MM-DD'
   checkOut: string; // 'YYYY-MM-DD'
 }): Promise<PlanEvent[]> {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
-  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  const supabase = getSupabaseForEvents();
+  if (!supabase) return [];
 
   const towns = Array.isArray(opts.town) ? opts.town : [opts.town];
 
