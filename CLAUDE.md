@@ -141,7 +141,9 @@ src/
 │   └── api/
 │       ├── payment-intent/route.ts       # Per-listing pet fee via BEAPI; petFeePerPet in PI metadata
 │       ├── stripe/webhook/route.ts       # HMAC-SHA256 validation; routes to checkout-finalizer
-│       └── cron/refresh-tokens/route.ts  # Every 4h — refreshes BEAPI + OpenAPI tokens
+│       └── cron/refresh-tokens/route.ts  # Every 2h — refreshes BEAPI + OpenAPI tokens
+│                                          # Also callable from getBEAPIToken() as
+│                                          # in-app self-heal (throttled 1×/5min/instance)
 ├── components/
 │   ├── no-fees/
 │   │   ├── no-fees-header.tsx            # Rich nav; phoneOverride prop for B2B page
@@ -248,6 +250,42 @@ Cities require BOTH params: `city=Crested Butte&country=United States`
 - Strict TypeScript — `tsc --noEmit` runs in CI. Always run locally before deploying if you've changed types.
 - ESLint strict — `<img>` vs `<Image />` warnings exist (non-blocking) but adding new ones will generate noise.
 - Build preflights all API routes — lazy init patterns (`getSupabaseAdmin()`) are required for routes that need env vars.
+
+### BEAPI token expiry → /properties returns 0 (and how it's protected)
+
+If `/properties` ever returns 0 listings AND all searches show "No
+properties found" — the first thing to check is BEAPI token health.
+This has bitten production at least three times historically. As of
+2026-05-28 there are four overlapping safeguards:
+
+1. **Cron at `10 */2 * * *`** (every 2h, was 4h). `/api/cron/refresh-tokens`
+   refreshes when token has < 2h life. With tokens lasting 24h that's
+   ~once per 22h = under Guesty's 5/24h OAuth cap.
+
+2. **Low-warning alert** in `/api/health/beapi`. When hoursRemaining
+   drops below 1, a Resend email goes out (1h dedup so it's not spammy).
+   Whoever's on call sees the warning hours before /properties breaks.
+
+3. **In-app self-heal** in `src/lib/guesty-beapi.ts:getBEAPIToken()`.
+   If both caches (in-memory + Supabase) are empty AND the cron has
+   dropped, the next /properties request calls `/api/cron/refresh-tokens`
+   inline via HTTPS+CRON_SECRET, re-polls Supabase, and proceeds.
+   Throttled to 1×/5min/serverless instance against token-burn.
+
+4. **Manual escape hatch**: `curl -H "Authorization: Bearer $CRON_SECRET"
+   https://www.booktraverse.com/api/cron/refresh-tokens` always works.
+   Should be rare now — if you find yourself running it, file an issue
+   noting which of the above layers didn't fire and why.
+
+Health-check endpoints:
+- `https://www.booktraverse.com/api/health/beapi` — current BEAPI status
+- `https://www.booktraverse.com/api/health/openapi` — OpenAPI status (still
+  failing because `GUESTY_CLIENT_ID`/`SECRET` aren't set in Vercel, but
+  OpenAPI isn't used by the public booking surface — only admin endpoints).
+
+Where to look in Vercel dashboard if the cron is suspected to be dropping
+fires: Project → Crons tab → `/api/cron/refresh-tokens` → execution
+history. Look for missing fires, 4xx/5xx, or long durations.
 
 ### ⚠️ The "uncommitted receiver-side" trap (bit us 3× on 2026-05-28)
 

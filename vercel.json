@@ -36,7 +36,7 @@
     },
     {
       "path": "/api/cron/refresh-tokens",
-      "schedule": "10 */4 * * *"
+      "schedule": "10 */2 * * *"
     },
     {
       "path": "/api/cron/reconcile-cart-refunds",
@@ -45,6 +45,10 @@
     {
       "path": "/api/cron/blog-publish",
       "schedule": "0 15 */3 * *"
+    },
+    {
+      "path": "/api/cron/blog-edit-replies",
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/cron/sync-reviews",

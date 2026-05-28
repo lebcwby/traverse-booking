@@ -22,9 +22,24 @@ interface RefreshTarget {
 }
 
 export async function GET(request: Request) {
+  // Tag every invocation so Vercel runtime logs can distinguish cron fires
+  // from manual curl-driven self-heal calls (both hit the same route).
+  // Vercel's cron sets a `user-agent: vercel-cron/1.0` header on its
+  // scheduled invocations; manual curls won't.
+  const userAgent = request.headers.get("user-agent") || "";
+  const isVercelCron = userAgent.startsWith("vercel-cron/");
+  const triggerSource = isVercelCron ? "vercel-cron" : "manual";
+  const startMs = Date.now();
+  console.log(
+    `[refresh-tokens] start trigger=${triggerSource} ua=${userAgent.slice(0, 60)}`
+  );
+
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    console.warn(
+      `[refresh-tokens] UNAUTHORIZED trigger=${triggerSource} (cronSecret set=${!!cronSecret})`
+    );
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -53,18 +68,33 @@ export async function GET(request: Request) {
 
   for (const target of targets) {
     if (!target.clientId || !target.clientSecret) {
+      console.warn(
+        `[refresh-tokens] ${target.label} SKIPPED missing credentials (clientId=${!!target.clientId}, clientSecret=${!!target.clientSecret})`
+      );
       results[target.tokenType] = { skipped: "missing credentials" };
       continue;
     }
     try {
+      const beforeMs = Date.now();
       results[target.tokenType] = await refreshOne(supabase, target);
+      const r = results[target.tokenType] as {
+        refreshed: boolean;
+        hoursRemaining: number;
+      };
+      console.log(
+        `[refresh-tokens] ${target.label} ok refreshed=${r.refreshed} hoursLeft=${r.hoursRemaining} elapsedMs=${Date.now() - beforeMs}`
+      );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`[Cron] ${target.label} token refresh failed:`, msg);
+      console.error(
+        `[refresh-tokens] ${target.label} FAILED trigger=${triggerSource}:`,
+        msg
+      );
       results[target.tokenType] = { error: msg };
       await sendAlert(
         `CRITICAL: ${target.label} Token Refresh Failed`,
         `<p>The refresh-tokens cron failed to refresh the ${target.label} token.</p>
+         <p><strong>Trigger:</strong> ${escapeHtml(triggerSource)}</p>
          <p><strong>Error:</strong> ${escapeHtml(msg)}</p>
          <p>Next retry follows the cron schedule. If this repeats, check Guesty OAuth credentials.</p>`,
         `cron-${target.tokenType}-refresh-fail`
@@ -77,6 +107,10 @@ export async function GET(request: Request) {
       typeof r === "object" &&
       r !== null &&
       "error" in (r as Record<string, unknown>)
+  );
+
+  console.log(
+    `[refresh-tokens] done trigger=${triggerSource} success=${!anyFailed} totalMs=${Date.now() - startMs}`
   );
 
   return NextResponse.json(
