@@ -133,17 +133,31 @@ export function PhotoGallery({
             </div>
           ))}
         </div>
-        {/* Back arrow — top left over photo */}
+        {/* Back arrow — top left, Airbnb-style white circle so it's
+            actually visible against busy hero photos. Falls back to /
+            when there's no browser history (e.g. user landed directly
+            from a Google search result and would otherwise dead-end). */}
         <button
           onClick={(e) => {
             e.stopPropagation();
-            router.back();
+            // history.length === 1 means we opened in a fresh tab — there's
+            // nothing to go "back" to. Push to / instead so the user can
+            // actually navigate.
+            if (window.history.length <= 1) {
+              router.push("/");
+            } else {
+              router.back();
+            }
           }}
-          className="absolute left-3 top-3 z-10 drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]"
+          aria-label="Go back"
+          className="absolute left-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.25)] transition-transform hover:scale-105 active:scale-95"
         >
-          <ChevronLeft className="h-7 w-7 text-white" />
+          <ChevronLeft className="h-5 w-5 text-foreground" />
         </button>
-        {/* Share & Save overlay — top right */}
+        {/* Share & Save overlay — top right. Styling on these stays
+            independent of the back-button circle: the heart icon needs
+            to flip to red when saved, and the existing drop-shadow-on-
+            photo treatment renders fine. */}
         {mobileActions && (
           <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
             {mobileActions}
