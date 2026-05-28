@@ -5,6 +5,7 @@ export interface ConfirmationSession {
   confirmationCode?: string;
   listingId?: string;
   listingTitle?: string;
+  listingNickname?: string;
   picture?: string;
   checkIn?: string;
   checkOut?: string;
@@ -65,6 +66,7 @@ export function readConfirmationSession(
       confirmationCode: toOptionalString(parsed.confirmationCode),
       listingId: toOptionalString(parsed.listingId),
       listingTitle: toOptionalString(parsed.listingTitle),
+      listingNickname: toOptionalString(parsed.listingNickname),
       picture: toOptionalString(parsed.picture),
       checkIn: toOptionalString(parsed.checkIn),
       checkOut: toOptionalString(parsed.checkOut),

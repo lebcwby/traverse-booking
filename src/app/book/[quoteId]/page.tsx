@@ -66,36 +66,65 @@ export default function CheckoutPage() {
     }
 
     setQuote(data);
+  }, [quoteId]);
 
-    // Fetch listing photos (and picture if missing)
-    fetch(`/api/listings/${data.listingId}`)
+  // Fetch listing detail (photos + per-listing pet config) once the quote
+  // is loaded — runs whether the quote came from sessionStorage or the
+  // /api/quotes fallback. Pet data fetched here drives the upsell picker.
+  useEffect(() => {
+    const listingId = quote?.listingId;
+    if (!listingId) return;
+    let cancelled = false;
+    fetch(`/api/listings/${listingId}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((listing) => {
-        if (listing) {
-          const photos = (listing.pictures || [])
-            .map(
-              (p: {
-                original?: string;
-                thumbnail?: string;
-                caption?: string;
-              }) => ({
-                original: p.original || p.thumbnail || "",
-                thumbnail: p.thumbnail || p.original || "",
-                caption: p.caption || "",
-              })
-            )
-            .filter((p: { original: string }) => p.original);
-          const updates: Partial<QuoteData> = { photos };
-          if (!data.picture && photos.length > 0) {
+        if (cancelled || !listing) return;
+        const photos = (listing.pictures || [])
+          .map(
+            (p: {
+              original?: string;
+              thumbnail?: string;
+              caption?: string;
+            }) => ({
+              original: p.original || p.thumbnail || "",
+              thumbnail: p.thumbnail || p.original || "",
+              caption: p.caption || "",
+            })
+          )
+          .filter((p: { original: string }) => p.original);
+        const petsAllowed =
+          listing?.unitTypeHouseRules?.houseRules?.petsAllowed?.enabled ===
+          true;
+        const petFeePerPet =
+          typeof listing?.prices?.petFee === "number"
+            ? listing.prices.petFee
+            : null;
+        const listingNickname =
+          typeof listing?.nickname === "string" ? listing.nickname : null;
+        setQuote((prev) => {
+          if (!prev) return prev;
+          const updates: Partial<QuoteData> = {
+            photos,
+            petsAllowed,
+            petFeePerPet,
+            // Only overwrite if the API path didn't already set this from
+            // the cached Supabase listing (quote-response's `listingNickname`).
+            ...(!prev.listingNickname &&
+              listingNickname && { listingNickname }),
+          };
+          if (!prev.picture && photos.length > 0) {
             updates.picture = photos[0].thumbnail;
           }
-          setQuote((prev) => (prev ? { ...prev, ...updates } : prev));
-        }
+          return { ...prev, ...updates };
+        });
       })
       .catch(() => {
         /* non-critical */
       });
-  }, [quoteId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [quote?.listingId]);
 
   useEffect(() => {
     if (!quote) return;
@@ -106,6 +135,7 @@ export default function CheckoutPage() {
     trackStartedCheckout({
       listingId: quote.listingId,
       listingTitle: quote.listingTitle,
+      listingNickname: quote.listingNickname,
       checkIn: quote.checkIn,
       checkOut: quote.checkOut,
       guests: quote.guests,

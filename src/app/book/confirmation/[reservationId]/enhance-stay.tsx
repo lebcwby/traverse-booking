@@ -15,23 +15,10 @@ interface UpsellItem {
   icon: "clock" | "paw";
 }
 
+// Early check-in / late checkout removed 2026-05-20 — these are request-only
+// (handled post-booking via SuiteOp, not guaranteed at booking time). See
+// src/lib/upsells.ts for the canonical UPSELLS list. Keep this file in sync.
 const UPSELL_OPTIONS: UpsellItem[] = [
-  {
-    id: "early-checkin",
-    title: "Early Check-in (1 PM)",
-    description:
-      "Arrive 3 hours early and settle in before the standard check-in time.",
-    price: 50,
-    icon: "clock",
-  },
-  {
-    id: "late-checkout",
-    title: "Late Check-out (1 PM)",
-    description:
-      "Enjoy a relaxed departure with an extra 3 hours past the standard check-out time.",
-    price: 50,
-    icon: "clock",
-  },
   {
     id: "pet-fee",
     title: "Pet Fee",

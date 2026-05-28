@@ -25,8 +25,10 @@ export function TrackConfirmation({
 
     const {
       reservationId: sessionReservationId,
+      confirmationCode,
       listingId,
       listingTitle,
+      listingNickname,
       checkIn,
       checkOut,
       guests,
@@ -62,11 +64,13 @@ export function TrackConfirmation({
     trackBookingCompleted({
       listingId,
       listingTitle,
+      listingNickname,
       checkIn,
       checkOut,
       guests,
       total: totalPaid,
       reservationId: sessionReservationId || reservationId,
+      confirmationCode,
       guestEmail,
       guestPhone,
       guestFirstName,
