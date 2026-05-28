@@ -73,6 +73,10 @@ export const RETIRED_LANDING_SLUGS: ReadonlySet<string> = new Set([
   "downtown-portland-stays",
   "best-portland-stays",
   "backyard",
+  // Portland-bodied "extended-stay" entry retired 2026-05-27 via Codex #14
+  // (next.config.ts redirects /s/extended-stay -> /properties). A
+  // Colorado long-stay landing page can be added later as a new entry.
+  "extended-stay",
 ]);
 
 export function isRetiredLandingSlug(slug: string): boolean {
