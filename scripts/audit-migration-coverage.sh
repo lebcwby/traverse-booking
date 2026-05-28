@@ -21,13 +21,16 @@ REFERENCED=$(
     | sort -u
 )
 
-# Tables covered by any committed migration (handles both UPPER and lower
-# case `CREATE TABLE` syntax, optional `IF NOT EXISTS`, optional `public.`
-# schema prefix).
+# Tables covered by any committed migration. Handles all the variants pg_dump
+# and hand-written migrations produce:
+#   CREATE TABLE listings (
+#   CREATE TABLE IF NOT EXISTS public.listings (
+#   create table "public"."listings" (    <-- supabase db pull output
+#   CREATE TABLE "listings" (
 COVERED=$(
   cat supabase/_archived_migrations_20260319/*.sql supabase/migrations/*.sql 2>/dev/null \
-    | grep -iEo "create table( if not exists)? +(public\.)?[a-z_]+" \
-    | sed -E 's/.* (public\.)?//' \
+    | grep -iEo 'create table( if not exists)? +("?public"?\.)?"?[a-z_]+"?' \
+    | sed -E 's/^.*create table( if not exists)? +//I; s/"?public"?\.//; s/"//g' \
     | sort -u
 )
 

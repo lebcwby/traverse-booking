@@ -74,13 +74,13 @@ npx supabase db pull --schema public
 # be idempotent (IF NOT EXISTS) so reapplying it on prod is a no-op.
 ```
 
-## Known gap (audit run 2026-05-27 via Codex #13)
+## Ghost-table references (audit run 2026-05-27 via Codex #13)
 
 Run `bash scripts/audit-migration-coverage.sh` from the repo root to
 re-audit at any time. Current output:
 
 ```
-[MISSING]  avatars               (may be a storage bucket, not a table)
+[MISSING]  avatars               (storage bucket, not a table — false positive)
 [MISSING]  seo_comparison_pages
 [MISSING]  seo_event_pages
 [MISSING]  seo_neighborhood_pages
@@ -92,21 +92,31 @@ re-audit at any time. Current output:
 [MISSING]  visitor_attribution
 ```
 
-These were all created via the Supabase dashboard SQL editor — most of
-them during the WordPress -> Next.js migration — and never backfilled to
-a committed migration file. None are blocking production (the prod DB
-has the schema), but:
+**These tables do NOT exist on prod.** `supabase db pull` was run on
+2026-05-27 against the live `traverse-booking` project and the resulting
+`20260528022121_remote_schema.sql` did not contain any of them. The
+code's `.from("seo_comparison_pages")` (etc.) calls are ghost references
+— Portland-era / Stay-Portland leftovers where the table was planned
+but never built, OR where the table was dropped during the rebrand and
+the call sites weren't cleaned up. Reads silently fail because every
+call site wraps the supabase client in `try/catch` and returns empty
+results on error (defense-in-depth from Codex #15).
 
-- Preview branches can't bootstrap with the right tables.
-- New devs hit "relation does not exist" until they hand-run the
-  dashboard SQL locally.
-- Disaster recovery requires replaying dashboard history.
+`avatars` is a Supabase Storage bucket (not a Postgres table) — the
+audit script can't see Storage buckets, so it's a false positive.
 
-**Action for next maintainer**: run `npx supabase db pull` against the
-prod project (requires database URL + service role key) and commit the
-resulting diff under a single `supabase/migrations/<timestamp>_backfill_dashboard_changes.sql`
-file. The audit script should then exit clean.
+**Recommended cleanup** (out of scope for this README — flagged as
+future work):
+- grep `.from("seo_comparison_pages")` etc. across `src/`. For each
+  hit, either (a) drop the dead code path entirely if the feature was
+  never finished, or (b) create the missing table via a new migration
+  if the feature is still planned.
+- After cleanup, this list should be empty.
 
-Until that lands: treat the dashboard SQL editor as source of truth for
-these specific tables, AND when adding any NEW table, write the migration
-file alongside (don't let the gap grow).
+## Adding a new table — workflow
+
+If you DO need to add a new table going forward, always write the
+migration file FIRST, then run it via the dashboard or `supabase db push`.
+That way the file is the source of truth and the audit script stays
+clean. Never start from dashboard SQL — backfilling is harder than
+forward-flowing.
