@@ -15,35 +15,15 @@
  */
 
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-auth-server";
+import {
+  authorizeAdminRequest,
+  unauthorizedAdminResponse,
+} from "@/lib/admin-auth";
 import { getOpenAPIListingsPage } from "@/lib/guesty-openapi";
 import { getListingSlug } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
-
-const ADMIN_EMAILS = new Set([
-  "nadim@traversehospitality.com",
-  "ngtannous@gmail.com",
-  "alex@traversehospitality.com",
-  "sabrina@traversehospitality.com",
-]);
-
-async function authorize(request: Request): Promise<boolean> {
-  const auth = request.headers.get("authorization");
-  const secret = process.env.CRON_SECRET;
-  if (secret && auth === `Bearer ${secret}`) return true;
-  try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user?.email && ADMIN_EMAILS.has(user.email.toLowerCase())) return true;
-  } catch {
-    /* fall through */
-  }
-  return false;
-}
 
 interface GuestyListing {
   _id?: string;
@@ -111,7 +91,8 @@ async function fetchAllListings(): Promise<GuestyListing[]> {
   for (let page = 0; page < 50; page++) {
     const response = (await getOpenAPIListingsPage({
       // Request only the fields we need to keep payload small.
-      fields: "_id nickname title active address accommodates bedrooms prices tags",
+      fields:
+        "_id nickname title active address accommodates bedrooms prices tags",
       limit: pageSize,
       skip,
     })) as { results?: GuestyListing[]; count?: number };
@@ -146,8 +127,8 @@ function listingToRow(l: GuestyListing): ExportRow {
 }
 
 export async function GET(request: Request) {
-  if (!(await authorize(request))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await authorizeAdminRequest(request))) {
+    return unauthorizedAdminResponse();
   }
 
   const url = new URL(request.url);

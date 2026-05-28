@@ -22,36 +22,16 @@ import {
   extractQuotePricing,
 } from "@/lib/quote-response";
 import { getListingWithBeapiFallback } from "@/lib/listing-utils";
-import { createServerSupabaseClient } from "@/lib/supabase-auth-server";
+import {
+  authorizeAdminRequest,
+  unauthorizedAdminResponse,
+} from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
-const ADMIN_EMAILS = new Set([
-  "nadim@traversehospitality.com",
-  "ngtannous@gmail.com",
-  "alex@traversehospitality.com",
-  "sabrina@traversehospitality.com",
-]);
-
-async function authorize(request: Request): Promise<boolean> {
-  const auth = request.headers.get("authorization");
-  const secret = process.env.CRON_SECRET;
-  if (secret && auth === `Bearer ${secret}`) return true;
-  try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user?.email && ADMIN_EMAILS.has(user.email.toLowerCase())) return true;
-  } catch {
-    /* fall through */
-  }
-  return false;
-}
-
 export async function GET(request: Request) {
-  if (!(await authorize(request))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await authorizeAdminRequest(request))) {
+    return unauthorizedAdminResponse();
   }
 
   const url = new URL(request.url);
@@ -84,14 +64,16 @@ export async function GET(request: Request) {
         normalizedTaxBreakdown: normalized.pricing.taxBreakdown ?? null,
         // Re-extract using the same exported helper so we see what the
         // current matcher returns (should match normalizedTaxBreakdown).
-        rerunExtract:
-          extractQuotePricing(raw).taxBreakdown ?? null,
+        rerunExtract: extractQuotePricing(raw).taxBreakdown ?? null,
       },
       candidatePaths: {
-        "raw.pricing.invoiceItems (length)":
-          Array.isArray(pricingInvoiceItems) ? pricingInvoiceItems.length : "not-an-array",
+        "raw.pricing.invoiceItems (length)": Array.isArray(pricingInvoiceItems)
+          ? pricingInvoiceItems.length
+          : "not-an-array",
         "raw.rates.ratePlans[0].ratePlan.money.invoiceItems (length)":
-          Array.isArray(ratePlanInvoiceItems) ? ratePlanInvoiceItems.length : "not-an-array",
+          Array.isArray(ratePlanInvoiceItems)
+            ? ratePlanInvoiceItems.length
+            : "not-an-array",
         // Other places Guesty has historically stuffed tax data:
         "raw.pricing.taxesItems": raw?.pricing?.taxesItems ?? null,
         "raw.pricing.taxBreakdown": raw?.pricing?.taxBreakdown ?? null,

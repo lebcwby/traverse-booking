@@ -18,50 +18,17 @@
 
 import { NextResponse } from "next/server";
 import { getPool } from "@/lib/db";
+import { getOpenAPIReservation, recordPayment } from "@/lib/guesty-openapi";
 import {
-  getOpenAPIReservation,
-  recordPayment,
-} from "@/lib/guesty-openapi";
-import { createServerSupabaseClient } from "@/lib/supabase-auth-server";
+  authorizeAdminRequest,
+  unauthorizedAdminResponse,
+} from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 
-// Anyone with this email is allowed to use the admin diagnostic endpoint via
-// browser cookie auth. Keeps things working when CRON_SECRET is marked
-// "Sensitive" in Vercel and cannot be copied out.
-const ADMIN_EMAILS = new Set([
-  "nadim@traversehospitality.com",
-  "ngtannous@gmail.com",
-  "alex@traversehospitality.com",
-  "sabrina@traversehospitality.com",
-]);
-
-function unauthorized() {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-}
-
-async function authorize(request: Request): Promise<boolean> {
-  // Path 1: Bearer CRON_SECRET (curl-friendly, server-to-server)
-  const auth = request.headers.get("authorization");
-  const secret = process.env.CRON_SECRET;
-  if (secret && auth === `Bearer ${secret}`) return true;
-
-  // Path 2: Logged-in admin via Supabase session cookie (browser-friendly).
-  // Just hit the URL in your browser while signed in to the site as an admin.
-  try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user?.email && ADMIN_EMAILS.has(user.email.toLowerCase())) return true;
-  } catch {
-    // ignore — fall through to unauthorized
-  }
-  return false;
-}
-
 export async function GET(request: Request) {
-  if (!(await authorize(request))) return unauthorized();
+  if (!(await authorizeAdminRequest(request)))
+    return unauthorizedAdminResponse();
 
   const url = new URL(request.url);
   const reservationId = url.searchParams.get("id");
@@ -94,8 +61,7 @@ export async function GET(request: Request) {
   }
 
   // Prefer the resolved guesty_id from the DB for Guesty API calls
-  const guestyId =
-    (localRow?.guesty_id as string | undefined) ?? reservationId;
+  const guestyId = (localRow?.guesty_id as string | undefined) ?? reservationId;
 
   let guestyReservation: Record<string, unknown> | null = null;
   let guestyError: string | null = null;
@@ -122,9 +88,10 @@ export async function GET(request: Request) {
             stripe_payment_intent_id: localRow.stripe_payment_intent_id,
             payment_recorded_at: localRow.payment_recorded_at,
             last_synced_mt: localRow.last_synced_at
-              ? new Date(
-                  Number(localRow.last_synced_at)
-                ).toLocaleString("en-US", { timeZone: "America/Denver" })
+              ? new Date(Number(localRow.last_synced_at)).toLocaleString(
+                  "en-US",
+                  { timeZone: "America/Denver" }
+                )
               : null,
             guest: localRow.guest,
             money: localRow.money,
@@ -202,9 +169,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const guest = guestyReservation?.guest as
-      | { _id?: string }
-      | undefined;
+    const guest = guestyReservation?.guest as { _id?: string } | undefined;
     const guestId = guest?._id;
     if (!guestId) {
       return NextResponse.json(

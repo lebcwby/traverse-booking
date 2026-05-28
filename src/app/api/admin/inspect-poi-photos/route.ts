@@ -23,32 +23,12 @@
 
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { createServerSupabaseClient } from "@/lib/supabase-auth-server";
+import {
+  authorizeAdminRequest,
+  unauthorizedAdminResponse,
+} from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
-
-const ADMIN_EMAILS = new Set([
-  "nadim@traversehospitality.com",
-  "ngtannous@gmail.com",
-  "alex@traversehospitality.com",
-  "sabrina@traversehospitality.com",
-]);
-
-async function authorize(request: Request): Promise<boolean> {
-  const auth = request.headers.get("authorization");
-  const secret = process.env.CRON_SECRET;
-  if (secret && auth === `Bearer ${secret}`) return true;
-  try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user?.email && ADMIN_EMAILS.has(user.email.toLowerCase())) return true;
-  } catch {
-    /* fall through */
-  }
-  return false;
-}
 
 function keyFingerprint(url: string): string | null {
   const m = url.match(/[?&]key=([^&]+)/);
@@ -82,8 +62,8 @@ async function probePhotoUrl(photoUrl: string) {
 }
 
 export async function GET(request: Request) {
-  if (!(await authorize(request))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await authorizeAdminRequest(request))) {
+    return unauthorizedAdminResponse();
   }
 
   const url = new URL(request.url);
@@ -109,9 +89,7 @@ export async function GET(request: Request) {
       neighborhood: data.neighborhood,
       category: data.category,
       hasPhotoUrl: !!data.photo_url,
-      keyFingerprint: data.photo_url
-        ? keyFingerprint(data.photo_url)
-        : null,
+      keyFingerprint: data.photo_url ? keyFingerprint(data.photo_url) : null,
       upstreamProbe: probe,
     });
   }

@@ -22,8 +22,11 @@
 
 import { NextResponse } from "next/server";
 import { getPool } from "@/lib/db";
-import { createServerSupabaseClient } from "@/lib/supabase-auth-server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import {
+  authorizeAdminRequest,
+  unauthorizedAdminResponse,
+} from "@/lib/admin-auth";
 import {
   syncReviewsForListing,
   syncAllListingReviews,
@@ -52,32 +55,9 @@ export const dynamic = "force-dynamic";
 // can't finish.
 export const maxDuration = 800;
 
-const ADMIN_EMAILS = new Set([
-  "nadim@traversehospitality.com",
-  "ngtannous@gmail.com",
-  "alex@traversehospitality.com",
-  "sabrina@traversehospitality.com",
-]);
-
-async function authorize(request: Request): Promise<boolean> {
-  const auth = request.headers.get("authorization");
-  const secret = process.env.CRON_SECRET;
-  if (secret && auth === `Bearer ${secret}`) return true;
-  try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user?.email && ADMIN_EMAILS.has(user.email.toLowerCase())) return true;
-  } catch {
-    /* fall through */
-  }
-  return false;
-}
-
 export async function GET(request: Request) {
-  if (!(await authorize(request))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await authorizeAdminRequest(request))) {
+    return unauthorizedAdminResponse();
   }
 
   const url = new URL(request.url);
@@ -148,12 +128,9 @@ export async function GET(request: Request) {
 
       for (const c of candidates) {
         try {
-          const resp = await fetch(
-            `https://open-api.guesty.com${c.path}`,
-            {
-              headers: { Authorization: `Bearer ${tokenResp}` },
-            }
-          );
+          const resp = await fetch(`https://open-api.guesty.com${c.path}`, {
+            headers: { Authorization: `Bearer ${tokenResp}` },
+          });
           const text = await resp.text();
           let body: unknown;
           try {

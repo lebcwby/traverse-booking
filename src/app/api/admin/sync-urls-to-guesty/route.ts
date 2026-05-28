@@ -34,8 +34,11 @@
  */
 
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-auth-server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import {
+  authorizeAdminRequest,
+  unauthorizedAdminResponse,
+} from "@/lib/admin-auth";
 import { getOpenAPIListingsPage } from "@/lib/guesty-openapi";
 import { getListingSlug } from "@/lib/utils";
 
@@ -48,29 +51,6 @@ const SITE_URL = "https://www.booktraverse.com";
 // The matcher also handles the display-name form ("Book Direct Link") and
 // the template-syntax form (`{{book_direct_link}}`) — see normalizeName.
 const DEFAULT_FIELD_NAME = "book_direct_link";
-
-const ADMIN_EMAILS = new Set([
-  "nadim@traversehospitality.com",
-  "ngtannous@gmail.com",
-  "alex@traversehospitality.com",
-  "sabrina@traversehospitality.com",
-]);
-
-async function authorize(request: Request): Promise<boolean> {
-  const auth = request.headers.get("authorization");
-  const secret = process.env.CRON_SECRET;
-  if (secret && auth === `Bearer ${secret}`) return true;
-  try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user?.email && ADMIN_EMAILS.has(user.email.toLowerCase())) return true;
-  } catch {
-    /* fall through */
-  }
-  return false;
-}
 
 async function getOpenAPITokenForProbe(): Promise<string> {
   const supabase = getSupabaseAdmin();
@@ -305,7 +285,11 @@ async function fetchListingCustomFields(
   }
   const json = (await res.json()) as { customFields?: unknown };
   return Array.isArray(json.customFields)
-    ? (json.customFields as Array<{ fieldId?: string; _id?: string; value?: unknown }>)
+    ? (json.customFields as Array<{
+        fieldId?: string;
+        _id?: string;
+        value?: unknown;
+      }>)
     : [];
 }
 
@@ -324,16 +308,17 @@ async function patchListingCustomField(
   // Defensive: if any existing entry has no recognizable id, abort rather
   // than silently drop it on the PUT. Better to surface "unexpected shape"
   // than to repeat the 2026-05-20 wipe.
-  const unidentified = existing.filter(
-    (cf) => !cf.fieldId && !cf._id
-  );
+  const unidentified = existing.filter((cf) => !cf.fieldId && !cf._id);
   if (unidentified.length > 0) {
     throw new Error(
       `Aborting PUT for ${listingId}: ${unidentified.length} existing customField entries have no fieldId or _id; refusing to write a merge that would drop them.`
     );
   }
   const others = existing
-    .map((cf) => ({ fieldId: (cf.fieldId ?? cf._id) as string, value: cf.value }))
+    .map((cf) => ({
+      fieldId: (cf.fieldId ?? cf._id) as string,
+      value: cf.value,
+    }))
     .filter((cf) => cf.fieldId !== fieldId);
   const merged = [...others, { fieldId, value }];
 
@@ -367,8 +352,8 @@ async function patchListingCustomField(
 }
 
 export async function GET(request: Request) {
-  if (!(await authorize(request))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await authorizeAdminRequest(request))) {
+    return unauthorizedAdminResponse();
   }
 
   const url = new URL(request.url);
@@ -430,9 +415,7 @@ export async function GET(request: Request) {
   // so we can locate the field ID for "Book Direct Link" by eye.
   if (url.searchParams.get("action") === "inspect") {
     const sample = listings
-      .filter(
-        (l) => Array.isArray(l.customFields) && l.customFields.length > 0
-      )
+      .filter((l) => Array.isArray(l.customFields) && l.customFields.length > 0)
       .slice(0, 5)
       .map((l) => ({
         listingId: l._id,
@@ -482,7 +465,12 @@ export async function GET(request: Request) {
     title: string;
     desiredUrl: string;
     currentValue: string | null;
-    action: "skip-no-id" | "skip-already-correct" | "would-update" | "updated" | "error";
+    action:
+      | "skip-no-id"
+      | "skip-already-correct"
+      | "would-update"
+      | "updated"
+      | "error";
     error?: string;
   };
 
@@ -583,7 +571,10 @@ export async function GET(request: Request) {
           type: fieldMeta.type ?? fieldMeta.fieldType,
           objectType: fieldMeta.objectType,
         }
-      : { source: "?fieldId query param (manual override, metadata not fetched)" },
+      : {
+          source:
+            "?fieldId query param (manual override, metadata not fetched)",
+        },
     totalListings: listings.length,
     updatedCount,
     skippedAlreadyCorrect,
