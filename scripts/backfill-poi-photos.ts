@@ -20,15 +20,12 @@ import { searchPlace, photoUrl } from "../src/lib/pois/seed/google-places";
 // hand-rolled parser left literal quotes in place and broke the Supabase URL.
 loadDotenv({ path: ".env.local" });
 
-const SUPABASE_URL =
-  process.env.SHARED_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY =
-  process.env.SHARED_SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   throw new Error(
-    "SHARED_SUPABASE_URL and SHARED_SUPABASE_SERVICE_ROLE_KEY must be set in .env.local"
+    "NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env.local"
   );
 }
 if (!process.env.GOOGLE_PLACES_API_KEY) {
@@ -40,6 +37,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 // Neighborhood slug → Google Places location bias. Accuracy matters because
 // "Haystack Rock" in a Portland-biased search lands on random unrelated hits.
 const LOCATION_BIAS: Record<string, string> = {
+  // Oregon (legacy)
   astoria: "Astoria, Oregon",
   cannon_beach: "Cannon Beach, Oregon",
   carlton: "Carlton, Oregon",
@@ -51,11 +49,27 @@ const LOCATION_BIAS: Record<string, string> = {
   seaside: "Seaside, Oregon",
   tillamook: "Tillamook, Oregon",
   turner: "Turner, Oregon",
+  // Colorado — Crested Butte
+  crested_butte: "Crested Butte, Colorado",
+  mt_crested_butte: "Mt. Crested Butte, Colorado",
+  kebler_pass: "Kebler Pass, Crested Butte, Colorado",
+  gothic: "Gothic, Crested Butte, Colorado",
+  almont: "Almont, Colorado",
+  washington_gulch: "Washington Gulch, Crested Butte, Colorado",
+  elk_range: "Elk Range, Crested Butte, Colorado",
+  ohio_city: "Ohio City, Colorado",
+  // Colorado — Leadville
+  leadville: "Leadville, Colorado",
+  tennessee_pass: "Tennessee Pass, Leadville, Colorado",
+  san_isabel_nf: "San Isabel National Forest, Colorado",
+  twin_lakes: "Twin Lakes, Colorado",
+  buena_vista: "Buena Vista, Colorado",
+  lake_county: "Lake County, Colorado",
 };
 
 function biasFor(neighborhood: string | null): string {
-  if (!neighborhood) return "Portland, Oregon";
-  return LOCATION_BIAS[neighborhood] ?? "Portland, Oregon";
+  if (!neighborhood) return "Colorado";
+  return LOCATION_BIAS[neighborhood] ?? "Colorado";
 }
 
 interface PoiRow {

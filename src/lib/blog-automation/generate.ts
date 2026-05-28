@@ -31,16 +31,18 @@ function getClient(): Anthropic {
 async function askClaude(
   client: Anthropic,
   userPrompt: string,
-  retryFeedback?: string,
+  retryFeedback?: string
 ): Promise<{ text: string; tokensIn: number; tokensOut: number }> {
-  const messages: Anthropic.MessageParam[] = [{ role: "user", content: userPrompt }];
+  const messages: Anthropic.MessageParam[] = [
+    { role: "user", content: userPrompt },
+  ];
   if (retryFeedback) {
     messages.push(
       { role: "assistant", content: "Understood." },
       {
         role: "user",
         content: `The previous draft failed validation:\n${retryFeedback}\n\nRewrite the full post (frontmatter + body) fixing every issue. Return only the fenced block.`,
-      },
+      }
     );
   }
 
@@ -76,7 +78,7 @@ export interface GenerateOptions {
 }
 
 export async function generateNextPost(
-  opts: GenerateOptions = {},
+  opts: GenerateOptions = {}
 ): Promise<GenerateResult | null> {
   const entry = opts.entry ?? pickNextDue(opts.today);
   if (!entry) return null;
@@ -93,14 +95,12 @@ export async function generateNextPost(
     const feedback =
       attempt === 1
         ? undefined
-        : lastIssues
-            .map((i) => `- ${i.kind}: ${i.detail}`)
-            .join("\n");
+        : lastIssues.map((i) => `- ${i.kind}: ${i.detail}`).join("\n");
 
     const { text, tokensIn, tokensOut } = await askClaude(
       client,
       userPrompt,
-      feedback,
+      feedback
     );
     totalIn += tokensIn;
     totalOut += tokensOut;
@@ -159,7 +159,7 @@ export async function generateNextPost(
   };
 }
 
-export interface RevisionResult extends GenerateResult {}
+export type RevisionResult = GenerateResult;
 
 /**
  * Revise an existing draft using the reviewer's edit notes. Returns a fresh
@@ -188,7 +188,7 @@ export async function revisePost(args: {
     const { text, tokensIn, tokensOut } = await askClaude(
       client,
       userPrompt,
-      feedback,
+      feedback
     );
     totalIn += tokensIn;
     totalOut += tokensOut;

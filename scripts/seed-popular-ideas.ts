@@ -200,8 +200,8 @@ async function main() {
       "ANTHROPIC_API_KEY is required (pull with vercel env pull)"
     );
   }
-  if (!process.env.SHARED_DATABASE_URL) {
-    throw new Error("SHARED_DATABASE_URL is required");
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is required");
   }
 
   const targets = onlyKey
@@ -218,7 +218,7 @@ async function main() {
   );
 
   const client = new Client({
-    connectionString: process.env.SHARED_DATABASE_URL,
+    connectionString: process.env.DATABASE_URL,
   });
   await client.connect();
 
