@@ -1,6 +1,11 @@
 import path from "node:path";
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+// Single source of truth for CSP directives — see file header in csp.ts.
+// Both this file (baseline policy via headers()) and middleware.ts (stricter
+// nonce-based policy for sensitive paths) consume from there so the two
+// can't drift. Codex #12 in the 2026-05-27 review.
+import { buildBaseContentSecurityPolicy } from "./src/lib/csp";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -12,165 +17,6 @@ function supabaseHostname(): string | null {
   } catch {
     return null;
   }
-}
-
-function buildCsp() {
-  const supabaseOrigin = (() => {
-    const host = supabaseHostname();
-    return host ? `https://${host}` : null;
-  })();
-  const directives: Record<string, string[]> = {
-    "default-src": ["'self'"],
-    "script-src": [
-      "'self'",
-      "'unsafe-inline'",
-      ...(isProduction ? [] : ["'unsafe-eval'"]),
-      "https://www.googletagmanager.com",
-      "https://www.google-analytics.com",
-      "https://region1.google-analytics.com",
-      "https://connect.facebook.net",
-      "https://static.klaviyo.com",
-      "https://static-tracking.klaviyo.com",
-      "https://js.stripe.com",
-      "https://googleads.g.doubleclick.net",
-      "https://beacon.beyondpricing.com",
-      "https://pay.guesty.com",
-      "https://bat.bing.com",
-      "https://js.hsforms.net",
-      "https://js-na2.hsforms.net",
-      "https://*.hsforms.net",
-      "https://*.hsforms.com",
-      "https://*.hubspot.com",
-      "https://*.hsappstatic.net",
-    ],
-    "script-src-attr": ["'none'"],
-    "style-src": [
-      "'self'",
-      "'unsafe-inline'",
-      "https://api.mapbox.com",
-      "https://fonts.googleapis.com",
-      "https://static.klaviyo.com",
-      "https://*.hsforms.net",
-      "https://*.hsforms.com",
-      "https://*.hubspot.com",
-    ],
-    "img-src": [
-      "'self'",
-      "data:",
-      "blob:",
-      "https://assets.guesty.com",
-      "https://guesty-listing-images.s3.amazonaws.com",
-      "https://images.unsplash.com",
-      ...(supabaseOrigin ? [supabaseOrigin] : []),
-      "https://lh3.googleusercontent.com",
-      "https://places.googleapis.com",
-      "https://www.google-analytics.com",
-      "https://www.googletagmanager.com",
-      "https://www.facebook.com",
-      "https://api.mapbox.com",
-      "https://*.mapbox.com",
-      "https://www.google.com",
-      "https://googleads.g.doubleclick.net",
-      "https://beacon.beyondpricing.com",
-      "https://q.stripe.com",
-      "https://static.klaviyo.com",
-      "https://static-forms.klaviyo.com",
-      "https://*.klaviyo.com",
-      "https://d3k81ch9hvuctc.cloudfront.net",
-      "https://bat.bing.com",
-      "https://*.bing.com",
-      "https://*.convex.cloud",
-      "https://*.hubspot.com",
-      "https://*.hsforms.com",
-      "https://*.hsforms.net",
-      "https://*.hubspotusercontent-na2.net",
-    ],
-    "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
-    "connect-src": [
-      "'self'",
-      ...(supabaseOrigin ? [supabaseOrigin] : []),
-      "https://booking.guesty.com",
-      "https://open-api.guesty.com",
-      "https://www.google-analytics.com",
-      "https://region1.google-analytics.com",
-      "https://analytics.google.com",
-      "https://www.google.com",
-      "https://api.mapbox.com",
-      "https://*.mapbox.com",
-      "https://graph.facebook.com",
-      "https://a.klaviyo.com",
-      "https://fast.a.klaviyo.com",
-      "https://static-forms.klaviyo.com",
-      // Stripe — full set for PaymentElement + ExpressCheckout in live mode
-      "https://api.stripe.com",
-      "https://q.stripe.com",
-      "https://r.stripe.com",
-      "https://m.stripe.com",
-      "https://m.stripe.network",
-      "https://*.stripe.com",
-      "https://errors.stripe.com",
-      "wss://ppm.stripe.com",
-      "https://ppm.stripe.com",
-      "https://www.googletagmanager.com",
-      "https://beacon.beyondpricing.com",
-      "https://api.beacon.beyondpricing.com",
-      "https://pay.guesty.com",
-      "https://stats.g.doubleclick.net",
-      "https://googleads.g.doubleclick.net",
-      "wss://*.convex.cloud",
-      "https://bat.bing.com",
-      "https://*.bing.com",
-      "https://*.msn.com",
-      "https://api64.ipify.org",
-      "https://www.googleadservices.com",
-      "https://forms.hubspot.com",
-      "https://api.hubapi.com",
-      "https://*.hubspot.com",
-      "https://*.hubapi.com",
-      "https://*.hsforms.com",
-      "https://*.hsforms.net",
-      // Lead form POSTs from /property-management to the Traverse team app.
-      "https://team.traversehospitality.com",
-    ],
-    "frame-src": [
-      // Stripe — PaymentElement and ExpressCheckout iframes
-      "https://js.stripe.com",
-      "https://hooks.stripe.com",
-      "https://m.stripe.com",
-      "https://*.stripe.com",
-      // Google Pay iframe via Stripe's ExpressCheckoutElement
-      "https://pay.google.com",
-      "https://www.googletagmanager.com",
-      "https://pay.guesty.com",
-      "https://beacon.beyondpricing.com",
-      "https://*.hsforms.com",
-      "https://*.hsforms.net",
-      "https://*.hubspot.com",
-      // Referral form iframe on /referrals-form — Traverse internal team app.
-      "https://team.traversehospitality.com",
-      // Google Maps embed (used on building hub pages: /crested-butte/grand-lodge,
-      // /crested-butte/the-plaza, /crested-butte/lodge-at-mountaineer-square).
-      "https://www.google.com",
-      "https://maps.google.com",
-      // Facebook pixel iframe injected by GTM on conversion pages
-      "https://www.facebook.com",
-    ],
-    "worker-src": ["'self'", "blob:"],
-    "object-src": ["'none'"],
-    "base-uri": ["'self'"],
-    "form-action": ["'self'", "https://www.facebook.com"],
-    "frame-ancestors": ["'none'"],
-    "manifest-src": ["'self'"],
-    "upgrade-insecure-requests": [],
-  };
-
-  return Object.entries(directives)
-    .map(([directive, values]) =>
-      values.length > 0
-        ? `${directive} ${Array.from(new Set(values)).join(" ")}`
-        : directive
-    )
-    .join("; ");
 }
 
 const nextConfig: NextConfig = {
@@ -199,7 +45,7 @@ const nextConfig: NextConfig = {
             key: isProduction
               ? "Content-Security-Policy"
               : "Content-Security-Policy-Report-Only",
-            value: buildCsp(),
+            value: buildBaseContentSecurityPolicy({ isProduction }),
           },
         ],
       },
