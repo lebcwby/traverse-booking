@@ -20,6 +20,7 @@ const {
   mockMarkPendingCheckoutError,
   mockGetListing,
   mockIsAlreadySettledPaymentError,
+  mockResolveAmountVsBalance,
 } = vi.hoisted(() => ({
   mockStripeRetrieve: vi.fn(),
   mockStripePiUpdate: vi.fn(),
@@ -40,6 +41,7 @@ const {
   mockMarkPendingCheckoutError: vi.fn(),
   mockGetListing: vi.fn(),
   mockIsAlreadySettledPaymentError: vi.fn(),
+  mockResolveAmountVsBalance: vi.fn(),
 }));
 
 vi.mock("@/lib/stripe", () => ({
@@ -58,6 +60,7 @@ vi.mock("@/lib/guesty-openapi", () => ({
   recordPayment: mockRecordPayment,
   addInvoiceItem: mockAddInvoiceItem,
   isAlreadySettledPaymentError: mockIsAlreadySettledPaymentError,
+  resolveAmountVsBalance: mockResolveAmountVsBalance,
 }));
 
 vi.mock("@/lib/guesty-beapi", () => ({
@@ -96,6 +99,10 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/lib/upsells", () => ({
   getSelectedUpsells: mockGetSelectedUpsells,
   getUpsellTotal: mockGetUpsellTotal,
+  // resolvePetFeePerPet is called from finalizeReservationLocked when the PI
+  // metadata has a petFeePerPet entry. Stub to 0 — tests that exercise pet
+  // fees override this per-call.
+  resolvePetFeePerPet: vi.fn(() => 0),
 }));
 
 vi.mock("@/lib/consent", () => ({
@@ -352,7 +359,10 @@ describe("finalizeReservation", () => {
       "cus_123",
       expect.objectContaining({
         email: "guest@example.com",
-        phone: "5035551212",
+        // E.164 format — added 2026-05-16. Bare 10-digit numbers are silently
+        // dropped by Guesty's API; we now normalize to E.164 at every API
+        // boundary (Stripe accepts both but we send E.164 for consistency).
+        phone: "+15035551212",
       })
     );
     expect(mockStripePiUpdate).toHaveBeenCalledWith(
@@ -483,17 +493,87 @@ describe("recordPaymentWithIndexingRetry", () => {
     expect(mockRecordPayment).toHaveBeenCalledTimes(4);
   });
 
-  it("returns immediately when isAlreadySettledPaymentError matches", async () => {
+  it("returns success when isAlreadySettledPaymentError matches and balance is 0 (truly settled)", async () => {
     mockRecordPayment.mockRejectedValueOnce(
       new Error("Payment amount can't be greater than balance due")
     );
     mockIsAlreadySettledPaymentError.mockReturnValueOnce(true);
+    // resolveAmountVsBalance returns { settled: true, mismatch: false } when
+    // Guesty's balance is 0 — meaning the payment was previously recorded.
+    mockResolveAmountVsBalance.mockResolvedValueOnce({
+      settled: true,
+      mismatch: false,
+    });
 
     await expect(
       recordPaymentWithIndexingRetry("res_3", 100, "pi_3")
     ).resolves.toBeUndefined();
 
     expect(mockRecordPayment).toHaveBeenCalledTimes(1);
+    expect(mockResolveAmountVsBalance).toHaveBeenCalledWith(
+      "res_3",
+      100,
+      "pi_3"
+    );
+    expect(mockSendAlert).not.toHaveBeenCalled();
+  });
+
+  it("returns success AND sends a mismatch alert when balance != captured amount", async () => {
+    // Simulates the original $3.71 bug: Stripe captured $536.83 but Guesty
+    // balance was $533.12. resolveAmountVsBalance retries with the actual
+    // balance and reports the delta — recordPaymentWithIndexingRetry should
+    // succeed but emit a sendAlert for ops to reconcile.
+    mockRecordPayment.mockRejectedValueOnce(
+      new Error("Payment amount can't be greater than balance due")
+    );
+    mockIsAlreadySettledPaymentError.mockReturnValueOnce(true);
+    mockResolveAmountVsBalance.mockResolvedValueOnce({
+      settled: true,
+      mismatch: true,
+      originalAmount: 536.83,
+      balanceAmount: 533.12,
+      delta: 3.71,
+    });
+
+    await expect(
+      recordPaymentWithIndexingRetry("res_mismatch", 536.83, "pi_mismatch")
+    ).resolves.toBeUndefined();
+
+    expect(mockSendAlert).toHaveBeenCalledTimes(1);
+    expect(mockSendAlert.mock.calls[0]?.[0]).toContain(
+      "Payment amount mismatch"
+    );
+    expect(mockSendAlert.mock.calls[0]?.[2]).toBe(
+      "amount-mismatch-res_mismatch"
+    );
+  });
+
+  it("falls through to backoff retry if resolveAmountVsBalance itself fails", async () => {
+    // If we can't even fetch the reservation to check the balance, treat
+    // the original error as a normal retryable failure rather than silent
+    // success.
+    for (let i = 0; i < 6; i++) {
+      mockRecordPayment.mockRejectedValueOnce(
+        new Error("Payment amount can't be greater than balance due")
+      );
+    }
+    mockIsAlreadySettledPaymentError.mockReturnValue(true);
+    mockResolveAmountVsBalance.mockRejectedValue(
+      new Error("Guesty OpenAPI unavailable")
+    );
+
+    const promise = recordPaymentWithIndexingRetry(
+      "res_resolve_fail",
+      100,
+      "pi_resolve_fail"
+    );
+    promise.catch(() => {});
+    await vi.advanceTimersByTimeAsync(15000);
+    await expect(promise).rejects.toThrow("Guesty OpenAPI unavailable");
+
+    // All 6 attempts: each tries recordPayment, gets the ambiguous error,
+    // tries resolveAmountVsBalance, fails, retries.
+    expect(mockRecordPayment).toHaveBeenCalledTimes(6);
   });
 
   it("throws after the budget is exhausted", async () => {
