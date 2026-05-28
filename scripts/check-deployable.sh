@@ -159,6 +159,37 @@ else
   fi
 fi
 
+# ─── 5. Backlog tripwire (advisory) ───────────────────────────────────────
+#
+# The /plan page served stale "Portland" branding in prod for an unknown
+# stretch because the Colorado rewrite was finished locally but never
+# committed — it sat in a working tree that had quietly grown to ~100
+# uncommitted files. When the backlog is that big, nobody can tell what's
+# shipped vs. unshipped, and finished work silently never reaches prod.
+#
+# This is a WARNING, not a hard block: legitimate multi-file features exist,
+# and we don't want to wedge people into bad habits (giant commits, --force).
+# But a large uncommitted set should never be silent. Set
+# DEPLOY_CHECK_BACKLOG_FAIL=1 to make it a hard failure instead.
+backlog_warn="${DEPLOY_CHECK_BACKLOG_WARN:-25}"
+backlog_count="$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')"
+if [ "${backlog_count:-0}" -gt "$backlog_warn" ]; then
+  yellow ""
+  yellow "⚠ Backlog tripwire: $backlog_count uncommitted files in the working tree (warn threshold: $backlog_warn)."
+  yellow "  A large backlog is how finished work silently never ships (the /plan"
+  yellow "  Portland regression). Triage it: commit, stash with intent, or discard."
+  yellow "  Top of the pile:"
+  git status --short | head -12 | sed 's/^/    /'
+  remaining=$((backlog_count - 12))
+  if [ "$remaining" -gt 0 ]; then
+    yellow "    …and $remaining more (git status)"
+  fi
+  if [ "${DEPLOY_CHECK_BACKLOG_FAIL:-0}" = "1" ]; then
+    red "✗ DEPLOY_CHECK_BACKLOG_FAIL=1 — treating backlog as a hard failure."
+    problems=$((problems + 1))
+  fi
+fi
+
 # ─── Verdict ──────────────────────────────────────────────────────────────
 if [ "$problems" -gt 0 ]; then
   red ""
