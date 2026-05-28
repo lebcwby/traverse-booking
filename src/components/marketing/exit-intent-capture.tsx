@@ -94,7 +94,7 @@ export function ExitIntentCapture() {
               Wait — $50 off your stay
             </p>
             <p className="mt-2 text-center text-sm text-primary-foreground/60">
-              Get an exclusive discount plus Portland travel tips. No spam,
+              Get an exclusive discount plus Colorado travel tips. No spam,
               unsubscribe anytime.
             </p>
             <form onSubmit={handleSubmit} className="mt-5">

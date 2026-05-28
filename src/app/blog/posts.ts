@@ -13,6 +13,17 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "crested-butte-wildflower-season-guide-2026",
+    oldSlug: "crested-butte-wildflower-season-guide-2026",
+    title: "Crested Butte Wildflower Season: The Insider's Guide (2026)",
+    excerpt: "Crested Butte wildflower season peaks in July. Here's when to go, the best hikes, 2026 festival dates, and how to book the right rental at Grand Lodge.",
+    date: "2026-05-12",
+    author: "Traverse Hospitality",
+    category: "Travel Guides",
+    market: "crested-butte",
+    image: "",
+  },
+  {
     slug: "grand-lodge-traverse-vs-vail-resorts",
     oldSlug: "grand-lodge-crested-butte-condos-traverse-vs-vail-resorts-what-s-the-difference",
     title: "Grand Lodge Crested Butte Condos: Traverse vs. Vail Resorts — What's the Difference?",
@@ -21,7 +32,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Traverse",
     category: "Crested Butte",
     market: "crested-butte",
-    image: "https://booktraverse.com/wp-content/uploads/2026/04/Grand-Lodge-28.jpg",
+    image: "/blog/grand-lodge-28.jpg",
   },
   {
     slug: "pet-friendly-crested-butte-grand-lodge-153",
@@ -32,7 +43,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Natasha Lacque",
     category: "Crested Butte",
     market: "crested-butte",
-    image: "https://booktraverse.com/wp-content/uploads/2026/04/153-living-room.jpg",
+    image: "/blog/153-living-room.jpg",
   },
   {
     slug: "leadville-complete-visitors-guide",
@@ -43,7 +54,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Traverse",
     category: "Leadville",
     market: "leadville",
-    image: "https://booktraverse.com/wp-content/uploads/2026/04/IMG_2741.jpg",
+    image: "/blog/img_2741.jpg",
   },
   {
     slug: "budget-friendly-ski-vacation-leadville",
@@ -54,7 +65,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Traverse",
     category: "Leadville",
     market: "leadville",
-    image: "https://booktraverse.com/wp-content/uploads/2024/10/Budget-Friendly-Ski-Vacation-Affordable-Leadville-Rentals-Near-Top-Resorts.jpeg",
+    image: "/blog/budget-friendly-ski-vacation-affordable-leadville-rentals-near-top-resorts.jpeg",
   },
   {
     slug: "cozy-winter-rentals-leadville",
@@ -65,7 +76,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Traverse",
     category: "Leadville",
     market: "leadville",
-    image: "https://booktraverse.com/wp-content/uploads/2024/10/10-Cozy-Vacation-Rentals-in-Leadville-for-the-Ultimate-Winter-Getaway.webp",
+    image: "/blog/10-cozy-vacation-rentals-in-leadville-for-the-ultimate-winter-getaway.webp",
   },
   {
     slug: "christmas-getaway-leadville",
@@ -76,7 +87,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Traverse",
     category: "Leadville",
     market: "leadville",
-    image: "https://booktraverse.com/wp-content/uploads/2024/09/christmas.webp",
+    image: "/blog/christmas.webp",
   },
   {
     slug: "fall-adventures-leadville-hiking-biking",
@@ -87,7 +98,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Traverse",
     category: "Leadville",
     market: "leadville",
-    image: "https://booktraverse.com/wp-content/uploads/2024/09/leadville-foliage.webp",
+    image: "/blog/leadville-foliage.webp",
   },
   {
     slug: "top-5-winter-ski-rentals-leadville",
@@ -98,7 +109,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Traverse",
     category: "Leadville",
     market: "leadville",
-    image: "https://booktraverse.com/wp-content/uploads/2024/09/skiing.jpeg",
+    image: "/blog/skiing.jpeg",
   },
   {
     slug: "thanksgiving-leadville-family-rentals",
@@ -109,7 +120,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Traverse",
     category: "Leadville",
     market: "leadville",
-    image: "https://booktraverse.com/wp-content/uploads/2024/09/leadville-thanksgiving.webp",
+    image: "/blog/leadville-thanksgiving.webp",
   },
   {
     slug: "romantic-getaways-leadville",
@@ -120,7 +131,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Traverse",
     category: "Leadville",
     market: "leadville",
-    image: "https://booktraverse.com/wp-content/uploads/2024/09/romantic-getaways-leadville-cozy-vacation-rentals-two.jpg",
+    image: "/blog/romantic-getaways-leadville-cozy-vacation-rentals-two.jpg",
   },
   {
     slug: "labor-day-leadville",
@@ -131,7 +142,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Traverse",
     category: "Leadville",
     market: "leadville",
-    image: "https://booktraverse.com/wp-content/uploads/2024/09/labor-day-weekend.jpg",
+    image: "/blog/labor-day-weekend.jpg",
   },
   {
     slug: "solo-to-group-getaways-leadville",
@@ -142,7 +153,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Traverse",
     category: "Leadville",
     market: "leadville",
-    image: "https://booktraverse.com/wp-content/uploads/2024/09/from-solo-retreats-to-group-getaways-sizing-up-leadvilles-vacation-rental-options.jpg",
+    image: "/blog/from-solo-retreats-to-group-getaways-sizing-up-leadvilles-vacation-rental-options.jpg",
   },
   {
     slug: "top-10-leadville-vacation-rentals",
@@ -153,7 +164,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Traverse",
     category: "Leadville",
     market: "leadville",
-    image: "https://booktraverse.com/wp-content/uploads/2022/08/1-7.jpg",
+    image: "/featured/mountain-hideaway.jpg",
   },
   {
     slug: "ski-resorts-near-leadville",
@@ -164,7 +175,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Traverse",
     category: "Leadville",
     market: "leadville",
-    image: "https://booktraverse.com/wp-content/uploads/2024/09/skiing.jpeg",
+    image: "/blog/skiing.jpeg",
   },
   {
     slug: "introducing-traverse-hospitality",

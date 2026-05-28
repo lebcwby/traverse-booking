@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase-auth";
 import { clearWishlistCache } from "@/components/wishlist-button";
+import { HeaderCartButton } from "@/components/cart/header-cart-button";
 
 export function Header() {
   const pathname = usePathname();
@@ -102,6 +103,7 @@ export function Header() {
           </Link>
 
           <div className="flex shrink-0 items-center gap-6">
+            <HeaderCartButton className="text-[#2a2b2b] transition-colors hover:text-[#2d3e2c]" />
             <Link
               href="/account/wishlists"
               className="flex items-center gap-2 text-sm font-medium text-[#2a2b2b] transition-colors hover:text-[#2d3e2c]"

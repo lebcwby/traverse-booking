@@ -39,7 +39,7 @@ export function FooterEmailSignup() {
     return (
       <div className="flex items-center justify-center gap-2 text-sm text-primary-foreground/80">
         <CheckCircle2 className="h-4 w-4" />
-        <span>You&apos;re in! Look for Portland tips in your inbox.</span>
+        <span>You&apos;re in! Look for Colorado tips in your inbox.</span>
       </div>
     );
   }
@@ -50,7 +50,7 @@ export function FooterEmailSignup() {
         Save 10-15% — book direct, skip the fees
       </p>
       <p className="mt-1 text-center text-xs text-primary-foreground/50">
-        Plus Portland travel tips and seasonal deals
+        Plus Colorado travel tips and seasonal deals
       </p>
       <div className="mt-3 flex gap-2">
         <input

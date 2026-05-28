@@ -41,7 +41,7 @@ export default async function BlogPostPage({
     content = `<p>This post is being migrated. Check back soon or <a href="https://booktraverse.com/traversehospitality/blog/${post.oldSlug}/">read it on our current site</a>.</p>`;
   }
 
-  const heroImg = post.image || "https://booktraverse.com/wp-content/uploads/2026/04/IMG_2659-scaled.jpeg";
+  const heroImg = post.image || "/markets/crested-butte.jpg";
 
   return (
     <div>

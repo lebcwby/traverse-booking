@@ -34,7 +34,7 @@ function SocialIcons() {
         </svg>
       </a>
       <a
-        href="https://www.facebook.com/booktraverse"
+        href="https://www.facebook.com/traversehospitality"
         target="_blank"
         rel="noopener noreferrer"
         className="text-primary-foreground/40 transition-colors hover:text-primary-foreground"
@@ -45,11 +45,11 @@ function SocialIcons() {
         </svg>
       </a>
       <a
-        href="https://share.google/mxXxrTA4c6XSK5Gh0"
+        href="https://www.google.com/search?q=traverse+leadville&sca_esv=e43388f8423b2460&hl=en-US&biw=2160&bih=1026&sxsrf=ANbL-n5twI206Ru15GEbTfagr2iKZV2A4w%3A1778094111695&ei=H5D7aaeWKpnCkPIPl8CskAs&ved=0ahUKEwjnoZ7frKWUAxUZIUQIHRcgC7IQ4dUDCBE&uact=5&oq=traverse+leadville&gs_lp=Egxnd3Mtd2l6LXNlcnAiEnRyYXZlcnNlIGxlYWR2aWxsZTIEECMYJzIEECMYJzIGEAAYFhgeMgYQABgWGB4yCxAAGIAEGIoFGIYDMgsQABiABBiKBRiGAzIIEAAYgAQYogQyBRAAGO8FMgUQABjvBUiIFFC2AligE3AEeAGQAQCYAcoBoAG3DqoBBjE0LjMuMbgBA8gBAPgBAZgCFqAC-g7CAgoQABhHGNYEGLADwgIKECMYgAQYigUYJ8ICFxAuGIAEGIoFGJECGMcBGK8BGJgFGJkFwgIKEC4YgAQYigUYQ8ICChAAGIAEGIoFGEPCAgsQABiABBixAxiDAcICDhAuGIAEGLEDGMcBGNEDwgIOEAAYgAQYigUYsQMYgwHCAhAQABiABBiKBRhDGLEDGIMBwgILEAAYgAQYigUYkQLCAhEQLhiABBiKBRiRAhjHARivAcICCxAuGIAEGLEDGIMBwgIIEAAYgAQYsQPCAg0QABiABBgUGIcCGLEDwgIIEC4YgAQYsQPCAg4QLhjHARixAxjRAxiABMICEBAAGIAEGBQYhwIYsQMYgwHCAggQLhixAxiABMICCxAuGIMBGLEDGIAEwgIFEAAYgATCAgUQLhiABMICChAAGIAEGBQYhwLCAhEQLhiABBiKBRiRAhjHARjRA8ICCxAuGMcBGNEDGIAEwgIIEAAYFhgeGAqYAwCIBgGQBgiSBwYxNy40LjGgB9TXAbIHBjEzLjQuMbgH7w7CBwYwLjE4LjTIBzSACAE&sclient=gws-wiz-serp"
         target="_blank"
         rel="noopener noreferrer"
         className="text-primary-foreground/40 transition-colors hover:text-primary-foreground"
-        aria-label="Google Business Profile"
+        aria-label="Search Traverse Hospitality on Google"
       >
         <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
@@ -98,7 +98,7 @@ function MobileFooter() {
       {/* 3. Social Proof Strip */}
       <div className="border-y border-primary-foreground/10 py-4 px-6 mb-6 text-center">
         <p className="text-xs">
-          <span className="font-semibold text-primary-foreground/95">275+</span>
+          <span className="font-semibold text-primary-foreground/95">189+</span>
           <span className="text-primary-foreground/50"> homes · </span>
           <span className="font-semibold text-primary-foreground/95">
             80,000+
@@ -137,22 +137,16 @@ function MobileFooter() {
               Pet-Friendly
             </Link>
             <Link
-              href={getLandingPagePath("luxury")}
+              href={getLandingPagePath("hot-tubs")}
               className="block py-2.5 text-sm text-primary-foreground/70 transition-colors"
             >
-              Luxury
+              Hot Tubs
             </Link>
             <Link
               href={getLandingPagePath("family-friendly")}
               className="block py-2.5 text-sm text-primary-foreground/70 transition-colors"
             >
               Family-Friendly
-            </Link>
-            <Link
-              href="/neighborhoods"
-              className="block py-2.5 text-sm text-primary-foreground/70 transition-colors"
-            >
-              Neighborhoods
             </Link>
           </div>
         </div>
@@ -261,11 +255,11 @@ function MobileFooter() {
         {/* Contact row */}
         <div className="flex items-center justify-center gap-4 text-[0.8125rem] text-primary-foreground/50 flex-wrap">
           <TrackedContactLink
-            href="mailto:info@booktraverse.com"
+            href="mailto:bookings@traversehospitality.com"
             className="flex items-center gap-1.5 transition-colors hover:text-primary-foreground"
           >
             <Mail className="h-3.5 w-3.5" />
-            info@booktraverse.com
+            bookings@traversehospitality.com
           </TrackedContactLink>
           <TrackedContactLink
             href="tel:+17207592013"
@@ -337,7 +331,7 @@ function DesktopFooter() {
           />
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-primary-foreground/60">
             <span className="font-semibold text-primary-foreground/95">
-              275+
+              189+
             </span>{" "}
             homes ·{" "}
             <span className="font-semibold text-primary-foreground/95">
@@ -360,48 +354,12 @@ function DesktopFooter() {
         </div>
 
         {/* Explore — organized by category for SEO internal linking */}
-        <div className="mt-8 grid grid-cols-2 gap-x-8 gap-y-6 text-sm sm:grid-cols-3 lg:grid-cols-6">
+        <div className="mt-8 grid grid-cols-2 gap-x-8 gap-y-6 text-sm sm:grid-cols-3 lg:grid-cols-4">
           <div>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground/40">
-              By Neighborhood
+              By Market
             </h3>
             <div className="flex flex-col gap-2">
-              <Link
-                href="/neighborhoods/pearl-district"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Pearl District
-              </Link>
-              <Link
-                href="/neighborhoods/alberta-arts-district"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Alberta Arts District
-              </Link>
-              <Link
-                href="/neighborhoods/hawthorne-belmont"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Hawthorne &amp; Belmont
-              </Link>
-              <Link
-                href="/neighborhoods/nob-hill"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Nob Hill
-              </Link>
-              <Link
-                href="/neighborhoods/mississippi-avenue"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Mississippi Avenue
-              </Link>
-              <Link
-                href="/neighborhoods/sellwood"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Sellwood-Moreland
-              </Link>
               <Link
                 href="/crested-butte"
                 className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
@@ -421,16 +379,22 @@ function DesktopFooter() {
                 Vail
               </Link>
               <Link
-                href="/neighborhoods/north-portland"
+                href="/properties?city=Avon"
                 className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
               >
-                North Colorado
+                Avon
               </Link>
               <Link
-                href={getLandingPagePath("mt-hood")}
+                href="/properties?city=Granby"
                 className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
               >
-                Mt. Hood
+                Granby
+              </Link>
+              <Link
+                href="/properties?city=Twin+Lakes"
+                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
+              >
+                Twin Lakes
               </Link>
             </div>
           </div>
@@ -446,28 +410,10 @@ function DesktopFooter() {
                 All Properties
               </Link>
               <Link
-                href={getLandingPagePath("portland-accommodations")}
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Colorado Accommodations
-              </Link>
-              <Link
-                href={getLandingPagePath("best-portland-stays")}
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Best Colorado Stays
-              </Link>
-              <Link
                 href={getLandingPagePath("pet-friendly")}
                 className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
               >
                 Pet-Friendly
-              </Link>
-              <Link
-                href={getLandingPagePath("luxury")}
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Luxury
               </Link>
               <Link
                 href={getLandingPagePath("large-groups")}
@@ -482,18 +428,6 @@ function DesktopFooter() {
                 Family-Friendly
               </Link>
               <Link
-                href={getLandingPagePath("budget-friendly")}
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Budget-Friendly
-              </Link>
-              <Link
-                href={getLandingPagePath("top-rated")}
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Top Rated
-              </Link>
-              <Link
                 href={getLandingPagePath("hot-tubs")}
                 className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
               >
@@ -506,150 +440,53 @@ function DesktopFooter() {
                 Fireplaces
               </Link>
               <Link
-                href={getLandingPagePath("backyard")}
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Backyards
-              </Link>
-              <Link
-                href={getLandingPagePath("free-parking")}
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Free Parking
-              </Link>
-            </div>
-          </div>
-          <div>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground/40">
-              By Purpose
-            </h3>
-            <div className="flex flex-col gap-2">
-              <Link
-                href="/stays/travel-nurse-housing-portland"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Travel Nurse Housing
-              </Link>
-              <Link
-                href="/stays/corporate-housing-portland"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Corporate Housing
-              </Link>
-              <Link
-                href="/stays/extended-book-traverse"
+                href={getLandingPagePath("extended-stay")}
                 className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
               >
                 Extended Stay
               </Link>
-              <Link
-                href="/stays/relocation-housing-portland"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Relocation Housing
-              </Link>
-              <Link
-                href="/stays/family-vacation-rentals-portland"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Family Vacations
-              </Link>
-              <Link
-                href="/stays/pet-friendly-rentals-portland"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Pet-Friendly Stays
-              </Link>
-              <Link
-                href="/stays/wedding-guest-accommodations-portland"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Wedding Guests
-              </Link>
-              <Link
-                href="/stays/film-production-housing-portland"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Film &amp; Production
-              </Link>
-              <Link
-                href={getLandingPagePath("monthly-rentals")}
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Monthly Rentals
-              </Link>
-              <Link
-                href={getLandingPagePath("furnished-apartments")}
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Furnished Apartments
-              </Link>
             </div>
           </div>
           <div>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground/40">
-              Events
+              Buildings &amp; Categories
             </h3>
             <div className="flex flex-col gap-2">
               <Link
-                href="/events/portland-rose-festival"
+                href="/crested-butte/grand-lodge"
                 className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
               >
-                Rose Festival
+                Grand Lodge Crested Butte
               </Link>
               <Link
-                href="/events/oregon-brewfest"
+                href="/crested-butte/the-plaza"
                 className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
               >
-                Oregon Brewfest
+                The Plaza Condominiums
               </Link>
               <Link
-                href="/events/portland-marathon"
+                href="/crested-butte/lodge-at-mountaineer-square"
                 className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
               >
-                Colorado Marathon
+                Lodge at Mountaineer Square
               </Link>
               <Link
-                href="/events/portland-timbers"
+                href="/properties?tag=Grand+West+Village+Resort"
                 className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
               >
-                Timbers Games
+                Grand West Village
               </Link>
               <Link
-                href="/events/portland-thorns"
+                href="/properties?tag=OSV"
                 className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
               >
-                Thorns Games
+                Old St Vincent&apos;s
               </Link>
               <Link
-                href="/events/feast-portland"
+                href="/properties?tag=cabin"
                 className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
               >
-                Feast Colorado
-              </Link>
-              <Link
-                href="/events/pickathon"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Pickathon
-              </Link>
-              <Link
-                href="/events/oregon-convention-center"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Convention Center
-              </Link>
-              <Link
-                href={getLandingPagePath("near-providence-park")}
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Near Providence Park
-              </Link>
-              <Link
-                href={getLandingPagePath("near-moda-center")}
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Near Moda Center
+                Cabin Rentals
               </Link>
             </div>
           </div>
@@ -665,46 +502,10 @@ function DesktopFooter() {
                 Book Direct &amp; Save
               </Link>
               <Link
-                href="/guide"
+                href="/crested-butte/guides/where-to-stay"
                 className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
               >
-                Colorado Travel Guide
-              </Link>
-              <Link
-                href="/guide/where-to-stay-in-portland"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Where to Stay
-              </Link>
-              <Link
-                href="/guide/best-restaurants-portland"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Best Restaurants
-              </Link>
-              <Link
-                href="/guide/best-breweries-portland"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Best Breweries
-              </Link>
-              <Link
-                href="/portland-apartments-vs-hotels"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Apartments vs Hotels
-              </Link>
-              <Link
-                href="/portland-homes-vs-hotels"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Homes vs Hotels
-              </Link>
-              <Link
-                href="/the-pomeroy"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                The Pomeroy
+                Where to Stay in Crested Butte
               </Link>
               <Link
                 href="/reviews"
@@ -713,53 +514,16 @@ function DesktopFooter() {
                 Guest Reviews
               </Link>
               <Link
-                href="/contact"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Trust &amp; Safety
-              </Link>
-            </div>
-          </div>
-          <div>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground/40">
-              Trip Plans
-            </h3>
-            <div className="flex flex-col gap-2">
-              <Link
-                href="/plan"
-                className="font-medium text-primary-foreground/90 transition-colors hover:text-primary-foreground"
-              >
-                Build Your Trip
-              </Link>
-              <Link
-                href="/plan"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Weekend Getaway Planner
-              </Link>
-              <Link
-                href="/plan"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Crested Butte Guide
-              </Link>
-              <Link
-                href="/plan"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Leadville Guide
-              </Link>
-              <Link
-                href="/crested-butte/guides/where-to-stay"
-                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-              >
-                Where to Stay in CB
-              </Link>
-              <Link
                 href="/blog"
                 className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
               >
                 Blog
+              </Link>
+              <Link
+                href="/contact"
+                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
+              >
+                Trust &amp; Safety
               </Link>
             </div>
           </div>
@@ -832,11 +596,11 @@ function DesktopFooter() {
             Leadville & Crested Butte, CO
           </span>
           <TrackedContactLink
-            href="mailto:info@booktraverse.com"
+            href="mailto:bookings@traversehospitality.com"
             className="flex items-center gap-1.5 transition-colors hover:text-primary-foreground"
           >
             <Mail className="h-3.5 w-3.5" />
-            info@booktraverse.com
+            bookings@traversehospitality.com
           </TrackedContactLink>
           <TrackedContactLink
             href="tel:+17207592013"

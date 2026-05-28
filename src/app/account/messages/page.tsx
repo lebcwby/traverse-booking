@@ -54,7 +54,7 @@ interface ReservationSummary {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const HOST_EMAIL = "hello@booktraverse.com";
+const HOST_EMAIL = "bookings@traversehospitality.com";
 
 /** Extract the guest email (non-host participant) from thread messages */
 function getGuestEmail(detail: ThreadDetail | null): string | null {
@@ -684,7 +684,7 @@ function ReservationCard({ reservation }: { reservation: ReservationSummary }) {
         <div className="mt-5 space-y-3 border-t border-border pt-5">
           {reservation.confirmation_code && (
             <a
-              href={`https://app.booktraverse.com/${reservation.confirmation_code}`}
+              href={`https://portal.booktraverse.com/${reservation.confirmation_code}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex w-full items-center justify-center rounded-lg bg-warm px-4 py-2.5 text-sm font-semibold text-warm-foreground transition-colors hover:bg-warm/90"
