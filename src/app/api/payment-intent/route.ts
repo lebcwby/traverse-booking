@@ -14,6 +14,10 @@ import {
   normalizeGuestEmail,
   normalizeGuestPhone,
 } from "@/lib/booking-identity";
+import {
+  createPendingCheckoutLookupToken,
+  verifyPendingCheckoutLookupToken,
+} from "@/lib/pending-checkout-token";
 
 const GA_SESSION_COOKIE = "_ga_PPWFFFPC42";
 
@@ -131,6 +135,13 @@ async function resolveStripeCustomerId(args: {
 
 function normalizePetsValue(pets: unknown) {
   return typeof pets === "number" && pets > 0 ? pets : 0;
+}
+
+function isValidCheckoutToken(paymentIntentId: string, token: unknown) {
+  return (
+    typeof token === "string" &&
+    verifyPendingCheckoutLookupToken(token, paymentIntentId)
+  );
 }
 
 function getNextAmountCents(args: {
@@ -354,6 +365,7 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({
             clientSecret: updatedIntent.client_secret,
             paymentIntentId: updatedIntent.id,
+            checkoutToken: createPendingCheckoutLookupToken(updatedIntent.id),
             stripeCustomerId: existingCustomerId,
           });
         }
@@ -436,6 +448,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
+      checkoutToken: createPendingCheckoutLookupToken(paymentIntent.id),
       stripeCustomerId: null,
     });
   } catch (error) {
@@ -451,7 +464,14 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
     const trackingContext = extractTrackingContext(request);
-    const { paymentIntentId, upsellIds, pets, guestEmail, guestPhone } = body;
+    const {
+      paymentIntentId,
+      checkoutToken,
+      upsellIds,
+      pets,
+      guestEmail,
+      guestPhone,
+    } = body;
 
     if (!paymentIntentId) {
       return NextResponse.json(
@@ -459,10 +479,15 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       );
     }
+    if (!isValidCheckoutToken(paymentIntentId, checkoutToken)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const stripe = getStripeServer();
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-    const existingPending = await getPendingCheckout(paymentIntentId).catch(() => null);
+    const existingPending = await getPendingCheckout(paymentIntentId).catch(
+      () => null
+    );
 
     if (
       paymentIntent.status !== "requires_payment_method" &&
