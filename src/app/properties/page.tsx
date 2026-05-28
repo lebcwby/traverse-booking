@@ -154,7 +154,14 @@ export default async function PropertiesPage({
     allTags.push(...filterTags);
   }
 
-  // Common BEAPI params
+  // Common BEAPI params.
+  // NOTE: we intentionally do NOT pass `city` to BEAPI even when the URL
+  // has `?city=...`. BEAPI's city filter is too strict — a Crested Butte
+  // search returned 0 listings because most of our CB inventory has
+  // `address.city = "Mt. Crested Butte"` or other variants that don't
+  // exactly equal "Crested Butte". Instead we fetch all listings matching
+  // the other filters and then post-filter by city substring + tag
+  // membership below.
   const commonParams = {
     minOccupancy: searchParams.guests ? Number(searchParams.guests) : undefined,
     numberOfBedrooms: searchParams.bedrooms
@@ -171,9 +178,6 @@ export default async function PropertiesPage({
     includeAmenities:
       searchParams.amenities || searchParams.includeAmenities || undefined,
     tags: allTags.length > 0 ? allTags : undefined,
-    city: searchParams.city || undefined,
-    // BEAPI requires country whenever city is provided.
-    country: searchParams.city ? "United States" : undefined,
   };
 
   let listings: Listing[];
@@ -204,27 +208,29 @@ export default async function PropertiesPage({
 
       listings = allResults.map(mapBeapiToListing);
 
-      // Defensive post-filter on city. BEAPI's `city` param is sometimes
-      // permissive (a "Leadville" search has been observed returning
-      // listings tagged for other markets). Accept a listing if EITHER:
-      //   (a) address.city contains the city substring, OR
-      //   (b) any of its tags contains the city substring (catches
-      //       Leadville listings whose address.city is "" or "Lake
-      //       County" but they're tagged "Leadville" / "leadville" in
-      //       Guesty).
-      // Strict equality (the first version of this filter) wiped out
-      // legitimate listings whose address.city was empty or non-canonical.
+      // Client-side city post-filter. We don't trust BEAPI's `city` param
+      // (see commonParams note above) so we do all city filtering here.
+      //
+      // Match logic — accept a listing if EITHER side substring-contains
+      // EITHER the requested city OR the listing's address-city (e.g.
+      // "Crested Butte" must match both downtown CB AND Mt. Crested
+      // Butte). Two-way substring catches:
+      //   - "Crested Butte" search → "Mt. Crested Butte" listing  ✓
+      //   - "Leadville" search → "Leadville" / "" tagged-Leadville ✓
+      //   - tag-only listings (city empty / unusual) → fallback to tags
       if (searchParams.city) {
         const wanted = searchParams.city.trim().toLowerCase();
         listings = listings.filter((l) => {
-          const cityMatch = (l.address?.city || "")
-            .trim()
-            .toLowerCase()
-            .includes(wanted);
-          if (cityMatch) return true;
+          const lcCity = (l.address?.city || "").trim().toLowerCase();
+          if (lcCity && (lcCity.includes(wanted) || wanted.includes(lcCity))) {
+            return true;
+          }
           const tags = Array.isArray(l.tags) ? l.tags : [];
-          return tags.some((t) =>
-            typeof t === "string" && t.toLowerCase().includes(wanted)
+          return tags.some(
+            (t) =>
+              typeof t === "string" &&
+              (t.toLowerCase().includes(wanted) ||
+                wanted.includes(t.toLowerCase()))
           );
         });
       }
@@ -382,6 +388,7 @@ export default async function PropertiesPage({
           checkIn={searchParams.checkIn}
           checkOut={searchParams.checkOut}
           showCachedPricing={showCachedPricing}
+          cityParam={searchParams.city}
         />
       </Suspense>
     </div>

@@ -39,19 +39,57 @@ function getPageNumbers(current: number, total: number): (number | "...")[] {
   return pages;
 }
 
+// Map-center coordinates for each Traverse market. Used as a hint to
+// PropertyMap when an over-narrow filter returns 0 listings — without
+// this the map can't fit-bounds to anything and would land on its
+// hardcoded default (CB downtown), which is misleading for a "Leadville"
+// or "Vail" search that returned empty. [lng, lat] order for Mapbox.
+const MARKET_CENTERS: Record<string, [number, number]> = {
+  "crested butte": [-106.9784, 38.8697],
+  "mt. crested butte": [-106.9645, 38.9097],
+  "mt crested butte": [-106.9645, 38.9097],
+  leadville: [-106.2925, 39.2508],
+  "twin lakes": [-106.3753, 39.0808],
+  vail: [-106.3742, 39.6403],
+  avon: [-106.5217, 39.6315],
+  granby: [-105.9419, 40.0867],
+};
+
+function inferMarketCenter(
+  cityParam: string | undefined | null,
+  listings: Listing[]
+): [number, number] | undefined {
+  if (cityParam) {
+    const key = cityParam.trim().toLowerCase();
+    if (MARKET_CENTERS[key]) return MARKET_CENTERS[key];
+  }
+  // Fall back to the first listing's address if no city param matched.
+  const first = listings.find((l) => l.address?.lat && l.address?.lng);
+  if (first?.address) {
+    return [first.address.lng, first.address.lat];
+  }
+  return undefined;
+}
+
 export function PropertiesLayout({
   listings,
   dateFiltered,
   checkIn,
   checkOut,
   showCachedPricing,
+  cityParam,
 }: {
   listings: Listing[];
   dateFiltered?: boolean;
   checkIn?: string;
   checkOut?: string;
   showCachedPricing?: boolean;
+  /** Pass-through of the `?city=` URL param so the map can hint-center
+   *  on that market when listings is empty. */
+  cityParam?: string;
 }) {
+  // Resolve the initial map center from the URL hint, with a safe fallback.
+  const initialCenter = inferMarketCenter(cityParam, listings);
   // On mobile, hide the footer since this page uses a fixed full-screen layout.
   // Without this, the footer renders in flow behind the fixed map and is visible
   // through the header gap.
@@ -474,6 +512,8 @@ export function PropertiesLayout({
             listings={listings}
             onVisibleListingsChange={handleVisibleListingsChange}
             hidePrice={!dateFiltered}
+            initialCenter={initialCenter}
+            initialZoom={cityParam ? 11 : undefined}
             key={mapKey}
           />
         </div>
@@ -490,6 +530,8 @@ export function PropertiesLayout({
             listings={listings}
             onVisibleListingsChange={handleVisibleListingsChange}
             hidePrice={!dateFiltered}
+            initialCenter={initialCenter}
+            initialZoom={cityParam ? 11 : undefined}
             key={`mobile-${mapKey}`}
             bottomPadding={
               selectedListingId || sheetTop >= SNAP_MAP - 5

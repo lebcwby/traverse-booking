@@ -36,6 +36,16 @@ interface PropertyMapProps {
   onMarkerClick?: (listingId: string) => void;
   onMapInteraction?: () => void;
   selectedListingId?: string | null;
+  /**
+   * Optional [lng, lat] center hint for first-mount. Used when there are
+   * no listings to fit-bounds against (e.g. an over-narrow filter returns
+   * 0 results) so the map at least lands in the user's searched market
+   * instead of falling back to the hardcoded default. Ignored once
+   * listings are present — fitBounds takes over.
+   */
+  initialCenter?: [number, number];
+  /** Optional zoom paired with `initialCenter`. Defaults to 10. */
+  initialZoom?: number;
 }
 
 export function PropertyMap({
@@ -46,6 +56,8 @@ export function PropertyMap({
   onMarkerClick,
   onMapInteraction,
   selectedListingId,
+  initialCenter,
+  initialZoom,
 }: PropertyMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -75,11 +87,16 @@ export function PropertyMap({
     )
       return;
 
+    // Default to a Colorado-wide overview when no per-route hint is given.
+    // The hardcoded [-106.97, 38.86] is downtown Crested Butte. Whenever
+    // possible, the parent (properties-layout) passes initialCenter based
+    // on the URL's `city=` param so the map lands in the searched market
+    // even when 0 listings come back. Cache-bust marker: 2026-05-28.
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/streets-v12",
-      center: [-122.6765, 45.5231],
-      zoom: 12,
+      center: initialCenter ?? [-106.9784, 38.8697],
+      zoom: initialZoom ?? 12,
       scrollZoom: true,
       doubleClickZoom: true,
       touchZoomRotate: true,
