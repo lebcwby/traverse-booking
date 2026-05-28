@@ -75,7 +75,7 @@ export async function getListings(params?: {
 }) {
   let query = getSupabase()
     .from("listings")
-    .select("*")
+    .select(LISTING_FIELDS)
     .eq("active", true)
     .eq("is_listed", true)
     .eq("beapi_enabled", true)
@@ -115,18 +115,21 @@ export async function getListings(params?: {
   const { data, error } = await query;
 
   if (error) throw error;
-  return data as Listing[];
+  // Cast via unknown — Supabase-js's PostgREST type inference can't narrow
+  // dynamic column lists back to Listing, so an explicit two-step cast is
+  // required. Same pattern is used in getListingsForBrowseRender().
+  return data as unknown as Listing[];
 }
 
 export async function getListing(guestyId: string) {
   const { data, error } = await getSupabase()
     .from("listings")
-    .select("*")
+    .select(LISTING_FIELDS)
     .eq("guesty_id", guestyId)
     .single();
 
   if (error) throw error;
-  return data as Listing;
+  return data as unknown as Listing;
 }
 
 export async function getListingByTitleSlug(
@@ -134,14 +137,14 @@ export async function getListingByTitleSlug(
 ): Promise<Listing | null> {
   const { data, error } = await getSupabase()
     .from("listings")
-    .select("*")
+    .select(LISTING_FIELDS)
     .eq("active", true);
 
   if (error || !data) return null;
 
   const { slugify } = await import("@/lib/utils");
   return (
-    (data as Listing[]).find(
+    (data as unknown as Listing[]).find(
       (l) =>
         (l.title && slugify(l.title) === slug) ||
         (l.nickname && slugify(l.nickname) === slug)
@@ -157,7 +160,7 @@ export async function getSimilarListings(
 ): Promise<Listing[]> {
   let query = getSupabase()
     .from("listings")
-    .select("*")
+    .select(LISTING_FIELDS)
     .eq("active", true)
     .eq("is_listed", true)
     .eq("beapi_enabled", true)
@@ -175,7 +178,7 @@ export async function getSimilarListings(
 
   const { data, error } = await query.limit(limit);
   if (error) return [];
-  return (data as Listing[]) || [];
+  return (data as unknown as Listing[]) || [];
 }
 
 export async function getListingsByTag(
@@ -184,7 +187,7 @@ export async function getListingsByTag(
 ): Promise<Listing[]> {
   const { data, error } = await getSupabase()
     .from("listings")
-    .select("*")
+    .select(LISTING_FIELDS)
     .eq("active", true)
     .eq("is_listed", true)
     .eq("beapi_enabled", true)
@@ -192,16 +195,19 @@ export async function getListingsByTag(
     .order("review_count", { ascending: false })
     .limit(limit);
   if (error) return [];
-  return (data as Listing[]) || [];
+  return (data as unknown as Listing[]) || [];
 }
 
-// Browse-render variant — same Listing shape, but skips the heavy JSONB
-// columns (`raw` ~35KB/row, `wheelhouse_data` ~8.5KB/row, financials,
-// owners, integrations, cleaning_status, custom_fields, terms) that card
-// rendering + rankListings don't touch. Cuts avg row size from ~47KB →
-// ~2KB, which matters on pages that render dozens of listings and used to
-// SELECT * with an in-JS tag filter (e.g. /neighborhoods/[slug] SSG was
-// truncating Supabase responses past 3MB).
+// Listing column lists for explicit SELECTs (Codex #10, 2026-05-27).
+// The `listings` table is wide (~50 cols including JSONB blobs `raw`
+// ~35KB/row, `wheelhouse_data` ~8.5KB/row, plus financials, owners,
+// integrations, cleaning_status, custom_fields). SELECT * pulls all of
+// that for every row, bloating Vercel egress and parsing cost on hot
+// paths that show dozens of listings.
+//
+// BROWSE_RENDER_FIELDS — strict subset used by card grids + ranking.
+// Skips `pictures[]` and `terms` (only needed on /properties/[id]).
+// Cut avg row size from ~47KB → ~2KB.
 const BROWSE_RENDER_FIELDS =
   "id,guesty_id,nickname,title,property_type,room_type," +
   "bedrooms,bathrooms,beds,accommodates,area_square_feet," +
@@ -210,6 +216,16 @@ const BROWSE_RENDER_FIELDS =
   "default_check_in_time,default_check_out_time,timezone," +
   "review_count,computed_review_avg,computed_review_count," +
   "occupancy_stats,city,state,guesty_updated_at,listing_category,review_summary";
+
+// LISTING_FIELDS — superset matching the public `Listing` interface
+// (above). Adds `pictures[]` and `terms` for /properties/[id] +
+// /api/payment-intent flows that need the full photo array and terms
+// blob. Still skips the wide JSONB extras (`raw`, `wheelhouse_data`,
+// financials, owners, integrations, cleaning_status, custom_fields)
+// which no production consumer reads anymore — verified by grep on
+// 2026-05-27, only ms-travel-feed.ts touches `raw` and it does its own
+// explicit query.
+const LISTING_FIELDS = BROWSE_RENDER_FIELDS + ",pictures,terms";
 
 export async function getListingsForBrowseRender(params: {
   tag?: string;
@@ -281,7 +297,7 @@ export async function getListingPricingCache(): Promise<
 export async function getFeaturedListings(limit = 6) {
   const { data, error } = await getSupabase()
     .from("listings")
-    .select("*")
+    .select(LISTING_FIELDS)
     .eq("active", true)
     .eq("is_listed", true)
     .eq("beapi_enabled", true)
@@ -291,5 +307,5 @@ export async function getFeaturedListings(limit = 6) {
     .limit(limit);
 
   if (error) throw error;
-  return data as Listing[];
+  return data as unknown as Listing[];
 }

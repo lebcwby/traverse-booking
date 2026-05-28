@@ -144,11 +144,26 @@ async function fetchAvailableIds(
   }
 }
 
+// Column list mirrors `Listing` interface — skips heavy JSONB extras
+// (`raw`, `wheelhouse_data`, financials, owners, integrations,
+// cleaning_status, custom_fields) that this route never reads. See
+// LISTING_FIELDS comment in src/lib/supabase.ts for the full rationale
+// (Codex #10, 2026-05-27). Kept local to this file so the columns the
+// sidebar actually renders are visible right next to the query.
+const PLAN_SIDEBAR_LISTING_FIELDS =
+  "id,guesty_id,nickname,title,property_type,room_type," +
+  "bedrooms,bathrooms,beds,accommodates,area_square_feet," +
+  "address,prices,active,is_listed,beapi_enabled," +
+  "picture,pictures,picture_count,amenities,tags," +
+  "default_check_in_time,default_check_out_time,timezone," +
+  "review_count,computed_review_avg,computed_review_count," +
+  "occupancy_stats,city,state,guesty_updated_at,listing_category,review_summary";
+
 async function hydrateListings(guestyIds: string[]): Promise<Listing[]> {
   if (guestyIds.length === 0) return [];
   const { data, error } = await getSupabaseAdmin()
     .from("listings")
-    .select("*")
+    .select(PLAN_SIDEBAR_LISTING_FIELDS)
     .in("guesty_id", guestyIds)
     .eq("active", true)
     .eq("is_listed", true);
@@ -158,7 +173,10 @@ async function hydrateListings(guestyIds: string[]): Promise<Listing[]> {
     );
     return [];
   }
-  const listings = (data ?? []) as Listing[];
+  // Cast via unknown — Supabase-js's PostgREST type inference can't narrow
+  // an explicit column list back to Listing; same pattern as in
+  // src/lib/supabase.ts.
+  const listings = (data ?? []) as unknown as Listing[];
   await enrichListingsWithReviewAverages(listings);
   return listings;
 }
