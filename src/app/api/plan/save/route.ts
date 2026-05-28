@@ -9,17 +9,26 @@ import { Resend } from "resend";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { getPoisByIds } from "@/lib/pois/queries";
 import type { Poi } from "@/lib/pois/types";
-import type { Itinerary } from "@/lib/plan/schema";
+import { ItinerarySchema, type Itinerary } from "@/lib/plan/schema";
 import { slotLabel } from "@/lib/plan/slot-label";
 import {
   enforceRateLimit,
   rejectOversizedRequest,
 } from "@/lib/plan/route-guards";
 
+// Email assets and CTAs need an absolute URL. Pre-cutover, booktraverse.com
+// still serves the legacy WordPress site (which 404s on the new routes and
+// asset paths), so we have to point at the Vercel deploy. Post-cutover, set
+// NEXT_PUBLIC_SITE_URL=https://www.booktraverse.com in Vercel and links in
+// trip-plan share emails will start using the canonical domain — no code
+// change needed.
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://traverse-booking.vercel.app";
+
 interface SaveRequest {
   email?: string;
   name?: string;
-  itinerary?: Itinerary;
+  itinerary?: unknown;
 }
 
 function escapeHtml(s: string): string {
@@ -27,7 +36,32 @@ function escapeHtml(s: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function text(value: unknown): string {
+  return escapeHtml(String(value ?? ""));
+}
+
+function cleanSubject(value: string): string {
+  return value
+    .replace(/[\r\n]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function propertiesUrl(it: Itinerary): string {
+  const url = new URL("/properties", SITE_URL);
+  if (!it.dates.isTentative) {
+    url.searchParams.set("checkIn", it.dates.checkIn);
+    url.searchParams.set("checkOut", it.dates.checkOut);
+    url.searchParams.set(
+      "guests",
+      String(it.party.adults + (it.party.kids ?? 0))
+    );
+  }
+  return url.toString();
 }
 
 function titleCase(slug: string): string {
@@ -59,10 +93,11 @@ function buildItineraryHtml(
   poisById: Map<string, Poi>,
   name?: string
 ): string {
-  const greeting = name ? `Hi ${name},` : "Hi there,";
-  const dateRange = it.dates.isTentative
+  const greeting = name ? `Hi ${text(name)},` : "Hi there,";
+  const dateRangeText = it.dates.isTentative
     ? "flexible dates"
     : `${formatDate(it.dates.checkIn)} – ${formatDate(it.dates.checkOut)}`;
+  const dateRange = text(dateRangeText);
 
   let daysHtml = "";
   for (const day of it.days) {
@@ -101,41 +136,52 @@ function buildItineraryHtml(
       <div style="margin-top: 24px; padding: 16px; background: #f5f5f5; border-radius: 8px;">
         <h3 style="font-size: 14px; font-weight: 600; color: #171717; margin: 0 0 8px 0;">Practical Notes</h3>
         <ul style="margin: 0; padding-left: 20px; color: #525252; font-size: 14px;">
-          ${it.notes.map((n) => `<li style="margin-bottom: 4px;">${n}</li>`).join("")}
+          ${it.notes.map((n) => `<li style="margin-bottom: 4px;">${text(n)}</li>`).join("")}
         </ul>
       </div>`;
   }
 
-  const partyLabel = `${it.party.adults} adult${it.party.adults === 1 ? "" : "s"}${it.party.kids ? ` + ${it.party.kids} kid${it.party.kids === 1 ? "" : "s"}` : ""}`;
+  const partyLabel = text(
+    `${it.party.adults} adult${it.party.adults === 1 ? "" : "s"}${it.party.kids ? ` + ${it.party.kids} kid${it.party.kids === 1 ? "" : "s"}` : ""}`
+  );
+  const tripTitle = text(it.title);
+  const tripSummary = text(it.summary);
+  const tripVibe = text(it.party.vibe);
+  const browseUrl = propertiesUrl(it);
+  const planUrl = new URL("/plan", SITE_URL).toString();
+  const logoUrl = new URL(
+    "/book-traverse-wordmark-dark.png",
+    SITE_URL
+  ).toString();
 
   return `
     <div style="max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #171717; line-height: 1.6;">
       <div style="text-align: center; padding: 32px 0 24px;">
-        <img src="https://www.booktraverse.com/book-traverse-wordmark-dark.png" alt="Book Traverse" style="height: 28px;" />
+        <img src="${logoUrl}" alt="Book Traverse" style="height: 28px;" />
       </div>
 
       <p style="font-size: 15px; color: #525252;">${greeting}</p>
-      <p style="font-size: 15px; color: #525252;">Here's your Portland trip itinerary — built from where Portlanders actually eat, drink and hang out.</p>
+      <p style="font-size: 15px; color: #525252;">Here's your Colorado trip itinerary — built by the team behind 189+ vacation rentals across Crested Butte, Leadville, and the Colorado mountains.</p>
 
       <div style="margin: 20px 0; padding: 16px 20px; background: #f5f5f5; border-radius: 12px;">
         <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #a3a3a3; margin-bottom: 4px;">Your trip</div>
-        <div style="font-size: 18px; font-weight: 700; color: #171717;">${escapeHtml(it.title)}</div>
-        <div style="font-size: 14px; color: #525252; margin-top: 4px;">${dateRange} · ${partyLabel} · ${it.party.vibe} pace</div>
+        <div style="font-size: 18px; font-weight: 700; color: #171717;">${tripTitle}</div>
+        <div style="font-size: 14px; color: #525252; margin-top: 4px;">${dateRange} · ${partyLabel} · ${tripVibe} pace</div>
       </div>
 
-      <h2 style="font-size: 20px; font-weight: 700; color: #171717; margin: 32px 0 16px;">${it.title}</h2>
-      <p style="font-size: 14px; color: #737373; margin: 0 0 24px;">${it.summary}</p>
+      <h2 style="font-size: 20px; font-weight: 700; color: #171717; margin: 32px 0 16px;">${tripTitle}</h2>
+      <p style="font-size: 14px; color: #737373; margin: 0 0 24px;">${tripSummary}</p>
 
       ${daysHtml}
       ${notesHtml}
 
       <div style="margin-top: 32px; padding: 24px; background: #171717; border-radius: 12px; text-align: center;">
         <p style="color: #e5e5e5; font-size: 15px; margin: 0 0 16px;">Ready to book your stay?</p>
-        <a href="https://www.booktraverse.com/properties${it.dates.isTentative ? "" : `?checkIn=${it.dates.checkIn}&checkOut=${it.dates.checkOut}&guests=${it.party.adults + (it.party.kids ?? 0)}`}" style="display: inline-block; padding: 12px 32px; background: white; color: #171717; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">Browse Vacation Rentals</a>
+        <a href="${browseUrl}" style="display: inline-block; padding: 12px 32px; background: white; color: #171717; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">Browse Vacation Rentals</a>
       </div>
 
       <p style="margin-top: 32px; font-size: 12px; color: #a3a3a3; text-align: center;">
-        Built with Book Traverse's Trip Concierge &mdash; <a href="https://www.booktraverse.com/plan" style="color: #a3a3a3;">plan another trip</a>
+        Built with Book Traverse's Trip Concierge &mdash; <a href="${planUrl}" style="color: #a3a3a3;">plan another trip</a>
       </p>
     </div>
   `;
@@ -167,11 +213,18 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
-  if (!body.itinerary || !body.itinerary.days) {
-    return NextResponse.json({ error: "itinerary required" }, { status: 400 });
+  const parsedItinerary = ItinerarySchema.safeParse(body.itinerary);
+  if (!parsedItinerary.success) {
+    return NextResponse.json(
+      {
+        error: "valid itinerary required",
+        issues: parsedItinerary.error.issues.slice(0, 5),
+      },
+      { status: 400 }
+    );
   }
 
-  const it = body.itinerary;
+  const it = parsedItinerary.data;
   const guests = it.party.adults + (it.party.kids ?? 0);
 
   // 1. Save lead to sp_plan_leads
@@ -218,7 +271,7 @@ export async function POST(req: Request) {
     const { error: emailError } = await resend.emails.send({
       from: "Book Traverse Trip Concierge <noreply@booktraverse.com>",
       to: email,
-      subject: `Your Portland Trip: ${it.title}`,
+      subject: cleanSubject(`Your Colorado Trip: ${it.title}`),
       html: buildItineraryHtml(it, poisById, body.name || undefined),
     });
 
