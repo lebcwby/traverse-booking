@@ -45,20 +45,27 @@ export async function GET(request: Request) {
 
   const supabase = getSupabaseAdmin();
 
+  // Defensive trim — Vercel env values have been observed to retain
+  // trailing literal "\n" or whitespace that silently breaks OAuth
+  // client_secret validation (Guesty returns `invalid_client` with no
+  // hint that whitespace is the problem). Same pattern stripe.ts uses
+  // for STRIPE_SECRET_KEY.
+  const trimEnv = (v: string | undefined) => (v || "").trim();
+
   const targets: RefreshTarget[] = [
     {
       tokenType: "beapi",
       tokenUrl: BEAPI_TOKEN_URL,
-      clientId: process.env.GUESTY_BEAPI_CLIENT_ID,
-      clientSecret: process.env.GUESTY_BEAPI_CLIENT_SECRET,
+      clientId: trimEnv(process.env.GUESTY_BEAPI_CLIENT_ID),
+      clientSecret: trimEnv(process.env.GUESTY_BEAPI_CLIENT_SECRET),
       scope: "booking_engine:api",
       label: "BEAPI",
     },
     {
       tokenType: "openapi",
       tokenUrl: OPENAPI_TOKEN_URL,
-      clientId: process.env.GUESTY_CLIENT_ID,
-      clientSecret: process.env.GUESTY_CLIENT_SECRET,
+      clientId: trimEnv(process.env.GUESTY_CLIENT_ID),
+      clientSecret: trimEnv(process.env.GUESTY_CLIENT_SECRET),
       scope: "open-api",
       label: "OpenAPI",
     },
