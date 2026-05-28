@@ -42,6 +42,7 @@ interface ShareDialogProps {
   title: string;
   description: string;
   photo?: string | null;
+  city?: string | null;
   bedrooms?: number | null;
   beds?: number | null;
   bathrooms?: number | string | null;
@@ -51,6 +52,7 @@ interface ShareDialogProps {
 export function ShareButton({
   title,
   photo,
+  city,
   bedrooms,
   beds,
   bathrooms,
@@ -110,7 +112,7 @@ export function ShareButton({
   ]
     .filter(Boolean)
     .join(" · ");
-  const summaryText = `Home in Portland${stats ? ` · ${stats}` : ""}`;
+  const summaryText = `Home in ${city || "Colorado"}${stats ? ` · ${stats}` : ""}`;
 
   const shareText = `Check out this place on Book Traverse: ${title}`;
 

@@ -204,17 +204,29 @@ export default async function PropertiesPage({
 
       listings = allResults.map(mapBeapiToListing);
 
-      // Defensive post-filter on city. BEAPI's `city` param is permissive
-      // — listings whose address.city doesn't strictly match what the
-      // user picked have been observed slipping through (e.g. a "Leadville"
-      // search returning Denver-tagged or CB-tagged listings whose
-      // metadata differs from their actual market). Enforce a strict
-      // case-insensitive equality match here.
+      // Defensive post-filter on city. BEAPI's `city` param is sometimes
+      // permissive (a "Leadville" search has been observed returning
+      // listings tagged for other markets). Accept a listing if EITHER:
+      //   (a) address.city contains the city substring, OR
+      //   (b) any of its tags contains the city substring (catches
+      //       Leadville listings whose address.city is "" or "Lake
+      //       County" but they're tagged "Leadville" / "leadville" in
+      //       Guesty).
+      // Strict equality (the first version of this filter) wiped out
+      // legitimate listings whose address.city was empty or non-canonical.
       if (searchParams.city) {
         const wanted = searchParams.city.trim().toLowerCase();
-        listings = listings.filter(
-          (l) => (l.address?.city || "").trim().toLowerCase() === wanted
-        );
+        listings = listings.filter((l) => {
+          const cityMatch = (l.address?.city || "")
+            .trim()
+            .toLowerCase()
+            .includes(wanted);
+          if (cityMatch) return true;
+          const tags = Array.isArray(l.tags) ? l.tags : [];
+          return tags.some((t) =>
+            typeof t === "string" && t.toLowerCase().includes(wanted)
+          );
+        });
       }
 
       // Filter by search query if provided
