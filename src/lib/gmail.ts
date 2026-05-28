@@ -8,7 +8,7 @@ function getGmailClient() {
     email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
     key: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, "\n"),
     scopes: SCOPES,
-    subject: process.env.GMAIL_USER_EMAIL || "hello@booktraverse.com",
+    subject: process.env.GMAIL_USER_EMAIL || "bookings@traversehospitality.com",
   });
 
   return google.gmail({ version: "v1", auth });
@@ -127,7 +127,7 @@ export interface ThreadDetail {
   messages: ThreadMessage[];
 }
 
-const HOST_EMAIL = process.env.GMAIL_USER_EMAIL || "hello@booktraverse.com";
+const HOST_EMAIL = process.env.GMAIL_USER_EMAIL || "bookings@traversehospitality.com";
 
 export async function getThreadsForGuest(
   guestEmail: string
