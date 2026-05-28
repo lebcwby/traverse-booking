@@ -103,6 +103,62 @@ if [ -n "$sym_gap" ]; then
   problems=$((problems + 1))
 fi
 
+# ─── 4. Clean-checkout TypeScript check ────────────────────────────────────
+#
+# Bit us three times on 2026-05-28: a modified-but-uncommitted file
+# (ShareButton city prop, UpsellSelector upsells prop, payment-intent
+# checkoutToken response) created a runtime mismatch between the
+# committed consumer and the committed receiver. Local `npx tsc --noEmit`
+# always passed because the dev's working tree was self-consistent;
+# Vercel's git checkout was missing the receiver's update, so either
+# the build broke OR the deploy succeeded with a runtime contract gap.
+#
+# This stash dance simulates exactly what Vercel sees: stash unstaged +
+# untracked, run tsc, restore. If the staged changes need uncommitted
+# files to compile, we catch it here.
+#
+# Skippable with DEPLOY_CHECK_SKIP_CLEAN_TSC=1 — useful when intentionally
+# pushing partial work behind a feature flag, but should be very rare.
+if [ "${DEPLOY_CHECK_SKIP_CLEAN_TSC:-0}" = "1" ]; then
+  yellow "Skipping clean-checkout tsc (DEPLOY_CHECK_SKIP_CLEAN_TSC=1)"
+else
+  yellow "Running tsc against staged-only state (simulates Vercel git checkout)…"
+  # `--keep-index` stashes the unstaged + untracked changes, leaving the
+  # staged set in place. That's exactly what Vercel will compile.
+  stash_msg="deploy-check $(date +%s)"
+  needs_pop=0
+  if ! git diff --quiet || ! git diff --cached --quiet || \
+       [ -n "$(git ls-files --others --exclude-standard 2>/dev/null)" ]; then
+    if git stash push -u --keep-index -m "$stash_msg" >/dev/null 2>&1; then
+      needs_pop=1
+    fi
+  fi
+
+  tsc_output=$(npx tsc --noEmit 2>&1)
+  tsc_exit=$?
+
+  if [ "$needs_pop" = "1" ]; then
+    # Restore unstaged + untracked. If pop fails, that's bad — leave a loud
+    # message so the dev can manually `git stash list` and pop.
+    if ! git stash pop --quiet >/dev/null 2>&1; then
+      red "✗ git stash pop FAILED after clean-checkout tsc. Your unstaged"
+      red "  changes are in the stash. Recover with: git stash list && git stash pop"
+      exit 1
+    fi
+  fi
+
+  if [ "$tsc_exit" -ne 0 ]; then
+    red "✗ TypeScript errors against staged-only state (what Vercel will see):"
+    echo "$tsc_output" | head -40
+    red ""
+    red "This means your push would BREAK the Vercel build. The most common"
+    red "cause: a tracked file imports a prop/symbol/field that lives in another"
+    red "tracked file's UNCOMMITTED working-tree changes. Stage the missing"
+    red "receiver-side edits and retry."
+    problems=$((problems + 1))
+  fi
+fi
+
 # ─── Verdict ──────────────────────────────────────────────────────────────
 if [ "$problems" -gt 0 ]; then
   red ""
