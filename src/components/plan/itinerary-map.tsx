@@ -33,7 +33,7 @@ export function ItineraryMap({ itinerary, poisById }: ItineraryMapProps) {
       mapRef.current = new mapboxgl.Map({
         container: containerRef.current,
         style: "mapbox://styles/mapbox/streets-v12",
-        center: [-122.676, 45.523], // downtown Portland
+        center: [-106.9784, 38.8697],
         zoom: 11,
         attributionControl: false,
       });

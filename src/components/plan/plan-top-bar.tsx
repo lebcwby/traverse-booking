@@ -57,7 +57,7 @@ export function PlanTopBar({ itinerary }: PlanTopBarProps) {
           className="h-7 w-auto"
         />
         <span className="hidden text-[11.5px] leading-snug text-neutral-500 xl:inline">
-          Where Portlanders eat, drink and hang out
+          Where Coloradans ski, hike, eat and unwind
         </span>
       </Link>
 

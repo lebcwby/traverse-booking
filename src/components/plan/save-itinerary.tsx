@@ -61,7 +61,7 @@ export function SaveItinerary({ itinerary }: SaveItineraryProps) {
         className="group inline-flex w-full shrink-0 items-center justify-center gap-2.5 whitespace-nowrap rounded-full bg-primary px-7 py-4 text-base font-semibold tracking-tight text-primary-foreground shadow-lg shadow-primary/25 ring-1 ring-primary/10 transition-all duration-200 hover:-translate-y-0.5 hover:bg-primary/95 hover:shadow-xl hover:shadow-primary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 active:translate-y-0 sm:w-auto"
       >
         <Mail className="h-5 w-5 transition-transform duration-200 group-hover:-rotate-6" />
-        Email me my Portland trip plan
+        Email me my Colorado trip plan
       </button>
 
       {/* Email modal overlay */}
@@ -75,7 +75,7 @@ export function SaveItinerary({ itinerary }: SaveItineraryProps) {
                 </h3>
                 {!sent && (
                   <p className="mt-1 text-sm text-neutral-500">
-                    We'll send a formatted copy of your Portland trip plan to
+                    We'll send a formatted copy of your Colorado trip plan to
                     your inbox.
                   </p>
                 )}
@@ -158,7 +158,7 @@ export function SaveItinerary({ itinerary }: SaveItineraryProps) {
 
                 <p className="text-center text-[11px] text-neutral-400">
                   We'll only use your email to send this itinerary and
-                  occasional Portland travel tips. Unsubscribe anytime.
+                  occasional Colorado travel tips. Unsubscribe anytime.
                 </p>
               </form>
             )}

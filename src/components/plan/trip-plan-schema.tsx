@@ -44,8 +44,7 @@ export function TripPlanSchema({
             ? {
                 "@type": "PostalAddress",
                 streetAddress: poi.address,
-                addressLocality: "Portland",
-                addressRegion: "OR",
+                addressRegion: "CO",
                 addressCountry: "US",
               }
             : undefined,

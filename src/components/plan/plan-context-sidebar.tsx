@@ -28,7 +28,7 @@ const QUICK_REFINES: Array<{ label: string; prompt: string }> = [
   {
     label: "More local",
     prompt:
-      "Refine this plan: make it feel more local and less touristy. Lean hidden gems, neighborhood spots, and places only Portlanders know — skip the obvious tourist stops.",
+      "Refine this plan: make it feel more local and less touristy. Lean hidden gems and spots only locals know — skip the obvious tourist stops.",
   },
   {
     label: "Less touristy",
@@ -38,36 +38,36 @@ const QUICK_REFINES: Array<{ label: string; prompt: string }> = [
   {
     label: "More iconic",
     prompt:
-      "Refine this plan: lean into iconic Portland — Powell's Books, Voodoo Doughnut, Pittock Mansion, Lan Su Garden, Saturday Market, Multnomah Falls. Bucket-list stuff.",
+      "Refine this plan: lean into iconic Colorado mountain town experiences — Elk Avenue in Crested Butte, the Mineral Belt Trail and Leadville 100 route, Twin Lakes views, classic 14er hikes, historic mining-town saloons. Bucket-list stuff.",
   },
   {
     label: "More walkable",
     prompt:
-      "Refine this plan: keep everything walkable within one or two neighborhoods — no driving between stops if possible.",
+      "Refine this plan: keep everything walkable within one or two neighborhoods (Elk Avenue, downtown Leadville, Mt. CB base) — no driving between stops if possible.",
   },
   {
     label: "More kid-friendly",
     prompt:
-      "Refine this plan: add more kid-friendly activities — OMSI, the Zoo, Oaks Amusement Park, splash pads, family-friendly restaurants.",
+      "Refine this plan: add more kid-friendly activities — easy nature trails, the CB Mountain Bike Park kid zone, the Mineral Belt Trail, family-friendly restaurants, ice cream stops.",
   },
   {
     label: "Cheaper",
     prompt:
-      "Refine this plan: make it more budget-friendly. Swap splurge spots for cheaper neighborhood joints, food carts, and free activities.",
+      "Refine this plan: make it more budget-friendly. Swap splurge restaurants for casual neighborhood spots, free trails and viewpoints, and lift-free outdoor activities.",
   },
   {
     label: "Skip places I've been",
     prompt:
-      "Refine this plan: I've been to Portland before. Swap out the obvious picks for something fresh — surprise me with spots I probably haven't tried.",
+      "Refine this plan: I've been here before. Swap out the obvious picks for something fresh — surprise me with spots I probably haven't tried.",
   },
   {
     label: "Swap neighborhoods",
     prompt:
-      "Refine this plan: try a different anchor neighborhood. Pick one that fits our vibe but changes the feel of the trip.",
+      "Refine this plan: try a different anchor neighborhood (e.g. swap Mt. CB for downtown Crested Butte, or Leadville for Twin Lakes). Pick one that fits our vibe but changes the feel of the trip.",
   },
 ];
 
-const FOLLOWUP_CHIPS = ["Best coffee shops?", "Rooftop bars", "Brunch spots"];
+const FOLLOWUP_CHIPS = ["Best coffee shops?", "Best après-ski bars", "Brunch spots"];
 
 function extractOpener(messages: UIMessage[]): string | null {
   for (const msg of messages) {

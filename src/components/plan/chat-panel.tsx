@@ -28,10 +28,10 @@ function useAutoResizeTextarea() {
 // on the landing empty state. NN/g onboarding research: broad starters
 // outperform niche ones — users bounce off examples that don't apply to them.
 export const PLACEHOLDER_PROMPTS = [
-  "A 3-day Portland weekend for two",
-  "Long weekend with kids, ages 7 and 10",
+  "A 3-day Crested Butte weekend for two",
+  "Long weekend in Leadville with kids, ages 7 and 10",
   "Surprise me — 2 nights with no plan",
-  "Food, coffee, and live music",
+  "Wildflowers, coffee, and live music in Crested Butte",
 ];
 
 // Typewriter animation for the placeholder: types a phrase, holds, deletes,
@@ -331,7 +331,7 @@ function EmptyState({ onPick }: { onPick: (text: string) => void }) {
     <div className="flex min-h-full flex-col justify-end gap-5 pb-4 pt-8">
       <div>
         <h2 className="text-lg font-semibold text-neutral-900">
-          What kind of Portland trip are you planning?
+          What kind of Colorado trip are you planning?
         </h2>
         <p className="mt-1 text-sm text-neutral-600">
           I'll ask a few questions, then build you a day-by-day itinerary with

@@ -22,7 +22,7 @@ export function ShareItinerary({
 
   const handleShare = async () => {
     const url = window.location.href;
-    const title = itinerary.title || "My Portland trip plan";
+    const title = itinerary.title || "My Colorado trip plan";
     const text = `${title} — built on Book Traverse`;
 
     const canNativeShare =

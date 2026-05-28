@@ -6,9 +6,9 @@ import type { Metadata } from "next";
 import { PlanClient } from "@/components/plan/plan-client";
 
 export const metadata: Metadata = {
-  title: "Plan Your Portland Trip — Local Favorites",
+  title: "Plan Your Colorado Trip — Local Favorites",
   description:
-    "Build your Portland trip from local favorites — day-by-day itineraries with maps, real places, and matching vacation rentals. Free, no booking fees.",
+    "Build your Colorado mountain trip from local favorites — day-by-day itineraries with maps, real places, and matching vacation rentals across Crested Butte, Leadville, Vail, and beyond. Free, no booking fees.",
   robots: {
     index: true,
     follow: true,
