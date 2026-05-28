@@ -91,14 +91,27 @@ export async function GET(request: Request) {
         msg
       );
       results[target.tokenType] = { error: msg };
-      await sendAlert(
-        `CRITICAL: ${target.label} Token Refresh Failed`,
-        `<p>The refresh-tokens cron failed to refresh the ${target.label} token.</p>
-         <p><strong>Trigger:</strong> ${escapeHtml(triggerSource)}</p>
-         <p><strong>Error:</strong> ${escapeHtml(msg)}</p>
-         <p>Next retry follows the cron schedule. If this repeats, check Guesty OAuth credentials.</p>`,
-        `cron-${target.tokenType}-refresh-fail`
-      );
+
+      // Skip the email alert for the well-known "wrong-creds" 401 the
+      // OpenAPI side hits while GUESTY_CLIENT_ID/SECRET in Vercel are
+      // still BEAPI-class instead of OpenAPI-class. Per CLAUDE.md this
+      // is a known gap (the OpenAPI surface isn't used by the public
+      // booking flow — only admin endpoints) and alerting once per
+      // cron fire generates ~24 emails/day with no actionable signal.
+      // The error stays in runtime logs for diagnosis.
+      const isKnownWrongCreds =
+        target.tokenType === "openapi" &&
+        /use booking\.guesty\.com|UNAUTHO/i.test(msg);
+      if (!isKnownWrongCreds) {
+        await sendAlert(
+          `CRITICAL: ${target.label} Token Refresh Failed`,
+          `<p>The refresh-tokens cron failed to refresh the ${target.label} token.</p>
+           <p><strong>Trigger:</strong> ${escapeHtml(triggerSource)}</p>
+           <p><strong>Error:</strong> ${escapeHtml(msg)}</p>
+           <p>Next retry follows the cron schedule. If this repeats, check Guesty OAuth credentials.</p>`,
+          `cron-${target.tokenType}-refresh-fail`
+        );
+      }
     }
   }
 
