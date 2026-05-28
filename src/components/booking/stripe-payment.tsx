@@ -322,7 +322,7 @@ function PaymentForm({
           options={{
             layout: {
               type: "accordion",
-              defaultCollapsed: true,
+              defaultCollapsed: false,
               radios: false,
               spacedAccordionItems: true,
             },

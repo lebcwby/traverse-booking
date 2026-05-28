@@ -17,6 +17,7 @@ export function TrackPropertiesList({ listings }: { listings: Listing[] }) {
       listings.slice(0, 20).map((l, i) => ({
         id: l.guesty_id,
         title: l.title || l.nickname || "",
+        nickname: l.nickname,
         price: l.prices?.basePrice || 0,
         propertyType: l.property_type || undefined,
         position: i + 1,

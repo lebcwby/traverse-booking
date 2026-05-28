@@ -5,17 +5,11 @@ import { getLandingPagePath } from "@/lib/landing-page-paths";
 
 const CATEGORIES = [
   { label: "Pet Friendly", slug: "pet-friendly" },
-  { label: "Luxury", slug: "luxury" },
   { label: "Large Groups", slug: "large-groups" },
   { label: "Family Friendly", slug: "family-friendly" },
   { label: "Hot Tubs", slug: "hot-tubs" },
-  { label: "Crested Butte", slug: "crested-butte" },
-  { label: "Leadville", slug: "leadville" },
-  { label: "Vail & Avon", slug: "vail" },
-  { label: "Mt. Hood", slug: "mt-hood" },
   { label: "Extended Stay", slug: "extended-stay" },
   { label: "Fireplace", slug: "fireplace" },
-  { label: "Backyard", slug: "backyard" },
 ];
 
 export function CategoryPills() {
