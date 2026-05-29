@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import {
   TrendingUp,
@@ -15,6 +15,11 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { NoFeesHeader } from "@/components/no-fees/no-fees-header";
+import {
+  TurnstileWidget,
+  turnstileConfigured,
+  type TurnstileHandle,
+} from "@/components/turnstile-widget";
 import { GoogleReviewsCarousel } from "@/components/google-reviews-carousel";
 import { PORTFOLIO_STATS } from "@/lib/portfolio-stats";
 import "../no-fees/no-fees.css";
@@ -155,10 +160,21 @@ export default function PropertyManagementPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Cloudflare Turnstile token — required by the team app's /api/leads
+  // guard. Empty until the widget verifies; reset (single-use) after
+  // each submit attempt so a retry gets a fresh token.
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstileRef = useRef<TurnstileHandle | null>(null);
 
   async function handleEstimateSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+
+    if (turnstileConfigured && !turnstileToken) {
+      setError("Please complete the verification below and try again.");
+      return;
+    }
+
     setSubmitting(true);
 
     const fd = new FormData(e.currentTarget);
@@ -175,6 +191,7 @@ export default function PropertyManagementPage() {
           currentlyRent: fd.get("currently_rent") || "",
           propertyPersonalUse: fd.get("property_personal_use") || "",
           expectations: fd.get("expectations") || "",
+          turnstileToken,
           source: "booktraverse.com",
         }),
       });
@@ -192,13 +209,21 @@ export default function PropertyManagementPage() {
             ? "Please fill in the required fields."
             : data.error === "invalid_email"
               ? "That email address doesn't look right."
-              : "Something went wrong. Please try again.";
+              : data.error === "spam_check_failed"
+                ? "Verification failed. Please complete the check and try again."
+                : data.error === "rate_limited"
+                  ? "Too many attempts. Please wait a few minutes and try again."
+                  : "Something went wrong. Please try again.";
         setError(msg);
       }
     } catch {
       setError("Network error. Please try again.");
     } finally {
       setSubmitting(false);
+      // Turnstile tokens are single-use — reset so the next attempt
+      // (after a server-side rejection) gets a fresh one.
+      turnstileRef.current?.reset();
+      setTurnstileToken("");
     }
   }
 
@@ -651,6 +676,11 @@ export default function PropertyManagementPage() {
                       className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                   </div>
+
+                  <TurnstileWidget
+                    ref={turnstileRef}
+                    onToken={setTurnstileToken}
+                  />
 
                   {error && (
                     <p
