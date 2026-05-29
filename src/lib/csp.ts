@@ -48,6 +48,10 @@ export const SCRIPT_SOURCES = [
   "https://*.hsforms.com",
   "https://*.hubspot.com",
   "https://*.hsappstatic.net",
+  // Cloudflare Turnstile api.js — spam protection on the
+  // /property-management owner-lead form (posts to the team app's
+  // /api/leads, which requires a Turnstile token).
+  "https://challenges.cloudflare.com",
 ];
 
 export const STYLE_SOURCES = [
@@ -137,6 +141,8 @@ export const CONNECT_SOURCES = [
   "https://*.hsforms.net",
   // Lead form POSTs from /property-management to the Traverse team app.
   "https://team.traversehospitality.com",
+  // Cloudflare Turnstile widget telemetry/challenge XHRs.
+  "https://challenges.cloudflare.com",
 ];
 
 export const FRAME_SOURCES = [
@@ -155,6 +161,8 @@ export const FRAME_SOURCES = [
   "https://*.hubspot.com",
   // Referral form iframe on /referrals-form — Traverse internal team app.
   "https://team.traversehospitality.com",
+  // Cloudflare Turnstile renders its challenge in an iframe.
+  "https://challenges.cloudflare.com",
   // Google Maps embed (building hub pages — Grand Lodge, The Plaza, Lodge at
   // Mountaineer Square).
   "https://www.google.com",
