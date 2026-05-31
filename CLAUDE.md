@@ -86,6 +86,8 @@ The site itself is fine — this is purely a Guesty-internal data issue.
 
 6. **GA4 historical property preserved** — G-C5098JP52V (formerly assumed canonical) is kept untouched as a read-only archive of WordPress-era purchase data. Do **not** retry routing events to it — its gtag.js CDN returns 404 and we don't know why. New tracking flows to G-8NK72KVMJJ. See memory `project_traverse_ga4_duplicate_property.md` for the full history.
 
+7. **GA4 server-side `purchase` tracking — VERIFIED HEALTHY 2026-05-30; report-lag is the usual culprit.** Symptom: a confirmed+paid BE-API booking (e.g. GY-XaH3sK9M) doesn't show in the G-8NK72KVMJJ *Ecommerce purchases* report same-day. **Tracking infra is fine** — `/api/admin/inspect-ga4?fire=true` returned measurementId G-8NK72KVMJJ + secret fingerprint `zY…_Q` (len 22, this is the PROD secret; the `mK…qA` in `.env.local` is a stale LOCAL value tied to the old property — ignore it) + liveFireStatus 204, and the `TEST-GA4-INSPECT` purchase **landed in G-8NK72KVMJJ Realtime**. So the MP secret↔property pairing is valid and server purchases deliver. The earlier "secret minted under old property" theory is DISPROVEN. Likely reasons a given booking looks missing: (a) GA4 *standard* Ecommerce report lags 24–48h — verify by searching the next-day report for `transaction_id = <confirmation code>`, not by glancing at "today"; (b) the guest declined **analytics** consent (server GA4 `purchase` is gated on `consent.analytics !== false` in server-tracking.ts ~L858) — a structural gap for the decline subset, not a config bug. NOTE: single-listing `pending_checkouts` rows are **deleted on completion** (cart rows in `pending_cart_checkouts` are retained), and the finalizer rebuilds `tracking` from `quoteContext.trackingDefaults`, so a missing pending row does NOT block the purchase event. The prior GY-zBMnaYA8/GY-dmwm6uVF misses (2026-05-23) were the fire-and-forget lambda-freeze bug, since fixed (finalizer now `await`s `trackBookingServerSide`). Runbook: `docs/runbooks/ga4-server-purchase-fix.md`.
+
 ---
 
 ## Open work (priority order)
@@ -227,7 +229,8 @@ Cities require BOTH params: `city=Crested Butte&country=United States`
 - `NEXT_PUBLIC_MAPBOX_TOKEN`
 - `CRON_SECRET`
 - `NEXT_PUBLIC_SITE_URL` = `https://www.booktraverse.com`
-- `NEXT_PUBLIC_GA4_MEASUREMENT_ID`, `NEXT_PUBLIC_GTM_ID`, `NEXT_PUBLIC_META_PIXEL_ID`
+- `NEXT_PUBLIC_GA4_MEASUREMENT_ID` (= `G-8NK72KVMJJ` in prod; live site confirms), `NEXT_PUBLIC_GTM_ID`, `NEXT_PUBLIC_META_PIXEL_ID`
+- `GA4_MP_API_SECRET` — server-side Measurement Protocol secret used by `trackBookingServerSide`. Prod value (fingerprint `zY…_Q`) is VERIFIED paired with G-8NK72KVMJJ (live-fire landed in Realtime 2026-05-30). Note: `.env.local` has a DIFFERENT, stale secret (`mK…qA`) tied to the old G-C5098JP52V — do not assume local == prod here. See Known issue #7.
 - `ALERT_FROM_EMAIL`, `LISTING_INQUIRY_FROM`
 
 ### Still needed
