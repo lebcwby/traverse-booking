@@ -400,11 +400,29 @@ export function trackStartedCheckout(data: {
     });
   };
 
+  // The abandoned-cart email CTA points at this URL. The /book/[quoteId]
+  // quote expires (and sessionStorage is gone in a fresh email-click session),
+  // so append recovery context — listing + dates + guests — that the checkout
+  // page falls back to, offering a one-click re-quote on the property page
+  // instead of dead-ending on "Browse Properties".
+  const recoveryUrl = (() => {
+    try {
+      const u = new URL(url);
+      u.searchParams.set("lid", data.listingId);
+      if (data.checkIn) u.searchParams.set("ci", data.checkIn);
+      if (data.checkOut) u.searchParams.set("co", data.checkOut);
+      if (data.guests) u.searchParams.set("g", String(data.guests));
+      return u.toString();
+    } catch {
+      return url;
+    }
+  })();
+
   if (marketingConsent && window.klaviyo) {
     window.klaviyo.track("Started Checkout", {
       Title: data.listingTitle,
       ID: data.listingId,
-      URL: url,
+      URL: recoveryUrl,
       ImageURL: data.imageUrl
         ? data.imageUrl.replace(
             /\/t_[a-z_]+\//,

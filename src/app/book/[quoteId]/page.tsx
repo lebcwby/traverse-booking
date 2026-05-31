@@ -17,7 +17,29 @@ export default function CheckoutPage() {
   const quoteId = params.quoteId as string;
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Built from recovery params (lid/ci/co/g) the abandoned-cart email CTA
+  // carries. Lets an expired-quote landing re-quote the exact listing+dates
+  // in one click instead of dumping the guest on a generic property list.
+  const [recoveryHref, setRecoveryHref] = useState<string | null>(null);
   useEffect(() => {
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      const lid = sp.get("lid");
+      if (lid) {
+        const qs = new URLSearchParams();
+        const ci = sp.get("ci");
+        const co = sp.get("co");
+        const g = sp.get("g");
+        if (ci) qs.set("checkIn", ci);
+        if (co) qs.set("checkOut", co);
+        if (g) qs.set("guests", g);
+        const query = qs.toString();
+        setRecoveryHref(`/properties/${lid}${query ? `?${query}` : ""}`);
+      }
+    } catch {
+      /* no recovery context — fall back to generic browse */
+    }
+
     let data: QuoteData | null = null;
 
     const stored = sessionStorage.getItem(`quote_${quoteId}`);
@@ -149,13 +171,34 @@ export default function CheckoutPage() {
     return (
       <div className="mx-auto max-w-md px-4 py-16 text-center sm:px-6">
         <h1 className="text-2xl font-bold text-foreground">Checkout</h1>
-        <p className="mt-4 text-sm text-muted-foreground">{error}</p>
-        <Link
-          href="/properties"
-          className="mt-6 inline-block rounded-full bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-        >
-          Browse Properties
-        </Link>
+        <p className="mt-4 text-sm text-muted-foreground">
+          {recoveryHref
+            ? "Your saved quote expired — but your dates are one click away. Pick up right where you left off."
+            : error}
+        </p>
+        {recoveryHref ? (
+          <div className="mt-6 flex flex-col items-center gap-3">
+            <Link
+              href={recoveryHref}
+              className="inline-block rounded-full bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              Continue your booking
+            </Link>
+            <Link
+              href="/properties"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Browse all properties
+            </Link>
+          </div>
+        ) : (
+          <Link
+            href="/properties"
+            className="mt-6 inline-block rounded-full bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            Browse Properties
+          </Link>
+        )}
       </div>
     );
   }

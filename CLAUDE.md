@@ -80,7 +80,7 @@ The site itself is fine — this is purely a Guesty-internal data issue.
 
 3. **GA4 Ecommerce purchases report — 48h lag** — item_variant data was just deployed. Check 2026-05-12 at 11:00 AM Mountain (scheduled routine will fire then).
 
-4. **Klaviyo flow not yet activated** — Needs to be flipped from Draft → Live once sign-in 400 is resolved (so abandoned-cart email links work correctly on booktraverse.com).
+4. **Klaviyo abandoned-cart flow — LIVE and sending (verified 2026-05-31).** Flow "Abandoned Cart — Single Listing" (`Xpdwza`) is live; last 30d: 16 recipients, 14 delivered, 57% open, but 0 clicks/conversions. It reaches only ~26% of "Started Checkout" events (62→16) because the rest are anonymous (guest left before entering a usable email) or non-marketing-consented — inherent to abandoned-cart. Open improvements: (a) **add the 2nd-touch email** (template `SdNCVn`, already built + on-brand) as a delayed message in the flow — UI-only, Klaviyo API can't edit flow structure; (b) checkout page now offers expired-quote recovery via `lid/ci/co/g` params on the Started-Checkout URL (shipped 2026-05-31) so late email clicks re-quote instead of dead-ending; (c) capture email earlier to lift reach.
 
 5. **Stripe still in test mode** — Live bookings won't process until all 3 Stripe env vars are swapped. See `~/.claude/projects/-Users-Nadim/memory/project_traverse_stripe_live_mode.md` for the full procedure. Do this as a single atomic pass: `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (new live-mode secret).
 
