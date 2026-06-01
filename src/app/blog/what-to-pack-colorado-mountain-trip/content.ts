@@ -1,105 +1,115 @@
-export const pageContent = `<h2>Stop Googling "What to Wear at 10,000 Feet" — Here's the Real List</h2>
-<p>The moment you start climbing out of Denver on I-70 or drop into the Gunnison Valley off Monarch Pass, one thing becomes obvious fast: the mountains play by their own rules. A summer afternoon can flip from 75°F and sunny to hail in twenty minutes. A bluebird ski day can cook your face through the SPF you left in the car. And every single altitude-related headache is worse when you're underprepared.</p>
-<p>This <strong>what to pack Colorado mountain trip</strong> guide is built for guests heading to our properties in Crested Butte, Leadville, and Vail — elevations that range from about 8,150 feet (Vail town) up to 10,152 feet (Leadville, the highest incorporated city in North America). These aren't theoretical suggestions. They're the things our local property teams see guests wish they'd brought — and the stuff we watch guests haul in unnecessarily.</p>
+export const pageContent = `<h2>Your Complete Guide: What to Pack for a Colorado Mountain Trip</h2>
+<p>Figuring out what to pack for a Colorado mountain trip is half the battle before you ever hit the road. Colorado's high-country towns sit between 8,900 and 10,152 feet above sea level — elevations that change how your body handles heat, cold, UV radiation, and hydration. Pack light in the wrong areas and you'll be shivering at a summer wildflower festival. Pack heavy in the wrong areas and you'll spend your ski week wrestling a suitcase you didn't need.</p>
+<p>This guide covers everything you actually need for a trip to Crested Butte, Leadville, or Vail — organized by category so you can pack once and spend your energy on the mountain instead of at the pharmacy.</p>
 <hr>
-<h2>Understand the Environment Before You Pack</h2>
-<h3>Elevation Changes Everything</h3>
-<p>At 8,000–10,000+ feet, the atmosphere filters less UV radiation. That means sunburn happens faster, even on overcast days and especially on snow. The air is also significantly drier than most guests expect, which accelerates dehydration — and dehydration makes altitude sickness worse. Plan your packing around those two realities and you'll be ahead of most visitors.</p>
-<h3>Weather Windows Are Narrow and Unpredictable</h3>
-<p>Crested Butte averages around 300 inches of snow a year. Leadville sits above tree line on most sides and catches weather from multiple directions. Vail's valley position gives it slightly more shelter, but afternoon storms are standard from late June through September. "I'll just buy it there" is a workable backup plan for most things — but gear shops in mountain towns aren't cheap, and they sell out of basics on busy weekends.</p>
-<hr>
-<h2>The Core Layering System</h2>
-<p>This is the foundation of your <strong>Colorado packing list</strong>, winter or summer.</p>
+<h2>Layering: The Core of Any Colorado Packing List</h2>
+<p>At altitude, temperatures can swing 30°F or more between morning and afternoon. The three-layer system isn't a trend — it's basic mountain survival.</p>
 <h3>Base Layer</h3>
-<p>Pack two or three lightweight, moisture-wicking base layer tops and at least one pair of thermal bottoms. Merino wool is the gold standard — it regulates temperature, resists odor across multiple days of use, and doesn't feel clammy when you sweat. Synthetic options (polyester blends) work well too and dry faster.</p>
-<p><strong>Skip</strong>: cotton base layers. Cotton holds moisture and loses insulating properties when wet. At altitude in cold weather, that matters.</p>
+<p>Go moisture-wicking, not cotton. Merino wool or synthetic fabrics pull sweat away from your skin and keep you from getting chilled when the wind picks up above treeline. Bring at least two sets — one for the day, one to sleep in when temperatures drop overnight.</p>
 <h3>Mid Layer</h3>
-<p>One fleece or down vest and one lightweight insulating jacket cover most situations. A down puffy that compresses into a pocket is worth the space it takes. In shoulder seasons (May–June, September–October), this layer gets used constantly — mornings and evenings are cold even when midday is warm.</p>
-<h3>Outer Shell</h3>
-<p>Waterproof, windproof, breathable. One shell jacket is enough if it's a real one — look for taped seams and a waterproof rating, not just "water resistant." In winter, pair it with waterproof ski or snowboard-specific pants. In summer, a packable rain shell weighing under a pound is all you need.</p>
-<h3>The Hat and Gloves Rule</h3>
-<p>Pack them regardless of season. June snowstorms are common in Crested Butte. Leadville can drop below freezing any month of the year. A thin beanie and a pair of liner gloves take up almost no space and will save an evening hike or a morning on the lift.</p>
+<p>A fleece or down vest handles the shoulder between cold mornings and warm afternoons. A lightweight packable down jacket is the single most versatile item you can bring on any Colorado mountain trip. It stuffs into a water bottle pocket and can save your day on a chairlift or a high-country trail.</p>
+<h3>Outer Layer</h3>
+<p>A waterproof, breathable shell is non-negotiable — in every season. Colorado afternoon thunderstorms in summer are legendary. Ski season brings the obvious need. Even a warm October day in Leadville can end in sleet. Look for taped seams and pit zips if you run warm.</p>
+<h3>What to Skip</h3>
+<p>Leave the heavy parka home unless you're visiting during a genuine cold snap (below 0°F overnight). Rental properties have extra blankets, and most mountain restaurants are warm enough that you won't need it at dinner.</p>
 <hr>
-<h2>Sun Protection: More Than You Think You Need</h2>
-<p>High altitude + reflective snow + dry air = aggressive UV exposure. This isn't a minor consideration — it's one of the most under-packed categories we see.</p>
-<p><strong>Bring:</strong></p>
+<h2>Altitude Packing Essentials</h2>
+<p>Crested Butte sits at roughly 8,900 feet. Leadville — the highest incorporated city in North America at 10,152 feet — is a genuine altitude destination. Vail's base sits above 8,100 feet. If you're arriving from sea level or a lower-elevation city, your body will feel the difference.</p>
+<h3>Hydration Gear</h3>
+<p>Pack a reusable water bottle with at least 24 oz capacity. You'll drink more than you think, and altitude dehydration sneaks up fast. A hydration bladder for day hikes is worth the extra weight.</p>
+<h3>Electrolytes</h3>
+<p>Single-serve electrolyte packets take up almost no space and make a real difference if you're skiing hard, hiking, or exercising in your first day or two. Toss a handful in your bag.</p>
+<h3>Ibuprofen or Acetaminophen</h3>
+<p>Altitude headaches are common on arrival days, especially in Leadville. Over-the-counter pain relief is easy to pack and hard to find in small mountain towns late at night.</p>
+<h3>Lip Balm with SPF</h3>
+<p>At altitude, UV intensity increases noticeably with every 1,000 feet of elevation gain. Your lips will crack without it. Pack two — one for your jacket pocket, one for your bag.</p>
+<h3>Sunscreen — More Than You Think</h3>
+<p>This belongs under altitude essentials, not just sun protection, because the burn happens faster than people expect. See the section below for details.</p>
+<hr>
+<h2>Sun Protection at Elevation</h2>
+<p>The sun hits harder above 8,000 feet than it does at the beach, even in winter. Snow reflects UV radiation back up at your face, and cloud cover doesn't block it the way most people assume.</p>
 <ul>
-<li>Broad-spectrum SPF 50+ sunscreen (face and body)</li>
-<li>SPF lip balm — reapply constantly, especially on the mountain</li>
-<li>UV-blocking sunglasses (wraparound or glacier-style for ski days)</li>
-<li>A sun hat with a brim for summer hiking</li>
-<li>Ski goggles in winter (rental options exist at resorts, but your own are more comfortable)</li>
+<li><strong>Sunscreen, SPF 30 minimum</strong> — bring more than you'd pack for a beach trip. Reapply every two hours on the mountain.</li>
+<li><strong>Ski/snow goggles</strong> with UV protection for winter visits</li>
+<li><strong>Polarized sunglasses</strong> year-round — essential for summer hiking and driving high-altitude passes</li>
+<li><strong>Sun-protective hat</strong> — wide-brim for summer, helmet-compatible for ski season</li>
 </ul>
-<p>Apply sunscreen before you get outside, not after you've been out for an hour. At altitude, the burn can set in within 20 minutes on a clear day.</p>
+<p>If you're heading to Crested Butte for the wildflower season (typically peak July), you'll be hiking exposed ridgelines for hours. Don't underestimate it.</p>
 <hr>
 <h2>Footwear by Season</h2>
+<p>Getting your footwear right might be the highest-stakes packing decision on a mountain trip.</p>
 <h3>Winter (November–April)</h3>
-<ul>
-<li><strong>Waterproof insulated snow boots</strong> for walking around town — Crested Butte's Mount Crested Butte base area and Leadville's Historic District streets get packed snow and ice. Insulated to at least -20°F if you're visiting Leadville in January or February.</li>
-<li><strong>Ski or snowboard boots</strong> — most guests rent these at the resort, which is usually more practical than traveling with them.</li>
-<li><strong>Warm socks</strong> — wool or synthetic, at least three pairs per person. Cold feet end ski days early.</li>
-</ul>
+| Activity | Recommended Footwear |
+<p>|---|---|</p>
+| Skiing / snowboarding | Rental boots (on-mountain), or personal boots |
+| Walking in town | Waterproof insulated boots, ankle height or higher |
+| Around the rental | Warm slippers or sandals |
+<p>Crested Butte's base village and Leadville's historic downtown both involve walking on packed snow and ice. Waterproof is not optional. Insulation to at least -20°F rated comfort is smart for Leadville, where overnight lows can be punishing in deep winter.</p>
 <h3>Summer (June–September)</h3>
-<ul>
-<li><strong>Trail runners or light hiking boots</strong> — most summer trails are rocky and uneven. A stiff-soled trail runner handles 90% of hikes in the area; save the heavy mountaineering boots for technical routes.</li>
-<li><strong>Camp sandals or flip-flops</strong> — for around the cabin, the pool deck at Grand Lodge Crested Butte, or post-hike recovery.</li>
-<li><strong>One pair of casual shoes</strong> — sneakers are fine for town evenings.</li>
-</ul>
-<h3>Shoulder Season (May, October)</h3>
-<p>Pack for both. Seriously. Snow and 60°F sunshine within the same 48 hours is not unusual.</p>
+| Activity | Recommended Footwear |
+<p>|---|---|</p>
+| Hiking (day trails) | Trail runners or light hiking boots, broken in |
+| Hiking (longer / off-trail) | Mid or high hiking boots with ankle support |
+| Town walking | Comfortable sneakers or casual shoes |
+| Around the rental | Flip flops / sandals |
+<p>Bring only one pair of town shoes. Mountain towns involve a lot of walking, so comfort beats style every time.</p>
+<h3>Spring &amp; Fall</h3>
+<p>These shoulder seasons are sneaky. Trail conditions above treeline can be icy through May and again by October. Pack microspikes if you plan to hike early or late in the season — they weigh almost nothing and prevent turned ankles.</p>
 <hr>
-<h2>Altitude Prep Essentials</h2>
-<p>Altitude sickness (acute mountain sickness, or AMS) is real and it affects guests who are in excellent physical shape just as often as those who aren't. According to the <a href="https://wms.org/">Wilderness Medical Society</a>, gradual ascent and hydration are the most effective prevention strategies for recreational travelers.</p>
+<h2>Clothing Beyond Layers</h2>
 <ul>
-<li><strong>Electrolyte packets or tablets</strong> — plain water isn't enough when you're breathing harder and sweating more than usual. Electrolytes help you absorb and retain fluids.</li>
-<li><strong>Ibuprofen or acetaminophen</strong> — altitude headaches are common in the first 24–48 hours. Having it in your bag means you're not hunting for a pharmacy at 9pm.</li>
-<li><strong>Reusable water bottle, large</strong> — 32 oz minimum. Fill it constantly. The dry mountain air dehydrates you without obvious sweating.</li>
-<li><strong>Prescription altitude medication</strong> — if you're particularly altitude-sensitive, ask your doctor about acetazolamide before your trip. Bring it if prescribed; don't rely on getting it locally.</li>
-</ul>
-<p>The <a href="https://www.cdc.gov/travel/page/altitude">Centers for Disease Control and Prevention</a> recommend arriving a day early before strenuous activity when traveling to elevations above 8,000 feet. Planning a low-key arrival day is one of the best things you can do for your trip.</p>
-<hr>
-<h2>What Your Rental Already Has (Leave This at Home)</h2>
-<p>One advantage of staying with a professionally managed property — and something guests often over-pack around — is that the basics are already there.</p>
-<p>All <a href="https://booktraverse.com/property-management/">Traverse Hospitality properties</a> are stocked with:</p>
-<ul>
-<li><strong>Linens and towels</strong> — all beds made, bath towels provided. No need to pack sleeping bags or extra bedding.</li>
-<li><strong>Basic kitchen supplies</strong> — cookware, utensils, coffee maker, dish soap. Bring your preferred coffee or specialty items, but leave the full camp kitchen setup at home.</li>
-<li><strong>Hair dryer</strong> — present in virtually all units.</li>
-<li><strong>Paper goods</strong> — toilet paper, paper towels for the initial supply.</li>
-</ul>
-<p>At <strong>Grand Lodge Crested Butte</strong>, guests also have access to the indoor/outdoor heated pool, hot tubs, steam room, and fitness center — so you can skip packing resistance bands or an inflatable hot tub (yes, it happens). Robes are available through the spa, and the WoodStone Grille is steps from your unit.</p>
-<hr>
-<h2>The Full Packing Checklist at a Glance</h2>
-| Category | Must Pack | Leave Behind |
-<p>|---|---|---|</p>
-| Layers | Base (wool/synthetic), mid (fleece/down), shell | Cotton hoodies as your only warm layer |
-| Footwear | Snow boots (winter), trail runners (summer), camp sandals | Heavy mountaineering boots unless technical climbing |
-| Sun | SPF 50+, lip balm, UV sunglasses, sun hat | Nothing — this category is always under-packed |
-| Altitude | Electrolytes, pain reliever, large water bottle | Excessive supplements not recommended by your doctor |
-| Extras | Beanie, gloves (any season), rain shell | Sleeping bags, extra towels, full camp kitchen kit |
-<hr>
-<h2>Planning a Trip to a Specific Destination?</h2>
-<p>Each of our markets has slightly different packing priorities. Here's a quick breakdown:</p>
-<ul>
-<li><strong>Crested Butte</strong> — Longest winter, highest average snowfall, slopeside ski-in/ski-out access at Grand Lodge. Heaviest emphasis on layering and ski gear. <a href="https://booktraverse.com/crested-butte/">Browse Crested Butte rentals →</a></li>
-<li><strong>Leadville</strong> — Highest elevation in our portfolio at 10,152 ft. Altitude prep is more critical here than anywhere else. The historic district and events like <a href="https://leadvillecolorado.org/">Ski Joring on Harrison Ave</a> make it a year-round destination. <a href="https://booktraverse.com/leadville/">Browse Leadville rentals →</a></li>
-<li><strong>Vail</strong> — More sheltered valley climate, but still mountain weather rules apply. Great shoulder-season destination. <a href="https://booktraverse.com/vail/">Browse Vail rentals →</a></li>
+<li><strong>Wool or synthetic hiking socks</strong> — at least three pairs. No cotton.</li>
+<li><strong>Convertible hiking pants</strong> — zip-off legs earn their weight on shoulder-season trips.</li>
+<li><strong>Gloves and a hat</strong> — even in summer, bring a thin pair of gloves for summit hikes and cold-morning starts.</li>
+<li><strong>Swimsuit</strong> — if you're staying at Grand Lodge Crested Butte, the heated indoor/outdoor pool and hot tubs are open year-round. Don't forget this one.</li>
+<li><strong>One nicer outfit</strong> — mountain towns have real restaurants. You don't need a blazer, but clean jeans and a flannel go a long way.</li>
 </ul>
 <hr>
-<h2>Frequently Asked Questions</h2>
-<h3>Do I need to pack towels and bedding for a Traverse Hospitality rental?</h3>
-<p>No — all Traverse Hospitality properties come with fresh linens and towels provided. Your beds will be made on arrival and bath towels are included. You don't need to pack sleeping bags or extra bedding. If you're staying at Grand Lodge Crested Butte, the indoor pool and hot tubs mean you may want an extra personal towel for convenience.</p>
-<h3>What's the most commonly forgotten item on a Colorado mountain trip?</h3>
-<p>Sun protection is what our local teams see under-packed most often. High-altitude UV exposure is intense year-round, and snow reflects it back at your face on ski days. Bring SPF 50+ sunscreen, SPF lip balm, and UV-blocking eyewear — even if your trip is in winter or you're expecting mostly cloudy weather.</p>
-<h3>How do I prevent altitude sickness when visiting Crested Butte or Leadville?</h3>
-<p>Hydrate heavily starting the day before you arrive, ascend gradually if possible, and plan a low-activity first day to let your body adjust. Carry electrolyte packets, ibuprofen, and a large water bottle. If you're altitude-sensitive, talk to your doctor about prescription medication before your trip. Leadville's 10,152-foot elevation warrants extra preparation compared to lower destinations.</p>
-<h3>Is it worth renting ski gear at the resort instead of packing my own?</h3>
-<p>For ski boots and helmets, renting locally is usually the right call — it saves bag fees, avoids wear on travel, and modern demo gear is excellent. Skis and snowboards are worth renting too unless you have highly personalized setups. Your own ski socks, base layers, and outerwear are worth bringing since personal fit makes a big difference over a multi-day trip.</p>
-<h3>What should I pack for a summer trip to Colorado's mountains?</h3>
-<p>Prioritize a packable rain shell, trail runners, sun protection, and electrolytes. Summer afternoons in the Rockies bring reliable thunderstorms, so plan outdoor activities for mornings and be off exposed ridges by early afternoon. A light fleece for evenings is essential — temperatures drop fast at elevation after sunset, even in July and August.</p>
-<h3>Do I need chains or special tires to drive to these Colorado mountain towns?</h3>
-<p>Colorado law requires traction laws compliance on many mountain highways during winter conditions — this typically means all-wheel drive with mud+snow tires, or chains. Check current <a href="https://cotrip.org/">CDOT road conditions</a> before your drive. If you're renting a vehicle, confirm it meets Colorado traction requirements before heading into the mountains in winter or spring.</p>
+<h2>Gear Worth Throwing In</h2>
+<ul>
+<li><strong>Daypack (20–30L)</strong> — for ski-day essentials, day hikes, or town exploring</li>
+<li><strong>Reusable grocery bag</strong> — mountain towns appreciate it, and you'll use it</li>
+<li><strong>Car charger or portable battery</strong> — mountain drives can drain your phone as it hunts for signal</li>
+<li><strong>Paper maps or downloaded offline maps</strong> — cell coverage drops in the backcountry and on some passes between markets</li>
+<li><strong>Cash</strong> — some smaller mountain vendors, farmers markets, and parking situations are cash-only</li>
+</ul>
 <hr>
-<h2>Ready to Book Your Colorado Mountain Trip?</h2>
-<p>The packing is handled. Now the only question is where you're heading. Browse our full portfolio at <a href="https://reservations.booktraverse.com">booktraverse.com</a> — real photos of exact units, up to 15% savings versus booking through OTAs, and a local team on the ground in every market. Questions before you book? Call us at 970-438-2241.</p>
-<p>Your dream vacation starts here.</p>`;
+<h2>What to Leave at Home — Your Rental Has It</h2>
+<p>One of the real benefits of a managed vacation rental over a hotel is the gear that's already waiting for you. Across Traverse Hospitality's portfolio, standard amenities typically include:</p>
+<ul>
+<li>Full kitchen with cookware, dishes, and utensils</li>
+<li>Coffee maker and basic pantry staples</li>
+<li>Hair dryer and iron</li>
+<li>Extra blankets and pillows</li>
+<li>Washer and dryer (in most units)</li>
+<li>High-speed Wi-Fi</li>
+</ul>
+<p><strong>At Grand Lodge Crested Butte specifically</strong>, you also have access to a fitness center, steam room, and Elevation Spa — so leave the travel-size workout gear and the heavy bath products. At the <a href="https://governorsmansion.net">Governor's Mansion</a> and <a href="https://mountainhideaway.com">Mountain Hideaway Lodge</a> in Leadville, both properties are fully outfitted for groups.</p>
+<p>Skip packing: full-size shampoo/conditioner bottles, towels (provided), extra pillows, a coffee setup, or a full toolkit. You won't need them.</p>
+<hr>
+<h2>A Note on Altitude Medication</h2>
+<p>Some travelers flying directly to high-elevation destinations like Leadville speak with their doctor about acetazolamide (Diamox) before arrival. This is a personal medical decision — but if you have a history of altitude sickness or are heading straight to 10,000+ feet from sea level, it's worth a conversation before you leave home. The <a href="https://wwwnc.cdc.gov/travel/page/yellowbook-home">CDC's travel health guidelines</a> and the <a href="https://wms.org">Wilderness Medical Society</a> both publish practical information on altitude illness prevention.</p>
+<hr>
+<h2>FAQ: Packing for a Colorado Mountain Trip</h2>
+<h3>What's the most important thing to pack for a Colorado mountain trip?</h3>
+<p>A waterproof outer shell and moisture-wicking base layers are the non-negotiables. Colorado weather changes fast at altitude, and staying dry keeps you warm. After that, SPF 30+ sunscreen and a reusable water bottle round out the absolute essentials regardless of season or which mountain town you're visiting.</p>
+<h3>Do I need to pack altitude sickness medication?</h3>
+<p>Not necessarily, but it's smart to carry ibuprofen or acetaminophen for arrival-day headaches, which are common. If you're heading to Leadville at 10,152 feet and coming from sea level, talk to your doctor beforehand. Staying hydrated and avoiding alcohol your first day makes a bigger difference than most people expect.</p>
+<h3>What shoes do I need for a winter trip to Crested Butte or Vail?</h3>
+<p>You need waterproof, insulated winter boots for walking around town — packed snow and ice are standard on sidewalks from November through March. Ski or snowboard boots are rented or brought separately. Pack warm slippers or sandals for the rental unit, especially if you're at Grand Lodge Crested Butte near the pool area.</p>
+<h3>Can I rent ski or outdoor gear once I arrive?</h3>
+<p>Yes. Crested Butte, Vail, and Leadville all have ski and outdoor gear rental shops in town or on-mountain. If you're a casual or first-time skier, renting locally saves the hassle of traveling with boots and skis. For summer hiking, most guests bring their own footwear and use rental shops for bikes or specialty gear.</p>
+<h3>What should I NOT pack because the vacation rental provides it?</h3>
+<p>Skip the towels, extra pillows, hair dryer, full-size toiletries, cookware, and coffee setup. Most Traverse Hospitality rentals are fully equipped kitchens with everything you need to cook. At Grand Lodge Crested Butte, you also have on-site fitness, spa, and pool access — leave the portable workout gear home.</p>
+<h3>Is there anything special to pack for a summer wildflower trip to Crested Butte?</h3>
+<p>Crested Butte is the Wildflower Capital of Colorado, and peak season typically means exposed high-altitude hiking. Pack a wide-brim sun hat, SPF 50 sunscreen, polarized sunglasses, trail runners or hiking boots, and a packable rain jacket for afternoon thunderstorms. A camera or phone with extra storage is worth it — the blooms are genuinely extraordinary.</p>
+<hr>
+<h2>Plan Your Colorado Mountain Trip</h2>
+<p>Ready to stop planning and start packing? Browse properties across all our Colorado markets and book direct to save up to 15% compared to the major booking platforms.</p>
+<ul>
+<li><a href="https://booktraverse.com/crested-butte/">Crested Butte vacation rentals</a> — including Grand Lodge Crested Butte, slopeside at CBMR</li>
+<li><a href="https://booktraverse.com/leadville/">Leadville vacation rentals</a> — historic homes at the top of North America</li>
+<li><a href="https://booktraverse.com/vail/">Vail vacation rentals</a> — ski-in/ski-out and village access</li>
+</ul>
+<p>Or <a href="https://reservations.booktraverse.com">start your search at reservations.booktraverse.com</a> to check availability across the full portfolio. Questions? Call us at 970-438-2241 — our local teams are on the ground in every market and happy to help you plan.</p>
+<p><em>Your dream vacation starts here.</em></p>`;
