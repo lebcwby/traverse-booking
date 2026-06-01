@@ -52,11 +52,14 @@ export const SCRIPT_SOURCES = [
   // /property-management owner-lead form (posts to the team app's
   // /api/leads, which requires a Turnstile token).
   "https://challenges.cloudflare.com",
+  // Conduit AI chat widget — widget.min.js + any sub-resources it pulls.
+  "https://*.conduit.ai",
 ];
 
 export const STYLE_SOURCES = [
   "'self'",
   "'unsafe-inline'",
+  "https://*.conduit.ai",
   "https://api.mapbox.com",
   "https://fonts.googleapis.com",
   "https://static.klaviyo.com",
@@ -95,10 +98,14 @@ export const IMG_SOURCES = [
   "https://*.hsforms.com",
   "https://*.hsforms.net",
   "https://*.hubspotusercontent-na2.net",
+  "https://*.conduit.ai",
 ];
 
 export const CONNECT_SOURCES = [
   "'self'",
+  // Conduit AI chat widget — REST API + chat websocket.
+  "https://*.conduit.ai",
+  "wss://*.conduit.ai",
   "https://booking.guesty.com",
   "https://open-api.guesty.com",
   "https://www.google-analytics.com",
@@ -146,6 +153,8 @@ export const CONNECT_SOURCES = [
 ];
 
 export const FRAME_SOURCES = [
+  // Conduit AI chat widget renders its panel in an iframe.
+  "https://*.conduit.ai",
   // Stripe — PaymentElement and ExpressCheckout create iframes from these origins
   "https://js.stripe.com",
   "https://hooks.stripe.com",

@@ -210,6 +210,18 @@ export default async function RootLayout({
           <MobileBottomNav />
         </Suspense>
 
+        {/* Conduit AI chat widget. Loads site-wide; reads its config from the
+            data-widget-id attribute. Allowed in CSP via *.conduit.ai
+            (script/style/img/frame + connect/wss). nonce lets it load under
+            the strict nonce-based policy on /book, /login, /account, etc. */}
+        <Script
+          id="conduit-widget"
+          src="https://base.conduit.ai/widget/widget.min.js"
+          strategy="afterInteractive"
+          nonce={nonce}
+          data-widget-id="775588b1-311b-4695-bf49-b820b965e107"
+        />
+
         {/* Microsoft Ads UET — loaded directly (not via GTM) to avoid CSP nonce
             blocking on /book pages and deferred GTM timing gaps */}
         <Script
