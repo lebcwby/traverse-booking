@@ -108,10 +108,18 @@ function quotasFor(vibe?: string): Partial<Record<PoiCategory, number>> {
   if (/\b(food|drink|eat|coffee|restaurant|dinner|brunch|cocktail)\b/.test(v)) {
     return CATEGORY_QUOTAS.food;
   }
-  if (/\b(outdoor|hike|park|mountain|view|gorge|hood|nature)\b/.test(v)) {
+  if (
+    /\b(outdoor|hike|park|mountain|view|14er|elbert|massive|ski|nature|wildflower|paddle|raft)\b/.test(
+      v
+    )
+  ) {
     return CATEGORY_QUOTAS.outdoors;
   }
-  if (/\b(neighborhood|shop|art|vintage|local|gallery|bookstore)\b/.test(v)) {
+  if (
+    /\b(neighborhood|shop|art|vintage|local|gallery|bookstore|history|museum)\b/.test(
+      v
+    )
+  ) {
     return CATEGORY_QUOTAS.neighborhoods;
   }
   if (/\b(classic|first.*time|must.*see|iconic|highlights)\b/.test(v)) {
@@ -128,10 +136,18 @@ export function detectVibe(text: string): string | undefined {
   if (/food|drink|restaurant|coffee|brunch|cocktail|dinner/.test(lc)) {
     return "food";
   }
-  if (/outdoor|hike|park|viewpoint|mt\.? hood|gorge|nature/.test(lc)) {
+  if (
+    /outdoor|hike|park|viewpoint|14er|elbert|massive|ski|nature|wildflower|paddle|raft|race|trail 100|silver rush/.test(
+      lc
+    )
+  ) {
     return "outdoors";
   }
-  if (/neighborhood|shop|bookstore|gallery|vintage|art|local finds/.test(lc)) {
+  if (
+    /neighborhood|elk ave|harrison ave|shop|bookstore|gallery|vintage|art|history|museum|local finds/.test(
+      lc
+    )
+  ) {
     return "neighborhoods";
   }
   if (/classic|first.?time|must.?see|iconic|highlights/.test(lc)) {
@@ -140,37 +156,61 @@ export function detectVibe(text: string): string | undefined {
   return undefined;
 }
 
+// Detect the primary town the visitor is asking about. Used to filter the
+// PRELOADED_CANDIDATES slate AND to scope the EVENTS_OVERLAPPING block.
+// Returns an array because a visitor can legitimately name multiple ("CB or
+// Leadville, open to either"). Empty array means "no town signal" — the
+// agent should ask up front.
+export type Town =
+  | "Crested Butte"
+  | "Leadville"
+  | "Twin Lakes"
+  | "Vail"
+  | "Avon"
+  | "Granby";
+
+export function detectTown(text: string): Town[] {
+  const lc = text.toLowerCase();
+  const hits: Town[] = [];
+  // Order matters when one phrase is a substring of another (e.g.
+  // "mt. crested butte" → still Crested Butte). We dedupe at the end.
+  if (/\bcrested butte\b|\bcb\b|\bmt\.?\s*cb\b|\bmt\.?\s*crested\b/.test(lc)) {
+    hits.push("Crested Butte");
+  }
+  if (/\bleadville\b|\bharrison ave\b|\blake county\b/.test(lc)) {
+    hits.push("Leadville");
+  }
+  if (/\btwin lakes\b/.test(lc)) hits.push("Twin Lakes");
+  if (/\bvail\b/.test(lc)) hits.push("Vail");
+  if (/\bavon\b|\bbeaver creek\b/.test(lc)) hits.push("Avon");
+  if (/\bgranby\b/.test(lc)) hits.push("Granby");
+  return Array.from(new Set(hits));
+}
+
 // Detect anchor neighborhoods from free-form user text. Keys match sp_pois
-// neighborhood slugs. Returns ALL hits because a user can legitimately name
-// more than one ("we're between Pearl and Nob Hill"). When populated, the
-// preload promotes POIs in these neighborhoods ahead of favorites elsewhere.
+// neighborhood slugs (Crested Butte + Leadville first, then secondary
+// markets). When populated, the preload promotes POIs in these neighborhoods
+// ahead of favorites elsewhere.
 export function detectAnchorNeighborhoods(text: string): string[] {
   const lc = text.toLowerCase();
   const hits: string[] = [];
   const MAP: Array<[RegExp, string[]]> = [
-    [/\bnob hill\b|\bnw\s*23(?:rd)?\b|\bslabtown\b/, ["nob_hill", "northwest"]],
-    [/\bpearl(?:\s+district)?\b/, ["pearl"]],
-    [/\bdowntown\b|\bdt\b/, ["downtown", "pearl"]],
-    [/\bhawthorne\b/, ["hawthorne"]],
-    [/\balberta\b/, ["alberta"]],
-    [/\bmississippi\b/, ["mississippi"]],
-    [/\bse\s*division\b|\bdivision st\b/, ["division", "richmond"]],
-    [/\bsellwood\b|\bmoreland\b/, ["sellwood"]],
-    [/\bbelmont\b/, ["belmont", "buckman"]],
-    [/\bst\.?\s*johns\b/, ["st_johns"]],
-    [/\bmt\.?\s*tabor\b/, ["mt_tabor"]],
-    [/\blaurelhurst\b/, ["laurelhurst"]],
-    [/\bbuckman\b/, ["buckman"]],
-    [/\brichmond\b/, ["richmond"]],
-    [/\bkerns\b/, ["kerns"]],
-    [/\bhollywood\b/, ["hollywood"]],
-    [/\bne\s+portland\b|\bnortheast\b/, ["alberta", "hollywood", "kerns"]],
-    [/\bse\s+portland\b|\bsoutheast\b/, ["hawthorne", "division", "buckman"]],
-    [/\bnw\s+portland\b/, ["nob_hill", "northwest", "pearl"]],
-    [
-      /\bn\s+portland\b|\bnorth\s+portland\b/,
-      ["mississippi", "north_portland"],
-    ],
+    // Crested Butte area
+    [/\bmt\.?\s*crested butte\b|\bbase area\b|\bski.?in\b|\bski.?out\b/, ["mt_crested_butte"]],
+    [/\bcrested butte\b|\belk ave(?:nue)?\b|\bdowntown cb\b/, ["crested_butte"]],
+    [/\bgothic\b|\bschofield\b|\bmaroon pass\b/, ["gothic", "elk_range"]],
+    [/\bkebler\b|\baspen grove\b|\birwin\b/, ["kebler_pass"]],
+    [/\balmont\b|\btaylor river\b/, ["almont"]],
+    [/\bwashington gulch\b|\blake grant\b|\blong lake\b/, ["washington_gulch"]],
+    [/\bohio city\b|\bmushing mutts\b/, ["ohio_city"]],
+    // Leadville area
+    [/\bharrison ave(?:nue)?\b|\bdowntown leadville\b/, ["leadville"]],
+    [/\bleadville\b/, ["leadville"]],
+    [/\btennessee pass\b|\bski cooper\b|\bcookhouse\b/, ["tennessee_pass"]],
+    [/\btwin lakes\b|\binterlaken\b/, ["twin_lakes"]],
+    [/\b14er\b|\belbert\b|\bmassive\b|\bla plata\b|\bsan isabel\b/, ["san_isabel_nf"]],
+    [/\bindependence pass\b|\btop of the rockies\b|\bhagerman\b/, ["lake_county"]],
+    [/\bbuena vista\b|\bbrowns canyon\b|\barkansas river\b/, ["buena_vista"]],
   ];
   for (const [re, tags] of MAP) {
     if (re.test(lc)) {
@@ -217,7 +257,6 @@ export async function preloadPoiCandidates(
       const budget = Math.max(quota * 4, 16);
       const { data, error } = await query.limit(budget);
       if (error) {
-        // eslint-disable-next-line no-console
         console.error(`[preload] ${category} query failed:`, error.message);
         return { category, rows: [] };
       }

@@ -3,7 +3,8 @@ import { TrackedContactLink } from "@/components/analytics/tracked-contact-link"
 
 export const metadata: Metadata = {
   title: "Cancellation Policy",
-  description: "Cancellation and refund policy for Book Traverse reservations.",
+  description:
+    "Cancellation and refund policy for Traverse Hospitality direct bookings. Free cancellation up to 14 days before check-in.",
   robots: { index: false, follow: true },
   alternates: { canonical: "/cancellation" },
 };
@@ -14,19 +15,16 @@ export default function CancellationPage() {
       <h1 className="text-3xl font-bold tracking-tight text-foreground">
         Cancellation Policy
       </h1>
-      <p className="mt-3 text-muted-foreground">Last updated: February 2026</p>
+      <p className="mt-3 text-muted-foreground">Last updated: May 2026</p>
 
       <div className="mt-10 space-y-8 text-sm leading-relaxed text-muted-foreground">
         <section>
           <h2 className="text-lg font-semibold text-foreground">
-            Semi-Flexible Cancellation Policy
+            Cancellation Policy
           </h2>
           <p className="mt-2">
-            We understand that plans can change. Guests may cancel for a full
-            refund up to 48 hours before check-in. After that, the reservation
-            is non-refundable. These terms apply to all reservations made
-            through Book Traverse unless otherwise specified at the time of
-            booking.
+            Booking direct with Traverse Hospitality means one cancellation
+            policy across every property — no per-listing fine print to decode.
           </p>
         </section>
 
@@ -37,16 +35,24 @@ export default function CancellationPage() {
           <div className="mt-3 space-y-4">
             <div className="rounded-lg border border-border bg-muted/30 p-4">
               <p className="font-medium text-foreground">
-                More than 48 hours before check-in
+                More than 14 days before check-in
               </p>
-              <p className="mt-1">Full refund.</p>
+              <p className="mt-1">
+                Full refund — including taxes and fees. Cancel any time up to
+                14 days before your scheduled arrival and we&apos;ll refund the
+                full amount you paid.
+              </p>
             </div>
             <div className="rounded-lg border border-border bg-muted/30 p-4">
               <p className="font-medium text-foreground">
-                Less than 48 hours before check-in
+                Within 14 days of check-in
               </p>
               <p className="mt-1">
-                No refund. The full reservation amount is non-refundable.
+                Non-refundable. Once you&apos;re inside the 14-day window, the
+                booking is no longer eligible for a refund. We can&apos;t make
+                exceptions for weather, illness, change of plans, or travel
+                disruptions — please consider trip insurance for stays where
+                flexibility matters.
               </p>
             </div>
           </div>
@@ -59,17 +65,17 @@ export default function CancellationPage() {
           <p className="mt-2">
             To cancel your reservation, please contact us as soon as possible at{" "}
             <TrackedContactLink
-              href="mailto:hello@booktraverse.com"
+              href="mailto:bookings@traversehospitality.com"
               className="text-primary hover:underline"
             >
-              hello@booktraverse.com
+              bookings@traversehospitality.com
             </TrackedContactLink>{" "}
             or call{" "}
             <TrackedContactLink
-              href="tel:+19713624726"
+              href="tel:+17207592013"
               className="text-primary hover:underline"
             >
-              (971) 362-4726
+              (720) 759-2013
             </TrackedContactLink>
             . Cancellations are effective as of the date we receive your
             request.
@@ -135,10 +141,10 @@ export default function CancellationPage() {
           <p className="mt-2">
             Questions about our cancellation policy? Reach out at{" "}
             <TrackedContactLink
-              href="mailto:hello@booktraverse.com"
+              href="mailto:bookings@traversehospitality.com"
               className="text-primary hover:underline"
             >
-              hello@booktraverse.com
+              bookings@traversehospitality.com
             </TrackedContactLink>
             .
           </p>

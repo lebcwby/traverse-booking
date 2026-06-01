@@ -64,7 +64,7 @@ export function InlineEmailCapture({
         className={`flex items-center justify-center gap-2 py-3 text-sm ${isDark ? "text-white/80" : "text-muted-foreground"} ${className}`}
       >
         <CheckCircle2 className="h-4 w-4" />
-        <span>You&apos;re in! Look for Portland tips in your inbox.</span>
+        <span>You&apos;re in! Look for Colorado tips in your inbox.</span>
       </div>
     );
   }

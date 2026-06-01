@@ -5,9 +5,9 @@
 // momentum toward a result, not a 13-row checklist of mechanical searches.
 //
 // Stage 1 — Understanding your trip. Done as soon as any tool fires.
-// Stage 2 — Exploring Portland. Aggregates every search_pois + get_neighborhood
+// Stage 2 — Exploring Colorado. Aggregates every search_pois + get_neighborhood
 //           call into a single row with a counter + the latest in-flight
-//           search as a sub-detail ("Bars in Alberta").
+//           search as a sub-detail ("Bars in Elk Avenue").
 // Stage 3 — Writing your day-by-day plan. Tracks generate_itinerary.
 //
 // Design goal per user CRO feedback: "forward motion toward a result" —
@@ -122,7 +122,7 @@ function deriveStages(messages: UIMessage[]): Stage[] {
     state: hasAnyToolCall ? "done" : "running",
   };
 
-  // Stage 2: Exploring Portland
+  // Stage 2: Exploring Colorado
   let exploringState: StageState = "pending";
   let exploringDetail: string | undefined;
   if (poisTotal > 0) {
@@ -133,7 +133,7 @@ function deriveStages(messages: UIMessage[]): Stage[] {
         : `${poisDone} of ${poisTotal} searches running`;
     } else {
       exploringState = "done";
-      exploringDetail = `${poisDone} Portland ${poisDone === 1 ? "category" : "categories"} searched`;
+      exploringDetail = `${poisDone} Colorado ${poisDone === 1 ? "category" : "categories"} searched`;
     }
   } else if (hasAnyToolCall) {
     // Tools fired but none were POI searches yet — skip ahead visually
@@ -141,7 +141,7 @@ function deriveStages(messages: UIMessage[]): Stage[] {
   }
   const exploring: Stage = {
     key: "exploring",
-    title: "Pulling real Portland spots",
+    title: "Pulling real Colorado spots",
     detail: exploringDetail,
     state: exploringState,
   };
@@ -198,7 +198,7 @@ export function PlanBuildProgress({ messages }: { messages: UIMessage[] }) {
     <div className="w-full max-w-md rounded-2xl border border-[#d6cfc4] bg-white p-5 shadow-sm">
       <div className="flex items-baseline justify-between">
         <h3 className="text-sm font-semibold text-neutral-900">
-          Building your Portland trip
+          Building your Colorado trip
         </h3>
         <span className="text-[11px] font-medium tabular-nums text-neutral-500">
           {completed}/{total}

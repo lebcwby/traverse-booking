@@ -49,6 +49,27 @@ async function validateAndLoadPois(itinerary: Itinerary): Promise<Itinerary> {
     );
   }
 
+  // Lunch enforcement: each midday slot needs to include a restaurant. The
+  // system prompt requires "ONE lunch (category=restaurant)" at midday and
+  // the schema requires at least one midday item, but Haiku has been known
+  // to fill midday with only an activity and skip lunch entirely. Catch
+  // that here so the agent retries instead of returning a lunch-less day.
+  const poiById = new Map(pois.map((p) => [p.id, p]));
+  const lunchlessDays = cleanedDays.filter((day) => {
+    const middayItems = day.items.filter(
+      (item) => item.timeSlot === "midday"
+    );
+    return !middayItems.some(
+      (item) => poiById.get(item.poiId)?.category === "restaurant"
+    );
+  });
+  if (lunchlessDays.length > 0) {
+    const dayNumbers = lunchlessDays.map((d) => d.dayNumber).join(", ");
+    throw new Error(
+      `Day(s) ${dayNumbers} are missing a lunch — every day must have one midday item whose POI category is "restaurant". Call search_pois for restaurants in the right town/neighborhood, then re-emit generate_itinerary with a lunch added at the midday slot for each flagged day.`
+    );
+  }
+
   return { ...itinerary, days: cleanedDays };
 }
 

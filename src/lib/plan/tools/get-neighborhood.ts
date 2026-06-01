@@ -5,12 +5,12 @@ import { getAuthAdmin } from "@/lib/supabase-auth-admin";
 
 export const getNeighborhoodTool = tool({
   description:
-    "Get background info on a Portland neighborhood (vibe, walkability, highlights, nearby attractions). Use this when the user asks about a specific area or when deciding where to anchor a trip.",
+    "Get background info on a Colorado neighborhood or market (vibe, walkability, highlights, nearby attractions). Use this when the user asks about a specific area or when deciding where to anchor a trip.",
   inputSchema: z.object({
     slug: z
       .string()
       .describe(
-        "Neighborhood slug like 'pearl', 'alberta', 'hawthorne-belmont', 'downtown'"
+        "Neighborhood / market slug like 'crested-butte', 'mt-crested-butte', 'leadville-downtown', 'vail-village', 'avon', 'granby', 'twin-lakes'."
       ),
   }),
   execute: async (input) => {

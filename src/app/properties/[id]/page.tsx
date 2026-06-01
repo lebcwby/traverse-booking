@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   DoorOpen,
   PawPrint,
+  Info,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -58,7 +59,6 @@ import {
 import { getListingReviews } from "@/lib/reviews";
 import { WishlistButton } from "@/components/wishlist-button";
 import { ShareButton } from "@/components/share-dialog";
-import { InlineChatCta } from "@/components/chat/inline-chat-cta";
 import { TrackViewedListing } from "./track-viewed-listing";
 import { RareFindBadge } from "@/components/properties/property-detail/rare-find-badge";
 
@@ -85,43 +85,19 @@ function formatTime(time: string | null | undefined): string {
   return time;
 }
 
-function getCancellationText(policy: string | undefined): string {
-  if (!policy) return "";
-  switch (policy) {
-    case "flexible":
-      return "Free cancellation up to 24 hours before check-in.";
-    case "semi_flexible":
-      return "Free cancellation up to 48 hours before check-in. After that, the reservation is non-refundable.";
-    case "moderate":
-      return "Free cancellation up to 5 days before check-in.";
-    case "firm":
-      return "Free cancellation up to 30 days before check-in.";
-    case "strict":
-      return "Free cancellation up to 60 days before check-in. 50% refund up to 30 days.";
-    case "super_strict":
-      return "Non-refundable. No cancellation.";
-    default:
-      return `Cancellation policy: ${policy.replace(/_/g, " ")}`;
-  }
+// Traverse Direct uses a unified 14-day cancellation policy across every
+// property — BEAPI's per-listing terms.cancellation reflects what's set on
+// OTA channels (Airbnb/VRBO), which doesn't apply to direct bookings. Single
+// source of truth: src/app/cancellation/page.tsx.
+const TRAVERSE_DIRECT_CANCEL_TEXT =
+  "Free cancellation up to 14 days before check-in. Within 14 days, the reservation is non-refundable.";
+
+function getCancellationText(_policy: string | undefined): string {
+  return TRAVERSE_DIRECT_CANCEL_TEXT;
 }
 
-function getCancellationTitle(policy: string | undefined): string {
-  if (!policy) return "Cancellation policy";
-  switch (policy) {
-    case "flexible":
-      return "Flexible cancellation";
-    case "semi_flexible":
-      return "Semi-flexible cancellation";
-    case "moderate":
-      return "Moderate cancellation";
-    case "firm":
-    case "strict":
-      return "Strict cancellation";
-    case "super_strict":
-      return "Non-refundable";
-    default:
-      return "Cancellation policy";
-  }
+function getCancellationTitle(_policy: string | undefined): string {
+  return "Cancellation policy";
 }
 
 function normalizeStructuredDataTime(
@@ -586,6 +562,35 @@ export default async function PropertyDetailPage({
     beapiListing?.defaultCheckOutTime || listing.default_check_out_time;
   const cancellationPolicy = beapiListing?.terms?.cancellation;
   const houseRules = beapiListing?.unitTypeHouseRules?.houseRules;
+
+  // "Other things to note" — Guesty's free-form notes field. The first line
+  // typically contains the short-term-rental license # (required by Colorado
+  // mountain towns); render it as a labeled callout, then the rest as paragraphs.
+  const rawNotes: string =
+    typeof description === "object" && description && "notes" in description
+      ? ((description as { notes?: string }).notes ?? "")
+      : "";
+  const trimmedNotes = rawNotes.trim();
+  let licenseNumber: string | null = null;
+  let notesBody = "";
+  if (trimmedNotes) {
+    const licenseMatch = trimmedNotes.match(
+      /License\s*#\s*[:#]?\s*([A-Za-z0-9-]+)/i
+    );
+    if (licenseMatch) {
+      licenseNumber = licenseMatch[1];
+      notesBody = trimmedNotes
+        .replace(licenseMatch[0], "")
+        .replace(/^\s*[\r\n]+/, "")
+        .trim();
+    } else {
+      notesBody = trimmedNotes;
+    }
+  }
+  const noteParagraphs = notesBody
+    .split(/\n{2,}|\n(?=[-••])/)
+    .map((p) => p.trim())
+    .filter(Boolean);
   // Compute displayRating from actual individual review scores for genuine
   // decimal precision. BEAPI's reviews.avg has 1-decimal precision on a 10-point
   // scale — dividing by 2 makes the second decimal always 0 or 5, looking fake.
@@ -985,6 +990,7 @@ export default async function PropertyDetailPage({
               title={listing.title || listing.nickname || "Vacation Rental"}
               description=""
               photo={photos[0]?.original || listing.picture}
+              city={listing.address?.city}
               bedrooms={listing.bedrooms}
               beds={listing.beds}
               bathrooms={listing.bathrooms}
@@ -1004,6 +1010,7 @@ export default async function PropertyDetailPage({
                   title={listing.title || listing.nickname || "Vacation Rental"}
                   description=""
                   photo={photos[0]?.original || listing.picture}
+                  city={listing.address?.city}
                   bedrooms={listing.bedrooms}
                   beds={listing.beds}
                   bathrooms={listing.bathrooms}
@@ -1162,7 +1169,7 @@ export default async function PropertyDetailPage({
               listingSlug={slug}
               city={
                 listing.address?.city
-                  ? `${listing.address.city}, ${listing.address?.state || "Oregon"}`
+                  ? `${listing.address.city}, ${listing.address?.state || "Colorado"}`
                   : undefined
               }
             />
@@ -1259,27 +1266,35 @@ export default async function PropertyDetailPage({
                     </div>
                   </div>
                   <div className="h-10 w-px bg-border" />
-                  <div className="text-center">
-                    <p className="text-lg font-semibold text-foreground">
+                  <a
+                    href="#reviews"
+                    className="rounded-md text-center transition-colors hover:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 px-2 -mx-2"
+                    aria-label={`Jump to ${reviewTotal} ${reviewTotal === 1 ? "review" : "reviews"}`}
+                  >
+                    <p className="text-lg font-semibold text-foreground underline decoration-foreground/30 decoration-1 underline-offset-4 hover:decoration-foreground">
                       {reviewTotal}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {reviewTotal === 1 ? "Review" : "Reviews"}
                     </p>
-                  </div>
+                  </a>
                 </div>
               </div>
             ) : displayRating && reviewTotal ? (
-              <div className="hidden sm:flex mt-3 items-center gap-2 text-base text-foreground">
+              <a
+                href="#reviews"
+                className="hidden sm:flex mt-3 items-center gap-2 text-base text-foreground rounded-md transition-colors hover:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 px-1 -mx-1"
+                aria-label={`Jump to ${reviewTotal} ${reviewTotal === 1 ? "review" : "reviews"}`}
+              >
                 <Star className="h-4 w-4 fill-current text-foreground" />
                 <span className="font-semibold">
                   {displayRating.toFixed(2)}
                 </span>
                 <span className="text-muted-foreground">·</span>
-                <span className="text-muted-foreground">
+                <span className="text-muted-foreground underline decoration-muted-foreground/40 decoration-1 underline-offset-4">
                   {reviewTotal} {reviewTotal === 1 ? "review" : "reviews"}
                 </span>
-              </div>
+              </a>
             ) : null}
 
             <Separator className="my-6" />
@@ -1480,13 +1495,6 @@ export default async function PropertyDetailPage({
               </>
             )}
 
-            {/* Inline chat CTA — mobile only, right after description */}
-            <InlineChatCta
-              listingId={listing.guesty_id}
-              listingTitle={listing.title || listing.nickname || ""}
-            />
-            <Separator className="my-6 lg:hidden" />
-
             {/* Mobile: Reviews section (between description and sleep) */}
             <div className="sm:hidden">
               <div id="reviews-mobile">
@@ -1541,7 +1549,7 @@ export default async function PropertyDetailPage({
 
         {/* Reviews — desktop only (mobile shows above "Where you'll sleep") */}
         <Separator className="my-6 hidden sm:block" />
-        <div id="reviews" className="hidden sm:block">
+        <div id="reviews" className="hidden sm:block scroll-mt-24">
           <ReviewsSection
             reviews={reviewsData.reviews}
             categoryAverages={reviewsData.categoryAverages}
@@ -1594,9 +1602,7 @@ export default async function PropertyDetailPage({
                 Cancellation policy
               </h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                {cancellationPolicy
-                  ? getCancellationText(cancellationPolicy)
-                  : "Free cancellation up to 48 hours before check-in. After that, the reservation is non-refundable."}
+                {getCancellationText(cancellationPolicy)}
               </p>
               <Link
                 href="/cancellation"
@@ -1660,6 +1666,35 @@ export default async function PropertyDetailPage({
           </div>
         </div>
 
+        {/* Other things to note (Guesty publicDescription.notes) — license #
+            and free-form host notes. Rendered when present. */}
+        {(licenseNumber || noteParagraphs.length > 0) && (
+          <>
+            <Separator className="my-8" />
+            <div id="other-things-to-note" className="pb-4">
+              <div className="flex items-center gap-2">
+                <Info className="h-5 w-5 text-foreground" />
+                <h2 className="text-xl font-semibold text-foreground">
+                  Other things to note
+                </h2>
+              </div>
+              {licenseNumber && (
+                <p className="mt-4 text-sm text-foreground">
+                  <span className="font-medium">Short-term rental license #:</span>{" "}
+                  <span className="font-mono">{licenseNumber}</span>
+                </p>
+              )}
+              {noteParagraphs.length > 0 && (
+                <div className="mt-3 space-y-3 text-sm text-muted-foreground whitespace-pre-line">
+                  {noteParagraphs.map((p, i) => (
+                    <p key={i}>{p}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
         {/* Similar Properties */}
         {similarListings.length > 0 && (
           <>
@@ -1706,6 +1741,7 @@ export default async function PropertyDetailPage({
       <TrackViewedListing
         id={listing.guesty_id}
         title={listing.title || listing.nickname || ""}
+        nickname={listing.nickname ?? null}
         propertyType={listing.property_type ?? undefined}
         city={listing.address?.city}
         basePrice={listing.prices?.basePrice}
@@ -1718,10 +1754,13 @@ export default async function PropertyDetailPage({
       <MobileBottomBar
         listingId={listing.guesty_id}
         listingTitle={listing.title || listing.nickname || ""}
+        listingNickname={listing.nickname ?? null}
         basePrice={listing.prices?.basePrice || 0}
         pointofsale={sp.pointofsale}
         picture={listing.picture}
+        bedrooms={listing.bedrooms ?? null}
         maxGuests={listing.accommodates || undefined}
+        city={listing.address?.city ?? null}
         cancellationPolicy={cancellationPolicy}
         reviewRating={displayRating ?? undefined}
         reviewCount={reviewTotal ?? undefined}

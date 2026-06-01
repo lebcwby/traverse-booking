@@ -2,7 +2,7 @@ export const pageContent = `<main id="main">
 
 <!-- ══════ HERO ══════ -->
 <header class="hero-full">
-  <div class="hero-bg" style="background-image:url('https://booktraverse.com/wp-content/uploads/2026/04/IMG_2659-scaled.jpeg');"></div>
+  <div class="hero-bg" style="background-image:url('/markets/crested-butte.jpg');"></div>
   <div class="hero-overlay"></div>
   <div class="hero-inner">
     <div class="eyebrow">Crested Butte Lodging Guide · Updated April 2026</div>
@@ -114,7 +114,7 @@ export const pageContent = `<main id="main">
 
 </section>
 
-<div style="width:100%;height:400px;background:url('https://booktraverse.com/wp-content/uploads/2026/04/IMG_2705-scaled.jpeg') center/cover no-repeat;"></div>
+<div style="width:100%;height:400px;background:url('/home/colorado-mountain-scene.jpg') center/cover no-repeat;"></div>
 
 <section class="prose-section">
 
@@ -222,7 +222,7 @@ export const pageContent = `<main id="main">
 <section class="cta-band">
   <h2>Ready to book?</h2>
   <p>Browse Traverse-managed units across all three slope-side buildings. Book direct — no platform markups.</p>
-  <a href="https://reservations.booktraverse.com/en/properties?city=Crested+Butte&country=United+States&minOccupancy=1" class="btn btn-primary">Search Available Dates</a>
+  <a href="/properties?city=Crested+Butte&country=United+States&minOccupancy=1" class="btn btn-primary">Search Available Dates</a>
 </section>
 
 </main>`;

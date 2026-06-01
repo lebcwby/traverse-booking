@@ -29,6 +29,7 @@ import {
   trackABExposure,
   PLAN_RENTAL_CTA_TEST,
 } from "@/lib/ab-testing";
+import { PORTFOLIO_STATS } from "@/lib/portfolio-stats";
 
 const CTA_COPY: Record<string, string> = {
   view_details: "View details",
@@ -85,23 +86,21 @@ interface PlanListingsResponseRow {
   checkOut: string;
 }
 
-// Six specific SP neighborhoods + four quadrants, in match priority order.
-// Specific first so a listing tagged both "NW 23rd" and "Northwest" shows
-// the more useful "NW 23rd".
-const SP_SPECIFIC_TAGS = [
-  "Alberta",
-  "Hawthorne Belmont",
-  "Pearl District",
-  "Mississippi",
-  "NW 23rd",
-  "Sellwood Moreland",
-] as const;
-const SP_QUADRANT_TAGS = [
-  "Northeast",
-  "Northwest",
-  "Southeast",
-  "North",
-] as const;
+// Real Guesty BEAPI tag → friendly display name. Building tags win first
+// because "Grand Lodge" or "Plaza" is more specific than "Crested Butte".
+// City fallbacks come second. Anything not in this map returns null and the
+// card uses the generic "Quiet Colorado mountain home" copy.
+const CO_TAG_LABELS: Record<string, string> = {
+  "The Grand Lodge Crested Butte": "Grand Lodge Crested Butte",
+  "The Plaza Crested Butte": "The Plaza, Crested Butte",
+  "The Lodge at Mountaineer Square": "Lodge at Mountaineer Square",
+  "Grand West Village Resort": "Grand West Village, Leadville",
+  OSV: "Old St Vincent's, Leadville",
+  "Market - CB": "Crested Butte",
+  "Market - Leadville": "Leadville",
+  "City of Leadville": "Leadville",
+  "City of Crested Butte": "Crested Butte",
+};
 
 export function PropertySidebar({ itinerary }: { itinerary: Itinerary }) {
   const [items, setItems] = useState<SidebarItem[] | null>(null);
@@ -285,8 +284,8 @@ export function PropertySidebar({ itinerary }: { itinerary: Itinerary }) {
         {/* Trust row */}
         <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12.5px] text-neutral-700">
           <TrustItem icon={BadgeCheck} label="Confirmed availability" />
-          <TrustItem icon={Tag} label="Best price guarantee" />
-          <TrustItem icon={ShieldCheck} label="No booking fees" />
+          <TrustItem icon={Tag} label="No booking fees" />
+          <TrustItem icon={ShieldCheck} label="Free cancel 14 days out" />
         </div>
       </div>
 
@@ -380,9 +379,10 @@ function formatDateRange(checkIn: string, checkOut: string): string {
 
 function pickNeighborhood(tags: string[] | null | undefined): string | null {
   if (!tags || tags.length === 0) return null;
-  const tagSet = new Set(tags);
-  for (const t of SP_SPECIFIC_TAGS) if (tagSet.has(t)) return t;
-  for (const t of SP_QUADRANT_TAGS) if (tagSet.has(t)) return `${t} Portland`;
+  for (const tag of tags) {
+    const label = CO_TAG_LABELS[tag];
+    if (label) return label;
+  }
   return null;
 }
 
@@ -392,10 +392,10 @@ function buildWalkableClaim(listing: Listing): string {
   const hood = pickNeighborhood(listing.tags);
   if (walkableByName || hood) {
     return hood
-      ? `Walk to cafes, shops & dining in ${hood.replace(" Portland", "")}`
-      : "Walk to cafes, shops & dining";
+      ? `Walk to dining, lifts & town from ${hood}`
+      : "Walk to dining, lifts & town";
   }
-  return "Quiet Portland neighborhood";
+  return "Quiet Colorado mountain home";
 }
 
 function buildAmenityClaim(listing: Listing): string {
@@ -442,7 +442,7 @@ function PropertyCard({
   const thumb = upgradeListingPhoto(
     listing.picture ?? listing.pictures?.[0] ?? null
   );
-  const title = listing.title ?? listing.nickname ?? "Portland rental";
+  const title = listing.title ?? listing.nickname ?? "Colorado rental";
   const href = buildDetailHref(item, guests);
   const dateRange =
     checkIn && checkOut ? formatDateRange(checkIn, checkOut) : null;
@@ -524,6 +524,8 @@ function PropertyCard({
         </div>
         <Link
           href={href}
+          target="_blank"
+          rel="noopener noreferrer"
           data-ab-variant={ctaVariant}
           className="inline-flex items-center gap-1 rounded-full bg-primary px-3.5 py-1.5 text-[12px] font-semibold text-primary-foreground transition hover:bg-primary/90"
         >
@@ -566,7 +568,7 @@ function BrowseAllCard({ href }: { href: string }) {
           Need a different date or more space?
         </div>
         <div className="text-[12px] text-neutral-500">
-          Browse all 275+ Portland rentals.
+          Browse all {PORTFOLIO_STATS.totalListings}+ Colorado rentals.
         </div>
       </div>
       <Link

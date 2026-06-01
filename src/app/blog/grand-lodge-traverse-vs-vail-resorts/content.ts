@@ -19,7 +19,7 @@ Here&#8217;s exactly what&#8217;s different — and why it matters for your trip
 Grand Lodge sits at the base of Crested Butte Mountain Resort in Mt. Crested Butte. Every unit in the building is privately owned. Owners choose who manages their condo — and the two main options are:
 <ul>
  	<li><strong>Vail Resorts (CBMR)</strong> — manages approximately 100 units, bookable through skicb.com, Expedia, Hotels.com, and Booking.com</li>
- 	<li><strong>Traverse Hospitality</strong> — manages approximately 50 units, bookable direct at <a href="https://reservations.booktraverse.com">reservations.booktraverse.com</a> and on Airbnb, Expedia, Hotels.com, Booking.com, and Whimstay — with up to 15% savings when you book direct</li>
+ 	<li><strong>Traverse Hospitality</strong> — manages approximately 50 units, bookable direct at <a href="/properties">booktraverse.com/properties</a> and on Airbnb, Expedia, Hotels.com, Booking.com, and Whimstay — with up to 15% savings when you book direct</li>
 </ul>
 Both companies share access to the same building amenities — pool, hot tubs, steam room, fitness center, on-site restaurant, and free shuttle to town. The differences are in how your stay actually feels from the moment you book to the moment you check in.
 
@@ -48,7 +48,7 @@ For families arriving with kids and equipment after a long drive, or groups who 
 <h2>Pricing: OTA Rates vs. Direct Booking Savings</h2>
 <strong>Vail Resorts</strong> distributes their Grand Lodge units through skicb.com, Expedia, Hotels.com, and Booking.com — each of which takes a commission that gets built into the rate you pay as a guest.
 
-<strong>Traverse Hospitality</strong> offers direct booking at <a href="https://reservations.booktraverse.com">reservations.booktraverse.com</a> with up to 15% savings versus OTA rates on the same unit. Traverse units are also listed on Airbnb, Expedia, Hotels.com, Booking.com, and Whimstay — but booking direct always gets you the best rate. On a $600/night condo during peak ski week, 15% savings is $90 per night — or over $600 saved on a week-long stay.
+<strong>Traverse Hospitality</strong> offers direct booking at <a href="/properties">booktraverse.com/properties</a> with up to 15% savings versus OTA rates on the same unit. Traverse units are also listed on Airbnb, Expedia, Hotels.com, Booking.com, and Whimstay — but booking direct always gets you the best rate. On a $600/night condo during peak ski week, 15% savings is $90 per night — or over $600 saved on a week-long stay.
 
 <hr />
 
@@ -107,7 +107,7 @@ When evaluating where to book, platform-specific ratings give you a more accurat
     </tr>
     <tr>
       <td style="padding:12px 16px; border:1px solid #e0e0e0; font-weight:500; color:#555; background:#fafafa;">Direct booking savings</td>
-      <td style="padding:12px 16px; border:1px solid #e0e0e0; background:#F4F9FE;"><span style="color:#0F6E56; font-weight:500;">Up to 15% off</span> at reservations.booktraverse.com</td>
+      <td style="padding:12px 16px; border:1px solid #e0e0e0; background:#F4F9FE;"><span style="color:#0F6E56; font-weight:500;">Up to 15% off</span> at booktraverse.com/properties</td>
       <td style="padding:12px 16px; border:1px solid #e0e0e0;">Book through skicb.com or OTAs — no direct discount</td>
     </tr>
     <tr>
@@ -127,7 +127,7 @@ When evaluating where to book, platform-specific ratings give you a more accurat
     </tr>
     <tr>
       <td style="padding:12px 16px; border:1px solid #e0e0e0; font-weight:500; color:#555; background:#fafafa;">Book direct at</td>
-      <td style="padding:12px 16px; border:1px solid #e0e0e0; background:#F4F9FE;"><a href="https://reservations.booktraverse.com" style="color:#185FA5;">reservations.booktraverse.com</a></td>
+      <td style="padding:12px 16px; border:1px solid #e0e0e0; background:#F4F9FE;"><a href="/properties" style="color:#185FA5;">booktraverse.com/properties</a></td>
       <td style="padding:12px 16px; border:1px solid #e0e0e0;">skicb.com</td>
     </tr>
   </tbody>
@@ -160,14 +160,14 @@ With Traverse Hospitality, yes — every listing shows the specific unit with re
 <h3>Why does the Grand Lodge Google rating combine Vail and Traverse reviews?</h3>
 The Grand Lodge Crested Butte Google Business Profile consolidates reviews from both Vail Resorts-managed and Traverse Hospitality-managed units into a single listing. For a more accurate picture, check platform-specific ratings: Traverse Hospitality holds a 4.84-star average, while Vail Resorts-managed units rate 4.1 on Expedia and 3.9 on Google.
 <h3>How do I book a Traverse-managed Grand Lodge condo?</h3>
-Book direct at <a href="https://reservations.booktraverse.com">reservations.booktraverse.com</a> for the best rate — up to 15% less than OTA rates. Traverse units are also available on Airbnb, Expedia, Hotels.com, Booking.com, and Whimstay. Call the local Crested Butte team at 970-438-2241 with any questions about specific units or availability.
+Book direct at <a href="/properties">booktraverse.com/properties</a> for the best rate — up to 15% less than OTA rates. Traverse units are also available on Airbnb, Expedia, Hotels.com, Booking.com, and Whimstay. Call the local Crested Butte team at 970-438-2241 with any questions about specific units or availability.
 
 <hr />
 
 <h2>Ready to Book?</h2>
 Know your exact unit before you arrive. Get your keyless code before you leave home. Walk straight to your condo at any hour — parking pass already inside.
 
-Browse available Grand Lodge condos and book direct at <a href="https://reservations.booktraverse.com">reservations.booktraverse.com</a> to save up to 15%. Questions? Call the Traverse Crested Butte team at <strong>970-438-2241</strong> or reach out through <a href="https://booktraverse.com/crested-butte/">booktraverse.com/crested-butte/</a>.								</div>
+Browse available Grand Lodge condos and book direct at <a href="/properties">booktraverse.com/properties</a> to save up to 15%. Questions? Call the Traverse Crested Butte team at <strong>970-438-2241</strong> or reach out through <a href="https://booktraverse.com/crested-butte/">booktraverse.com/crested-butte/</a>.								</div>
 				</div>
 					</div>
 				</div>
@@ -254,7 +254,7 @@ Browse available Grand Lodge condos and book direct at <a href="https://reservat
 							<div class="elementor-posts-container elementor-posts elementor-posts--skin-classic elementor-grid">
 				<article class="elementor-post elementor-grid-item post-2769 post type-post status-publish format-standard has-post-thumbnail hentry category-travel-guides tag-colorado tag-crested-butte tag-grand-lodge tag-property-management tag-ski-condos tag-vacation-rentals">
 				<a class="elementor-post__thumbnail__link" href="https://booktraverse.com/traversehospitality/blog/grand-lodge-crested-butte-condos-traverse-vs-vail-resorts-what-s-the-difference/" tabindex="-1" >
-			<div class="elementor-post__thumbnail"><img width="300" height="223" src="https://booktraverse.com/wp-content/uploads/2026/04/Grand-Lodge-28-300x223.jpg" class="attachment-medium size-medium wp-image-2770" alt="" /></div>
+			<div class="elementor-post__thumbnail"><img width="300" height="223" src="/blog/grand-lodge-28.jpg" class="attachment-medium size-medium wp-image-2770" alt="" /></div>
 		</a>
 				<div class="elementor-post__text">
 				<h3 class="elementor-post__title">
@@ -278,7 +278,7 @@ Browse available Grand Lodge condos and book direct at <a href="https://reservat
 				</article>
 				<article class="elementor-post elementor-grid-item post-2645 post type-post status-publish format-standard has-post-thumbnail hentry category-crested-butte tag-colorado tag-crested-butte tag-family-friendly tag-grand-lodge tag-pet-friendly tag-vacation-rentals">
 				<a class="elementor-post__thumbnail__link" href="https://booktraverse.com/traversehospitality/blog/pet-friendly-crested-butte-condo-grand-lodge-studio-153-walk-to-the-lifts-pool-hot-tub/" tabindex="-1" >
-			<div class="elementor-post__thumbnail"><img width="300" height="195" src="https://booktraverse.com/wp-content/uploads/2026/04/153-living-room-300x195.jpg" class="attachment-medium size-medium wp-image-2650" alt="" /></div>
+			<div class="elementor-post__thumbnail"><img width="300" height="195" src="/blog/153-living-room.jpg" class="attachment-medium size-medium wp-image-2650" alt="" /></div>
 		</a>
 				<div class="elementor-post__text">
 				<h3 class="elementor-post__title">
@@ -302,7 +302,7 @@ Browse available Grand Lodge condos and book direct at <a href="https://reservat
 				</article>
 				<article class="elementor-post elementor-grid-item post-2631 post type-post status-publish format-standard has-post-thumbnail hentry category-travel-guides tag-colorado tag-leadville tag-mountain-travel tag-things-to-do tag-vacation-rentals tag-visitor-guide">
 				<a class="elementor-post__thumbnail__link" href="https://booktraverse.com/traversehospitality/blog/leadville-colorado-the-complete-visitor-s-guide-2026-2/" tabindex="-1" >
-			<div class="elementor-post__thumbnail"><img loading="lazy" width="300" height="262" src="https://booktraverse.com/wp-content/uploads/2026/04/IMG_2741-300x262.jpg" class="attachment-medium size-medium wp-image-2632" alt="" /></div>
+			<div class="elementor-post__thumbnail"><img loading="lazy" width="300" height="262" src="/blog/img_2741.jpg" class="attachment-medium size-medium wp-image-2632" alt="" /></div>
 		</a>
 				<div class="elementor-post__text">
 				<h3 class="elementor-post__title">

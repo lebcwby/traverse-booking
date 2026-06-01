@@ -23,6 +23,67 @@ const TOKEN_BUFFER_MS = 2 * 60 * 60 * 1000; // 2 hours — token is "fresh" if >
 // In-memory cache — survives within same Vercel serverless instance.
 let memoryToken: { token: string; expiresAt: number } | null = null;
 
+// ─── Self-heal state ─────────────────────────────────────────────
+// Last time this serverless instance asked the cron route to refresh the
+// token. Throttle to once per SELF_HEAL_COOLDOWN_MS so a stampede of 401s
+// or expired-token reads can't burn through Guesty's 5-tokens-per-24h cap.
+let lastSelfHealAttemptAt = 0;
+const SELF_HEAL_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Fire-and-forget call to /api/cron/refresh-tokens via internal HTTPS,
+ * using the CRON_SECRET to authenticate as the cron itself. This is the
+ * SAFE way to trigger a refresh from runtime code — we never touch the
+ * guesty_tokens table directly (see "Token Strategy" header). The cron
+ * route already has its own dedup-by-expiry-buffer logic, so calling it
+ * repeatedly within a few seconds doesn't actually fire multiple OAuth
+ * requests.
+ *
+ * Throttled to once per SELF_HEAL_COOLDOWN_MS per serverless instance.
+ * Returns true if a refresh was attempted, false if throttled.
+ */
+async function attemptTokenSelfHeal(reason: string): Promise<boolean> {
+  const now = Date.now();
+  if (now - lastSelfHealAttemptAt < SELF_HEAL_COOLDOWN_MS) {
+    return false;
+  }
+  lastSelfHealAttemptAt = now;
+
+  const cronSecret = process.env.CRON_SECRET;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.booktraverse.com";
+  if (!cronSecret) {
+    console.warn(
+      "[BEAPI self-heal] CRON_SECRET not set — can't trigger refresh"
+    );
+    return false;
+  }
+
+  console.warn(`[BEAPI self-heal] Triggering refresh — reason: ${reason}`);
+  try {
+    // Use a short timeout so we don't block the user's request waiting on
+    // the refresh — fire it, wait briefly for it to complete in the
+    // common case, then proceed. AbortController gives us the timeout.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    const resp = await fetch(`${siteUrl}/api/cron/refresh-tokens`, {
+      headers: { Authorization: `Bearer ${cronSecret}` },
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    clearTimeout(timer);
+    if (!resp.ok) {
+      console.warn(
+        `[BEAPI self-heal] Refresh route returned ${resp.status} — continuing anyway`
+      );
+    }
+    return true;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[BEAPI self-heal] Refresh trigger failed: ${msg}`);
+    return false;
+  }
+}
+
 // ─── Token Management ─────────────────────────────────────────────
 
 function isTokenFresh(expiresAt: number): boolean {
@@ -100,8 +161,29 @@ export async function getBEAPIToken(): Promise<string> {
     return cached.token;
   }
 
-  // No usable token — alert and fail.
-  const msg = "BEAPI token expired — refresh-tokens pg_cron must refresh it";
+  // Layer 3: Self-heal. No usable token in either cache — the Vercel cron
+  // probably dropped its fire. Trigger the refresh-tokens route once
+  // (throttled), wait for it, then re-poll Supabase. If still expired
+  // after that, alert and fail. The throttle keeps a stampede of expired-
+  // token requests from burning through Guesty's 5 OAuth tokens / 24h.
+  const healed = await attemptTokenSelfHeal("getBEAPIToken found no usable token");
+  if (healed) {
+    // After the cron route returns, the new token row is in Supabase.
+    // Re-poll once.
+    const retried = await getSupabaseCachedToken();
+    if (retried) {
+      memoryToken = { token: retried.token, expiresAt: retried.expiresAt };
+      console.log("[BEAPI self-heal] Recovery succeeded");
+      return retried.token;
+    }
+    console.warn(
+      "[BEAPI self-heal] Refresh route ran but Supabase still has no usable token"
+    );
+  }
+
+  // Either self-heal was throttled (already attempted recently) or the
+  // refresh route itself failed. Alert and surface the error.
+  const msg = "BEAPI token expired — self-heal exhausted, manual refresh needed";
   await sendAlert("CRITICAL: BEAPI Token Expired", msg, "beapi-token-expired");
   throw new Error(msg);
 }

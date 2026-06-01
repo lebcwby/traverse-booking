@@ -25,10 +25,14 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env*.local
-.env.vercel
-.env.vercel-check
+# local env files — ignore every variant by default; .env.example is the
+# only file with placeholder values that's safe to commit. Belt-and-suspenders
+# against `git add -A` accidentally staging a real secret file. Previously
+# this list only covered .env*.local + a few specific names (.env.verify,
+# .env.vercel) — but new variants like .env.local.new / .env.local.tmp
+# slipped through. The `.env*` glob catches all of them.
+.env*
+!.env.example
 
 # vercel
 .vercel

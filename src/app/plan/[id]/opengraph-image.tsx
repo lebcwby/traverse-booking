@@ -8,7 +8,7 @@
 import { ImageResponse } from "next/og";
 import { getPlanSlug } from "@/lib/plan/slug-map";
 
-export const alt = "Book Traverse — Portland vacation rentals and trip plans";
+export const alt = "Book Traverse — Colorado vacation rentals and trip plans";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const runtime = "edge";
@@ -24,9 +24,10 @@ export default async function PlanOgImage({ params }: Props) {
   const title = entry?.h1 ?? "Book Traverse";
   const subtitle =
     entry?.subtitle ??
-    "Portland vacation rentals — book direct. Always the lowest price.";
+    "Colorado vacation rentals — book direct. Always the lowest price.";
 
-  // SP brand palette: dark #1c1d1d, teal #404f52, gold #f2c070, warm #faf8f5.
+  // Traverse brand palette: dark #1c1d1d, teal #404f52, blue accent #3b82f6,
+  // warm #faf8f5. (The legacy #3b82f6 gold has been swept site-wide.)
   return new ImageResponse(
     <div
       style={{
@@ -53,7 +54,7 @@ export default async function PlanOgImage({ params }: Props) {
           style={{
             height: "6px",
             width: "96px",
-            backgroundColor: "#f2c070",
+            backgroundColor: "#3b82f6",
             marginBottom: "36px",
             borderRadius: "3px",
           }}
@@ -64,7 +65,7 @@ export default async function PlanOgImage({ params }: Props) {
             fontWeight: 600,
             letterSpacing: "6px",
             textTransform: "uppercase",
-            color: "#f2c070",
+            color: "#3b82f6",
           }}
         >
           Book Traverse
@@ -114,9 +115,9 @@ export default async function PlanOgImage({ params }: Props) {
           color: "rgba(250, 248, 245, 0.65)",
         }}
       >
-        <span>275+ Portland homes</span>
+        <span>180+ Colorado homes</span>
         <span>·</span>
-        <span>80,000+ guests hosted</span>
+        <span>6 mountain markets</span>
         <span>·</span>
         <span>Book direct. No fees.</span>
       </div>

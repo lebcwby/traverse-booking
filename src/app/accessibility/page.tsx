@@ -72,19 +72,19 @@ export default function AccessibilityPage() {
             <li>
               Email:{" "}
               <TrackedContactLink
-                href="mailto:hello@booktraverse.com"
+                href="mailto:bookings@traversehospitality.com"
                 className="text-primary hover:underline"
               >
-                hello@booktraverse.com
+                bookings@traversehospitality.com
               </TrackedContactLink>
             </li>
             <li>
               Phone:{" "}
               <TrackedContactLink
-                href="tel:+19713624726"
+                href="tel:+17207592013"
                 className="text-primary hover:underline"
               >
-                (971) 362-4726
+                (720) 759-2013
               </TrackedContactLink>
             </li>
           </ul>

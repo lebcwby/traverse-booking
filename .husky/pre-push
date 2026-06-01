@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Blocks pushes that would dangle imports on git-integrated Vercel builds.
+# Skip in genuine emergency: `git push --no-verify`.
+bash "$(dirname "$0")/../scripts/check-deployable.sh"

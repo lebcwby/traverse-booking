@@ -10,6 +10,11 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  DESTINATIONS,
+  CB_BUILDINGS,
+  LV_CATEGORIES,
+} from "@/components/home/floating-search-bar";
 
 type GuestKey = "adults" | "children" | "infants" | "pets";
 
@@ -50,7 +55,17 @@ const GUEST_ROWS: Array<{
   },
 ];
 
-export function NoFeesSearchBar() {
+export interface LockedDestination {
+  city?: string;
+  tag?: string;
+  label: string;
+}
+
+export function NoFeesSearchBar({
+  lockedDestination,
+}: {
+  lockedDestination?: LockedDestination;
+} = {}) {
   const router = useRouter();
   const [range, setRange] = useState<DateRange | undefined>(undefined);
   const [counts, setCounts] = useState<Record<GuestKey, number>>({
@@ -61,7 +76,14 @@ export function NoFeesSearchBar() {
   });
   const [datesOpen, setDatesOpen] = useState(false);
   const [guestsOpen, setGuestsOpen] = useState(false);
+  const [whereOpen, setWhereOpen] = useState(false);
   const [calendarMonths, setCalendarMonths] = useState(2);
+  const [selectedCity, setSelectedCity] = useState(lockedDestination?.city ?? "");
+  const [selectedTag, setSelectedTag] = useState(lockedDestination?.tag ?? "");
+  const [selectedLabel, setSelectedLabel] = useState(
+    lockedDestination?.label ?? ""
+  );
+  const isLocked = !!lockedDestination;
 
   useEffect(() => {
     const mql = window.matchMedia("(max-width: 720px)");
@@ -85,12 +107,28 @@ export function NoFeesSearchBar() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const params = new URLSearchParams();
-    params.set("city", "Crested Butte, CO");
+    if (selectedCity) params.set("city", selectedCity);
+    else if (selectedTag) params.set("tag", selectedTag);
     if (range?.from) params.set("checkIn", format(range.from, "yyyy-MM-dd"));
     if (range?.to) params.set("checkOut", format(range.to, "yyyy-MM-dd"));
     if (totalGuests > 0) params.set("guests", String(totalGuests));
     if (counts.pets > 0) params.set("pets", "true");
-    router.push(`/properties?${params.toString()}`);
+    const qs = params.toString();
+    router.push(qs ? `/properties?${qs}` : "/properties");
+  }
+
+  function pickCity(city: string, label: string) {
+    setSelectedCity(city);
+    setSelectedTag("");
+    setSelectedLabel(label);
+    setWhereOpen(false);
+  }
+
+  function pickTag(tag: string, label: string) {
+    setSelectedCity("");
+    setSelectedTag(tag);
+    setSelectedLabel(label);
+    setWhereOpen(false);
   }
 
   const checkInLabel = range?.from ? format(range.from, "MMM d") : "Add dates";
@@ -121,23 +159,157 @@ export function NoFeesSearchBar() {
   return (
     <div className="wrap search-wrap">
       <form className="search-bar" onSubmit={handleSubmit}>
-        <div className="search-field search-field--where">
-          <span className="search-label">WHERE</span>
-          <span className="search-value">
-            <svg
-              viewBox="0 0 24 24"
-              width="15"
-              height="15"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-              <circle cx="12" cy="10" r="3" />
-            </svg>
-            Crested Butte, CO
-          </span>
-        </div>
+        {isLocked ? (
+          <div
+            className="search-field search-field--where search-field--locked"
+            aria-label={`Searching ${selectedLabel}`}
+          >
+            <span className="search-label">WHERE</span>
+            <span className="search-value">
+              <svg
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              {selectedLabel}
+            </span>
+          </div>
+        ) : (
+          <Popover open={whereOpen} onOpenChange={setWhereOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className={`search-field search-field-button search-field--where${
+                  whereOpen ? " is-active" : ""
+                }`}
+                aria-label="Choose destination"
+              >
+              <span className="search-label">WHERE</span>
+              <span
+                className={`search-value${selectedLabel ? "" : " search-placeholder"}`}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="15"
+                  height="15"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                {selectedLabel || "Search Destinations"}
+              </span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            side="bottom"
+            sideOffset={8}
+            // Force-anchor below the trigger. Without these, Radix's default
+            // `avoidCollisions={true}` flips the dropdown upward when the
+            // search bar sits at the bottom of the hero, hiding the top of
+            // the menu behind the sticky header. The max-h + overflow keeps
+            // the dropdown bounded even if it extends past the viewport.
+            avoidCollisions={false}
+            collisionPadding={{ top: 88, bottom: 16, left: 16, right: 16 }}
+            className="w-[360px] max-h-[70vh] overflow-y-auto p-0"
+          >
+            <div className="py-2">
+              <p className="px-4 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Colorado Markets
+              </p>
+              {DESTINATIONS.map((dest) => (
+                <button
+                  key={dest.city}
+                  type="button"
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-muted"
+                  onClick={() => pickCity(dest.city, dest.label)}
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{dest.label}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {dest.subtitle}
+                    </p>
+                  </div>
+                </button>
+              ))}
+              <p className="px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Slopeside Buildings in Crested Butte
+              </p>
+              {CB_BUILDINGS.map((hood) => (
+                <button
+                  key={hood.tag}
+                  type="button"
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-muted"
+                  onClick={() => pickTag(hood.tag, hood.label)}
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium">{hood.label}</p>
+                </button>
+              ))}
+              <p className="px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Leadville Categories
+              </p>
+              {LV_CATEGORIES.map((hood) => (
+                <button
+                  key={hood.tag}
+                  type="button"
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-muted"
+                  onClick={() => pickTag(hood.tag, hood.label)}
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium">{hood.label}</p>
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+        )}
 
         <Popover open={datesOpen} onOpenChange={setDatesOpen}>
           <PopoverTrigger asChild>
@@ -173,29 +345,35 @@ export function NoFeesSearchBar() {
               {checkOutLabel}
             </span>
           </button>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              className={`search-field search-field-button search-field--dates-mobile${
-                datesOpen ? " is-active" : ""
-              }`}
-              aria-label="Dates"
+          {/* Mobile-only dates button. NOT a PopoverTrigger — having two
+              PopoverTriggers inside one Popover causes Radix to anchor to the
+              hidden mobile trigger on desktop (its bounding-rect is 0,0,0,0
+              when display:none), positioning the calendar at viewport (0,0).
+              Plain `onClick` to setDatesOpen keeps the same UX without
+              breaking anchoring. */}
+          <button
+            type="button"
+            className={`search-field search-field-button search-field--dates-mobile${
+              datesOpen ? " is-active" : ""
+            }`}
+            onClick={() => setDatesOpen(true)}
+            aria-label="Dates"
+          >
+            <span className="search-label">DATES</span>
+            <span
+              className={`search-value${range?.from ? "" : " search-placeholder"}`}
             >
-              <span className="search-label">DATES</span>
-              <span
-                className={`search-value${range?.from ? "" : " search-placeholder"}`}
-              >
-                {CalendarIcon}
-                {datesMobileLabel}
-              </span>
-            </button>
-          </PopoverTrigger>
+              {CalendarIcon}
+              {datesMobileLabel}
+            </span>
+          </button>
           <PopoverContent
             className="dates-popover w-auto p-0"
             align="start"
             side="bottom"
             sideOffset={12}
             avoidCollisions={false}
+            collisionPadding={{ top: 88, bottom: 16, left: 16, right: 16 }}
           >
             <Calendar
               mode="range"
@@ -255,7 +433,14 @@ export function NoFeesSearchBar() {
               </span>
             </button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-4" align="end" sideOffset={12}>
+          <PopoverContent
+            className="w-80 p-4"
+            align="end"
+            side="bottom"
+            sideOffset={12}
+            avoidCollisions={false}
+            collisionPadding={{ top: 88, bottom: 16, left: 16, right: 16 }}
+          >
             <div className="divide-y divide-neutral-200">
               {GUEST_ROWS.map((row) => (
                 <div

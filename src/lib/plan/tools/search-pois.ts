@@ -12,13 +12,13 @@ import { findFavoriteForPoi } from "@/lib/plan/favorites";
 
 export const searchPoisTool = tool({
   description:
-    "Search the curated Book Traverse POI catalog for real Portland places (restaurants, coffee, bars, parks, activities, etc). Returns POIs with stable ids that must be referenced in any itinerary you generate. Use this for every place you want to recommend.",
+    "Search the curated Book Traverse POI catalog for real Colorado mountain-town places (restaurants, coffee, bars, parks, trails, activities, etc) across Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes. Returns POIs with stable ids that must be referenced in any itinerary you generate. Use this for every place you want to recommend.",
   inputSchema: z.object({
     neighborhoods: z
       .array(z.string())
       .optional()
       .describe(
-        "Neighborhood slugs to filter by (e.g. 'pearl', 'alberta', 'hawthorne', 'downtown'). Omit to search city-wide."
+        "Neighborhood / town slugs to filter by (e.g. 'crested-butte', 'mt-crested-butte', 'leadville-downtown', 'vail-village', 'avon', 'granby', 'twin-lakes'). Omit to search across all Colorado markets."
       ),
     category: z
       .enum(POI_CATEGORIES)
@@ -48,7 +48,7 @@ export const searchPoisTool = tool({
       .boolean()
       .optional()
       .describe(
-        "Set to true ONLY when the user explicitly asks about day trips from Portland, wine country, the Oregon coast, the Columbia Gorge, Hood River, Astoria, Cannon Beach, or Mt. Hood. Default false — generic 'Portland' queries should never surface places outside the city."
+        "Set to true ONLY when the user explicitly asks about day trips from their anchor market (e.g. Aspen from Leadville, Glenwood Springs from Vail, RMNP from Granby, Black Canyon of the Gunnison from Crested Butte). Default false — generic queries should stay within the anchor market."
       ),
     limit: z
       .number()

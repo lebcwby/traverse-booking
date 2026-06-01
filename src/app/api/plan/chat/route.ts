@@ -15,15 +15,23 @@ import {
   type ModelMessage,
   type UIMessage,
 } from "ai";
-import { buildPlanSystem, planModelSonnet, planTools } from "@/lib/plan/agent";
+import {
+  buildPlanSystem,
+  planModelHaiku,
+  planModelSonnet,
+  planTools,
+} from "@/lib/plan/agent";
 import type { z } from "zod";
 import {
   detectAnchorNeighborhoods,
   detectPartyType,
+  detectTown,
   detectVibe,
   preloadPoiCandidates,
   renderCandidatesForPrompt,
+  type Town,
 } from "@/lib/plan/poi-preload";
+import { getEventsForStay, formatEventsForAgent } from "@/lib/plan/events";
 import {
   enforceRateLimit,
   rejectOversizedRequest,
@@ -164,6 +172,7 @@ export async function POST(req: Request) {
       })
       .join(" ");
     const anchors = detectAnchorNeighborhoods(opener);
+    const towns = detectTown(opener);
     try {
       const candidates = await preloadPoiCandidates({
         vibe: detectVibe(opener),
@@ -172,22 +181,48 @@ export async function POST(req: Request) {
       });
       const anchorBlock =
         anchors.length > 0
-          ? `\n\nAnchor neighborhood(s) the visitor named: ${anchors.join(", ")}. Build the itinerary AROUND these — most picks should be in one of them, and anything outside should have a concrete reason (a specific request, a day trip, an iconic spot like Pittock or Powell's). Do NOT scatter picks across unrelated neighborhoods when the user named where they're staying.`
+          ? `\n\nAnchor neighborhood(s) the visitor named: ${anchors.join(", ")}. Build the itinerary AROUND these — most picks should be in one of them, and anything outside should have a concrete reason (a 14er trailhead, a scenic drive day, a specific request). Do NOT scatter picks across unrelated neighborhoods when the user named where they're staying.`
           : "";
+
+      // Pull events for any town the visitor named. We pass a wide date
+      // window (the whole upcoming year) since we don't yet know the user's
+      // exact stay dates at preload time — the agent reads the events list,
+      // matches it against the dates IT picks in generate_itinerary, and
+      // surfaces only the ones that overlap in its closing message.
+      let eventsBlock = "";
+      if (towns.length > 0) {
+        const today = new Date();
+        const oneYearOut = new Date(today);
+        oneYearOut.setFullYear(today.getFullYear() + 1);
+        const fmt = (d: Date) => d.toISOString().slice(0, 10);
+        try {
+          const events = await getEventsForStay({
+            town: towns as Town[],
+            checkIn: fmt(today),
+            checkOut: fmt(oneYearOut),
+          });
+          if (events.length > 0) {
+            eventsBlock = `\n\nEVENTS_OVERLAPPING (${towns.join(", ")} — next 12 months):\n${formatEventsForAgent(events)}\n\nIf the dates you pick overlap any FIXED-date event above, mention it in your closing message ("that's Trail 100 MTB weekend — book quick"). For RECURRING events (no specific date), mention only if the user's window plausibly contains it (e.g. "early August" for Boom Days, "first weekend of March" for Ski Joring).`;
+          }
+        } catch (e) {
+          console.error("[plan/chat] events lookup failed:", (e as Error).message);
+        }
+      }
+
       preloadSystem = {
         role: "system",
         content: `PRELOADED_CANDIDATES
 
-You have a curated slate of real Portland POIs below — already filtered to match the visitor's vibe and balanced across categories. IDs are stable sp_pois ids, safe to use directly in generate_itinerary.
+You have a curated slate of real Colorado mountain POIs below — already filtered to match the visitor's vibe and balanced across categories. IDs are stable sp_pois ids, safe to use directly in generate_itinerary.
 
 Rules for this turn:
 - Build the itinerary by picking ids from this list. DO NOT call search_pois on this turn — the slate covers what you need.
-- Aim for a FULL day: 5-6 items per day with time-slot coverage across morning / midday / afternoon / evening. Not every item needs to be food — include at least one non-food activity (park, viewpoint, activity, shop, museum) per day.
-- Max 2 restaurants per day. Pair a breakfast/coffee, a walk or activity, a lunch, an afternoon thing, a dinner, and optionally a nightcap.
+- Aim for 4-6 items per day with time-slot coverage across morning / midday / afternoon / evening. Not every item needs to be food — include at least one non-food activity (park, viewpoint, activity, shop, museum) per day. The user can ask for more items in a follow-up.
+- Max 3 restaurants per day (breakfast + lunch + dinner). Cover the meals the user is most likely to care about; you don't have to fill every slot.
 - Favorites (marked [FAV]) should anchor the plan but shouldn't be more than ~40% of picks — pull in fresh discoveries too so the plan isn't just the greatest hits.
-- Any [FAV — order: X] tag means mention X verbatim in that item's reason.${anchorBlock}
+- Any [FAV — order: X] tag means mention X verbatim in that item's reason.${anchorBlock}${eventsBlock}
 
-search_pois is still available if a user later asks for something specific not in the slate ("find me a Spanish restaurant", "something closer to downtown"). That's a REFINEMENT flow, not the initial generate.
+search_pois is still available if a user later asks for something specific not in the slate ("find me a Thai restaurant", "something closer to the resort"). That's a REFINEMENT flow, not the initial generate.
 
 ${renderCandidatesForPrompt(candidates)}`,
         providerOptions: {
@@ -197,7 +232,7 @@ ${renderCandidatesForPrompt(candidates)}`,
         },
       };
       console.log(
-        `[plan/chat] preloaded ${candidates.length} candidates (vibe=${detectVibe(opener) ?? "default"}, anchors=[${anchors.join(",")}])`
+        `[plan/chat] preloaded ${candidates.length} candidates (vibe=${detectVibe(opener) ?? "default"}, towns=[${towns.join(",")}], anchors=[${anchors.join(",")}])`
       );
     } catch (e) {
       // Non-fatal — fall back to the old search_pois flow.
@@ -205,19 +240,20 @@ ${renderCandidatesForPrompt(candidates)}`,
     }
   }
 
-  // Sonnet on every turn. Haiku empirically malforms generate_itinerary's
-  // nested JSON often enough that retrying through the repair hook hurts UX
-  // more than just running Sonnet from the start. Preload already removed
-  // the 20s of sequential search_pois round-trips, so Sonnet's slower token
-  // stream is tolerable on fresh plans; refinement turns (the hot path for
-  // this decision) now also stay on Sonnet for reliability.
+  // Haiku 4.5 on every turn (initial plan AND refinements) as of 2026-05-26.
+  // Previously the initial-plan turn ran Sonnet because Haiku occasionally
+  // malformed generate_itinerary's nested JSON; the experimental_repairToolCall
+  // hook below already catches that misfire and retries via Sonnet, so the
+  // cost win (~5x cheaper input + 4x cheaper output) wins on every turn
+  // including the first plan. `onRefinement` is kept for log clarity.
   const userMessageCount = modelMessages.filter(
     (m) => m.role === "user"
   ).length;
   const onRefinement = hasSuccessfulItinerary(rawMessages);
-  const chosenModel = planModelSonnet;
+  const chosenModel = planModelHaiku;
+  const chosenModelLabel = "haiku-4-5";
   console.log(
-    `[plan/chat] userMessages=${userMessageCount} refinement=${onRefinement} model=sonnet-4-6`
+    `[plan/chat] userMessages=${userMessageCount} refinement=${onRefinement} model=${chosenModelLabel}`
   );
 
   const systemMessages: ModelMessage[] = [cachedSystem];
@@ -227,7 +263,15 @@ ${renderCandidatesForPrompt(candidates)}`,
     model: chosenModel,
     tools: planTools,
     messages: [...systemMessages, ...modelMessages],
-    stopWhen: stepCountIs(8),
+    // 6 steps covers the worst-case happy path (interview turn + search_pois
+    // + get_neighborhood + search_listings + generate_itinerary + close) with
+    // headroom for one repair. Lower than the previous 8 caps tail cost on
+    // agents that thrash on edge cases without reaching a result.
+    stopWhen: stepCountIs(6),
+    // Hard ceiling on output tokens per step. A finished itinerary is
+    // typically 3-5k output tokens; 6000 leaves room for the closing message
+    // without letting a stuck agent burn a full 64k window.
+    maxOutputTokens: 6000,
     temperature: 0.7,
     // Safety net: when the model emits a tool_use whose JSON input fails
     // Zod validation, ask Sonnet to re-emit it correctly. Without this

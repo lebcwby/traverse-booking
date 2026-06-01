@@ -10,7 +10,7 @@ export function InlineCTA({ href, label }: { href: string; label: string }) {
         {label}
       </Link>
       <p className="mt-2 text-xs text-muted-foreground">
-        No booking fees &middot; Free cancellation on most stays
+        No booking fees &middot; Free cancellation up to 14 days before check-in
       </p>
     </div>
   );

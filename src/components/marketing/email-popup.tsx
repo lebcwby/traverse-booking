@@ -138,7 +138,7 @@ export function EmailPopup() {
             <CheckCircle2 className="h-10 w-10 text-warm" />
             <p className="text-lg font-semibold">You&apos;re in!</p>
             <p className="text-sm text-primary-foreground/60">
-              Look for Portland tips and seasonal deals in your inbox.
+              Look for Colorado tips and seasonal deals in your inbox.
             </p>
           </div>
         )}
@@ -146,7 +146,7 @@ export function EmailPopup() {
         {step === "step1" && (
           <>
             <p className="text-center text-2xl font-bold tracking-tight">
-              Save 10-15% on your Portland stay
+              Save 10-15% on your Colorado stay
             </p>
             <p className="mt-3 text-center text-sm leading-relaxed text-primary-foreground/60">
               The same homes you see on Airbnb — without the service fees. Book
@@ -176,7 +176,7 @@ export function EmailPopup() {
               Stay in the loop
             </p>
             <p className="mt-3 text-center text-sm leading-relaxed text-primary-foreground/60">
-              Portland travel tips and seasonal deals — straight to your inbox.
+              Colorado travel tips and seasonal deals — straight to your inbox.
             </p>
             <form onSubmit={handleSubmit} className="mt-5">
               <div className="flex gap-2">

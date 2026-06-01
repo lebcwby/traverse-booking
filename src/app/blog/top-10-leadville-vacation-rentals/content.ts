@@ -1,5 +1,5 @@
 export const pageContent = `<p>Traverse Hospitality has been around Leadville for many years now. These are the team&#8217;s favorite listings in town. Each property has its unique characteristics, whether it&#8217;s <a href="https://petfriendly.traversehospitality.com/">pet friendly</a>, <a href="https://kidfriendly.traversehospitality.com/">kid friendly</a>, or has a <a href="https://hottubs.traversehospitality.com/">hot tub</a>&nbsp;we have properties that span from large vacation homes for big groups all the way to cabins and 1 bedroom homes. Check them out below. Remember to compare the prices, when you book direct you can save ~5-10% on your booking!</p>
-<link rel="stylesheet" href="https://booktraverse.com/wp-content/plugins/elementor-pro/assets/css/widget-call-to-action.min.css">		<a href="https://www.mountainhideaway.com/" target="_blank" rel="noopener"></p>
+<a href="https://www.mountainhideaway.com/" target="_blank" rel="noopener"></p>
 <h2>1. The Mountain Hideaway</h2>
 <p>						This listing is to book the entire Mountain Hideaway, a Victorian Mansion just 1 block from Leadville&#8217;s Main Street.  You&#8217;ll have access to 10 bedrooms, 10 bathrooms, and 1 queen or king bed per room.  You&#8217;ll also have access to all of the amazing amenities that are spread throughout this historic Victorian mansion.<br />
 						Book Direct and Save!<br />
@@ -163,7 +163,7 @@ One bedroom has a king bed, 2nd bedroom has a queen bed, and an office with a wo
 							<div class="elementor-posts-container elementor-posts elementor-posts--skin-classic elementor-grid">
 				<article class="elementor-post elementor-grid-item post-2769 post type-post status-publish format-standard has-post-thumbnail hentry category-travel-guides tag-colorado tag-crested-butte tag-grand-lodge tag-property-management tag-ski-condos tag-vacation-rentals">
 				<a class="elementor-post__thumbnail__link" href="https://booktraverse.com/traversehospitality/blog/grand-lodge-crested-butte-condos-traverse-vs-vail-resorts-what-s-the-difference/" tabindex="-1" >
-			<div class="elementor-post__thumbnail"><img width="300" height="223" src="https://booktraverse.com/wp-content/uploads/2026/04/Grand-Lodge-28-300x223.jpg" class="attachment-medium size-medium wp-image-2770" alt="" /></div>
+			<div class="elementor-post__thumbnail"><img width="300" height="223" src="/blog/grand-lodge-28.jpg" class="attachment-medium size-medium wp-image-2770" alt="" /></div>
 		</a>
 				<div class="elementor-post__text">
 				<h3 class="elementor-post__title">
@@ -187,7 +187,7 @@ One bedroom has a king bed, 2nd bedroom has a queen bed, and an office with a wo
 				</article>
 				<article class="elementor-post elementor-grid-item post-2645 post type-post status-publish format-standard has-post-thumbnail hentry category-crested-butte tag-colorado tag-crested-butte tag-family-friendly tag-grand-lodge tag-pet-friendly tag-vacation-rentals">
 				<a class="elementor-post__thumbnail__link" href="https://booktraverse.com/traversehospitality/blog/pet-friendly-crested-butte-condo-grand-lodge-studio-153-walk-to-the-lifts-pool-hot-tub/" tabindex="-1" >
-			<div class="elementor-post__thumbnail"><img width="300" height="195" src="https://booktraverse.com/wp-content/uploads/2026/04/153-living-room-300x195.jpg" class="attachment-medium size-medium wp-image-2650" alt="" /></div>
+			<div class="elementor-post__thumbnail"><img width="300" height="195" src="/blog/153-living-room.jpg" class="attachment-medium size-medium wp-image-2650" alt="" /></div>
 		</a>
 				<div class="elementor-post__text">
 				<h3 class="elementor-post__title">
@@ -211,7 +211,7 @@ One bedroom has a king bed, 2nd bedroom has a queen bed, and an office with a wo
 				</article>
 				<article class="elementor-post elementor-grid-item post-2631 post type-post status-publish format-standard has-post-thumbnail hentry category-travel-guides tag-colorado tag-leadville tag-mountain-travel tag-things-to-do tag-vacation-rentals tag-visitor-guide">
 				<a class="elementor-post__thumbnail__link" href="https://booktraverse.com/traversehospitality/blog/leadville-colorado-the-complete-visitor-s-guide-2026-2/" tabindex="-1" >
-			<div class="elementor-post__thumbnail"><img loading="lazy" width="300" height="262" src="https://booktraverse.com/wp-content/uploads/2026/04/IMG_2741-300x262.jpg" class="attachment-medium size-medium wp-image-2632" alt="" /></div>
+			<div class="elementor-post__thumbnail"><img loading="lazy" width="300" height="262" src="/blog/img_2741.jpg" class="attachment-medium size-medium wp-image-2632" alt="" /></div>
 		</a>
 				<div class="elementor-post__text">
 				<h3 class="elementor-post__title">

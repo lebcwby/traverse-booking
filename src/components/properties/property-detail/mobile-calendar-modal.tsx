@@ -643,7 +643,8 @@ export function MobileCalendarModal({
                     if (onSaveWithQuote) onSaveWithQuote(quoteRaw);
                     onReserve(quoteRaw);
                   }}
-                  className="relative w-full overflow-hidden rounded-full bg-accent text-accent-foreground hover:bg-accent/90 py-6 text-base font-semibold after:absolute after:inset-0 after:animate-shimmer after:bg-gradient-to-r after:from-transparent after:via-white/20 after:via-50% after:to-transparent"
+                  variant="accent"
+                  className="relative w-full overflow-hidden rounded-full py-6 text-base font-semibold after:absolute after:inset-0 after:animate-shimmer after:bg-gradient-to-r after:from-transparent after:via-white/20 after:via-50% after:to-transparent"
                 >
                   Reserve
                 </Button>
@@ -654,7 +655,8 @@ export function MobileCalendarModal({
             ) : quoteLoading ? (
               <Button
                 disabled
-                className="w-full rounded-full bg-accent text-accent-foreground py-6 text-base font-semibold opacity-50"
+                variant="accent"
+                className="w-full rounded-full py-6 text-base font-semibold"
               >
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Reserve

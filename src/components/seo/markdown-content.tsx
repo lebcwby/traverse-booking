@@ -167,7 +167,7 @@ export function MarkdownContent({
           {isUnsplash ? (
             <Image
               src={src}
-              alt={alt || "Portland Oregon travel photo"}
+              alt={alt || "Colorado travel photo"}
               width={1200}
               height={675}
               className="w-full rounded-xl object-cover"
@@ -178,7 +178,7 @@ export function MarkdownContent({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={src}
-              alt={alt || "Portland Oregon travel photo"}
+              alt={alt || "Colorado travel photo"}
               className="w-full rounded-xl object-cover"
               loading="lazy"
             />

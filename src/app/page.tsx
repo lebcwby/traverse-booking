@@ -6,6 +6,7 @@ import Link from "next/link";
 import { NoFeesHeader } from "@/components/no-fees/no-fees-header";
 import { NoFeesSearchBar } from "@/components/no-fees/no-fees-search-bar";
 import { NoFeesEmailSignup } from "@/components/no-fees/no-fees-email-signup";
+import { GoogleReviewsCarousel } from "@/components/google-reviews-carousel";
 import "./no-fees/no-fees.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -26,15 +27,15 @@ export const metadata: Metadata = {
   title:
     "Traverse Hospitality | Colorado Vacation Rentals — Crested Butte, Leadville, Vail & More",
   description:
-    "190+ locally managed vacation rentals across 6 Colorado mountain markets. Ski-in condos at Crested Butte, cabins in Leadville, homes near Vail & Copper Mountain. Book direct and save up to 15%.",
+    "189+ locally managed vacation rentals across 6 Colorado mountain markets. Ski-in condos at Crested Butte, cabins in Leadville, homes near Vail & Copper Mountain. Book direct and save up to 15%.",
   alternates: { canonical: "/" },
   openGraph: {
     url: "https://www.booktraverse.com/",
     title:
       "Traverse Hospitality — Colorado's Locally Managed Vacation Rentals",
     description:
-      "190+ vacation rentals across 6 Colorado mountain markets. Ski-in condos, cabins, historic homes. Book direct and save 15%.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+      "189+ vacation rentals across 6 Colorado mountain markets. Ski-in condos, cabins, historic homes. Book direct and save 15%.",
+    images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
   },
 };
 
@@ -45,8 +46,13 @@ const orgSchema = {
   name: "Traverse Hospitality",
   alternateName: ["Book Traverse", "High Rocky Homes"],
   url: "https://www.booktraverse.com",
+  // Logo + image populate the brand mark in Google Knowledge Panel results
+  // (and clear the "Missing field 'image' (optional)" warning in Rich Results
+  // Test). Both point to the same brand asset on the canonical domain.
+  logo: "https://www.booktraverse.com/book-traverse-logo.png",
+  image: "https://www.booktraverse.com/book-traverse-logo.png",
   description:
-    "Colorado's locally managed vacation rental company. 190+ properties across Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes.",
+    "Colorado's locally managed vacation rental company. 189+ properties across Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes.",
   foundingDate: "2016",
   address: [
     {
@@ -66,7 +72,7 @@ const orgSchema = {
       addressCountry: "US",
     },
   ],
-  telephone: ["+1-720-759-2013", "+1-970-438-2241"],
+  telephone: ["+1-720-759-2013", "+1-970-438-2241", "+1-970-533-3583"],
 };
 
 /* ────────── Five Stars SVG ────────── */
@@ -91,42 +97,42 @@ const MARKETS = [
     name: "Crested Butte",
     count: "70+",
     sub: "3 slope-side buildings",
-    img: "https://booktraverse.com/wp-content/uploads/2026/04/IMG_2659-scaled.jpeg",
+    img: "/markets/crested-butte.jpg",
   },
   {
     href: "/leadville",
     name: "Leadville",
     count: "70+",
     sub: "Cabins, homes & hot tubs",
-    img: "https://booktraverse.com/wp-content/uploads/2025/11/500-W-Sixth-St_-2-1024x684.jpg",
+    img: "/markets/leadville.jpg",
   },
   {
     href: "/properties?city=Vail",
     name: "Vail",
     count: "",
     sub: "Near Vail Village & Lionshead",
-    img: "https://booktraverse.com/wp-content/uploads/2024/09/796_spruce_4-2048x1365-1-1024x683.jpeg",
+    img: "/property-management/markets/vail.jpg",
   },
   {
     href: "/properties?city=Avon",
     name: "Avon",
     count: "",
     sub: "Near Beaver Creek Resort",
-    img: "https://booktraverse.com/wp-content/uploads/2024/09/homepage-about-us-01-1024x683.jpg",
+    img: "/property-management/markets/avon.jpg",
   },
   {
     href: "/properties?city=Granby",
     name: "Granby",
     count: "",
     sub: "Near Winter Park & Grand Lake",
-    img: "https://booktraverse.com/wp-content/uploads/2025/11/500-W-Sixth-St_-66-1024x684.jpg",
+    img: "/property-management/markets/granby.jpg",
   },
   {
     href: "/properties?city=Twin+Lakes",
     name: "Twin Lakes",
     count: "",
     sub: "At the foot of Mt Elbert",
-    img: "https://booktraverse.com/wp-content/uploads/2025/11/500-W-Sixth-St_-24-1024x684.jpg",
+    img: "/property-management/markets/twin-lakes.jpg",
   },
 ];
 
@@ -147,7 +153,7 @@ const FEATURED = [
   },
   {
     href: "/properties/5bf09e709d2adc002667c5ec",
-    img: "https://booktraverse.com/wp-content/uploads/2022/08/1-7.jpg",
+    img: "/featured/mountain-hideaway.jpg",
     alt: "Mountain Hideaway sleeps 20 in Leadville",
     badge: "Leadville",
     title: "The Mountain Hideaway — Sleeps 20",
@@ -173,7 +179,7 @@ const FEATURED = [
   },
   {
     href: "/properties/5f2ee35e0a0b48002c8095b6",
-    img: "https://booktraverse.com/wp-content/uploads/2026/04/xgtutpl2bskzmyaxhtdr-1.jpg",
+    img: "/featured/hilltop-suite.jpg",
     alt: "Hilltop Suite Leadville with Mt Massive views",
     badge: "Leadville · Pet Friendly",
     title: "The Hilltop Suite — Mt Massive Views",
@@ -186,29 +192,8 @@ const FEATURED = [
   },
 ];
 
-/* ────────── Reviews ────────── */
-const REVIEWS = [
-  {
-    text: "This rental had everything we needed. The room was spacious, the hot tub felt amazing after hiking, and the pool was warm — great for kids! We'd happily stay here again.",
-    author: "Toni S.",
-    source: "Guest · Crested Butte",
-  },
-  {
-    text: "We stayed in a beautiful condo steps from the lifts. The check-in was smooth, the place was spotless, and anytime we had a question we got a response within the hour. Better than any hotel experience.",
-    author: "Jason M.",
-    source: "Guest · Lodge at Mountaineer Square",
-  },
-  {
-    text: "I stayed for a month-long remote work trip. The extended-stay discount was real, the desk setup was better than my home office, and coffee shops were a 3-minute walk. Will absolutely come back.",
-    author: "Mia B.",
-    source: "Guest · Leadville",
-  },
-  {
-    text: "Traverse took over management of our condo and revenue increased 40% in the first season. They handle everything — pricing, cleaning, guests, maintenance. We just get a monthly check and a report.",
-    author: "David & Karen L.",
-    source: "Property Owner · Grand Lodge",
-  },
-];
+/* Reviews now live in src/lib/google-reviews.ts (single source of truth for
+   home page + property-management carousels). Refresh quarterly. */
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HOME PAGE
@@ -216,7 +201,7 @@ const REVIEWS = [
 
 export default function HomePage() {
   return (
-    <div data-no-fees-layout={true} className={`${jakarta.variable} ${inter.variable}`}>
+    <div data-no-fees-layout="hide-chrome" className={`${jakarta.variable} ${inter.variable}`}>
       {/* JSON-LD */}
       <script
         type="application/ld+json"
@@ -230,7 +215,7 @@ export default function HomePage() {
       <section
         className="hero"
         style={{
-          backgroundImage: "url('https://booktraverse.com/wp-content/uploads/2026/04/IMG_2659-scaled.jpeg')",
+          backgroundImage: "url('/markets/crested-butte.jpg')",
           backgroundSize: "cover",
           backgroundPosition: "center 40%",
         }}
@@ -249,20 +234,20 @@ export default function HomePage() {
               Book <em className="script">Traverse.</em>
             </h1>
             <p className="hero-sub">
-              190+ managed rentals across 6 Colorado mountain markets — with
+              189+ managed rentals across 6 Colorado mountain markets — with
               locally managed comfort and <strong>save up to 15% by booking direct.</strong>
             </p>
             <div className="hero-stats">
               <div className="hero-stats-item">
-                <div className="stars" aria-label="4.9 out of 5 stars">
+                <div className="stars" aria-label="4.8 out of 5 stars">
                   <FiveStars />
                 </div>
                 <span>
-                  <strong>4.9★</strong> average rating
+                  <strong>4.8★</strong> average rating
                 </span>
               </div>
               <div className="hero-stats-item">
-                <strong>190+</strong>
+                <strong>189+</strong>
                 <span>properties</span>
               </div>
               <div className="hero-stats-item">
@@ -340,7 +325,7 @@ export default function HomePage() {
             </p>
           </div>
           <Link href="/properties" className="section-link">
-            View all 190+ stays →
+            View all 189+ stays →
           </Link>
         </div>
         <div className="stay-grid">
@@ -386,13 +371,13 @@ export default function HomePage() {
             </span>
             <h3>Tell us what you love. We&apos;ll plan your Colorado trip in 2 minutes.</h3>
             <p>
-              Real picks from the team managing 190+ Colorado rentals — skiing, hiking, restaurants, and a matching vacation rental, built around your dates.
+              Real picks from the team managing 189+ Colorado rentals — skiing, hiking, restaurants, and a matching vacation rental, built around your dates.
             </p>
           </div>
           <div className="tp-visual">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://booktraverse.com/wp-content/uploads/2026/04/IMG_2705-scaled.jpeg"
+              src="/home/colorado-mountain-scene.jpg"
               alt="Colorado mountain scene"
               loading="lazy"
               style={{
@@ -411,7 +396,7 @@ export default function HomePage() {
           <div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://booktraverse.com/wp-content/uploads/2024/09/services-01-1024x683.jpg"
+              src="/home/managed-rental-interior.jpg"
               alt="Traverse Hospitality managed vacation rental interior"
               className="why-img"
               loading="lazy"
@@ -431,16 +416,16 @@ export default function HomePage() {
             </p>
             <ul className="why-perks">
               <li>
-                <strong>Save 10–15%</strong> — lower rates than Airbnb and VRBO listings
+                <strong>No booking fees</strong> — save 10–15% vs. Airbnb and VRBO. The price you see is the price you pay
               </li>
               <li>
                 <strong>Local 24/7 support</strong> — real people in Leadville (115 W 6th St) and Mt. Crested Butte (the Plaza)
               </li>
               <li>
-                <strong>Best price guaranteed</strong> — find it cheaper elsewhere and we&apos;ll match it
+                <strong>One simple cancellation policy</strong> — full refund up to 14 days before check-in, every property
               </li>
               <li>
-                <strong>Flexible cancellation</strong> — plans change, we get it
+                <strong>Direct relationships</strong> — talk to the team that actually manages your home
               </li>
             </ul>
             <NoFeesEmailSignup />
@@ -478,7 +463,7 @@ export default function HomePage() {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
               <div style={{ padding: "28px", background: "var(--card)", border: "1px solid var(--line)", borderRadius: "var(--radius-md)" }}>
-                <strong style={{ fontSize: "36px", fontWeight: 800, display: "block", marginBottom: "4px" }}>190+</strong>
+                <strong style={{ fontSize: "36px", fontWeight: 800, display: "block", marginBottom: "4px" }}>189+</strong>
                 <span style={{ fontSize: "13px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                   Managed properties
                 </span>
@@ -490,7 +475,7 @@ export default function HomePage() {
                 </span>
               </div>
               <div style={{ padding: "28px", background: "var(--card)", border: "1px solid var(--line)", borderRadius: "var(--radius-md)" }}>
-                <strong style={{ fontSize: "36px", fontWeight: 800, display: "block", marginBottom: "4px" }}>4.9★</strong>
+                <strong style={{ fontSize: "36px", fontWeight: 800, display: "block", marginBottom: "4px" }}>4.8★</strong>
                 <span style={{ fontSize: "13px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                   Guest rating
                 </span>
@@ -507,38 +492,10 @@ export default function HomePage() {
       </section>
 
       {/* ================= REVIEWS ================= */}
-      <section className="section wrap">
-        <div className="section-head centered">
-          <h2>What Guests & Owners Say</h2>
-          <p className="section-lede">
-            4.9 stars from thousands of stays across Colorado.
-          </p>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginTop: "40px" }}>
-          {REVIEWS.map((r, i) => (
-            <div
-              key={i}
-              style={{
-                padding: "32px 28px",
-                background: "var(--card)",
-                border: "1px solid var(--line)",
-                borderRadius: "var(--radius-md)",
-              }}
-            >
-              <div style={{ color: "var(--star)", fontSize: "18px", marginBottom: "16px", letterSpacing: "2px" }}>
-                ★★★★★
-              </div>
-              <p style={{ fontSize: "15px", color: "var(--ink)", lineHeight: "1.7", marginBottom: "20px", fontStyle: "italic" }}>
-                &ldquo;{r.text}&rdquo;
-              </p>
-              <strong style={{ fontSize: "14px" }}>{r.author}</strong>
-              <div style={{ fontSize: "12px", color: "var(--muted)", marginTop: "4px" }}>
-                {r.source}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      <GoogleReviewsCarousel
+        heading="What guests & owners say"
+        subhead="4.8 stars from thousands of stays across Colorado."
+      />
 
       {/* ================= GUIDES / BLOG ================= */}
       <section className="section-alt" style={{ padding: "80px 0" }}>
@@ -635,7 +592,7 @@ export default function HomePage() {
             Find your Colorado rental.
           </h2>
           <p style={{ fontSize: "18px", maxWidth: "55ch", margin: "0 auto 36px", opacity: 0.6 }}>
-            190+ locally managed properties across 6 mountain markets. Book direct and save up to 15%.
+            189+ locally managed properties across 6 mountain markets. Book direct and save up to 15%.
           </p>
           <Link href="/properties" className="btn btn-primary" style={{ display: "inline-block" }}>
             Search Available Dates
@@ -676,8 +633,7 @@ export default function HomePage() {
               </strong>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 <Link href="/property-management" style={{ color: "inherit", textDecoration: "none" }}>Property Management</Link>
-                <Link href="/list-your-property" style={{ color: "inherit", textDecoration: "none" }}>List Your Property</Link>
-                <a href="https://booktraverse.com/owners-portal/" style={{ color: "inherit", textDecoration: "none" }}>Owner Portal</a>
+                <a href="https://dashboard.traversehospitality.com" style={{ color: "inherit", textDecoration: "none" }}>Owner Portal</a>
               </div>
             </div>
             <div>

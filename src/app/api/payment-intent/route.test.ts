@@ -9,7 +9,9 @@ const {
   mockPaymentIntentUpdate,
   mockPaymentIntentCreate,
   mockGetQuote,
+  mockGetListingDetail,
   mockGetUpsellTotal,
+  mockResolvePetFeePerPet,
   mockFindBlockingPendingCheckout,
   mockFindLatestReusablePendingCheckout,
   mockGetPendingCheckout,
@@ -23,7 +25,9 @@ const {
   mockPaymentIntentUpdate: vi.fn(),
   mockPaymentIntentCreate: vi.fn(),
   mockGetQuote: vi.fn(),
+  mockGetListingDetail: vi.fn(),
   mockGetUpsellTotal: vi.fn(),
+  mockResolvePetFeePerPet: vi.fn(),
   mockFindBlockingPendingCheckout: vi.fn(),
   mockFindLatestReusablePendingCheckout: vi.fn(),
   mockGetPendingCheckout: vi.fn(),
@@ -48,10 +52,12 @@ vi.mock("@/lib/stripe", () => ({
 
 vi.mock("@/lib/guesty-beapi", () => ({
   getQuote: mockGetQuote,
+  getListingDetail: mockGetListingDetail,
 }));
 
 vi.mock("@/lib/upsells", () => ({
   getUpsellTotal: mockGetUpsellTotal,
+  resolvePetFeePerPet: mockResolvePetFeePerPet,
 }));
 
 vi.mock("@/lib/pending-checkouts", () => ({
@@ -73,6 +79,7 @@ vi.mock("@/lib/booking-identity", () => ({
 }));
 
 import { PATCH, POST } from "./route";
+import { createPendingCheckoutLookupToken } from "@/lib/pending-checkout-token";
 
 // Test requests don't set any cookies/headers, so extractTrackingContext()
 // always produces the all-undefined shape below. Asserted explicitly so any
@@ -96,6 +103,7 @@ const EMPTY_TRACKING_CONTEXT = {
 
 describe("POST /api/payment-intent", () => {
   beforeEach(() => {
+    process.env.CRON_SECRET = "test_cron_secret";
     mockBuildStripeIdempotencyKey.mockReturnValue("idem_key_create_pi");
     mockCustomersList.mockResolvedValue({ data: [] });
     mockCustomersCreate.mockResolvedValue({ id: "cus_new" });
@@ -134,7 +142,11 @@ describe("POST /api/payment-intent", () => {
         ],
       },
     });
+    mockGetListingDetail.mockResolvedValue({ prices: { petFee: null } });
     mockGetUpsellTotal.mockReturnValue(25);
+    mockResolvePetFeePerPet.mockImplementation((value) =>
+      typeof value === "number" && value > 0 ? value : 99
+    );
     mockFindBlockingPendingCheckout.mockResolvedValue(null);
     mockFindLatestReusablePendingCheckout.mockResolvedValue(null);
     mockGetPendingCheckout.mockResolvedValue({
@@ -174,6 +186,7 @@ describe("POST /api/payment-intent", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    delete process.env.CRON_SECRET;
   });
 
   it("blocks a new payment intent when a paid pending reservation already exists", async () => {
@@ -262,6 +275,7 @@ describe("POST /api/payment-intent", () => {
         upsellIds: "late-checkout,pet-fee",
         pets: "2",
         petFeeAmountCents: "19800",
+        petFeePerPet: "99",
       },
     });
     expect(mockUpsertPendingCheckout).toHaveBeenCalledWith({
@@ -284,6 +298,7 @@ describe("POST /api/payment-intent", () => {
         checkIn: "2026-04-20",
         checkOut: "2026-04-23",
         guests: 2,
+        listingNickname: "Test Home",
         stayTotal: 57.93,
         totalPaid: 280.93,
       },
@@ -304,6 +319,7 @@ describe("POST /api/payment-intent", () => {
     await expect(response.json()).resolves.toEqual({
       clientSecret: "pi_existing_secret",
       paymentIntentId: "pi_existing",
+      checkoutToken: expect.any(String),
       stripeCustomerId: "cus_existing",
     });
     expect(mockPaymentIntentCreate).not.toHaveBeenCalled();
@@ -355,6 +371,7 @@ describe("POST /api/payment-intent", () => {
           upsellIds: "late-checkout,pet-fee",
           pets: "1",
           petFeeAmountCents: "9900",
+          petFeePerPet: "99",
         },
       },
       {
@@ -381,6 +398,7 @@ describe("POST /api/payment-intent", () => {
         checkIn: "2026-04-20",
         checkOut: "2026-04-23",
         guests: 2,
+        listingNickname: "Test Home",
         stayTotal: 57.93,
         totalPaid: 181.93,
       },
@@ -401,6 +419,7 @@ describe("POST /api/payment-intent", () => {
     await expect(response.json()).resolves.toEqual({
       clientSecret: "pi_new_secret",
       paymentIntentId: "pi_new",
+      checkoutToken: expect.any(String),
       stripeCustomerId: null,
     });
   });
@@ -408,7 +427,11 @@ describe("POST /api/payment-intent", () => {
 
 describe("PATCH /api/payment-intent", () => {
   beforeEach(() => {
+    process.env.CRON_SECRET = "test_cron_secret";
     mockGetUpsellTotal.mockReturnValue(25);
+    mockResolvePetFeePerPet.mockImplementation((value) =>
+      typeof value === "number" && value > 0 ? value : 99
+    );
     mockGetPendingCheckout.mockResolvedValue({
       paymentIntentId: "pi_existing",
       quoteId: "quote_123",
@@ -454,6 +477,7 @@ describe("PATCH /api/payment-intent", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    delete process.env.CRON_SECRET;
   });
 
   it("requires a paymentIntentId", async () => {
@@ -486,6 +510,7 @@ describe("PATCH /api/payment-intent", () => {
       method: "PATCH",
       body: JSON.stringify({
         paymentIntentId: "pi_existing",
+        checkoutToken: createPendingCheckoutLookupToken("pi_existing"),
         upsellIds: ["late-checkout"],
         pets: 1,
       }),
@@ -508,6 +533,7 @@ describe("PATCH /api/payment-intent", () => {
       method: "PATCH",
       body: JSON.stringify({
         paymentIntentId: "pi_existing",
+        checkoutToken: createPendingCheckoutLookupToken("pi_existing"),
         upsellIds: ["late-checkout", "pet-fee"],
         pets: 2,
       }),
@@ -526,6 +552,7 @@ describe("PATCH /api/payment-intent", () => {
         upsellIds: "late-checkout,pet-fee",
         pets: "2",
         petFeeAmountCents: "19800",
+        petFeePerPet: "99",
       },
     });
     expect(mockGetPendingCheckout).toHaveBeenCalledWith("pi_existing");
@@ -608,6 +635,7 @@ describe("PATCH /api/payment-intent", () => {
       method: "PATCH",
       body: JSON.stringify({
         paymentIntentId: "pi_existing",
+        checkoutToken: createPendingCheckoutLookupToken("pi_existing"),
         guestEmail: " Guest@Example.com ",
         guestPhone: "(503) 555-1212",
       }),

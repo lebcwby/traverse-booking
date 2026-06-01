@@ -36,7 +36,11 @@ import {
 import { PriceBreakdown } from "./price-breakdown";
 import { CouponInput } from "./coupon-input";
 import { UpsellSelector } from "./upsell-selector";
-import { getSelectedUpsells } from "@/lib/upsells";
+import {
+  getSelectedUpsells,
+  resolveUpsellsForListing,
+  resolvePetFeePerPet,
+} from "@/lib/upsells";
 import { extractQuotePricing, getQuoteIdentifiers } from "@/lib/quote-response";
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -63,7 +67,6 @@ import {
 import Image from "next/image";
 import { getPhotoUrl } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils";
-import { openConduitWidget } from "@/components/conduit-widget";
 
 export interface QuoteData {
   quoteId: string;
@@ -73,6 +76,9 @@ export interface QuoteData {
   checkOut: string;
   guests: number;
   listingTitle: string;
+  /** Internal short name for ops (e.g. "Slopeside Escape 314"). Surfaces in
+   *  GA4 Ecommerce reports as Item variant alongside the marketing title. */
+  listingNickname?: string | null;
   picture?: string | null;
   propertyType?: string | null;
   city?: string | null;
@@ -82,6 +88,10 @@ export interface QuoteData {
     accommodationAdjusted: number;
     cleaning: number;
     taxes: number;
+    /** Per-tax line items extracted from invoiceItems by extractQuotePricing.
+     *  When present, PriceBreakdown renders the Taxes row as an expandable
+     *  dropdown. See src/lib/quote-response.ts:extractTaxBreakdown. */
+    taxBreakdown?: Array<{ name: string; amount: number }>;
     total: number;
     days: Array<{ date: string; price: number }>;
     invoiceItems?: Array<{ title: string; amount: number; type: string }>;
@@ -91,6 +101,11 @@ export interface QuoteData {
   photos?: Array<{ original: string; thumbnail: string; caption?: string }>;
   reviewRating?: number | null;
   reviewCount?: number | null;
+  /** Per-listing pet config from Guesty BEAPI listing detail.
+   *  petFeePerPet is in dollars (matches UpsellItem.amount). When pets are
+   *  not allowed, Pet Fee is hidden from the upsell picker entirely. */
+  petsAllowed?: boolean;
+  petFeePerPet?: number | null;
 }
 
 function getCheckoutCancellationText(
@@ -132,6 +147,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
   const [pets, setPets] = useState(0);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [checkoutToken, setCheckoutToken] = useState<string | null>(null);
   const [piVersion, setPiVersion] = useState(0);
   const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -289,11 +305,13 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
   const syncPaymentIntentGuestDetails = useCallback(
     async ({
       paymentIntentId,
+      checkoutToken,
       guestEmail,
       guestPhone,
       signal,
     }: {
       paymentIntentId: string;
+      checkoutToken: string;
       guestEmail?: string;
       guestPhone?: string;
       signal?: AbortSignal;
@@ -326,6 +344,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
           signal,
           body: JSON.stringify({
             paymentIntentId,
+            checkoutToken,
             guestEmail: normalizedEmail || undefined,
             guestPhone: normalizedPhone || undefined,
           }),
@@ -373,7 +392,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
         if (lastPaymentIntentRequestKey.current !== requestKey) {
           return;
         }
-        if (!res.ok || !data.clientSecret) {
+        if (!res.ok || !data.clientSecret || !data.checkoutToken) {
           console.error("[Checkout] PaymentIntent failed:", data);
           if (!data.pendingRecovery) {
             lastPaymentIntentRequestKey.current = null;
@@ -398,6 +417,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
         }
         setClientSecret(data.clientSecret);
         setPaymentIntentId(data.paymentIntentId);
+        setCheckoutToken(data.checkoutToken);
         setStripeCustomerId(data.stripeCustomerId || null);
         setPiVersion((v) => v + 1);
       })
@@ -433,7 +453,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
   ]);
 
   useEffect(() => {
-    if (!paymentIntentId) {
+    if (!paymentIntentId || !checkoutToken) {
       lastPaymentIntentGuestDetailsKey.current = null;
       return;
     }
@@ -442,6 +462,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
     const controller = new AbortController();
     syncPaymentIntentGuestDetails({
       paymentIntentId,
+      checkoutToken,
       guestEmail: paymentIntentGuestEmail,
       guestPhone: paymentIntentGuestPhone,
       signal: controller.signal,
@@ -455,6 +476,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
     return () => controller.abort();
   }, [
     paymentIntentId,
+    checkoutToken,
     paymentIntentGuestEmail,
     paymentIntentGuestPhone,
     syncPaymentIntentGuestDetails,
@@ -463,7 +485,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
   // Update PI amount when upsells or pets change (skip initial empty state)
   const upsellsInitialized = useRef(false);
   useEffect(() => {
-    if (!paymentIntentId) return;
+    if (!paymentIntentId || !checkoutToken) return;
     if (!upsellsInitialized.current) {
       upsellsInitialized.current = true;
       if (chargeableUpsellIds.length === 0 && effectivePets === 0) {
@@ -475,6 +497,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         paymentIntentId,
+        checkoutToken,
         upsellIds: chargeableUpsellIds,
         pets: effectivePets,
       }),
@@ -483,18 +506,19 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
       .catch((err) =>
         console.error("[Checkout] Failed to update PI for upsells:", err)
       );
-  }, [paymentIntentId, chargeableUpsellIds, effectivePets]);
+  }, [paymentIntentId, checkoutToken, chargeableUpsellIds, effectivePets]);
 
   const handleBeforeExpressConfirm = useCallback(
     async (billingDetails: ExpressCheckoutBillingDetails) => {
-      if (!paymentIntentId) return;
+      if (!paymentIntentId || !checkoutToken) return;
       await syncPaymentIntentGuestDetails({
         paymentIntentId,
+        checkoutToken,
         guestEmail: billingDetails.email,
         guestPhone: billingDetails.phone,
       });
     },
-    [paymentIntentId, syncPaymentIntentGuestDetails]
+    [paymentIntentId, checkoutToken, syncPaymentIntentGuestDetails]
   );
 
   const [datesDialogOpen, setDatesDialogOpen] = useState(false);
@@ -969,7 +993,21 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
   // T&C acceptance is now passive — "By booking, you agree to..."
   const policiesAccepted = true;
 
-  const PET_FEE_PER_PET = 99;
+  const PET_FEE_PER_PET = useMemo(
+    () => resolvePetFeePerPet(quote.petFeePerPet),
+    [quote.petFeePerPet]
+  );
+
+  const petsAllowed = quote.petsAllowed !== false;
+
+  const applicableUpsells = useMemo(
+    () =>
+      resolveUpsellsForListing({
+        petsAllowed,
+        petFeePerPet: quote.petFeePerPet,
+      }),
+    [petsAllowed, quote.petFeePerPet]
+  );
 
   const handleUpsellToggle = useCallback((id: string) => {
     setSelectedUpsells((prev) =>
@@ -978,10 +1016,11 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
   }, []);
 
   const petFeeTotal = useMemo(() => {
+    if (!petsAllowed) return 0;
     if (pets > 0) return pets * PET_FEE_PER_PET;
     if (selectedUpsells.includes("pet-fee")) return PET_FEE_PER_PET;
     return 0;
-  }, [pets, selectedUpsells]);
+  }, [pets, selectedUpsells, petsAllowed, PET_FEE_PER_PET]);
 
   const upsellItems = useMemo(() => {
     const items = getSelectedUpsells(selectedUpsells)
@@ -1129,6 +1168,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
       const confirmationData = {
         listingId: quote.listingId,
         listingTitle: quote.listingTitle,
+        listingNickname: quote.listingNickname,
         picture: quote.picture,
         checkIn: quote.checkIn,
         checkOut: quote.checkOut,
@@ -1167,11 +1207,13 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
       trackBookingCompleted({
         listingId: quote.listingId,
         listingTitle: quote.listingTitle,
+        listingNickname: quote.listingNickname,
         checkIn: quote.checkIn,
         checkOut: quote.checkOut,
         guests: quote.guests,
         total: totalPaid,
         reservationId: data.reservationId,
+        confirmationCode: data.confirmationCode,
         guestEmail: guest.email,
         guestPhone: guest.phone,
         guestFirstName: guest.firstName,
@@ -1317,6 +1359,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
       const confirmationData = {
         listingId: quote.listingId,
         listingTitle: quote.listingTitle,
+        listingNickname: quote.listingNickname,
         picture: quote.picture,
         checkIn: quote.checkIn,
         checkOut: quote.checkOut,
@@ -1360,11 +1403,13 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
       trackBookingCompleted({
         listingId: quote.listingId,
         listingTitle: quote.listingTitle,
+        listingNickname: quote.listingNickname,
         checkIn: quote.checkIn,
         checkOut: quote.checkOut,
         guests: quote.guests,
         total: totalPaid,
         reservationId: data.reservationId,
+        confirmationCode: data.confirmationCode,
         guestEmail: expressGuest.email,
         guestPhone: expressGuest.phone,
         guestFirstName: expressGuest.firstName,
@@ -1537,7 +1582,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
                 className="h-4 w-4 shrink-0 cursor-pointer rounded accent-primary"
               />
               <span className="text-sm text-muted-foreground">
-                Send me Portland travel tips and deals
+                Send me Colorado travel tips and deals
               </span>
             </label>
           </div>
@@ -1549,6 +1594,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
         <UpsellSelector
           selectedUpsells={selectedUpsells}
           onToggle={handleUpsellToggle}
+          upsells={applicableUpsells}
         />
       </div>
     </div>
@@ -1757,20 +1803,12 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
               <span className="opacity-40">&middot;</span>
               <span>Details sent to your email</span>
               <span className="opacity-40">&middot;</span>
-              <button
-                type="button"
-                onClick={() =>
-                  openConduitWidget({
-                    trigger: "checkout_inline",
-                    pageType: "checkout",
-                    listingId: quote.listingId,
-                    listingTitle: quote.listingTitle,
-                  })
-                }
+              <a
+                href="tel:+17207592013"
                 className="underline hover:text-foreground transition-colors"
               >
-                Need help?
-              </button>
+                Need help? (720) 759-2013
+              </a>
             </div>
 
             {error && (
@@ -1831,11 +1869,11 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
                       ) : null}
                       {quote.reviewRating && quote.reviewRating >= 4.8 && (
                         <span className="flex items-center gap-1 text-xs">
-                          <span className="text-base">🌹</span>
+                          <span className="text-base">⭐</span>
                           {quote.reviewRating >= 4.9
-                            ? "Portland\u2019s Best"
+                            ? "Traverse Favorite"
                             : quote.reviewRating >= 4.85
-                              ? "Portland Favorite"
+                              ? "Guest Favorite"
                               : "Guest Approved"}
                         </span>
                       )}
@@ -1922,6 +1960,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
                 accommodationAdjusted={quote.pricing.accommodationAdjusted}
                 cleaning={quote.pricing.cleaning}
                 taxes={quote.pricing.taxes}
+                taxBreakdown={quote.pricing.taxBreakdown}
                 total={quote.pricing.total}
                 promotion={quote.promotion}
                 upsells={upsellItems.length > 0 ? upsellItems : undefined}
@@ -2061,6 +2100,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
                 accommodationAdjusted={quote.pricing.accommodationAdjusted}
                 cleaning={quote.pricing.cleaning}
                 taxes={quote.pricing.taxes}
+                taxBreakdown={quote.pricing.taxBreakdown}
                 total={quote.pricing.total}
                 promotion={quote.promotion}
                 upsells={upsellItems.length > 0 ? upsellItems : undefined}
@@ -2160,20 +2200,12 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
               </>
             )}
           </Button>
-          <button
-            type="button"
-            onClick={() =>
-              openConduitWidget({
-                trigger: "checkout_inline",
-                pageType: "checkout",
-                listingId: quote.listingId,
-                listingTitle: quote.listingTitle,
-              })
-            }
-            className="mt-2 w-full text-center text-xs text-muted-foreground underline"
+          <a
+            href="tel:+17207592013"
+            className="mt-2 block w-full text-center text-xs text-muted-foreground underline"
           >
-            Need help?
-          </button>
+            Need help? Call (720) 759-2013
+          </a>
         </div>
       </div>
 
@@ -2320,7 +2352,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
                   htmlFor="express-marketing"
                   className="text-sm text-muted-foreground cursor-pointer select-none"
                 >
-                  Send me Portland travel tips and deals
+                  Send me Colorado travel tips and deals
                 </label>
               </div>
               <DialogFooter>

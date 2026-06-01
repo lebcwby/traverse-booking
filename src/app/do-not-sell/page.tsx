@@ -167,10 +167,10 @@ export default function DoNotSellPage() {
             information that may qualify as advertising-related sharing. You can
             manage that here or contact us directly at{" "}
             <TrackedContactLink
-              href="mailto:hello@booktraverse.com"
+              href="mailto:bookings@traversehospitality.com"
               className="text-primary hover:underline"
             >
-              hello@booktraverse.com
+              bookings@traversehospitality.com
             </TrackedContactLink>{" "}
             if you prefer.
           </p>

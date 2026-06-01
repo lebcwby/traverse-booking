@@ -5,6 +5,8 @@
 
 @theme inline {
   /* Traverse Hospitality brand colors */
+  --color-white: #ffffff;
+  --color-black: #000000;
   --color-background: hsl(0 0% 100%);
   --color-foreground: hsl(215 28% 17%);
   --color-card: hsl(0 0% 100%);
@@ -70,6 +72,10 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  /* Accent buttons always render white text regardless of inherited color */
+  [data-variant="accent"] {
+    color: white;
   }
 }
 
@@ -167,4 +173,35 @@ button[data-selected-single="true"] {
   100% {
     transform: translateX(350%);
   }
+}
+
+/* Lightbox image slide transitions: forward slides in from right, back from left. */
+@keyframes lightboxSlideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes lightboxSlideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-40px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.animate-lightbox-forward {
+  animation: lightboxSlideInFromRight 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.animate-lightbox-backward {
+  animation: lightboxSlideInFromLeft 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
 }

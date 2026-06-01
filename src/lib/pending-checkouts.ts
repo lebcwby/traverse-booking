@@ -16,6 +16,8 @@ export interface PendingGuest {
 export interface PendingTracking {
   listingId: string;
   listingTitle: string;
+  /** Internal short name — populates GA4 Item variant column. */
+  listingNickname?: string | null;
   picture?: string | null;
   propertyType?: string | null;
   city?: string | null;

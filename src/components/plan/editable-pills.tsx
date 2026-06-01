@@ -342,19 +342,14 @@ export function VibePill({ itinerary, onRefine, busy }: VibePillProps) {
 // ─────────────────────────────────────────────────────────────────────
 
 const ANCHOR_OPTIONS: { slug: string; label: string }[] = [
-  { slug: "nob_hill", label: "Nob Hill" },
-  { slug: "pearl", label: "Pearl District" },
-  { slug: "downtown", label: "Downtown" },
-  { slug: "alberta", label: "Alberta" },
-  { slug: "hawthorne", label: "Hawthorne" },
-  { slug: "division", label: "Division" },
-  { slug: "buckman", label: "Buckman" },
-  { slug: "richmond", label: "Richmond" },
-  { slug: "mt_tabor", label: "Mt. Tabor" },
-  { slug: "north_portland", label: "Mississippi / N Portland" },
-  { slug: "sellwood", label: "Sellwood" },
-  { slug: "kerns", label: "Kerns" },
-  { slug: "hollywood", label: "Hollywood" },
+  { slug: "downtown_cb", label: "Downtown Crested Butte" },
+  { slug: "mt_cb", label: "Mt. Crested Butte" },
+  { slug: "elk_avenue", label: "Elk Avenue" },
+  { slug: "downtown_leadville", label: "Downtown Leadville" },
+  { slug: "twin_lakes", label: "Twin Lakes" },
+  { slug: "vail", label: "Vail Village" },
+  { slug: "avon", label: "Avon" },
+  { slug: "granby", label: "Granby" },
 ];
 
 interface NeighborhoodPillProps extends BasePillProps {
@@ -377,7 +372,7 @@ export function NeighborhoodPill({
     if (slug === current) return;
     if (slug == null) {
       onRefine(
-        "Refine this plan: don't anchor the trip to a single neighborhood — let it roam across Portland. Keep the rest of the trip the same."
+        "Refine this plan: don't anchor the trip to a single neighborhood — let it roam across the region. Keep the rest of the trip the same."
       );
     } else {
       const label = formatNeighborhood(slug);
@@ -412,7 +407,7 @@ export function NeighborhoodPill({
             )}
           </span>
           <span className="text-[11.5px] text-neutral-500">
-            Let the trip roam across Portland
+            Let the trip roam across the region
           </span>
         </button>
         <div className="my-1 h-px bg-neutral-100" />

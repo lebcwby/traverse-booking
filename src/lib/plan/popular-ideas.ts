@@ -29,36 +29,36 @@ export const POPULAR_IDEAS: PopularIdea[] = [
   {
     key: "food",
     cacheKey: "premade:food",
-    label: "Food & drink highlights",
+    label: "Crested Butte food & drink",
     prompt:
-      "Plan me a weekend in Portland for 2 adults in the next month or so, focused on food and drink — the restaurants, coffee, and craft drinks locals actually love. Pick specific dates for me and generate the itinerary now — no follow-up questions.",
+      "Plan me a weekend in Crested Butte, Colorado for 2 adults in the next month or so, focused on food and drink — the restaurants, breweries, and cocktails locals actually love. Pick specific dates for me and generate the itinerary now — no follow-up questions.",
   },
   {
     key: "outdoors",
     cacheKey: "premade:outdoors",
-    label: "Outdoor adventure",
+    label: "14er weekend in Leadville",
     prompt:
-      "Plan me a weekend in Portland for 2 adults in the next month or so, focused on the outdoors — parks, viewpoints, and a day out at Mt. Hood or the Columbia Gorge. Pick specific dates for me and generate the itinerary now — no follow-up questions.",
+      "Plan me a weekend in Leadville, Colorado for 2 adults in the next month or so, focused on the outdoors — a 14er summit (Mount Elbert or Mount Massive), Twin Lakes, and Independence Pass scenic drive. Pick specific dates for me and generate the itinerary now — no follow-up questions.",
   },
   {
     key: "neighborhoods",
     cacheKey: "premade:neighborhoods",
-    label: "Arts, shops & neighborhoods",
+    label: "Crested Butte history & arts",
     prompt:
-      "Plan me a weekend in Portland for 2 adults in the next month or so, exploring the best neighborhoods — bookstores, galleries, vintage shops, and local finds. Pick specific dates for me and generate the itinerary now — no follow-up questions.",
+      "Plan me a weekend in Crested Butte, Colorado for 2 adults in the next month or so — Elk Avenue's historic district, the Mountain Heritage Museum, the Center for the Arts, and great local shops. Pick specific dates for me and generate the itinerary now — no follow-up questions.",
   },
   {
     key: "classic",
     cacheKey: "premade:classic",
-    label: "Classic Portland first-timer",
+    label: "Classic Crested Butte first-timer",
     prompt:
-      "Plan me a weekend in Portland for 2 adults in the next month or so, showing me the classic first-time Portland must-sees. Pick specific dates for me and generate the itinerary now — no follow-up questions.",
+      "Plan me a weekend in Crested Butte, Colorado for 2 adults in the next month or so, showing me the classic first-time CB must-sees — Elk Avenue, the mountain, a wildflower hike, and dinner downtown. Pick specific dates for me and generate the itinerary now — no follow-up questions.",
   },
   {
     key: "kids",
     cacheKey: "premade:kids",
-    label: "Portland with kids",
+    label: "Family weekend in CB or Leadville",
     prompt:
-      "Plan me a weekend in Portland in the next month or so for 2 adults and 2 kids ages 7 and 10 — kid-friendly food, parks, hands-on activities, and one fun outing. Pick specific dates for me and generate the itinerary now — no follow-up questions.",
+      "Plan me a weekend in Crested Butte or Leadville, Colorado in the next month or so for 2 adults and 2 kids ages 7 and 10 — kid-friendly food, parks, the Storybook Trail or scenic train, and one big outing. Pick specific dates for me and generate the itinerary now — no follow-up questions.",
   },
 ];

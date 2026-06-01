@@ -168,7 +168,8 @@ export function StickyNav({
               ) : null}
             </div>
             <Button
-              className="rounded-full px-6 bg-accent text-accent-foreground hover:bg-accent/90"
+              variant="accent"
+              className="rounded-full px-6"
               onClick={() => scrollTo("booking-sidebar")}
             >
               Reserve

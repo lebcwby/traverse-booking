@@ -29,7 +29,7 @@ export async function generateMetadata({
       description: page.meta_description,
       url: `https://www.booktraverse.com/stays/${page.slug}`,
       type: "website",
-      images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+      images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
     },
     alternates: { canonical: `/stays/${page.slug}` },
   };
@@ -97,8 +97,8 @@ export default async function UseCasePage({
             Find Your Perfect {page.use_case} Rental
           </h2>
           <p className="mb-6 text-muted-foreground">
-            Browse our full collection of Portland vacation rentals. Book direct
-            — no service fees, guaranteed best price.
+            Browse our full collection of Colorado vacation rentals. Book
+            direct — no service fees, guaranteed best price.
           </p>
           <Link
             href="/properties"

@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
 const FROM = "Book Traverse <noreply@booktraverse.com>";
-const REPLY_TO = "hello@booktraverse.com";
+const REPLY_TO = "bookings@traversehospitality.com";
 const HERO_IMAGE =
   "https://images.squarespace-cdn.com/content/v1/661ed00787739f1c507cd3da/1754173664643-QT90L5DZIU1NRO6Q0FY8/unsplash-image-fkL_jC8rUGI.jpg";
 const WORDMARK =
@@ -325,7 +325,7 @@ export function buildCancellationEmailHtml(
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                   <tr>
                     <td style="padding:0;">
-                      <a href="mailto:hello@booktraverse.com" style="color:#1a3c34;font-size:14px;font-weight:700;text-decoration:underline;">Email us</a>
+                      <a href="mailto:bookings@traversehospitality.com" style="color:#1a3c34;font-size:14px;font-weight:700;text-decoration:underline;">Email us</a>
                     </td>
                     <td align="right" style="padding:0;">
                       <a href="https://www.booktraverse.com" style="color:#1a3c34;font-size:14px;font-weight:700;text-decoration:underline;">Visit website</a>
@@ -343,10 +343,10 @@ export function buildCancellationEmailHtml(
               <td align="center" style="padding:24px 32px 32px 32px;">
                 <img src="${ICON}" alt="Book Traverse" width="36" style="display:block;max-width:36px;height:auto;margin:0 auto 12px auto;" />
                 <p style="margin:0 0 4px 0;color:#6b7280;font-size:13px;line-height:20px;">
-                  Book Traverse &middot; Portland, Oregon
+                  Book Traverse &middot; Colorado
                 </p>
                 <p style="margin:0;color:#9ca3af;font-size:12px;line-height:18px;">
-                  <a href="https://www.booktraverse.com" style="color:#1a3c34;text-decoration:none;">booktraverse.com</a> &middot; <a href="mailto:hello@booktraverse.com" style="color:#1a3c34;text-decoration:none;">hello@booktraverse.com</a>
+                  <a href="https://www.booktraverse.com" style="color:#1a3c34;text-decoration:none;">booktraverse.com</a> &middot; <a href="mailto:bookings@traversehospitality.com" style="color:#1a3c34;text-decoration:none;">bookings@traversehospitality.com</a>
                 </p>
               </td>
             </tr>

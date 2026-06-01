@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { pageContent, schemaBlocks } from "./content";
+import { NoFeesHeader } from "@/components/no-fees/no-fees-header";
+import "../../../no-fees/no-fees.css";
 import "./page.css";
 
 export const metadata: Metadata = {
@@ -10,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <>
+    <div data-no-fees-layout={true}>
       {schemaBlocks.map((schema: Record<string, unknown>, i: number) => (
         <script
           key={i}
@@ -18,10 +20,11 @@ export default function Page() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
         />
       ))}
+      <NoFeesHeader />
       <div
         className="traverse-page"
         dangerouslySetInnerHTML={{ __html: pageContent }}
       />
-    </>
+    </div>
   );
 }

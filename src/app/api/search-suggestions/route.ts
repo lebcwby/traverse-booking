@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { LANDING_PAGES } from "@/lib/landing-pages";
+import { isRetiredLandingSlug } from "@/lib/landing-page-paths";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -12,12 +13,16 @@ export async function GET(request: Request) {
 
   const lower = q.toLowerCase();
 
-  // Match landing pages by title, slug, or tagline
+  // Match landing pages by title, slug, or tagline.
+  // Skip retired Portland-era slugs — those URLs 301 to /properties via
+  // next.config.ts, so surfacing them in autocomplete would dead-end the
+  // user and leak Portland-named labels into the dropdown.
   const landingPages = LANDING_PAGES.filter(
     (p) =>
-      p.title.toLowerCase().includes(lower) ||
-      p.slug.replace(/-/g, " ").includes(lower) ||
-      p.tagline.toLowerCase().includes(lower)
+      !isRetiredLandingSlug(p.slug) &&
+      (p.title.toLowerCase().includes(lower) ||
+        p.slug.replace(/-/g, " ").includes(lower) ||
+        p.tagline.toLowerCase().includes(lower))
   )
     .slice(0, 4)
     .map((p) => ({ title: p.title, slug: p.slug }));

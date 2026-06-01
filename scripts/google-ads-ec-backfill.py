@@ -141,8 +141,8 @@ def build_user_identifiers(guest: dict) -> list[dict]:
 
 def fetch_reservations(env: dict, since_iso: str, limit: int | None) -> list[dict]:
     """Pull confirmed BE-API direct bookings since the given timestamp."""
-    base = env["SHARED_SUPABASE_URL"].rstrip("/")
-    key = env["SHARED_SUPABASE_SERVICE_ROLE_KEY"]
+    base = env["NEXT_PUBLIC_SUPABASE_URL"].rstrip("/")
+    key = env["SUPABASE_SERVICE_ROLE_KEY"]
     headers = {
         "apikey": key,
         "Authorization": f"Bearer {key}",

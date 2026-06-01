@@ -10,38 +10,31 @@ import { searchListingsTool } from "./tools/search-listings";
 import { getNeighborhoodTool } from "./tools/get-neighborhood";
 import { generateItineraryTool } from "./tools/generate-itinerary";
 
-// Two models. Interview turns run Sonnet 4.6 for voice quality — the user
-// explicitly told us the interview must remain exactly as it is. The
-// generate_itinerary turn flips to Haiku 4.5 because it's output-token-bound
-// (~900 tokens of structured JSON) and Haiku streams ~2x faster than Sonnet
-// with minimal quality loss on constrained schema emission. See pickPlanModel
-// below for the turn-count heuristic that routes between them.
+// All /plan turns run on Haiku 4.5 as of 2026-05-26 — including the opening
+// interview turn that previously ran on Sonnet 4.6 for voice quality. Haiku's
+// ~2× token throughput wins on every turn now that the system prompt is
+// tight enough to carry the interview voice on its own. Sonnet stays exported
+// for tests and as an escape hatch if we ever want to re-split per turn.
 export const PLAN_MODEL_SONNET_ID = "claude-sonnet-4-6";
 export const PLAN_MODEL_HAIKU_ID = "claude-haiku-4-5-20251001";
 
 export const planModelSonnet = anthropic(PLAN_MODEL_SONNET_ID);
 export const planModelHaiku = anthropic(PLAN_MODEL_HAIKU_ID);
 
-// Backward-compat: anything importing planModel (e.g. tests) still gets Sonnet.
+// Backward-compat: anything importing planModel (e.g. tests) keeps Sonnet so
+// quality snapshots run against the higher-tier model.
 export const planModel = planModelSonnet;
 
 /**
- * Pick the model for an incoming /api/plan/chat POST based on interview depth.
+ * Pick the model for an incoming /api/plan/chat POST.
  *
- * The 2026-04-22 prompt rewrite dropped the question floor from 5 to 0 — a
- * chip click carries dates + party + vibe and skips the interview entirely.
- * Typical flows now have only 1–2 user messages before generate_itinerary
- * fires, so the old threshold (≥6) meant the heavy generate turn was running
- * on Sonnet instead of Haiku.
- *
- * New threshold: Haiku kicks in from the second user message onward. The
- * very first user message (which usually triggers the greeting / one-question
- * follow-up) stays on Sonnet for voice quality. Every subsequent turn —
- * including the generate turn that streams ~900 tokens of JSON — runs on
- * Haiku for ~2× the token throughput.
+ * Currently always returns Haiku regardless of turn count. The `userMessageCount`
+ * arg is retained so callers don't need to change, and to make re-introducing
+ * a per-turn split a one-line edit if voice quality regresses on the opener.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function pickPlanModel(userMessageCount: number) {
-  return userMessageCount >= 2 ? planModelHaiku : planModelSonnet;
+  return planModelHaiku;
 }
 
 // Export the tool set keyed by name — streamText uses these names in its
@@ -86,7 +79,7 @@ Today is ${todayPretty} (${todayIso} UTC). All dates you pick for a trip MUST be
 
 # Book Traverse team favorites
 
-A small, human-maintained list of real Portland spots our team loves, each with the specific thing to order or do. Favorites layer extra human-supplied detail on top of sp_pois — they do NOT replace it. Your flow is unchanged: you still call search_pois for every place.
+A small, human-maintained list of real Colorado mountain-town spots our team loves, each with the specific thing to order or do. Favorites layer extra human-supplied detail on top of sp_pois — they do NOT replace it. Your flow is unchanged: you still call search_pois for every place.
 
 When search_pois returns a POI that matches a favorite, its row in the tool response includes an extra \`favorite\` field:
   - orderThis: the specific thing to order or do

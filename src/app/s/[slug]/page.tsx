@@ -24,7 +24,7 @@ import { ServerPropertyCard } from "@/components/properties/server-property-card
 import { FloatingSearchBar } from "@/components/home/floating-search-bar";
 import { BehaviorTracker } from "@/components/behavior-tracker";
 
-const FALLBACK_HERO = "/images/portland-skyline-hero.jpg";
+const FALLBACK_HERO = "/markets/crested-butte.jpg";
 
 export const revalidate = 300;
 
@@ -53,13 +53,13 @@ export async function generateMetadata({
       description: config.metaDescription,
       url: `https://www.booktraverse.com/s/${config.slug}`,
       type: "website",
-      images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+      images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
     },
     twitter: {
       card: "summary_large_image",
       title: config.title,
       description: config.metaDescription,
-      images: ["/og-image.png"],
+      images: ["/og-image-v2.png"],
     },
     alternates: {
       canonical,
@@ -359,14 +359,14 @@ export default async function LandingPage({
         />
         <div className="absolute inset-0 bg-primary/40" />
         <div className="relative z-10 mx-auto w-full max-w-3xl text-center">
-          <h1 className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
+          <h1 className="text-3xl font-bold text-[#3b82f6] drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)] sm:text-4xl lg:text-5xl">
             {config.title}
           </h1>
-          <p className="mt-3 text-base text-white/90 sm:text-lg">
+          <p className="mt-3 text-base text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] sm:text-lg">
             {config.tagline}
           </p>
-          <p className="mt-2 text-sm font-medium text-accent">
-            No Fees. Lowest Price Guaranteed.
+          <p className="mt-2 text-sm font-medium text-accent drop-shadow-[0_1px_6px_rgba(0,0,0,0.45)]">
+            No Booking Fees · Save 10–15% vs. Airbnb.
           </p>
         </div>
       </section>

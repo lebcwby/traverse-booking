@@ -56,7 +56,7 @@ export function SubscribePrompt({ reservationId, isOwner }: Props) {
       <div className="flex items-center gap-2 rounded-lg border border-border p-4 text-sm text-muted-foreground">
         <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
         <span>
-          You&apos;re in! We&apos;ll send Portland tips and deals to your inbox.
+          You&apos;re in! We&apos;ll send Colorado tips and deals to your inbox.
         </span>
       </div>
     );
@@ -65,7 +65,7 @@ export function SubscribePrompt({ reservationId, isOwner }: Props) {
   return (
     <div className="rounded-lg border border-border p-4">
       <p className="text-sm font-medium text-foreground">
-        {name ? `${name}, want` : "Want"} Portland travel tips &amp; deals?
+        {name ? `${name}, want` : "Want"} Colorado travel tips &amp; deals?
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
         Local recommendations, seasonal guides, and deals for your next trip.

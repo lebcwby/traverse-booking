@@ -127,10 +127,10 @@ export default function PrivacyPage() {
             communications at any time. To exercise any of these rights, please
             contact us at{" "}
             <TrackedContactLink
-              href="mailto:hello@booktraverse.com"
+              href="mailto:bookings@traversehospitality.com"
               className="text-primary hover:underline"
             >
-              hello@booktraverse.com
+              bookings@traversehospitality.com
             </TrackedContactLink>
             .
           </p>
@@ -164,10 +164,10 @@ export default function PrivacyPage() {
             If you have questions about this Privacy Policy or how we handle
             your data, please contact us at{" "}
             <TrackedContactLink
-              href="mailto:hello@booktraverse.com"
+              href="mailto:bookings@traversehospitality.com"
               className="text-primary hover:underline"
             >
-              hello@booktraverse.com
+              bookings@traversehospitality.com
             </TrackedContactLink>
             .
           </p>

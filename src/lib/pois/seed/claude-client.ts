@@ -4,12 +4,21 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 
-const apiKey = process.env.ANTHROPIC_API_KEY;
-if (!apiKey) {
-  throw new Error("ANTHROPIC_API_KEY is required for POI seeding");
+// Lazy client. Top-level instantiation would throw at module-import time
+// in any environment without ANTHROPIC_API_KEY — which would have included
+// Next.js's route-preflight pass if this file ever got pulled in via the
+// app/api graph (currently it's only imported by scripts, but the import-
+// time throw is a foot-gun if a route ever does pull it in).
+let _claude: Anthropic | null = null;
+export function getClaudeClient(): Anthropic {
+  if (_claude) return _claude;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error("ANTHROPIC_API_KEY is required for POI seeding");
+  }
+  _claude = new Anthropic({ apiKey });
+  return _claude;
 }
-
-export const claude = new Anthropic({ apiKey });
 
 export const SEED_MODEL = "claude-sonnet-4-6";
 
@@ -23,7 +32,7 @@ export async function completeJson<T>(opts: {
   user: string;
   maxTokens?: number;
 }): Promise<T> {
-  const response = await claude.messages.create({
+  const response = await getClaudeClient().messages.create({
     model: SEED_MODEL,
     max_tokens: opts.maxTokens ?? 4096,
     system: opts.system,

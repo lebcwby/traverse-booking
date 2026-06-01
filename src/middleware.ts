@@ -48,6 +48,13 @@ const RATE_LIMIT_RULES: RateLimitRule[] = [
     methods: ["POST", "PATCH"],
     limit: 10,
     windowMs: 60_000,
+    // Fail-closed: this route creates Stripe payment intents (real money,
+    // real API quota cost). If the shared limiter is unavailable we 503
+    // rather than degrade to the per-lambda in-memory limiter which an
+    // attacker who can DoS Supabase could exhaust trivially by spreading
+    // requests across cold starts. See Codex #11 in the 2026-05-27 review
+    // and src/lib/rate-limit.ts header for the rationale.
+    failClosed: true,
   },
   {
     key: "reservations",
@@ -125,22 +132,49 @@ function buildRateLimitHeaders(
 
 export async function middleware(request: NextRequest) {
   const host = request.headers.get("host") || "";
-  if (host === "booking.booktraverse.com") {
+
+  // Marketing subdomain redirects — fixed destinations, no path preservation needed
+  const MARKETING_SUBDOMAIN_REDIRECTS: Record<string, string> = {
+    "hottubs.booktraverse.com":
+      "https://www.booktraverse.com/properties?amenities=Hot+Tub",
+    "kidfriendly.booktraverse.com":
+      "https://www.booktraverse.com/properties?amenities=Family%2FKid+Friendly",
+    "petfriendly.booktraverse.com":
+      "https://www.booktraverse.com/properties?pets=true",
+    // Catch common typo variant that may already be linked externally
+    "petfirendly.booktraverse.com":
+      "https://www.booktraverse.com/properties?pets=true",
+  };
+  if (host in MARKETING_SUBDOMAIN_REDIRECTS) {
+    return NextResponse.redirect(MARKETING_SUBDOMAIN_REDIRECTS[host], 301);
+  }
+
+  if (
+    host === "booking.booktraverse.com" ||
+    host === "reservations.booktraverse.com"
+  ) {
     let pathname = request.nextUrl.pathname;
 
+    // Strip /en/ locale prefix used by older Guesty-hosted sites
     if (pathname.startsWith("/en/") || pathname === "/en") {
       pathname = pathname.replace(/^\/en\/?/, "/") || "/";
     }
 
+    // One-to-one path renames
     const pathMap: Record<string, string> = {
       "/privacy-policy": "/privacy",
     };
     pathname = pathMap[pathname] ?? pathname;
 
+    // /property/{id} and /listing/{id} → /properties/{id}
     if (pathname.startsWith("/property/")) {
       pathname = pathname.replace(/^\/property\//, "/properties/");
     }
+    if (pathname.startsWith("/listing/")) {
+      pathname = pathname.replace(/^\/listing\//, "/properties/");
+    }
 
+    // Strip Guesty booking-engine-specific params that have no meaning on the new site
     const search = request.nextUrl.searchParams;
     search.delete("pointofsale");
     search.delete("ratePlanId");
@@ -170,10 +204,19 @@ export async function middleware(request: NextRequest) {
     const key = `${rateLimitRule.key}:${ip}`;
     rateLimitResult = await rateLimit(key, rateLimitRule);
     if (!rateLimitResult.allowed) {
+      // Distinguish "limiter unavailable" (503) from "actually rate-limited"
+      // (429). Both share the same `allowed=false` shape but the former
+      // sets `failure: true` so the caller and monitors can tell them
+      // apart.
+      const failClosedFailure = rateLimitResult.failure === true;
       return NextResponse.json(
-        { error: "Too many requests. Please try again later." },
         {
-          status: 429,
+          error: failClosedFailure
+            ? "Service temporarily unavailable. Please try again shortly."
+            : "Too many requests. Please try again later.",
+        },
+        {
+          status: failClosedFailure ? 503 : 429,
           headers: buildRateLimitHeaders(rateLimitResult, rateLimitRule),
         }
       );

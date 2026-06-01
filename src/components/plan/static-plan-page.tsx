@@ -146,7 +146,7 @@ export function StaticPlanPage({
             href="/properties"
             className="inline-flex items-center gap-2 rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-800 hover:border-neutral-400"
           >
-            Browse 275+ Portland rentals
+            Browse 180+ Colorado rentals
           </Link>
         </div>
         {/* E-E-A-T author byline — small but visible attribution block. */}
@@ -261,7 +261,7 @@ export function StaticPlanPage({
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-[13.5px] font-medium text-neutral-900">
-                            {l.title ?? l.nickname ?? "Portland rental"}
+                            {l.title ?? l.nickname ?? "Colorado rental"}
                           </div>
                           <div className="mt-0.5 flex items-center gap-2 text-[11.5px] text-neutral-500">
                             <span className="inline-flex items-center gap-1">
@@ -331,7 +331,7 @@ export function StaticPlanPage({
       {/* Related plans */}
       <section className="mt-12 border-t border-neutral-200 pt-8">
         <h2 className="text-lg font-semibold text-neutral-900">
-          More Portland trip ideas
+          More Colorado trip ideas
         </h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {otherSlugs.map((s) => (
@@ -356,10 +356,10 @@ export function StaticPlanPage({
       {/* Final CTA */}
       <section className="mt-10 rounded-3xl bg-primary/5 p-8 text-center">
         <h2 className="text-xl font-semibold text-neutral-900">
-          Build your own Portland trip
+          Build your own Colorado trip
         </h2>
         <p className="mx-auto mt-2 max-w-lg text-sm text-neutral-700">
-          Tell our Portland team what you&rsquo;re into and we&rsquo;ll build a
+          Tell our Colorado team what you&rsquo;re into and we&rsquo;ll build a
           day-by-day itinerary with a map and matching vacation rentals — free,
           in under a minute.
         </p>

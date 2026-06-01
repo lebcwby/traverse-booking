@@ -45,6 +45,8 @@ import { PlanTopBar } from "./plan-top-bar";
 import { PlanContextSidebar } from "./plan-context-sidebar";
 import { PlanLanding } from "./plan-landing";
 import { PlanMobileActionBar } from "./plan-mobile-action-bar";
+import { NoFeesHeader } from "@/components/no-fees/no-fees-header";
+import "@/app/no-fees/no-fees.css";
 import type { PopularIdea } from "@/lib/plan/popular-ideas";
 import type { Itinerary } from "@/lib/plan/schema";
 
@@ -398,7 +400,7 @@ export function PlanClient({
   const chatHeader = (
     <div className="border-b border-neutral-200 px-5 py-3">
       <div className="text-xs font-medium leading-snug text-neutral-700">
-        Where Portlanders eat, drink and hang out
+        Where Coloradans ski, hike, eat and unwind
       </div>
     </div>
   );
@@ -406,8 +408,17 @@ export function PlanClient({
   // ── Unified render: hero and sidebar as crossfading layers ─────────
   return (
     <div data-plan-chrome className="flex h-full w-full flex-col">
-      {/* Site nav surfaces only live alongside the sidebar/workspace.
-        Landing mode renders its own full-width top bar inside PlanLanding. */}
+      {/* Landing-mode global nav. Wrapping ONLY the header in
+        data-no-fees-layout (NOT contain:layout — that clips dropdowns under
+        the hero) keeps the rest of the page on Tailwind. The plan.css
+        `body:has([data-plan-chrome]) > header` rule only matches direct
+        children of <body>, so the nested NoFeesHeader is unaffected. */}
+      {!isSidebar && (
+        <div data-no-fees-layout className="relative z-50 shrink-0">
+          <NoFeesHeader />
+        </div>
+      )}
+      {/* Site nav surfaces for the sidebar/workspace mode. */}
       {isSidebar && <PlanMobileHeader />}
       {isSidebar && <PlanTopBar itinerary={itinerary} />}
       <div className="relative flex-1 overflow-hidden">

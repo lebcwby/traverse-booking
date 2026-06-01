@@ -1,19 +1,7 @@
 export const pageContent = `<main id="main">
 
 <!-- ══════ HERO ══════ -->
-<header class="hero-full">
-  <div class="hero-bg" style="background-image:url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1800&q=80');"></div>
-  <div class="hero-overlay"></div>
-  <div class="hero-inner">
-    <div class="eyebrow">Lake County · Elevation 10,152 ft · America's Highest City</div>
-    <h1>Leadville, <em>Colorado.</em></h1>
-    <p class="hero-lede">A silver mining boomtown turned high-alpine basecamp — 14ers out the front door, Ski Cooper up the road, and Vail under an hour away. 70+ locally managed vacation rentals: cabins, historic Victorians, hot tub homes, and pet-friendly stays. Book direct and save up to 15%.</p>
-    <div class="hero-cta">
-      <a href="https://reservations.booktraverse.com/en/properties?city=Leadville&minOccupancy=1" class="btn btn-primary">Browse All Leadville Rentals</a>
-      <a href="#categories" class="btn btn-ghost-light">Find Your Stay</a>
-    </div>
-  </div>
-</header>
+
 
 <!-- ══════ QUICK FACTS ══════ -->
 <section class="facts">
@@ -35,38 +23,38 @@ export const pageContent = `<main id="main">
 
   <div class="cat-grid">
     <article class="cat-card">
-      <img class="cat-card-img" src="https://booktraverse.com/wp-content/uploads/2022/08/1-7.jpg" alt="Large mountain home in Leadville Colorado with multiple bedrooms for groups" loading="lazy">
+      <img class="cat-card-img" src="/featured/mountain-hideaway.jpg" alt="Large mountain home in Leadville Colorado with multiple bedrooms for groups" loading="lazy">
       <div class="cat-card-body">
         <h3>Big Group Homes</h3>
         <p>Planning a reunion, retreat, or multi-family ski trip? Our largest homes sleep 10–20 guests with multiple bedrooms, common areas, and full kitchens. The Mountain Hideaway sleeps 20, the Governor's Mansion sleeps 14.</p>
-        <a href="https://reservations.booktraverse.com/en/properties?city=Leadville&minOccupancy=8" class="cat-link">Browse group homes →</a>
+        <a href="/properties?city=Leadville&minOccupancy=8" class="cat-link">Browse group homes →</a>
       </div>
     </article>
 
     <article class="cat-card">
-      <img class="cat-card-img" src="https://booktraverse.com/wp-content/uploads/2026/04/xgapa7nczvvlf5vzoibi-1024x771.jpg" alt="Vacation rental with hot tub and mountain views in Leadville" loading="lazy">
+      <img class="cat-card-img" src="/leadville/hot-tub-rental.jpg" alt="Vacation rental with hot tub and mountain views in Leadville" loading="lazy">
       <div class="cat-card-body">
         <h3>Hot Tub Rentals</h3>
         <p>At 10,152 feet, there's nothing better than a private hot tub after a day of skiing, hiking, or exploring. Many of our Leadville homes come equipped with hot tubs and mountain views.</p>
-        <a href="https://reservations.booktraverse.com/en/properties?city=Leadville&includeAmenities=Hot+tub&minOccupancy=1" class="cat-link">Browse hot tub rentals →</a>
+        <a href="/properties?city=Leadville&amenities=HOT_TUB&minOccupancy=1" class="cat-link">Browse hot tub rentals →</a>
       </div>
     </article>
 
     <article class="cat-card">
-      <img class="cat-card-img" src="https://booktraverse.com/wp-content/uploads/2026/04/wn5upkhghbw6znwwyzvp.jpg" alt="Pet-friendly vacation rental in Leadville Colorado" loading="lazy">
+      <img class="cat-card-img" src="/leadville/pet-friendly-rental.jpg" alt="Pet-friendly vacation rental in Leadville Colorado" loading="lazy">
       <div class="cat-card-body">
         <h3>Pet-Friendly Stays</h3>
         <p>Bring your dog along — many of our Leadville properties welcome well-behaved pets. From downtown homes near Harrison Ave to cabins outside of town, there's room for the whole family.</p>
-        <a href="https://reservations.booktraverse.com/en/properties?city=Leadville&petsAllowed=true&minOccupancy=1" class="cat-link">Browse pet-friendly →</a>
+        <a href="/properties?city=Leadville&petsAllowed=true&minOccupancy=1" class="cat-link">Browse pet-friendly →</a>
       </div>
     </article>
 
     <article class="cat-card">
-      <img class="cat-card-img" src="https://booktraverse.com/wp-content/uploads/2022/08/1-4-1.jpg" alt="Historic Victorian home in Leadville Colorado available for rent" loading="lazy">
+      <img class="cat-card-img" src="/leadville/victorian-3br.jpg" alt="Historic Victorian home in Leadville Colorado available for rent" loading="lazy">
       <div class="cat-card-body">
         <h3>Historic Homes</h3>
         <p>Leadville's Victorian architecture is a National Historic Landmark. Stay in a beautifully restored 1880s home on or near Harrison Avenue — the same streets silver barons walked 140 years ago.</p>
-        <a href="https://reservations.booktraverse.com/en/properties?city=Leadville&minOccupancy=1" class="cat-link">Browse all Leadville rentals →</a>
+        <a href="/properties?city=Leadville&minOccupancy=1" class="cat-link">Browse all Leadville rentals →</a>
       </div>
     </article>
   </div>
@@ -82,7 +70,7 @@ export const pageContent = `<main id="main">
   <div class="prop-grid">
 
     <article class="prop-card">
-      <img class="prop-card-img" src="https://booktraverse.com/wp-content/uploads/2022/08/1-7.jpg" alt="Mountain Hideaway exterior" loading="lazy">
+      <img class="prop-card-img" src="/featured/mountain-hideaway.jpg" alt="Mountain Hideaway exterior" loading="lazy">
       <div class="prop-card-body">
         <span class="prop-badge badge-group">Sleeps 20</span>
         <h3>The Mountain Hideaway</h3>
@@ -93,13 +81,13 @@ export const pageContent = `<main id="main">
         </div>
         <p>The largest home in our portfolio — hot tub, sauna, 1Gbps WiFi, and space for 20 guests. Perfect for reunions, corporate retreats, and multi-family ski trips.</p>
         <div class="prop-footer">
-          <a href="https://reservations.booktraverse.com/en/properties/5bf09e709d2adc002667c5ec" class="prop-link">View & Book →</a>
+          <a href="/properties/5bf09e709d2adc002667c5ec" class="prop-link">View & Book →</a>
         </div>
       </div>
     </article>
 
     <article class="prop-card">
-      <img class="prop-card-img" src="https://booktraverse.com/wp-content/uploads/2022/08/1-3.jpg" alt="Governor's Mansion exterior" loading="lazy">
+      <img class="prop-card-img" src="/leadville/governors-mansion.jpg" alt="Governor's Mansion exterior" loading="lazy">
       <div class="prop-card-body">
         <span class="prop-badge badge-historic">Historic Victorian</span>
         <h3>The Governor's Mansion</h3>
@@ -110,13 +98,13 @@ export const pageContent = `<main id="main">
         </div>
         <p>A grand Victorian home with character, space, and history. Sauna, pool table, and a walk to Main Street. One of Leadville's most iconic rental properties.</p>
         <div class="prop-footer">
-          <a href="https://reservations.booktraverse.com/en/properties/5c38a3cb6d3f8b0076761b23" class="prop-link">View & Book →</a>
+          <a href="/properties/5c38a3cb6d3f8b0076761b23" class="prop-link">View & Book →</a>
         </div>
       </div>
     </article>
 
     <article class="prop-card">
-      <img class="prop-card-img" src="https://booktraverse.com/wp-content/uploads/2026/04/xgtutpl2bskzmyaxhtdr-1.jpg" alt="Hilltop Suite with mountain views" loading="lazy">
+      <img class="prop-card-img" src="/featured/hilltop-suite.jpg" alt="Hilltop Suite with mountain views" loading="lazy">
       <div class="prop-card-body">
         <span class="prop-badge badge-pet">Pet Friendly · EV Charger</span>
         <h3>The Hilltop Suite</h3>
@@ -127,13 +115,13 @@ export const pageContent = `<main id="main">
         </div>
         <p>Stunning views of Mount Massive, pet-friendly, EV charger, and a quiet location above town. One of our most-reviewed properties — a guest favorite for couples and small families.</p>
         <div class="prop-footer">
-          <a href="https://reservations.booktraverse.com/en/properties/5f2ee35e0a0b48002c8095b6" class="prop-link">View & Book →</a>
+          <a href="/properties/5f2ee35e0a0b48002c8095b6" class="prop-link">View & Book →</a>
         </div>
       </div>
     </article>
 
     <article class="prop-card">
-      <img class="prop-card-img" src="https://booktraverse.com/wp-content/uploads/2026/04/hmt9q6cvavanbcj2aiwh-1024x684.jpg" alt="Hilltop Haven exterior" loading="lazy">
+      <img class="prop-card-img" src="/leadville/hilltop-haven.jpg" alt="Hilltop Haven exterior" loading="lazy">
       <div class="prop-card-body">
         <span class="prop-badge badge-family">Families</span>
         <h3>The Hilltop Haven</h3>
@@ -144,13 +132,13 @@ export const pageContent = `<main id="main">
         </div>
         <p>A warm, well-equipped family home with views, a full kitchen, and enough space for everyone to have their own room. Close to town but away from the noise.</p>
         <div class="prop-footer">
-          <a href="https://reservations.booktraverse.com/en/properties/6361acb0ceb7c600536ed901" class="prop-link">View & Book →</a>
+          <a href="/properties/6361acb0ceb7c600536ed901" class="prop-link">View & Book →</a>
         </div>
       </div>
     </article>
 
     <article class="prop-card">
-      <img class="prop-card-img" src="https://booktraverse.com/wp-content/uploads/2026/04/xgapa7nczvvlf5vzoibi-1024x771.jpg" alt="Hot tub rental with mountain views" loading="lazy">
+      <img class="prop-card-img" src="/leadville/hot-tub-rental.jpg" alt="Hot tub rental with mountain views" loading="lazy">
       <div class="prop-card-body">
         <span class="prop-badge badge-hot-tub">♨️ Hot Tub · Views</span>
         <h3>2BR — Hot Tub, Deck with Amazing Mountain Views</h3>
@@ -161,13 +149,13 @@ export const pageContent = `<main id="main">
         </div>
         <p>Private hot tub on the deck overlooking the mountains. The perfect couples or small-family retreat — cozy interior, expansive views, and total privacy.</p>
         <div class="prop-footer">
-          <a href="https://reservations.booktraverse.com/en/properties/6227ac6b4d2cb00036c4f738" class="prop-link">View & Book →</a>
+          <a href="/properties/6227ac6b4d2cb00036c4f738" class="prop-link">View & Book →</a>
         </div>
       </div>
     </article>
 
     <article class="prop-card">
-      <img class="prop-card-img" src="https://booktraverse.com/wp-content/uploads/2022/08/1-4-1.jpg" alt="1880s Victorian home" loading="lazy">
+      <img class="prop-card-img" src="/leadville/victorian-3br.jpg" alt="1880s Victorian home" loading="lazy">
       <div class="prop-card-body">
         <span class="prop-badge badge-historic">1880s Remodel</span>
         <h3>1880s Victorian Remodel</h3>
@@ -178,7 +166,7 @@ export const pageContent = `<main id="main">
         </div>
         <p>An authentically restored 1880s Victorian home — original character with modern comforts. Walk to Harrison Avenue restaurants and shops from the front door.</p>
         <div class="prop-footer">
-          <a href="https://reservations.booktraverse.com/en/properties/5edd46b2c4442a002d852113" class="prop-link">View & Book →</a>
+          <a href="/properties/5edd46b2c4442a002d852113" class="prop-link">View & Book →</a>
         </div>
       </div>
     </article>
@@ -186,7 +174,7 @@ export const pageContent = `<main id="main">
   </div>
 
   <div style="text-align:center;margin-top:48px;">
-    <a href="https://reservations.booktraverse.com/en/properties?city=Leadville&minOccupancy=1" class="btn" style="background:var(--ink-deep);color:#fff;">Browse All 70+ Leadville Rentals →</a>
+    <a href="/properties?city=Leadville&minOccupancy=1" class="btn" style="background:var(--ink-deep);color:#fff;">Browse All 70+ Leadville Rentals →</a>
   </div>
 </section>
 
@@ -274,7 +262,7 @@ export const pageContent = `<main id="main">
       <a href="https://booktraverse.com/driving-directions-leadville/" class="guide-card"><small>Travel</small><span>Driving directions</span></a>
       <a href="https://booktraverse.com/weather-leadville/" class="guide-card"><small>Planning</small><span>Leadville weather</span></a>
       <a href="https://www.leadvillevacationhomes.com/cabins" class="guide-card"><small>Lodging</small><span>Cabin rentals</span></a>
-      <a href="https://reservations.booktraverse.com/en/properties?city=Leadville&includeAmenities=Hot+tub&minOccupancy=1" class="guide-card"><small>Amenities</small><span>Hot tub rentals</span></a>
+      <a href="/properties?city=Leadville&amenities=HOT_TUB&minOccupancy=1" class="guide-card"><small>Amenities</small><span>Hot tub rentals</span></a>
       <a href="https://booktraverse.com/property-management/" class="guide-card"><small>Owners</small><span>Property management</span></a>
     </div>
   </div>
@@ -302,7 +290,7 @@ export const pageContent = `<main id="main">
 <section class="cta-band">
   <h2>Find your Leadville rental</h2>
   <p>70+ locally managed homes, cabins, and condos. Book direct and save up to 15% compared to Airbnb and VRBO.</p>
-  <a href="https://reservations.booktraverse.com/en/properties?city=Leadville&minOccupancy=1" class="btn btn-primary">Search Available Dates</a>
+  <a href="/properties?city=Leadville&minOccupancy=1" class="btn btn-primary">Search Available Dates</a>
 </section>
 
 </main>`;

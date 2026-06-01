@@ -749,7 +749,7 @@ export default function ReservationDetailPage() {
             ))}
           </div>
           <a
-            href={`https://app.booktraverse.com/${r.confirmation_code}`}
+            href={`https://portal.booktraverse.com/${r.confirmation_code}`}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"

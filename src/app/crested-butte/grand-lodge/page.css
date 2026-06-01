@@ -15,8 +15,8 @@ h1,h2,h3,h4{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;line-heig
 
 /* HERO */
 .hero-full{position:relative;min-height:80vh;display:flex;align-items:flex-end;overflow:hidden;}
-.hero-full .hero-bg{position:absolute;inset:0;background-size:cover;background-position:center 40%;filter:brightness(.5);}
-.hero-full .hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(20,20,43,.9) 0%,rgba(20,20,43,.35) 50%,rgba(20,20,43,.1) 100%);}
+.hero-full .hero-bg{position:absolute;inset:0;background-size:cover;background-position:center 40%;filter:brightness(.75);}
+.hero-full .hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(20,20,43,.55) 0%,rgba(20,20,43,.18) 50%,rgba(20,20,43,0) 100%);}
 .hero-full .hero-inner{position:relative;max-width:1280px;margin:0 auto;padding:0 32px 80px;width:100%;color:#fff;}
 .eyebrow{font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:.25em;font-size:12px;font-weight:500;color:rgba(255,255,255,.55);margin-bottom:24px;display:flex;align-items:center;gap:14px;}
 .eyebrow::before{content:"";display:block;width:40px;height:1px;background:rgba(255,255,255,.35);}
@@ -27,8 +27,8 @@ h1,h2,h3,h4{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;line-heig
 .btn{display:inline-block;padding:16px 32px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border:none;cursor:pointer;transition:all .25s;}
 .btn-primary{background:#fff;color:var(--ink-deep);}
 .btn-primary:hover{background:var(--paper-off);transform:translateY(-2px);}
-.btn-ghost-light{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);}
-.btn-ghost-light:hover{background:rgba(255,255,255,.1);}
+.traverse-page .btn-ghost-light{background:rgba(0,0,0,.55);color:#fff;border:2px solid #fff;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
+.traverse-page .btn-ghost-light:hover{background:#fff;color:var(--ink-deep);border-color:#fff;text-shadow:none;}
 
 /* FACTS */
 .facts{background:var(--ink-deep);color:#fff;padding:56px 32px;}

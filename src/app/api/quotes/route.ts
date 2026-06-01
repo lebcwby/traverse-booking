@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createQuote } from "@/lib/guesty-beapi";
+import { classifyBeapiError } from "@/lib/beapi-error";
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,7 +10,10 @@ export async function POST(request: NextRequest) {
 
     if (!listingId || !checkIn || !checkOut || !guestsCount) {
       return NextResponse.json(
-        { error: "listingId, checkIn, checkOut, and guestsCount are required" },
+        {
+          error: "listingId, checkIn, checkOut, and guestsCount are required",
+          code: "INVALID_REQUEST",
+        },
         { status: 400 }
       );
     }
@@ -20,18 +24,25 @@ export async function POST(request: NextRequest) {
       checkOut,
       guestsCount,
       coupons,
+      // Note: BEAPI's `pointofsale` only accepts the values [google, findrentals]
+      // for specific Guesty integrations — it is NOT for tagging direct-booking
+      // channels. Channel commissions for the Website manual channel are
+      // configured in Guesty itself and applied per the BEAPI account's default
+      // channel mapping. Forwarding only when an integration explicitly sets it.
       pointofsale,
     });
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error(
-      "[Quotes] Error:",
-      error instanceof Error ? error.message : error
-    );
+    // Keep the raw BEAPI error in server logs (and Sentry, if wired). The
+    // client only ever sees the classified, sanitized response — no raw
+    // internal field names or Guesty-internal codes leak.
+    console.error("[Quotes] Error:", error);
+
+    const classified = classifyBeapiError(error);
     return NextResponse.json(
-      { error: "Failed to create quote" },
-      { status: 500 }
+      { error: classified.message, code: classified.code },
+      { status: classified.status }
     );
   }
 }

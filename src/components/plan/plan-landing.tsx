@@ -5,12 +5,11 @@
 // message. Once useChat has messages, plan-client.tsx swaps this out for
 // the sidebar layout — this component is not re-used after submit.
 //
-// Brand-aligned to /no-fees/styles.css — forest #2d3e2c, gold #f2c070,
-// ink #1c1d1d, cream #faf8f5. "perfect" rendered in Dancing Script italic
-// gold (matches /no-fees hero "Portland." script word convention).
+// Brand-aligned to Traverse: navy #14142b on light backgrounds, accent
+// blue #3b82f6 on dark. "perfect" rendered in Dancing Script italic blue
+// (matches the home-page hero script-word convention via --gold token).
 // Full-bleed hero image with dark forest gradient overlay; white text.
 
-import Image from "next/image";
 import Link from "next/link";
 import { Dancing_Script } from "next/font/google";
 import {
@@ -62,19 +61,19 @@ function InstantSpark({ className }: { className?: string }) {
 type CategoryChip = { label: string; starter: string };
 
 const CATEGORY_CHIPS: CategoryChip[] = [
-  { label: "Food & Drink", starter: "Food and drink highlights of Portland" },
-  { label: "Outdoors", starter: "Outdoor adventures around Portland" },
-  { label: "Arts & Culture", starter: "Arts and culture in Portland" },
-  { label: "Family Fun", starter: "Family-friendly trip to Portland" },
-  { label: "Romance", starter: "Romantic getaway in Portland" },
-  { label: "Solo Travel", starter: "Solo trip to Portland" },
+  { label: "Food & Drink", starter: "Food and drink highlights in Crested Butte" },
+  { label: "14er Hikes", starter: "Mount Elbert 14er weekend in Leadville" },
+  { label: "Wildflowers", starter: "Crested Butte wildflower weekend in July" },
+  { label: "Family Fun", starter: "Family weekend with kids in Crested Butte or Leadville" },
+  { label: "Ski Weekend", starter: "Ski weekend in Crested Butte" },
+  { label: "Race Weekend", starter: "Leadville race weekend (Trail 100, Silver Rush, Marathon)" },
 ];
 
 const TRUST_PILLS = [
   { icon: CheckCircle2, bold: "Free forever", detail: "no signup required" },
-  { icon: MapPin, bold: "Local picks", detail: "curated by Portlanders" },
+  { icon: MapPin, bold: "Local picks", detail: "by the team in CB & Leadville" },
   { icon: Bookmark, bold: "Save & share", detail: "keep your trip plan" },
-  { icon: Star, bold: "Real rentals", detail: "275+ matched homes" },
+  { icon: Star, bold: "Real rentals", detail: "189+ Colorado homes" },
 ] as const;
 
 export interface PlanLandingProps {
@@ -102,38 +101,19 @@ export function PlanLanding({
 
   return (
     <div className="flex h-full w-full flex-col overflow-y-auto bg-[#faf8f5]">
-      {/* ── HEADER ───────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 shrink-0 border-b border-[#1c1d1d]/[0.06] bg-[#faf8f5]/95 backdrop-blur-md">
-        <div className="mx-auto flex h-[60px] w-full max-w-[1280px] items-center justify-between px-4 sm:px-7">
-          <Link href="/" aria-label="Book Traverse">
-            <Image
-              src="/book-traverse-wordmark-dark.png"
-              alt="Book Traverse"
-              width={150}
-              height={40}
-              priority
-              className="h-9 w-auto"
-            />
-          </Link>
-          <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium text-[#2a2b2b]">
-            <Sparkles
-              className="h-3.5 w-3.5 text-[#2d3e2c]"
-              strokeWidth={2.2}
-            />
-            Free Trip Planner
-          </span>
-        </div>
-      </header>
+      {/* Global nav (NoFeesHeader) is rendered by plan-client above this
+        component — no per-component sticky header needed. The "Trip Planner ·
+        Free" pill in the hero copy below carries the surface identity. */}
 
       {/* ── HERO (full-bleed image, forest overlay, white text) ──── */}
       <section className="relative shrink-0 overflow-hidden lg:min-h-[520px]">
         <div className="pointer-events-none absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/no-fees/img/hero-desktop.jpg"
+            src="/markets/crested-butte.jpg"
             alt=""
             className="h-full w-full object-cover"
-            style={{ objectPosition: "center 65%" }}
+            style={{ objectPosition: "center 55%" }}
           />
           {/* Forest gradient overlay — brand primary */}
           <div
@@ -154,7 +134,7 @@ export function PlanLanding({
             <div className="order-2 max-w-[620px] text-white lg:order-none">
               <span className="hidden items-center gap-1.5 rounded-full border border-white/25 bg-white/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white backdrop-blur sm:inline-flex">
                 <Sparkles
-                  className="h-3 w-3 text-[#f2c070]"
+                  className="h-3 w-3 text-[#3b82f6]"
                   strokeWidth={2.4}
                 />
                 Trip Planner · Free
@@ -173,7 +153,7 @@ export function PlanLanding({
                   style={{
                     fontStyle: "italic",
                     fontWeight: 700,
-                    color: "#f2c070",
+                    color: "#3b82f6",
                     fontSize: "1.12em",
                     paddingLeft: "4px",
                   }}
@@ -181,14 +161,15 @@ export function PlanLanding({
                   perfect
                 </em>
                 <br />
-                Portland trip.
+                Colorado trip.
               </h1>
 
               <p className="mt-4 max-w-[540px] text-[14.5px] leading-[1.55] text-white/92 sm:mt-5 sm:text-[17px]">
-                Built by the team managing 275+ Portland homes. Tell us your
-                vibe — we&apos;ll draft your day-by-day with real spots, a map,
-                and matching places to stay.{" "}
-                <strong className="font-bold text-[#f2c070]">
+                Built by the team managing 189+ vacation rentals across Crested
+                Butte, Leadville, and the Colorado mountains. Tell us your vibe
+                — we&apos;ll draft your day-by-day with real spots, a map, and
+                matching places to stay.{" "}
+                <strong className="font-bold text-[#3b82f6]">
                   No signup. Free forever.
                 </strong>
               </p>
@@ -202,7 +183,7 @@ export function PlanLanding({
                     {Array.from({ length: 5 }).map((_, i) => (
                       <Star
                         key={i}
-                        className="h-3 w-3 fill-[#f2c070]"
+                        className="h-3 w-3 fill-[#fbbf24]"
                         strokeWidth={0}
                       />
                     ))}
@@ -213,7 +194,7 @@ export function PlanLanding({
                   </span>
                 </div>
                 <div className="inline-flex items-center gap-1.5 border-r border-white/30 px-4">
-                  <strong className="font-bold text-white">275+</strong>
+                  <strong className="font-bold text-white">189+</strong>
                   <span>homes</span>
                 </div>
                 <div className="inline-flex items-center gap-1.5 pl-4">
@@ -235,7 +216,7 @@ export function PlanLanding({
                 <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#2d3e2c]">
                   Popular trip ideas
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#f2c070] px-2 py-[3px] text-[9.5px] font-extrabold uppercase tracking-[0.1em] text-[#1c1d1d]">
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#14142b] px-2 py-[3px] text-[9.5px] font-extrabold uppercase tracking-[0.1em] text-white">
                   <InstantSpark className="h-[9px] w-[9px]" />
                   Instant
                 </span>
@@ -257,13 +238,13 @@ export function PlanLanding({
                       }
                       className="group relative flex items-center gap-3 rounded-[10px] border border-[#e6e3dd] bg-white p-3 text-left transition hover:-translate-y-0.5 hover:border-[#2d3e2c] hover:shadow-[0_10px_28px_rgba(28,29,29,0.08)]"
                     >
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#efe9df] text-[#2d3e2c] transition group-hover:bg-[#2d3e2c] group-hover:text-[#f2c070]">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#efe9df] text-[#2d3e2c] transition group-hover:bg-[#14142b] group-hover:text-[#3b82f6]">
                         <Icon className="h-4 w-4" strokeWidth={2} />
                       </span>
                       <span className="flex-1 text-[13.5px] font-medium leading-snug text-[#1c1d1d]">
                         {idea.label}
                       </span>
-                      <InstantSpark className="h-3 w-3 shrink-0 text-[#f2c070] opacity-0 transition group-hover:opacity-100" />
+                      <InstantSpark className="h-3 w-3 shrink-0 text-[#14142b] opacity-0 transition group-hover:opacity-100" />
                       <ArrowRight
                         className="h-4 w-4 shrink-0 text-[#8b8e90] transition group-hover:translate-x-0.5 group-hover:text-[#2d3e2c]"
                         strokeWidth={2}
@@ -340,7 +321,7 @@ export function PlanLanding({
       <section className="mx-auto w-full max-w-[1100px] shrink-0 px-4 pt-12 sm:px-7 sm:pt-16">
         <div className="flex flex-col items-center text-center">
           <span className="inline-block text-[11px] font-bold uppercase tracking-[0.12em] text-[#6f7274]">
-            Or read a sample Portland trip plan
+            Or read a sample Colorado trip plan
           </span>
           <p className="mt-1.5 max-w-[520px] text-[13.5px] text-[#6f7274]">
             Full day-by-day itineraries with a map, real places, and matching
@@ -397,7 +378,7 @@ export function PlanLanding({
           >
             booktraverse.com
           </Link>{" "}
-          · Portland&apos;s direct-booking vacation rental company
+          · Colorado mountain-town direct-booking vacation rentals
         </p>
       </div>
     </div>

@@ -202,6 +202,10 @@ function saveToRecentlyViewed(data: {
 export function trackViewedListing(data: {
   id: string;
   title: string;
+  /** Internal short name (e.g. "Slopeside Escape 314"). Surfaces in GA4
+   *  Ecommerce reports as Item variant — useful for ops since the
+   *  marketing title is often long and similar across rooms in a building. */
+  nickname?: string | null;
   propertyType?: string;
   city?: string;
   basePrice?: number;
@@ -255,6 +259,7 @@ export function trackViewedListing(data: {
         {
           item_id: data.id,
           item_name: data.title,
+          ...(data.nickname && { item_variant: data.nickname }),
           item_brand: "Book Traverse",
           item_category: data.propertyType || "Vacation Rental",
           ...(typeof data.basePrice === "number" &&
@@ -303,11 +308,11 @@ export function trackViewedListing(data: {
             // Hotel/travel vertical params — Meta uses these for catalog
             // matching and hotel-specific bidding. Book Traverse is OR-only,
             // so region and country are constants per fire.
-            region: "Oregon",
+            region: "Colorado",
             country: "US",
             ...(data.city && {
               city: data.city,
-              destination: `${data.city}, Oregon, USA`,
+              destination: `${data.city}, Colorado, USA`,
             }),
           },
           { eventID: eventId }
@@ -365,6 +370,8 @@ function getOrCreateIcEventId(listingId: string): string {
 export function trackStartedCheckout(data: {
   listingId: string;
   listingTitle: string;
+  /** Internal short name — populates GA4 Item variant column. */
+  listingNickname?: string | null;
   checkIn: string;
   checkOut: string;
   guests: number;
@@ -393,11 +400,29 @@ export function trackStartedCheckout(data: {
     });
   };
 
+  // The abandoned-cart email CTA points at this URL. The /book/[quoteId]
+  // quote expires (and sessionStorage is gone in a fresh email-click session),
+  // so append recovery context — listing + dates + guests — that the checkout
+  // page falls back to, offering a one-click re-quote on the property page
+  // instead of dead-ending on "Browse Properties".
+  const recoveryUrl = (() => {
+    try {
+      const u = new URL(url);
+      u.searchParams.set("lid", data.listingId);
+      if (data.checkIn) u.searchParams.set("ci", data.checkIn);
+      if (data.checkOut) u.searchParams.set("co", data.checkOut);
+      if (data.guests) u.searchParams.set("g", String(data.guests));
+      return u.toString();
+    } catch {
+      return url;
+    }
+  })();
+
   if (marketingConsent && window.klaviyo) {
     window.klaviyo.track("Started Checkout", {
       Title: data.listingTitle,
       ID: data.listingId,
-      URL: url,
+      URL: recoveryUrl,
       ImageURL: data.imageUrl
         ? data.imageUrl.replace(
             /\/t_[a-z_]+\//,
@@ -431,6 +456,7 @@ export function trackStartedCheckout(data: {
         {
           item_id: data.listingId,
           item_name: data.listingTitle,
+          ...(data.listingNickname && { item_variant: data.listingNickname }),
           item_brand: "Book Traverse",
           item_category: data.propertyType || "Vacation Rental",
           price: data.total,
@@ -489,6 +515,7 @@ export function trackStartedCheckout(data: {
           {
             item_id: data.listingId,
             item_name: data.listingTitle,
+            ...(data.listingNickname && { item_variant: data.listingNickname }),
             price: data.total,
             quantity: 1,
           },
@@ -539,7 +566,7 @@ export function trackStartedCheckout(data: {
             checkin_date: data.checkIn,
             checkout_date: data.checkOut,
             num_adults: data.guests,
-            region: "Oregon",
+            region: "Colorado",
             country: "US",
           },
           { eventID: eventId }
@@ -605,6 +632,8 @@ export function trackStartedCheckout(data: {
 export function trackInitiateCheckoutEnriched(data: {
   listingId: string;
   listingTitle: string;
+  /** Internal short name — populates GA4 Item variant column. */
+  listingNickname?: string | null;
   checkIn: string;
   checkOut: string;
   guests: number;
@@ -651,6 +680,7 @@ export function trackInitiateCheckoutEnriched(data: {
           {
             item_id: data.listingId,
             item_name: data.listingTitle,
+            ...(data.listingNickname && { item_variant: data.listingNickname }),
             price: data.total,
             quantity: 1,
           },
@@ -685,7 +715,7 @@ export function trackInitiateCheckoutEnriched(data: {
           checkin_date: data.checkIn,
           checkout_date: data.checkOut,
           num_adults: data.guests,
-          region: "Oregon",
+          region: "Colorado",
           country: "US",
         },
         { eventID: eventId }
@@ -761,11 +791,18 @@ export function trackCheckoutError(data: {
 export function trackBookingCompleted(data: {
   listingId: string;
   listingTitle: string;
+  /** Internal short name — populates GA4 Item variant column. */
+  listingNickname?: string | null;
   checkIn: string;
   checkOut: string;
   guests: number;
   total: number;
   reservationId: string;
+  /** Human-readable Guesty confirmation code (e.g. "GY-rNZRDKkN").
+   *  Used as transaction_id when available so GA4 / Google Ads reports show
+   *  the friendly code instead of the long hex `_id`. Falls back to
+   *  reservationId. Added 2026-05-17. */
+  confirmationCode?: string | null;
   guestEmail?: string;
   guestPhone?: string;
   guestFirstName?: string;
@@ -781,6 +818,10 @@ export function trackBookingCompleted(data: {
 }) {
   const url = window.location.href;
   const eventId = data.eventId || generateEventId("purchase");
+  // Prefer the human-readable confirmation code (e.g. "GY-rNZRDKkN") as the
+  // transaction_id sent to GA4 / Google Ads. Falls back to the Guesty Mongo
+  // _id when the confirmation code isn't available (in-flight checkouts).
+  const transactionId = data.confirmationCode || data.reservationId;
   const marketingConsent = hasMarketingConsent();
   const enhancedConversionData = buildGoogleAdsUserData({
     email: data.guestEmail,
@@ -822,8 +863,8 @@ export function trackBookingCompleted(data: {
         checkout_date: data.checkOut,
         num_adults: data.guests,
         // Hotel/travel vertical params — improves catalog matching and
-        // travel-vertical EMQ. SP is Oregon-only.
-        region: "Oregon",
+        // travel-vertical EMQ. Traverse is Colorado-only.
+        region: "Colorado",
         country: "US",
       },
       { eventID: eventId }
@@ -847,7 +888,7 @@ export function trackBookingCompleted(data: {
       send_to: getGoogleAdsPurchaseSendTo(),
       value: data.total,
       currency: "USD",
-      transaction_id: data.reservationId,
+      transaction_id: transactionId,
       transport_type: "beacon",
     });
   }
@@ -857,17 +898,18 @@ export function trackBookingCompleted(data: {
     window.dataLayer.push({ ecommerce: null });
     window.dataLayer.push({
       event: "booking_completed",
-      transaction_id: data.reservationId,
+      transaction_id: transactionId,
       value: data.total,
       currency: "USD",
       ecommerce: {
-        transaction_id: data.reservationId,
+        transaction_id: transactionId,
         value: data.total,
         currency: "USD",
         items: [
           {
             item_id: data.listingId,
             item_name: data.listingTitle,
+            ...(data.listingNickname && { item_variant: data.listingNickname }),
             price: data.total,
             quantity: 1,
           },
@@ -986,10 +1028,10 @@ export function trackSearch(data: {
             checkin_date: data.checkIn || defaultCheckIn,
             checkout_date: data.checkOut || defaultCheckOut,
             destination: data.city
-              ? `${data.city}, Oregon, USA`
-              : "Portland, Oregon, USA",
-            city: data.city || "Portland",
-            region: "Oregon",
+              ? `${data.city}, Colorado, USA`
+              : "Crested Butte, Colorado, USA",
+            city: data.city || "Crested Butte",
+            region: "Colorado",
             country: "US",
             num_adults: data.guests || 2,
             currency: "USD",
@@ -1066,6 +1108,8 @@ export function trackViewedListingList(
   listings: Array<{
     id: string;
     title: string;
+    /** Internal short name — populates GA4 Item variant column. */
+    nickname?: string | null;
     price?: number;
     propertyType?: string;
     position: number;
@@ -1079,6 +1123,7 @@ export function trackViewedListingList(
     items: listings.map((l) => ({
       item_id: l.id,
       item_name: l.title,
+      ...(l.nickname && { item_variant: l.nickname }),
       item_brand: "Book Traverse",
       item_category: l.propertyType || "Vacation Rental",
       price: l.price || 0,
@@ -1159,6 +1204,225 @@ export function trackAddToWishlist(
       ],
     });
     qeNoteWishlist();
+  }
+}
+
+/** Per-line item shape for the cart funnel events. */
+export interface CartFunnelLineItem {
+  listingId: string;
+  listingTitle: string;
+  /** Best-known per-line total at the moment of the event. */
+  hostPayout?: number;
+}
+
+/**
+ * Cart funnel event helper — fires `begin_checkout` / `add_shipping_info` /
+ * `add_payment_info` (and the matching Meta + Klaviyo events) with
+ * multi-line item arrays. Single-flow checkout continues to use the
+ * per-listing trackStartedCheckout / trackAddShippingInfo / trackAddPaymentInfo
+ * helpers. This one's cart-shape-aware and aggregates value across lines.
+ */
+export function trackCartCheckoutStage(
+  stage: "begin_checkout" | "add_shipping_info" | "add_payment_info",
+  data: {
+    cartId?: string | null;
+    paymentIntentId?: string | null;
+    lines: CartFunnelLineItem[];
+    total: number;
+    currency?: string;
+  }
+) {
+  const marketingConsent = hasMarketingConsent();
+  const analyticsConsent = hasAnalyticsConsent();
+  const currency = data.currency || "USD";
+
+  // GA4 — preserves item array, lets you build a multi-item funnel report.
+  if (analyticsConsent && window.gtag) {
+    window.gtag("event", stage, {
+      currency,
+      value: data.total,
+      ...(data.cartId && { cart_id: data.cartId }),
+      ...(data.paymentIntentId && { transaction_id: data.paymentIntentId }),
+      items: data.lines.map((l) => ({
+        item_id: l.listingId,
+        item_name: l.listingTitle,
+        item_brand: "Book Traverse",
+        item_category: "Vacation Rental",
+        ...(typeof l.hostPayout === "number" && { price: l.hostPayout }),
+        quantity: 1,
+      })),
+    });
+  }
+
+  // Meta browser pixel — InitiateCheckout / AddPaymentInfo (no native event
+  // for shipping; we map add_shipping_info to a custom InitiateCheckout
+  // re-fire to keep the funnel intact).
+  if (marketingConsent && window.fbq) {
+    const metaEventName =
+      stage === "add_payment_info" ? "AddPaymentInfo" : "InitiateCheckout";
+    window.fbq("track", metaEventName, {
+      content_type: "hotel",
+      content_ids: data.lines.map((l) => l.listingId),
+      contents: data.lines.map((l) => ({
+        id: l.listingId,
+        quantity: 1,
+        ...(typeof l.hostPayout === "number" && { item_price: l.hostPayout }),
+      })),
+      num_items: data.lines.length,
+      value: data.total,
+      currency,
+    });
+  }
+
+  // Klaviyo — single "Started Cart Checkout" event with line summary
+  // (used by abandoned-cart flows). The shipping + payment stages don't
+  // need their own Klaviyo events; cart-flow attribution happens at
+  // checkout-started (this event) and at "Booked Reservation" (server).
+  if (
+    marketingConsent &&
+    window.klaviyo &&
+    stage === "begin_checkout"
+  ) {
+    window.klaviyo.track("Started Cart Checkout", {
+      "Cart ID": data.cartId || "",
+      "Line Count": data.lines.length,
+      $value: data.total,
+      Lines: data.lines.map((l) => ({
+        Title: l.listingTitle,
+        ID: l.listingId,
+        ...(typeof l.hostPayout === "number" && { Total: l.hostPayout }),
+      })),
+    });
+  }
+}
+
+/**
+ * Multi-listing cart "Add to Cart" event. Mirrors the wishlist pattern:
+ * Meta browser fbq + Meta CAPI (deduped via shared eventId) + GA4
+ * `add_to_cart` + Klaviyo "Added to Cart" (Klaviyo flow trigger). Called
+ * from AddToCartButton when the user adds a listing to the group-booking
+ * cart.
+ */
+export function trackAddToCart(data: {
+  listingId: string;
+  listingTitle: string;
+  /** Internal short name — populates GA4 Item variant column. */
+  listingNickname?: string | null;
+  checkIn: string;
+  checkOut: string;
+  guests: number;
+  pets?: number;
+  /** Per-night snapshot price; the cart value is computed from this × nights.
+   * Total at checkout is fetched live via /api/quotes/batch — this is the best
+   * client-side estimate at the moment of add. */
+  nightlyPrice?: number | null;
+  imageUrl?: string | null;
+  city?: string | null;
+}) {
+  const eventId = generateEventId("atc");
+  const marketingConsent = hasMarketingConsent();
+  const analyticsConsent = hasAnalyticsConsent();
+
+  const nights = (() => {
+    if (!data.checkIn || !data.checkOut) return 0;
+    const a = new Date(`${data.checkIn}T12:00:00Z`).getTime();
+    const b = new Date(`${data.checkOut}T12:00:00Z`).getTime();
+    return Math.max(0, Math.round((b - a) / 86_400_000));
+  })();
+  const estimatedTotal =
+    typeof data.nightlyPrice === "number" && nights > 0
+      ? data.nightlyPrice * nights
+      : 0;
+
+  if (marketingConsent && window.fbq) {
+    window.fbq(
+      "track",
+      "AddToCart",
+      {
+        content_type: "hotel",
+        content_ids: [data.listingId],
+        content_name: data.listingTitle,
+        currency: "USD",
+        ...(estimatedTotal > 0 && { value: estimatedTotal }),
+        checkin_date: data.checkIn,
+        checkout_date: data.checkOut,
+        num_adults: data.guests,
+      },
+      { eventID: eventId }
+    );
+  }
+
+  // Meta CAPI mirror — same eventId so Meta dedupes the two fires.
+  if (marketingConsent) {
+    const ipPromise = getDiscoveredClientIp();
+    waitForPixelAndFbp().then(() => {
+      ipPromise.then((clientIp) => {
+        fetch("/api/track/add-to-cart", {
+          method: "POST",
+          keepalive: true,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            listingId: data.listingId,
+            listingTitle: data.listingTitle,
+            total: estimatedTotal,
+            checkIn: data.checkIn,
+            checkOut: data.checkOut,
+            guests: data.guests,
+            url: window.location.href,
+            eventId,
+            guest: getKnownGuest(),
+            ...getMetaCookies(),
+            clientIp,
+          }),
+        }).catch(() => {});
+      });
+    });
+  }
+
+  if (analyticsConsent && window.gtag) {
+    window.gtag("event", "add_to_cart", {
+      currency: "USD",
+      ...(estimatedTotal > 0 && { value: estimatedTotal }),
+      items: [
+        {
+          item_id: data.listingId,
+          item_name: data.listingTitle,
+          ...(data.listingNickname && { item_variant: data.listingNickname }),
+          item_brand: "Book Traverse",
+          item_category: "Vacation Rental",
+          ...(data.city && { item_category2: data.city }),
+          ...(typeof data.nightlyPrice === "number" && {
+            price: data.nightlyPrice,
+          }),
+          quantity: 1,
+        },
+      ],
+      check_in: data.checkIn,
+      check_out: data.checkOut,
+      num_nights: nights,
+    });
+  }
+
+  // Klaviyo "Added to Cart" — drives cart abandonment flows. Fires for any
+  // marketing-consented visitor; if they later supply email at checkout,
+  // Klaviyo backfills the profile and can target via the abandoned cart
+  // segment.
+  if (marketingConsent && window.klaviyo) {
+    window.klaviyo.track("Added to Cart", {
+      Title: data.listingTitle,
+      ID: data.listingId,
+      URL: window.location.href,
+      ImageURL: data.imageUrl || "",
+      CheckIn: data.checkIn,
+      CheckOut: data.checkOut,
+      "Number of Guests": data.guests,
+      Pets: data.pets || 0,
+      Nights: nights,
+      ...(estimatedTotal > 0 && { $value: estimatedTotal }),
+      ...(typeof data.nightlyPrice === "number" && {
+        NightlyPrice: data.nightlyPrice,
+      }),
+    });
   }
 }
 

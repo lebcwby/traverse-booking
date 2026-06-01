@@ -3,16 +3,17 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Search, Heart, Luggage, MessageSquare, User } from "lucide-react";
-import { openConduitWidget } from "@/components/conduit-widget";
+import { Search, Heart, Luggage, Phone, User } from "lucide-react";
 import { createClient } from "@/lib/supabase-auth";
 
 type Tab = {
   label: string;
   icon: typeof Search;
+  href: string;
+  external?: boolean;
   match: (p: string) => boolean;
   requiresAuth: boolean;
-} & ({ href: string; action?: never } | { action: () => void; href?: never });
+};
 
 const tabs: Tab[] = [
   {
@@ -37,9 +38,10 @@ const tabs: Tab[] = [
     requiresAuth: true,
   },
   {
-    label: "Help",
-    icon: MessageSquare,
-    action: () => openConduitWidget({ trigger: "bottom_nav" }),
+    label: "Call",
+    icon: Phone,
+    href: "tel:+17207592013",
+    external: true,
     match: () => false,
     requiresAuth: false,
   },
@@ -135,19 +137,14 @@ export function MobileBottomNav() {
             active ? "text-accent" : "text-muted-foreground"
           }`;
 
-          if (tab.action) {
+          if (tab.external) {
             return (
-              <button
-                key={label}
-                type="button"
-                onClick={tab.action}
-                className={className}
-              >
+              <a key={label} href={tab.href} className={className}>
                 <Icon className="h-5 w-5" strokeWidth={2} />
                 <span className="text-[10px] font-medium leading-tight">
                   {label}
                 </span>
-              </button>
+              </a>
             );
           }
 

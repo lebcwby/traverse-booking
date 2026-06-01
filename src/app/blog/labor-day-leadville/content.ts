@@ -3,7 +3,7 @@ export const pageContent = `<div class="elementor elementor-2013">
 					<div class="e-con-inner">
 				
 				
-															<img fetchpriority="high" fetchpriority="high" decoding="async" width="1024" height="543" src="https://booktraverse.com/wp-content/uploads/2024/09/labor-day-weekend-1024x543.jpg" class="attachment-large size-large wp-image-2015" alt="" srcset="https://booktraverse.com/wp-content/uploads/2024/09/labor-day-weekend-1024x543.jpg 1024w, https://booktraverse.com/wp-content/uploads/2024/09/labor-day-weekend-300x159.jpg 300w, https://booktraverse.com/wp-content/uploads/2024/09/labor-day-weekend-768x407.jpg 768w, https://booktraverse.com/wp-content/uploads/2024/09/labor-day-weekend-1536x815.jpg 1536w, https://booktraverse.com/wp-content/uploads/2024/09/labor-day-weekend-2048x1086.jpg 2048w" sizes="(max-width: 1024px) 100vw, 1024px" />															</div>
+															<img fetchpriority="high" fetchpriority="high" decoding="async" width="1024" height="543" src="/blog/labor-day-weekend.jpg" class="attachment-large size-large wp-image-2015" alt="" srcset="/blog/labor-day-weekend.jpg 1024w, /blog/labor-day-weekend.jpg 300w, /blog/labor-day-weekend.jpg 768w, /blog/labor-day-weekend.jpg 1536w, /blog/labor-day-weekend.jpg 2048w" sizes="(max-width: 1024px) 100vw, 1024px" />															</div>
 				</div>
 				
 				
@@ -98,7 +98,7 @@ export const pageContent = `<div class="elementor elementor-2013">
 							<div class="elementor-posts-container elementor-posts elementor-posts--skin-classic elementor-grid">
 				<article class="elementor-post elementor-grid-item post-2769 post type-post status-publish format-standard has-post-thumbnail hentry category-travel-guides tag-colorado tag-crested-butte tag-grand-lodge tag-property-management tag-ski-condos tag-vacation-rentals">
 				<a class="elementor-post__thumbnail__link" href="https://booktraverse.com/traversehospitality/blog/grand-lodge-crested-butte-condos-traverse-vs-vail-resorts-what-s-the-difference/" tabindex="-1" >
-			<div class="elementor-post__thumbnail"><img width="300" height="223" src="https://booktraverse.com/wp-content/uploads/2026/04/Grand-Lodge-28-300x223.jpg" class="attachment-medium size-medium wp-image-2770" alt="" /></div>
+			<div class="elementor-post__thumbnail"><img width="300" height="223" src="/blog/grand-lodge-28.jpg" class="attachment-medium size-medium wp-image-2770" alt="" /></div>
 		</a>
 				<div class="elementor-post__text">
 				<h3 class="elementor-post__title">
@@ -122,7 +122,7 @@ export const pageContent = `<div class="elementor elementor-2013">
 				</article>
 				<article class="elementor-post elementor-grid-item post-2645 post type-post status-publish format-standard has-post-thumbnail hentry category-crested-butte tag-colorado tag-crested-butte tag-family-friendly tag-grand-lodge tag-pet-friendly tag-vacation-rentals">
 				<a class="elementor-post__thumbnail__link" href="https://booktraverse.com/traversehospitality/blog/pet-friendly-crested-butte-condo-grand-lodge-studio-153-walk-to-the-lifts-pool-hot-tub/" tabindex="-1" >
-			<div class="elementor-post__thumbnail"><img loading="lazy" width="300" height="195" src="https://booktraverse.com/wp-content/uploads/2026/04/153-living-room-300x195.jpg" class="attachment-medium size-medium wp-image-2650" alt="" /></div>
+			<div class="elementor-post__thumbnail"><img loading="lazy" width="300" height="195" src="/blog/153-living-room.jpg" class="attachment-medium size-medium wp-image-2650" alt="" /></div>
 		</a>
 				<div class="elementor-post__text">
 				<h3 class="elementor-post__title">
@@ -146,7 +146,7 @@ export const pageContent = `<div class="elementor elementor-2013">
 				</article>
 				<article class="elementor-post elementor-grid-item post-2631 post type-post status-publish format-standard has-post-thumbnail hentry category-travel-guides tag-colorado tag-leadville tag-mountain-travel tag-things-to-do tag-vacation-rentals tag-visitor-guide">
 				<a class="elementor-post__thumbnail__link" href="https://booktraverse.com/traversehospitality/blog/leadville-colorado-the-complete-visitor-s-guide-2026-2/" tabindex="-1" >
-			<div class="elementor-post__thumbnail"><img loading="lazy" width="300" height="262" src="https://booktraverse.com/wp-content/uploads/2026/04/IMG_2741-300x262.jpg" class="attachment-medium size-medium wp-image-2632" alt="" /></div>
+			<div class="elementor-post__thumbnail"><img loading="lazy" width="300" height="262" src="/blog/img_2741.jpg" class="attachment-medium size-medium wp-image-2632" alt="" /></div>
 		</a>
 				<div class="elementor-post__text">
 				<h3 class="elementor-post__title">

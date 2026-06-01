@@ -11,7 +11,6 @@ import {
   ChevronUp,
   PawPrint,
   Baby,
-  Gem,
   Wifi,
   Tv,
   CookingPot,
@@ -28,6 +27,7 @@ import {
   Flame,
   UtensilsCrossed,
   Fence,
+  Droplets,
   type LucideIcon,
 } from "lucide-react";
 
@@ -63,6 +63,7 @@ const AMENITIES_FEATURES: AmenityItem[] = [
     Icon: CircleParking,
   },
   { label: "Hot tub", code: "HOT_TUB", Icon: Bath },
+  { label: "Sauna", code: "SAUNA", Icon: Droplets },
   { label: "Gym", code: "GYM", Icon: Dumbbell },
   { label: "BBQ grill", code: "BBQ_GRILL", Icon: UtensilsCrossed },
   { label: "Patio/Balcony", code: "PATIO_OR_BALCONY", Icon: Fence },
@@ -213,11 +214,11 @@ const RECOMMENDED_ITEMS = [
     tagValue: "Family Friendly",
   },
   {
-    label: "Luxury stays",
-    Icon: Gem,
+    label: "Hot tub",
+    Icon: Bath,
     color: "text-blue-600",
-    type: "tag" as const,
-    tagValue: "Luxury Collection",
+    type: "amenity" as const,
+    amenityCode: "HOT_TUB",
   },
 ];
 
@@ -272,6 +273,8 @@ function FiltersContent({
   toggleAmenity,
   petsAllowed,
   setPetsAllowed,
+  minRating,
+  setMinRating,
   selectedTags,
   toggleTag,
 }: {
@@ -293,6 +296,8 @@ function FiltersContent({
   toggleAmenity: (code: string) => void;
   petsAllowed: boolean;
   setPetsAllowed: (v: boolean) => void;
+  minRating: number;
+  setMinRating: (v: number) => void;
   selectedTags: Set<string>;
   toggleTag: (tag: string) => void;
 }) {
@@ -303,12 +308,14 @@ function FiltersContent({
   ): boolean {
     if (item.type === "pets") return petsAllowed;
     if (item.type === "tag") return selectedTags.has(item.tagValue);
+    if (item.type === "amenity") return selectedAmenities.has(item.amenityCode);
     return false;
   }
 
   function toggleRecommended(item: (typeof RECOMMENDED_ITEMS)[number]) {
     if (item.type === "pets") setPetsAllowed(!petsAllowed);
     else if (item.type === "tag") toggleTag(item.tagValue);
+    else if (item.type === "amenity") toggleAmenity(item.amenityCode);
   }
 
   return (
@@ -328,6 +335,39 @@ function FiltersContent({
               active={isRecommendedActive(item)}
               onClick={() => toggleRecommended(item)}
             />
+          ))}
+        </div>
+      </div>
+
+      <div className="mx-6 border-t border-border" />
+
+      {/* Minimum star rating */}
+      <div className="px-6 py-6">
+        <h3 className="mb-1 text-lg font-semibold text-foreground">
+          Guest rating
+        </h3>
+        <p className="mb-4 text-sm text-muted-foreground">
+          Show only properties with this average rating or higher.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { label: "Any rating", value: 0 },
+            { label: "★ 4.0+", value: 4.0 },
+            { label: "★ 4.5+", value: 4.5 },
+            { label: "★ 4.8+", value: 4.8 },
+            { label: "★ 5.0", value: 5.0 },
+          ].map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setMinRating(opt.value)}
+              className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                minRating === opt.value
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-white text-foreground hover:border-primary"
+              }`}
+            >
+              {opt.label}
+            </button>
           ))}
         </div>
       </div>
@@ -915,6 +955,13 @@ export function FiltersDialog({ prices = [] }: { prices?: number[] }) {
   const [petsAllowed, setPetsAllowed] = useState(
     searchParams.get("pets") === "true"
   );
+  // Star rating filter. Stored as a 5-star scale (e.g. 4.5 means "show
+  // only listings with avg rating >= 4.5"). 0 = no rating filter applied.
+  // The server-side filter divides by 2 before comparing against BEAPI's
+  // 0-10-scale `reviews.avg` field.
+  const [minRating, setMinRating] = useState(
+    Number(searchParams.get("minRating")) || 0
+  );
   const [propertyType, setPropertyType] = useState(
     searchParams.get("propertyType") || ""
   );
@@ -968,6 +1015,10 @@ export function FiltersDialog({ prices = [] }: { prices?: number[] }) {
     if (petsAllowed) params.set("pets", "true");
     else params.delete("pets");
 
+    // Minimum star rating
+    if (minRating > 0) params.set("minRating", String(minRating));
+    else params.delete("minRating");
+
     // Property type
     if (propertyType) params.set("propertyType", propertyType);
     else params.delete("propertyType");
@@ -992,6 +1043,7 @@ export function FiltersDialog({ prices = [] }: { prices?: number[] }) {
     beds,
     bathrooms,
     petsAllowed,
+    minRating,
     propertyType,
     selectedAmenities,
     selectedTags,
@@ -1005,6 +1057,7 @@ export function FiltersDialog({ prices = [] }: { prices?: number[] }) {
     setBeds(0);
     setBathrooms(0);
     setPetsAllowed(false);
+    setMinRating(0);
     setPropertyType("");
     setSelectedAmenities(new Set());
     setSelectedTags(new Set());
@@ -1017,6 +1070,7 @@ export function FiltersDialog({ prices = [] }: { prices?: number[] }) {
     beds > 0,
     bathrooms > 0,
     petsAllowed,
+    minRating > 0,
     propertyType !== "",
     selectedAmenities.size > 0,
     selectedTags.size > 0,
@@ -1041,6 +1095,8 @@ export function FiltersDialog({ prices = [] }: { prices?: number[] }) {
     toggleAmenity,
     petsAllowed,
     setPetsAllowed,
+    minRating,
+    setMinRating,
     selectedTags,
     toggleTag,
   };

@@ -5,6 +5,7 @@ import {
   isAlreadySettledPaymentError,
   isTestModePaymentIntentError,
   recordPayment,
+  resolveAmountVsBalance,
 } from "@/lib/guesty-openapi";
 import {
   buildStripeDashboardPaymentUrl,
@@ -123,12 +124,66 @@ export async function GET(request: Request) {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (isAlreadySettledPaymentError(err)) {
-        await pool.query(
-          `UPDATE reservations SET payment_recorded_at = $1 WHERE guesty_id = $2`,
-          [Date.now(), reservationId]
-        );
-        results.push({ reservationId, status: "already settled in Guesty" });
-        continue;
+        // Disambiguate "balance is 0" (truly settled) from "amount > balance"
+        // (silent mis-record that hid the $3.71 discrepancy for every direct
+        // booking until 2026-05-16). See guesty-openapi.ts:resolveAmountVsBalance.
+        try {
+          const amount = Number(pi?.amount || 0) / 100;
+          const resolution = await resolveAmountVsBalance(
+            reservationId,
+            amount,
+            piId
+          );
+          await pool.query(
+            `UPDATE reservations SET payment_recorded_at = $1 WHERE guesty_id = $2`,
+            [Date.now(), reservationId]
+          );
+          if (resolution.mismatch) {
+            const stripeUrl = buildStripeDashboardPaymentUrl(piId);
+            await sendAlert(
+              `Payment amount mismatch (cron) — Stripe $${resolution.originalAmount.toFixed(2)} vs Guesty $${resolution.balanceAmount.toFixed(2)}`,
+              [
+                "<p>The cron-fallback payment recorder hit an amount mismatch between Stripe and Guesty's invoice balance. Guesty's books are now correct (balance is $0). The delta below is revenue that lives only in Stripe.</p>",
+                renderAlertDetails([
+                  ["Reservation", reservationId],
+                  ["PaymentIntent", piId],
+                  [
+                    "Stripe captured",
+                    `$${resolution.originalAmount.toFixed(2)}`,
+                  ],
+                  [
+                    "Guesty balance (now recorded)",
+                    `$${resolution.balanceAmount.toFixed(2)}`,
+                  ],
+                  [
+                    "Delta (extra in Stripe)",
+                    `$${resolution.delta.toFixed(2)}`,
+                  ],
+                ]),
+                renderAlertLinks([
+                  { label: "Stripe payment", url: stripeUrl },
+                ]),
+              ].join(""),
+              `amount-mismatch-cron-${reservationId}`
+            );
+            results.push({
+              reservationId,
+              status: `recorded balance $${resolution.balanceAmount.toFixed(2)} (mismatch alerted)`,
+            });
+          } else {
+            results.push({
+              reservationId,
+              status: "already settled in Guesty",
+            });
+          }
+          continue;
+        } catch (resolveErr) {
+          // Fall through — original error is reported below
+          console.warn(
+            `[Cron] resolveAmountVsBalance failed for ${reservationId}:`,
+            resolveErr instanceof Error ? resolveErr.message : resolveErr
+          );
+        }
       }
       if (isTestModePaymentIntentError(err)) {
         await pool.query(

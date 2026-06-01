@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ChevronLeft, X, LayoutGrid } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, LayoutGrid } from "lucide-react";
 import { getPhotoUrl } from "@/lib/utils";
 
 interface Photo {
@@ -14,7 +14,7 @@ interface Photo {
 
 export function PhotoGallery({
   photos,
-  altPrefix = "Portland vacation rental",
+  altPrefix = "Colorado vacation rental",
   mobileActions,
 }: {
   photos: Photo[];
@@ -24,18 +24,22 @@ export function PhotoGallery({
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [mobileIndex, setMobileIndex] = useState(0);
   const [mobileViewerOpen, setMobileViewerOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [lightboxDirection, setLightboxDirection] = useState<
+    "forward" | "backward"
+  >("forward");
   const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
   const touchRef = useRef<{ startX: number; startScroll: number } | null>(null);
 
-  // Lock body scroll when gallery or mobile viewer is open
+  // Lock body scroll when gallery, mobile viewer, or lightbox is open
   useEffect(() => {
-    if (!galleryOpen && !mobileViewerOpen) return;
+    if (!galleryOpen && !mobileViewerOpen && lightboxIndex === null) return;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [galleryOpen, mobileViewerOpen]);
+  }, [galleryOpen, mobileViewerOpen, lightboxIndex]);
 
   // Close gallery on Escape
   useEffect(() => {
@@ -47,10 +51,38 @@ export function PhotoGallery({
     return () => window.removeEventListener("keydown", handler);
   }, [galleryOpen]);
 
+  // Lightbox keyboard navigation: Esc to close, ←/→ to advance
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxIndex(null);
+      else if (e.key === "ArrowLeft") {
+        setLightboxDirection("backward");
+        setLightboxIndex((prev) =>
+          prev === null ? null : (prev - 1 + photos.length) % photos.length
+        );
+      } else if (e.key === "ArrowRight") {
+        setLightboxDirection("forward");
+        setLightboxIndex((prev) =>
+          prev === null ? null : (prev + 1) % photos.length
+        );
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [lightboxIndex, photos.length]);
+
   if (photos.length === 0) return null;
 
   const mainPhoto = photos[0];
   const thumbPhotos = photos.slice(1, 5);
+  const closeLightbox = () => setLightboxIndex(null);
+  const advanceLightbox = (delta: number) => {
+    setLightboxDirection(delta >= 0 ? "forward" : "backward");
+    setLightboxIndex((prev) =>
+      prev === null ? null : (prev + delta + photos.length) % photos.length
+    );
+  };
 
   function handleMobileScroll() {
     if (!scrollRef.current) return;
@@ -101,17 +133,31 @@ export function PhotoGallery({
             </div>
           ))}
         </div>
-        {/* Back arrow — top left over photo */}
+        {/* Back arrow — top left, Airbnb-style white circle so it's
+            actually visible against busy hero photos. Falls back to /
+            when there's no browser history (e.g. user landed directly
+            from a Google search result and would otherwise dead-end). */}
         <button
           onClick={(e) => {
             e.stopPropagation();
-            router.back();
+            // history.length === 1 means we opened in a fresh tab — there's
+            // nothing to go "back" to. Push to / instead so the user can
+            // actually navigate.
+            if (window.history.length <= 1) {
+              router.push("/");
+            } else {
+              router.back();
+            }
           }}
-          className="absolute left-3 top-3 z-10 drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]"
+          aria-label="Go back"
+          className="absolute left-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.25)] transition-transform hover:scale-105 active:scale-95"
         >
-          <ChevronLeft className="h-7 w-7 text-white" />
+          <ChevronLeft className="h-5 w-5 text-foreground" />
         </button>
-        {/* Share & Save overlay — top right */}
+        {/* Share & Save overlay — top right. Styling on these stays
+            independent of the back-button circle: the heart icon needs
+            to flip to red when saved, and the existing drop-shadow-on-
+            photo treatment renders fine. */}
         {mobileActions && (
           <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
             {mobileActions}
@@ -244,7 +290,8 @@ export function PhotoGallery({
                   return (
                     <div
                       key={i}
-                      className="relative w-full aspect-[3/2] rounded-sm overflow-hidden"
+                      className="relative w-full aspect-[3/2] rounded-sm overflow-hidden cursor-zoom-in"
+                      onClick={() => setLightboxIndex(i)}
                     >
                       <Image
                         src={getPhotoUrl(photo.original, 1200)}
@@ -264,7 +311,10 @@ export function PhotoGallery({
                   const nextPhoto = photos[i + 1];
                   return (
                     <div key={i} className="grid grid-cols-2 gap-2">
-                      <div className="relative aspect-[4/3] rounded-sm overflow-hidden">
+                      <div
+                        className="relative aspect-[4/3] rounded-sm overflow-hidden cursor-zoom-in"
+                        onClick={() => setLightboxIndex(i)}
+                      >
                         <Image
                           src={getPhotoUrl(photo.original, 800)}
                           alt={photo.caption || `${altPrefix} - photo ${i + 1}`}
@@ -275,7 +325,10 @@ export function PhotoGallery({
                         />
                       </div>
                       {nextPhoto && (
-                        <div className="relative aspect-[4/3] rounded-sm overflow-hidden">
+                        <div
+                          className="relative aspect-[4/3] rounded-sm overflow-hidden cursor-zoom-in"
+                          onClick={() => setLightboxIndex(i + 1)}
+                        >
                           <Image
                             src={getPhotoUrl(nextPhoto.original, 800)}
                             alt={
@@ -298,6 +351,103 @@ export function PhotoGallery({
               })}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Lightbox: single-image viewer with caption + arrow navigation */}
+      {lightboxIndex !== null && (
+        <div
+          className="fixed inset-0 z-[110] flex flex-col bg-black/95"
+          onClick={closeLightbox}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 sm:px-6">
+            <span className="text-sm font-medium text-white/70">
+              {lightboxIndex + 1} / {photos.length}
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                closeLightbox();
+              }}
+              aria-label="Close"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Image area */}
+          <div
+            className="relative flex flex-1 items-center justify-center px-4 sm:px-16"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              key={lightboxIndex}
+              className={`absolute inset-0 mx-4 sm:mx-16 ${
+                lightboxDirection === "forward"
+                  ? "animate-lightbox-forward"
+                  : "animate-lightbox-backward"
+              }`}
+            >
+              <Image
+                src={getPhotoUrl(photos[lightboxIndex].original, 1600)}
+                alt={
+                  photos[lightboxIndex].caption ||
+                  `${altPrefix} - photo ${lightboxIndex + 1}`
+                }
+                fill
+                className="object-contain"
+                sizes="100vw"
+                priority
+              />
+            </div>
+
+            {photos.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    advanceLightbox(-1);
+                  }}
+                  aria-label="Previous photo"
+                  className="absolute left-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white shadow-lg backdrop-blur transition-colors hover:bg-white/25 sm:left-6"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    advanceLightbox(1);
+                  }}
+                  aria-label="Next photo"
+                  className="absolute right-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white shadow-lg backdrop-blur transition-colors hover:bg-white/25 sm:right-6"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Caption (only when set) */}
+          {photos[lightboxIndex].caption && (
+            <div
+              key={`caption-${lightboxIndex}`}
+              className={`px-4 pb-6 pt-3 text-center sm:px-6 ${
+                lightboxDirection === "forward"
+                  ? "animate-lightbox-forward"
+                  : "animate-lightbox-backward"
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="mx-auto max-w-2xl text-sm text-white/85">
+                {photos[lightboxIndex].caption}
+              </p>
+            </div>
+          )}
         </div>
       )}
     </>

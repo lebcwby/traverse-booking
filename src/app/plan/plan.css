@@ -6,12 +6,7 @@ body:has([data-plan-chrome]) > footer,
 body:has([data-plan-chrome]) > nav,
 body:has([data-plan-chrome]) > header,
 body:has([data-plan-chrome]) #mobile-bottom-nav,
-body:has([data-plan-chrome]) > [class*="mobile-bottom-nav"],
-body:has([data-plan-chrome]) [data-conduit-widget],
-body:has([data-plan-chrome]) conduit-widget,
-body:has([data-plan-chrome]) conduit-chat-trigger,
-body:has([data-plan-chrome]) #conduit-chat-root,
-body:has([data-plan-chrome]) [aria-label="Open chat"] {
+body:has([data-plan-chrome]) > [class*="mobile-bottom-nav"] {
   display: none !important;
 }
 body:has([data-plan-chrome]) > main {

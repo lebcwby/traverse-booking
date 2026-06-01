@@ -1,4 +1,5 @@
-import { type Listing } from "@/lib/supabase";
+import { getListing, type Listing } from "@/lib/supabase";
+import { getListingDetail } from "@/lib/guesty-beapi";
 import { clampReviewAvg } from "@/lib/utils";
 
 export interface BeapiListingPhoto {
@@ -142,4 +143,31 @@ export function mapBeapiToListing(r: BeapiListingResult): Listing {
     reviewAvg: clampReviewAvg(r.reviews?.avg ?? null),
     reviewTotal: r.reviews?.total ?? null,
   };
+}
+
+/**
+ * Resolves a listing by Guesty ID.
+ *
+ * Tries Supabase first (fast, cheap). If the row isn't there yet — e.g.
+ * the sync-listings edge function has never run — falls back to a live
+ * BEAPI call and converts the response to the same Listing shape.
+ *
+ * This keeps item_variant populated in GA4 ecommerce events even before
+ * the Supabase listings table is seeded.
+ */
+export async function getListingWithBeapiFallback(
+  listingId: string
+): Promise<Listing | null> {
+  try {
+    const row = await getListing(listingId);
+    if (row) return row;
+  } catch {
+    // Supabase miss — fall through to BEAPI
+  }
+  try {
+    const beapiData = await getListingDetail(listingId);
+    return mapBeapiToListing(beapiData as BeapiListingResult);
+  } catch {
+    return null;
+  }
 }

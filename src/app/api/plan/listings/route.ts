@@ -13,7 +13,10 @@
 //   6. Pass 1: one distinct listing per range. Pass 2: fill to 5.
 
 import { NextResponse } from "next/server";
-import { searchListings as beapiSearchListings } from "@/lib/guesty-beapi";
+import {
+  searchListings as beapiSearchListings,
+  createQuote,
+} from "@/lib/guesty-beapi";
 import { getPoisByIds } from "@/lib/pois/queries";
 import { rankListings } from "@/lib/ranking";
 import { enrichListingsWithReviewAverages } from "@/lib/reviews";
@@ -61,9 +64,14 @@ const BEAPI_CACHE_TTL_MS = 30 * 60 * 1000;
 function beapiCacheKey(
   range: DateRange,
   guests: number,
-  limit: number
+  limit: number,
+  petsAllowed: boolean
 ): string {
-  return `plan:beapi:${range.checkIn}:${range.checkOut}:${guests}:${limit}`;
+  // Include pets in the key so a pet-friendly search doesn't get served the
+  // unfiltered cached result (or vice-versa). Two parallel cache entries:
+  // one with the petsAllowed filter, one without.
+  const petsSegment = petsAllowed ? ":pets" : "";
+  return `plan:beapi:${range.checkIn}:${range.checkOut}:${guests}:${limit}${petsSegment}`;
 }
 
 async function readBeapiCache(key: string): Promise<string[] | null> {
@@ -103,9 +111,10 @@ async function writeBeapiCache(key: string, ids: string[]): Promise<void> {
 async function fetchAvailableIds(
   range: DateRange,
   guests: number,
+  petsAllowed: boolean,
   limit = 20
 ): Promise<string[]> {
-  const cacheKey = beapiCacheKey(range, guests, limit);
+  const cacheKey = beapiCacheKey(range, guests, limit, petsAllowed);
   const cached = await readBeapiCache(cacheKey);
   if (cached) return cached;
 
@@ -114,6 +123,7 @@ async function fetchAvailableIds(
       checkIn: range.checkIn,
       checkOut: range.checkOut,
       minOccupancy: guests,
+      petsAllowed: petsAllowed || undefined,
       limit,
     })) as BeapiSearchResponse;
 
@@ -134,11 +144,26 @@ async function fetchAvailableIds(
   }
 }
 
+// Column list mirrors `Listing` interface — skips heavy JSONB extras
+// (`raw`, `wheelhouse_data`, financials, owners, integrations,
+// cleaning_status, custom_fields) that this route never reads. See
+// LISTING_FIELDS comment in src/lib/supabase.ts for the full rationale
+// (Codex #10, 2026-05-27). Kept local to this file so the columns the
+// sidebar actually renders are visible right next to the query.
+const PLAN_SIDEBAR_LISTING_FIELDS =
+  "id,guesty_id,nickname,title,property_type,room_type," +
+  "bedrooms,bathrooms,beds,accommodates,area_square_feet," +
+  "address,prices,active,is_listed,beapi_enabled," +
+  "picture,pictures,picture_count,amenities,tags," +
+  "default_check_in_time,default_check_out_time,timezone," +
+  "review_count,computed_review_avg,computed_review_count," +
+  "occupancy_stats,city,state,guesty_updated_at,listing_category,review_summary";
+
 async function hydrateListings(guestyIds: string[]): Promise<Listing[]> {
   if (guestyIds.length === 0) return [];
   const { data, error } = await getSupabaseAdmin()
     .from("listings")
-    .select("*")
+    .select(PLAN_SIDEBAR_LISTING_FIELDS)
     .in("guesty_id", guestyIds)
     .eq("active", true)
     .eq("is_listed", true);
@@ -148,7 +173,10 @@ async function hydrateListings(guestyIds: string[]): Promise<Listing[]> {
     );
     return [];
   }
-  const listings = (data ?? []) as Listing[];
+  // Cast via unknown — Supabase-js's PostgREST type inference can't narrow
+  // an explicit column list back to Listing; same pattern as in
+  // src/lib/supabase.ts.
+  const listings = (data ?? []) as unknown as Listing[];
   await enrichListingsWithReviewAverages(listings);
   return listings;
 }
@@ -259,6 +287,11 @@ export async function POST(req: Request) {
   }
 
   const guests = itinerary.party.adults + (itinerary.party.kids ?? 0);
+  // When the itinerary's party includes pets, restrict BEAPI to pet-friendly
+  // listings. Mirrors the agent's search_listings tool fix on 2026-05-25;
+  // without this the sidebar can still surface non-pet stays after the
+  // agent correctly recommended a pet-trip itinerary.
+  const petsAllowed = (itinerary.party.pets ?? 0) > 0;
   const alternates = itinerary.alternateDateRanges ?? [];
   const ranges: DateRange[] = [
     { checkIn: itinerary.dates.checkIn, checkOut: itinerary.dates.checkOut },
@@ -268,7 +301,7 @@ export async function POST(req: Request) {
   let availabilityByRange = await Promise.all(
     ranges.map(async (range) => ({
       range,
-      ids: await fetchAvailableIds(range, guests, 20),
+      ids: await fetchAvailableIds(range, guests, petsAllowed, 20),
     }))
   );
 
@@ -279,7 +312,7 @@ export async function POST(req: Request) {
       checkIn: addDaysISO(itinerary.dates.checkIn, 3),
       checkOut: addDaysISO(itinerary.dates.checkOut, 3),
     };
-    const ids = await fetchAvailableIds(next, guests, 20);
+    const ids = await fetchAvailableIds(next, guests, petsAllowed, 20);
     availabilityByRange = [{ range: next, ids }];
     shifted = ids.length > 0;
     shiftedRange = shifted ? next : null;
@@ -317,30 +350,58 @@ export async function POST(req: Request) {
     ranked: rankForRange(ids, byGuestyId, guests, match),
   }));
 
-  const picks: PublicListing[] = [];
+  // Build a candidate pool — pass 1 grabs one distinct listing per range,
+  // pass 2 fills to 8. We over-fetch beyond the 5 we'll show because the
+  // quote-validation step below will drop any that BEAPI's search marked
+  // available but its quote endpoint rejects (rate-plan / allotment edge
+  // cases that have leaked through to the sidebar in the past).
+  const candidates: PublicListing[] = [];
   const usedIds = new Set<string>();
 
   for (const { range, ranked } of rangeRanked) {
-    if (picks.length >= 5) break;
+    if (candidates.length >= 8) break;
     const next = ranked.find((l) => !usedIds.has(l.guesty_id));
     if (next) {
-      picks.push(toPublicListing(next, range.checkIn, range.checkOut));
+      candidates.push(toPublicListing(next, range.checkIn, range.checkOut));
       usedIds.add(next.guesty_id);
     }
   }
-
-  if (picks.length < 5) {
+  if (candidates.length < 8) {
     for (const { range, ranked } of rangeRanked) {
-      if (picks.length >= 5) break;
+      if (candidates.length >= 8) break;
       for (const listing of ranked) {
-        if (picks.length >= 5) break;
+        if (candidates.length >= 8) break;
         if (!usedIds.has(listing.guesty_id)) {
-          picks.push(toPublicListing(listing, range.checkIn, range.checkOut));
+          candidates.push(
+            toPublicListing(listing, range.checkIn, range.checkOut)
+          );
           usedIds.add(listing.guesty_id);
         }
       }
     }
   }
+
+  // Defensive bookability check — parallel quote each candidate against the
+  // exact (listingId, dates, guests) tuple we'd surface in the URL. Drop any
+  // that BEAPI rejects so the user never clicks through to an "Unable to get
+  // pricing" property page. Uses guests=1 minimum since BEAPI sometimes
+  // requires guestsCount >= 1 even for studio rentals.
+  const bookable = await Promise.all(
+    candidates.map(async (c) => {
+      try {
+        await createQuote({
+          listingId: c.guesty_id ?? String(c.id ?? ""),
+          checkIn: c.checkIn,
+          checkOut: c.checkOut,
+          guestsCount: Math.max(1, guests),
+        });
+        return c;
+      } catch {
+        return null;
+      }
+    })
+  );
+  const picks = bookable.filter((c): c is PublicListing => c !== null).slice(0, 5);
 
   return NextResponse.json({
     listings: picks,

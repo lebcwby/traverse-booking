@@ -51,9 +51,16 @@ export function trackABExposure(testId: string, variant: string) {
 
 // ─── Active Tests ────────────────────────────────────────────
 
+// PRICING_BADGE_TEST — concluded 2026-05-19. Winner: `no_sticker_shock`
+// (peach two-line "This price is the real price. All fees included." variant).
+// Test config kept here so the existing call sites in PricingBadge /
+// PricingBadgeCompact still work — `getVariant` now only ever returns
+// `no_sticker_shock`, including for users with a stale localStorage entry
+// from one of the retired variants (the `includes` check below in getVariant
+// rejects stale values and re-assigns to the only allowed one).
 export const PRICING_BADGE_TEST: ABTest = {
   id: "pricing_badge_v1",
-  variants: ["rain_check", "full_picture", "no_sticker_shock"],
+  variants: ["no_sticker_shock"],
 };
 
 /**

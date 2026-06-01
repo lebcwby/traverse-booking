@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildStripeIdempotencyKey, getStripeServer } from "@/lib/stripe";
-import { getQuote } from "@/lib/guesty-beapi";
-import { getUpsellTotal } from "@/lib/upsells";
+import { getQuote, getListingDetail } from "@/lib/guesty-beapi";
+import { getUpsellTotal, resolvePetFeePerPet } from "@/lib/upsells";
 import {
   findBlockingPendingCheckout,
   findLatestReusablePendingCheckout,
@@ -9,11 +9,15 @@ import {
   upsertPendingCheckout,
   type TrackingContext,
 } from "@/lib/pending-checkouts";
-import { getListing } from "@/lib/supabase";
+import { getListingWithBeapiFallback } from "@/lib/listing-utils";
 import {
   normalizeGuestEmail,
   normalizeGuestPhone,
 } from "@/lib/booking-identity";
+import {
+  createPendingCheckoutLookupToken,
+  verifyPendingCheckoutLookupToken,
+} from "@/lib/pending-checkout-token";
 
 const GA_SESSION_COOKIE = "_ga_PPWFFFPC42";
 
@@ -53,6 +57,7 @@ function buildPaymentIntentMetadata(args: {
   upsellIds: string[];
   pets: number;
   petFeeAmountCents: number;
+  petFeePerPet: number;
 }) {
   const metadata: Record<string, string> = {
     quoteId: args.quoteId,
@@ -63,6 +68,10 @@ function buildPaymentIntentMetadata(args: {
     upsellIds: args.upsellIds.join(","),
     pets: String(args.pets),
     petFeeAmountCents: String(args.petFeeAmountCents),
+    // Per-listing per-pet rate from Guesty BEAPI (or default fallback).
+    // checkout-finalizer reads this so the Guesty invoice item created
+    // post-payment matches the amount Stripe charged.
+    petFeePerPet: String(args.petFeePerPet),
   };
 
   if (args.guestEmail) {
@@ -119,7 +128,7 @@ async function resolveStripeCustomerId(args: {
   const customer = await stripe.customers.create({
     email: guestEmail,
     ...(guestPhone ? { phone: guestPhone } : {}),
-    metadata: { quoteId: args.quoteId, source: "stay-portland" },
+    metadata: { quoteId: args.quoteId, source: "book-traverse" },
   });
   return customer.id;
 }
@@ -128,21 +137,48 @@ function normalizePetsValue(pets: unknown) {
   return typeof pets === "number" && pets > 0 ? pets : 0;
 }
 
+function isValidCheckoutToken(paymentIntentId: string, token: unknown) {
+  return (
+    typeof token === "string" &&
+    verifyPendingCheckoutLookupToken(token, paymentIntentId)
+  );
+}
+
 function getNextAmountCents(args: {
   baseAmountCents: number;
   upsellIds: string[];
   pets: number;
+  petFeePerPet: number;
 }) {
   const upsellAmount = getUpsellTotal(
     args.upsellIds.filter((id) => id !== "pet-fee")
   );
-  const petFeeAmount = args.pets > 0 ? args.pets * 99 : 0;
+  const petFeeAmount = args.pets > 0 ? args.pets * args.petFeePerPet : 0;
   return {
     amountCents:
       args.baseAmountCents + Math.round((upsellAmount + petFeeAmount) * 100),
     chargeableUpsellIds: args.upsellIds.filter((id) => id !== "pet-fee"),
     petFeeAmountCents: Math.round(petFeeAmount * 100),
   };
+}
+
+/**
+ * Pulls the listing's per-pet fee from Guesty BEAPI so checkout amounts
+ * match each listing's configured `prices.petFee`. Falls back to the
+ * account-fee default when Guesty hasn't set one (or returns zero).
+ */
+async function resolvePetFeePerPetForListing(
+  listingId: string | undefined | null
+): Promise<number> {
+  if (!listingId) return resolvePetFeePerPet(null);
+  try {
+    const detail = (await getListingDetail(listingId)) as {
+      prices?: { petFee?: number | null } | null;
+    };
+    return resolvePetFeePerPet(detail?.prices?.petFee ?? null);
+  } catch {
+    return resolvePetFeePerPet(null);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -174,7 +210,7 @@ export async function POST(request: NextRequest) {
     const checkIn = quote.checkInDateLocalized || "";
     const checkOut = quote.checkOutDateLocalized || "";
     const listing = listingId
-      ? await getListing(listingId).catch(() => null)
+      ? await getListingWithBeapiFallback(listingId)
       : null;
     const blockingPending = await findBlockingPendingCheckout({
       quoteId,
@@ -215,10 +251,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const petFeePerPet = await resolvePetFeePerPetForListing(listingId);
     const upsellAmount = Array.isArray(upsellIds)
       ? getUpsellTotal(upsellIds.filter((id: string) => id !== "pet-fee"))
       : 0;
-    const petFeeAmount = typeof pets === "number" && pets > 0 ? pets * 99 : 0;
+    const petFeeAmount =
+      typeof pets === "number" && pets > 0 ? pets * petFeePerPet : 0;
     const totalAmount = hostPayout + upsellAmount + petFeeAmount;
     const totalAmountCents = Math.round(totalAmount * 100);
 
@@ -233,6 +271,7 @@ export async function POST(request: NextRequest) {
       upsellIds: Array.isArray(upsellIds) ? upsellIds : [],
       pets: normalizePetsValue(pets),
       petFeeAmountCents: Math.round(petFeeAmount * 100),
+      petFeePerPet,
     });
 
     if (existingPending?.paymentIntentId) {
@@ -278,6 +317,10 @@ export async function POST(request: NextRequest) {
                 listing?.nickname ||
                 existingPending.tracking.listingTitle ||
                 "",
+              listingNickname:
+                listing?.nickname ||
+                existingPending.tracking.listingNickname ||
+                null,
               picture:
                 listing?.picture ||
                 listing?.pictures?.[0] ||
@@ -322,6 +365,7 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({
             clientSecret: updatedIntent.client_secret,
             paymentIntentId: updatedIntent.id,
+            checkoutToken: createPendingCheckoutLookupToken(updatedIntent.id),
             stripeCustomerId: existingCustomerId,
           });
         }
@@ -369,6 +413,7 @@ export async function POST(request: NextRequest) {
       tracking: {
         listingId,
         listingTitle: listing?.title || listing?.nickname || "",
+        listingNickname: listing?.nickname || null,
         picture: listing?.picture || listing?.pictures?.[0] || null,
         propertyType: listing?.property_type || null,
         city: listing?.address?.city || null,
@@ -403,6 +448,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
+      checkoutToken: createPendingCheckoutLookupToken(paymentIntent.id),
       stripeCustomerId: null,
     });
   } catch (error) {
@@ -418,7 +464,14 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
     const trackingContext = extractTrackingContext(request);
-    const { paymentIntentId, upsellIds, pets, guestEmail, guestPhone } = body;
+    const {
+      paymentIntentId,
+      checkoutToken,
+      upsellIds,
+      pets,
+      guestEmail,
+      guestPhone,
+    } = body;
 
     if (!paymentIntentId) {
       return NextResponse.json(
@@ -426,10 +479,15 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       );
     }
+    if (!isValidCheckoutToken(paymentIntentId, checkoutToken)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const stripe = getStripeServer();
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-    const existingPending = await getPendingCheckout(paymentIntentId).catch(() => null);
+    const existingPending = await getPendingCheckout(paymentIntentId).catch(
+      () => null
+    );
 
     if (
       paymentIntent.status !== "requires_payment_method" &&
@@ -465,10 +523,14 @@ export async function PATCH(request: NextRequest) {
       : normalizePetsValue(
           Number.parseInt(paymentIntent.metadata.pets || "0", 10)
         );
+    const nextPetFeePerPet = await resolvePetFeePerPetForListing(
+      paymentIntent.metadata.listingId
+    );
     const nextAmount = getNextAmountCents({
       baseAmountCents,
       upsellIds: nextUpsellIds,
       pets: nextPets,
+      petFeePerPet: nextPetFeePerPet,
     });
     const stripeCustomerId = await resolveStripeCustomerId({
       existingCustomerId:
@@ -490,6 +552,7 @@ export async function PATCH(request: NextRequest) {
       metadataUpdates.upsellIds = nextUpsellIds.join(",");
       metadataUpdates.pets = String(nextPets);
       metadataUpdates.petFeeAmountCents = String(nextAmount.petFeeAmountCents);
+      metadataUpdates.petFeePerPet = String(nextPetFeePerPet);
     }
 
     if (normalizedGuestEmail) {

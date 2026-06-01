@@ -22,14 +22,14 @@ import { InlineEmailCapture } from "@/components/marketing/inline-email-capture"
 export const metadata: Metadata = {
   title: "Book Traverse Reviews — Guest Reviews From 7,700+ Verified Stays",
   description:
-    "87% 5-star reviews from 7,700+ verified guests. Read real Portland vacation rental reviews — sourced from Airbnb, VRBO & direct bookings on BookTraverse.com.",
+    "87% 5-star reviews from 7,700+ verified guests. Read real Colorado vacation rental reviews — sourced from Airbnb, VRBO & direct bookings on BookTraverse.com.",
   robots: { index: true, follow: true },
   alternates: { canonical: "/reviews" },
   openGraph: {
     title: "Book Traverse Reviews — 7,700+ Verified Guest Reviews",
     description:
-      "87% 5-star reviews from 7,700+ verified guests. Read real Portland vacation rental reviews from Airbnb, VRBO & direct bookings.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+      "87% 5-star reviews from 7,700+ verified guests. Read real Colorado vacation rental reviews from Airbnb, VRBO & direct bookings.",
+    images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
   },
 };
 
@@ -44,24 +44,22 @@ interface ReviewWithProperty {
   property_neighborhood: string | null;
 }
 
-// Map common tags to readable neighborhood names
+// Map common BEAPI tags to readable market / building names. These match the
+// Guesty tags applied to Traverse's Colorado portfolio.
 const NEIGHBORHOOD_MAP: Record<string, string> = {
-  "southeast-portland": "Southeast Portland",
-  "northeast-portland": "Northeast Portland",
-  "northwest-portland": "Northwest Portland",
-  "north-portland": "North Portland",
-  "southwest-portland": "Southwest Portland",
-  hawthorne: "Hawthorne",
-  alberta: "Alberta Arts District",
-  mississippi: "Mississippi",
-  "pearl-district": "Pearl District",
-  sellwood: "Sellwood",
-  kerns: "Kerns",
-  "division-street": "Division Street",
-  buckman: "Buckman",
-  "st-johns": "St. Johns",
-  woodstock: "Woodstock",
-  "alphabet-district": "Alphabet District",
+  "crested butte": "Crested Butte",
+  "mt-crested-butte": "Mt. Crested Butte",
+  leadville: "Leadville",
+  vail: "Vail",
+  avon: "Avon",
+  granby: "Granby",
+  "twin lakes": "Twin Lakes",
+  "the grand lodge crested butte": "Grand Lodge Crested Butte",
+  "the plaza crested butte": "The Plaza",
+  "the lodge at mountaineer square": "Lodge at Mountaineer Square",
+  "grand west village resort": "Grand West Village",
+  osv: "Old St Vincent's",
+  cabin: "Cabin Rentals",
 };
 
 function getNeighborhood(tags: string[] | null): string | null {
@@ -272,7 +270,7 @@ const REVIEW_FAQS = [
   },
   {
     q: "Is it safe to book directly on BookTraverse.com?",
-    a: "Payments are processed through Stripe, the same processor behind Airbnb, Shopify, and Lyft. Your card details never touch our servers. You get instant booking confirmation and can reach our Portland team anytime by phone or text.",
+    a: "Payments are processed through Stripe, the same processor behind Airbnb, Shopify, and Lyft. Your card details never touch our servers. You get instant booking confirmation and can reach our Colorado team anytime by phone or text.",
   },
   {
     q: "How does booking direct compare to Airbnb or VRBO?",
@@ -280,10 +278,10 @@ const REVIEW_FAQS = [
   },
   {
     q: "What happens if something goes wrong during my stay?",
-    a: "Our Portland-based guest services team is available by phone and text around the clock. Because we manage every property ourselves, we resolve issues directly \u2014 whether it's a lockout, a maintenance need, or a restaurant recommendation.",
+    a: "Our Colorado-based guest services team is available by phone and text around the clock. Because we manage every property ourselves, we resolve issues directly \u2014 whether it's a lockout, a maintenance need, or a restaurant recommendation.",
   },
   {
-    q: "Can I see reviews for a specific Portland vacation rental?",
+    q: "Can I see reviews for a specific Book Traverse vacation rental?",
     a: "Yes. Every property listing on BookTraverse.com displays its individual guest reviews and rating. Browse our properties to find reviews for the specific home you're considering.",
   },
 ];
@@ -299,12 +297,12 @@ export default async function ReviewsPage() {
     "@id": "https://www.booktraverse.com/#organization",
     name: "Book Traverse",
     url: "https://www.booktraverse.com",
-    image: "https://www.booktraverse.com/og-image.png",
-    telephone: "+1-971-362-4726",
+    image: "https://www.booktraverse.com/og-image-v2.png",
+    telephone: "+1-720-759-2013",
     address: {
       "@type": "PostalAddress",
-      addressLocality: "Portland",
-      addressRegion: "OR",
+      addressLocality: "Crested Butte",
+      addressRegion: "CO",
       addressCountry: "US",
     },
     aggregateRating: {
@@ -423,10 +421,11 @@ export default async function ReviewsPage() {
             {count.toLocaleString()}+ verified reviews. 87% five stars.
           </p>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-            We manage 275+ vacation rentals across Portland, Oregon and have
-            hosted over 80,000 guests since 2016. Below are real Portland
-            vacation rental reviews from Airbnb, VRBO, and direct bookings on
-            BookTraverse.com.
+            We manage 189 vacation rentals across six Colorado mountain
+            markets — Crested Butte, Leadville, Vail, Avon, Granby, and Twin
+            Lakes — and have hosted over 80,000 guests since 2016. Below are
+            real Book Traverse reviews from Airbnb, VRBO, and direct bookings
+            on BookTraverse.com.
           </p>
         </div>
       </section>
@@ -493,27 +492,27 @@ export default async function ReviewsPage() {
                 Walkable Locations
               </p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Guests love being steps from restaurants, coffee shops, and
-                parks in neighborhoods like{" "}
+                Guests love being a short walk from lifts, trailheads, and main
+                streets in destinations like{" "}
                 <Link
-                  href={getLandingPagePath("hawthorne-belmont")}
+                  href="/crested-butte/grand-lodge"
                   className="text-primary hover:underline"
                 >
-                  Hawthorne
+                  Grand Lodge Crested Butte
                 </Link>
                 ,{" "}
                 <Link
-                  href={getLandingPagePath("alberta")}
+                  href="/crested-butte/the-plaza"
                   className="text-primary hover:underline"
                 >
-                  Alberta
+                  The Plaza
                 </Link>
-                , and the{" "}
+                , and{" "}
                 <Link
-                  href={getLandingPagePath("northwest-portland")}
+                  href="/leadville"
                   className="text-primary hover:underline"
                 >
-                  Alphabet District
+                  downtown Leadville
                 </Link>
                 .
               </p>
@@ -560,7 +559,7 @@ export default async function ReviewsPage() {
             Recent Guest Reviews of Book Traverse Vacation Rentals
           </h2>
           <p className="mt-3 text-muted-foreground">
-            Verified reviews from guests who stayed at our Portland homes.
+            Verified reviews from guests who stayed at our Colorado homes.
           </p>
           <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {supporting.map((review, i) => (
@@ -590,11 +589,11 @@ export default async function ReviewsPage() {
           <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-5">
             <div className="lg:col-span-3">
               <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                Portland-Based. Locally Managed. Every Property.
+                Colorado-Based. Locally Managed. Every Property.
               </h2>
               <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
                 Book Traverse isn&apos;t a listing aggregator or a Silicon
-                Valley marketplace. We&apos;re a Portland vacation rental
+                Valley marketplace. We&apos;re a Colorado vacation rental
                 company that manages every home ourselves — from cleaning and
                 maintenance to guest support. When you book with us, you&apos;re
                 booking directly with the people who hold the keys.
@@ -636,17 +635,17 @@ export default async function ReviewsPage() {
                     </span>{" "}
                     &mdash;{" "}
                     <a
-                      href="tel:+19713624726"
+                      href="tel:+17207592013"
                       className="text-primary hover:underline"
                     >
-                      (971) 362-4726
+                      (720) 759-2013
                     </a>{" "}
                     or{" "}
                     <a
-                      href="mailto:hello@booktraverse.com"
+                      href="mailto:bookings@traversehospitality.com"
                       className="text-primary hover:underline"
                     >
-                      hello@booktraverse.com
+                      bookings@traversehospitality.com
                     </a>
                   </p>
                 </div>
@@ -654,29 +653,20 @@ export default async function ReviewsPage() {
               <p className="mt-6 text-xs text-muted-foreground">
                 You can also find our properties and guest reviews on{" "}
                 <a
-                  href="https://www.booking.com/hotel/us/book-traverse-collection-the-perfect-portland-escape.html"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  Booking.com
-                </a>{" "}
-                and{" "}
-                <a
-                  href="https://www.airbnb.com/s/Portland--OR/homes?query=Stay%20Portland"
+                  href="https://www.airbnb.com/s/Crested-Butte--CO/homes?query=Book%20Traverse"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline"
                 >
                   Airbnb
-                </a>
-                .
+                </a>{" "}
+                and VRBO.
               </p>
             </div>
             <div className="relative aspect-[3/4] overflow-hidden rounded-xl lg:col-span-2">
               <Image
-                src="/images/home/home-casa-adelynn-cover.jpg"
-                alt="Book Traverse vacation rental — The Adelynn in Portland's Kerns neighborhood"
+                src="/no-fees/img/hero.jpg"
+                alt="Book Traverse vacation rental in the Colorado mountains"
                 fill
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 40vw"
@@ -716,8 +706,8 @@ export default async function ReviewsPage() {
       <section className="relative py-24 md:py-32 overflow-hidden">
         <div className="absolute inset-0">
           <Image
-            src="/images/home/portland-sunset-skyline.jpg"
-            alt="Portland skyline at sunset"
+            src="/no-fees/img/hero.jpg"
+            alt="Colorado mountains at sunset"
             fill
             className="object-cover"
             sizes="100vw"
@@ -729,7 +719,7 @@ export default async function ReviewsPage() {
             See For Yourself
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-white/80">
-            275+ vacation homes across Portland&apos;s best neighborhoods. Book
+            189 vacation homes across Colorado&apos;s best mountain towns. Book
             direct for the lowest price.
           </p>
           <Link
@@ -740,7 +730,7 @@ export default async function ReviewsPage() {
           </Link>
           <div className="mx-auto mt-6 max-w-md">
             <InlineEmailCapture
-              headline="Get the best Portland deals in your inbox."
+              headline="Get the best Colorado deals in your inbox."
               buttonText="Send it"
               variant="dark"
             />

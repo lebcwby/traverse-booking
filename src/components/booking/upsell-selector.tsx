@@ -1,6 +1,6 @@
 "use client";
 
-import { UPSELLS } from "@/lib/upsells";
+import { UPSELLS, type UpsellItem } from "@/lib/upsells";
 import { formatCurrency } from "@/lib/utils";
 import { Clock, Moon, Shield, PawPrint } from "lucide-react";
 
@@ -15,12 +15,17 @@ export function UpsellSelector({
   selectedUpsells,
   onToggle,
   hiddenIds,
+  upsells,
 }: {
   selectedUpsells: string[];
   onToggle: (id: string) => void;
   hiddenIds?: string[];
+  /** Override the default UPSELLS list — used to inject per-listing amounts
+   *  and to filter out fees that don't apply (e.g. pet fee on no-pet listings). */
+  upsells?: UpsellItem[];
 }) {
-  const selectableUpsells = UPSELLS.filter((u) => !hiddenIds?.includes(u.id));
+  const source = upsells ?? UPSELLS;
+  const selectableUpsells = source.filter((u) => !hiddenIds?.includes(u.id));
 
   if (selectableUpsells.length === 0) return null;
 

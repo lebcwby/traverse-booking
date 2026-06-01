@@ -1,91 +1,124 @@
-# Stay Portland — Full Site Information
+# Traverse Hospitality — Full Site Information
 
-> Portland's local vacation rental booking platform. Book direct — no fees, lowest price guaranteed.
+> Colorado's locally managed vacation rental company. Book direct — no fees, lowest price guaranteed.
 
 ## Overview
 
-Stay Portland (stayportland.com) is a direct-booking vacation rental platform for Portland, Oregon. We manage 500+ design-forward homes across the city's most walkable neighborhoods. By booking direct, guests avoid the 10-15% service fees charged by third-party platforms like Airbnb and VRBO.
+Traverse Hospitality (booktraverse.com) is a direct-booking vacation rental company for Colorado's mountain markets. We manage 189+ properties across 6 markets — Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes. By booking direct, guests avoid the 10-15% service fees charged by third-party platforms like Airbnb and VRBO. We are not a platform — we are the local management company.
 
 ## Key Pages
 
-- Homepage: https://stayportland.com
-- Browse All Properties: https://stayportland.com/properties
-- Contact Us: https://stayportland.com/contact
+- Homepage: https://www.booktraverse.com
+- Browse All Properties: https://www.booktraverse.com/properties
+- Crested Butte: https://www.booktraverse.com/crested-butte
+- Leadville: https://www.booktraverse.com/leadville
+- Vail: https://www.booktraverse.com/vail
+- Avon: https://www.booktraverse.com/avon
+- Granby: https://www.booktraverse.com/granby
+- Twin Lakes: https://www.booktraverse.com/twin-lakes
+- Trip Planner: https://www.booktraverse.com/plan
+- Property Management: https://www.booktraverse.com/property-management
+- Blog: https://www.booktraverse.com/blog
+- Contact: https://www.booktraverse.com/contact
 
-## Neighborhoods
+## Markets
 
-Stay Portland properties are located across Portland's most popular neighborhoods:
+### Crested Butte / Mt. Crested Butte
+Colorado's last great ski town. Ski-in/ski-out condos, slope-side buildings, and mountain homes near Crested Butte Mountain Resort.
 
-- **Division Street**: Trendy restaurants, breweries, and boutiques along SE Division
-- **Alberta Arts District**: Eclectic arts scene, galleries, and vibrant street life in NE Portland
-- **Hawthorne**: Classic Portland — vintage shops, cafes, and tree-lined streets in SE Portland
-- **Pearl District**: Upscale urban living with galleries, restaurants, and Powell's Books
-- **Mississippi**: Creative hub with local restaurants, bars, and weekend markets in N Portland
-- **Kerns**: Central eastside location near dining, nightlife, and easy access to downtown
-- **Sellwood-Moreland**: Antique shops and family-friendly parks along the Willamette River
-- **St. Johns**: Charming neighborhood near Cathedral Park and the St. Johns Bridge
-- **Buckman**: Inner SE Portland with walkable access to restaurants and bars
-- **Foster-Powell**: Up-and-coming SE neighborhood with great food and community feel
+Key buildings managed by Traverse:
+- **Grand Lodge Crested Butte** (6 Emmons Loop, Mt. CB) — 50+ units, indoor/outdoor pool, hot tub, steam room, free parking. Pets in select units.
+- **The Plaza Condominiums** (11 Snowmass Road, Mt. CB) — 13 units, hot tubs, sauna, tennis and pickleball. No pets.
+- **Lodge at Mountaineer Square** (620 Gothic Road, Mt. CB) — 11 units, concierge/front desk, A/C, pool, heated underground parking. No pets.
+
+### Leadville
+The highest incorporated city in the United States at 10,152 ft. Base camp for 14er hikes, the Leadville 100 MTB and Trail Run, Ski Cooper, and Twin Lakes. Historic Victorian architecture.
+
+### Vail
+World-class skiing and luxury condos near Vail Mountain. Upscale dining and shopping in Vail Village.
+
+### Avon
+Gateway to Beaver Creek Resort. More affordable lodging than Vail with easy access to two ski resorts.
+
+### Granby
+Grand County's main hub. Access to SolVista/Granby Ranch skiing, Grand Lake, Rocky Mountain National Park.
+
+### Twin Lakes
+Two glacial lakes at the foot of Mt. Elbert (Colorado's highest 14er). Lakeside cabins, excellent fishing, Leadville 100 race venue.
 
 ## Property Types
 
-- **Studios & 1-Bedrooms**: Ideal for solo travelers and couples. Compact, design-forward spaces.
-- **2-3 Bedroom Homes**: Perfect for families and small groups. Full kitchens and living areas.
-- **4-5+ Bedroom Houses**: Large group and family reunion-friendly. Multiple bathrooms, outdoor spaces.
-- **Pet-Friendly Properties**: Select homes welcome dogs — filter by pet-friendly on the search page.
+- **Studios & 1-Bedrooms**: Ideal for couples and solo travelers. Efficient ski-base accommodations.
+- **2-3 Bedroom Condos**: Perfect for families and small groups. Full kitchens and living areas.
+- **4-6+ Bedroom Homes**: Large group retreats, family reunions, and corporate groups.
+- **Cabins**: Rustic mountain character with full amenities. Primarily near Twin Lakes and Leadville.
+- **Ski-in/Ski-out**: Direct slope access at multiple Crested Butte buildings.
+- **Pet-Friendly**: Select properties welcome dogs — filter by pet-friendly on the search page.
 
 ## Standard Amenities
 
-Most Stay Portland properties include:
+Most Traverse properties include:
 - Full kitchen with cookware, dishes, and coffee maker
 - High-speed Wi-Fi
 - Smart TV with streaming apps
-- Washer and dryer (in-unit or on-site)
-- Fresh linens and towels (hotel-quality)
-- Dedicated workspace
-- Climate control (heating/AC)
-- Free on-site or street parking
+- Washer and dryer (in-unit or shared on-site)
+- Fresh linens and towels
+- Ski storage (at mountain properties)
+- Free parking (most properties)
+- Keyless self check-in
 
 ## Booking Flow
 
-1. **Browse**: Visit /properties to see all available homes. Filter by dates, guest count, neighborhood, bedrooms, and amenities.
-2. **Select**: Click a property to view the full listing — photos, description, amenities, house rules, and a neighborhood map.
+1. **Browse**: Visit /properties to see all available homes. Filter by dates, guest count, market, building, or category (cabin, ski-in, pet-friendly, etc.).
+2. **Select**: Click a property to view the full listing — photos, description, amenities, house rules, map, and pricing calendar.
 3. **Quote**: Enter your check-in/check-out dates and number of guests to see an instant price quote with full cost breakdown.
-4. **Book**: Complete your booking with a credit card. No account creation required. You'll receive a confirmation email with check-in instructions.
+4. **Book**: Complete your booking with a credit card. No account creation required. Confirmation email includes check-in instructions.
 
 ## Pricing Model
 
 - **Nightly rate**: Varies by property, season, and length of stay
 - **Cleaning fee**: One-time fee per stay (varies by property size)
-- **Taxes**: Oregon lodging tax applied at checkout
-- **No booking fees**: Unlike Airbnb/VRBO, Stay Portland charges zero service or booking fees
+- **Taxes**: Colorado lodging taxes applied at checkout
+- **No booking fees**: Unlike Airbnb/VRBO, Traverse charges zero service or booking fees
 - **Lowest price guarantee**: Our direct rates are always equal to or lower than any third-party listing
 
-## Why Book Direct with Stay Portland
+## Why Book Direct with Traverse
 
-1. **Save 10-15%**: No platform service fees — the price you see is the real price
-2. **Lowest price guarantee**: We guarantee our direct rate is the lowest available anywhere
-3. **Local team**: Portland-based team available for guest support before, during, and after your stay
-4. **Quality assured**: Every home is professionally managed, cleaned, and maintained
-5. **Locally curated interiors**: Homes are styled to reflect Portland's character — not generic rentals
-6. **Flexible communication**: Reach us directly via the contact page — no middleman platform
+1. **Save 10-15%**: No platform service fees — the price you see is the price you pay
+2. **Lowest price guarantee**: Our direct rate is always the lowest available anywhere
+3. **Local Colorado team**: Based in Leadville and Crested Butte — not a call center
+4. **Quality assured**: Every home is professionally managed, cleaned to hotel standards
+5. **Flexible communication**: Contact us directly — no middleman platform messaging
 
 ## Guest Experience
 
 - **Check-in**: Self check-in with keyless entry (code provided via email before arrival)
-- **Support**: Local team available for questions or issues during your stay
-- **Checkout**: Simple checkout instructions provided — no early morning departures required
+- **Support**: Local team available for questions or issues during your stay. Guest line: (720) 759-2013.
+- **Checkout**: Flexible checkout — instructions provided with your confirmation
 
 ## Ideal For
 
-- **Vacationers**: Explore Portland's food scene, nature, and culture from a neighborhood home base
-- **Remote workers**: Fast Wi-Fi and dedicated workspaces for productive stays
-- **Families**: Spacious homes with full kitchens, yards, and family-friendly neighborhoods
-- **Groups**: Large homes for reunions, celebrations, and group trips
-- **Business travelers**: Comfortable, quiet spaces with reliable internet and parking
-- **Relocators**: Extended stays for people moving to Portland or between homes
+- **Skiers & Snowboarders**: Ski-in/ski-out access, slope-side buildings, gear storage
+- **Hikers**: Base camp for 14er summits (Mt. Elbert, Mt. Massive, Humboldt Peak, etc.)
+- **Mountain Bikers**: Leadville 100 venue, CB mountain bike trail network
+- **Families**: Spacious homes with full kitchens and multiple bedrooms
+- **Groups**: Large homes for reunions, race weekends, and ski trips
+- **Remote Workers**: Fast Wi-Fi and dedicated workspaces for extended stays
+- **Pet Owners**: Dog-friendly properties available in most markets
+
+## About Traverse Hospitality
+
+- **Founded**: 2016 (originally as High Rocky Homes, rebranded to Traverse Hospitality in 2024)
+- **Headquarters**: Leadville, CO + Crested Butte, CO
+- **Leadership**: Alex Haler (CEO), Nadim Tannous (CTO), Sabrina Colella (COO)
+- **Rating**: 4.8★ average across 50+ booking channels
+- **Portfolio**: 189+ active listings across 6 Colorado mountain markets
 
 ## Contact
 
-- Contact page: https://stayportland.com/contact
-- Website: https://stayportland.com
+- **Guest line**: (720) 759-2013
+- **Owner inquiries (B2B)**: (970) 533-3583
+- **Crested Butte office**: (970) 438-2241
+- Contact page: https://www.booktraverse.com/contact
+- Property management inquiries: https://www.booktraverse.com/property-management
+- Website: https://www.booktraverse.com

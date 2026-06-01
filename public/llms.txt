@@ -1,43 +1,60 @@
-# Stay Portland
+# Traverse Hospitality
 
-> Portland's local vacation rental booking platform. Book direct — no fees, lowest price guaranteed.
+> Colorado's locally managed vacation rental company. Book direct — no fees, lowest price guaranteed.
 
 ## What We Do
 
-Stay Portland offers 500+ design-forward vacation rental homes across Portland, Oregon. Guests book directly through stayportland.com with no booking fees — saving 10-15% compared to Airbnb or VRBO.
+Traverse Hospitality offers 189+ vacation rental properties across 6 Colorado mountain markets. Guests book directly through booktraverse.com with no booking fees — saving 10-15% compared to Airbnb or VRBO. We are the local management company, not a platform.
 
 ## Key Pages
 
-- Homepage: https://stayportland.com
-- Browse Properties: https://stayportland.com/properties
-- Contact: https://stayportland.com/contact
+- Homepage: https://www.booktraverse.com
+- Browse Properties: https://www.booktraverse.com/properties
+- Crested Butte Rentals: https://www.booktraverse.com/crested-butte
+- Leadville Rentals: https://www.booktraverse.com/leadville
+- Vail Rentals: https://www.booktraverse.com/vail
+- Trip Planner: https://www.booktraverse.com/plan
+- Property Management: https://www.booktraverse.com/property-management
+- Contact: https://www.booktraverse.com/contact
 
 ## How Booking Works
 
-1. Browse properties at /properties (filter by dates, guests, neighborhood)
+1. Browse properties at /properties (filter by dates, guests, market, or building)
 2. Select a property to see photos, amenities, and availability
 3. Choose dates and number of guests for an instant quote
 4. Book securely with a credit card — no account required
 
-## Why Stay Portland
+## Why Book Direct with Traverse
 
 - **No booking fees**: Book direct and skip the 10-15% service fees charged by Airbnb and VRBO
 - **Lowest price guarantee**: Our direct rates are always the lowest available
+- **Locally managed**: Every property is managed by our local Colorado team
 - **Hotel-quality comfort**: Professionally cleaned homes with premium linens and amenities
-- **Locally curated**: Every home is hand-selected and styled with Portland character
-- **Walkable neighborhoods**: Properties in Division St, Alberta Arts, Hawthorne, Pearl District, Mississippi, Kerns, and more
+- **Ski-in/ski-out options**: Direct access to Crested Butte Mountain Resort and Vail slopes
+
+## Markets
+
+- **Crested Butte / Mt. Crested Butte** — ski-in condos, slope-side buildings (Grand Lodge, The Plaza, Lodge at Mountaineer Square), mountain homes
+- **Leadville** — historic mining town, highest city in the US, race venue for Leadville 100
+- **Vail** — world-class skiing, luxury condos
+- **Avon** — gateway to Beaver Creek, more affordable than Vail
+- **Granby** — Grand Lake area, SolVista/Granby Ranch skiing
+- **Twin Lakes** — lakeside cabins near Leadville, 14er hiking base
 
 ## Property Highlights
 
-- 500+ homes across Portland's best neighborhoods
-- Studios to 5+ bedroom houses
-- Pet-friendly options available
-- Full kitchens, fast Wi-Fi, and dedicated workspaces in most homes
+- 189+ properties across Colorado's best mountain markets
+- Studios to 6+ bedroom homes
+- Pet-friendly options in select properties
+- Full kitchens, fast Wi-Fi, and ski storage in most homes
+- Ski-in/ski-out access at several Crested Butte buildings
 
 ## Contact
 
-Visit https://stayportland.com/contact to reach the Stay Portland team.
+- **Guest line**: (720) 759-2013
+- **Owner inquiries**: (970) 533-3583
+- Visit https://www.booktraverse.com/contact to reach our team
 
 ## Extended Info
 
-For more detailed information, see: https://stayportland.com/llms-full.txt
+For more detailed information, see: https://www.booktraverse.com/llms-full.txt

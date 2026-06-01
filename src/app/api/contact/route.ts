@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     const { error } = await resend.emails.send({
       from: "Book Traverse <noreply@booktraverse.com>",
-      to: "hello@booktraverse.com",
+      to: "bookings@traversehospitality.com",
       replyTo: email,
       subject: `[Contact Form] ${subject}`,
       html: `

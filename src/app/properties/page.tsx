@@ -7,9 +7,15 @@ import {
   getListingPricingCache,
   type Listing,
 } from "@/lib/supabase";
-import { searchListings } from "@/lib/guesty-beapi";
+import {
+  searchListings,
+  type SearchListingsParams,
+} from "@/lib/guesty-beapi";
 import { rankListings, type SearchMode } from "@/lib/ranking";
-import { mapBeapiToListing } from "@/lib/listing-utils";
+import {
+  mapBeapiToListing,
+  type BeapiListingResult,
+} from "@/lib/listing-utils";
 import { enrichListingsWithReviewAverages } from "@/lib/reviews";
 import { PropertiesLayout } from "@/components/properties/properties-layout";
 import { TrackPropertiesList } from "@/components/properties/track-properties-list";
@@ -20,6 +26,7 @@ interface Props {
   searchParams: Promise<{
     q?: string;
     tag?: string;
+    city?: string;
     filterTag?: string | string[];
     checkIn?: string;
     checkOut?: string;
@@ -30,15 +37,24 @@ interface Props {
     minPrice?: string;
     maxPrice?: string;
     pets?: string;
+    /** Legacy alias for `pets` — old links from the header / external sources
+     * use `petsAllowed=true`. Treat both as equivalent. */
+    petsAllowed?: string;
     propertyType?: string;
     amenities?: string;
+    /** Legacy alias for `amenities` — same reason. */
+    includeAmenities?: string;
+    /** Minimum guest rating filter on a 5-star scale (e.g. "4.5"). Added
+     *  2026-05-20. Server-side filtered against `listing.reviewAvg` (0-10
+     *  scale internally, so we multiply the filter value by 2). */
+    minRating?: string;
   }>;
 }
 
 export const metadata: Metadata = {
   title: "Colorado Vacation Rentals — Browse & Book Direct | Traverse Hospitality",
   description:
-    "Browse 190+ vacation rentals across Colorado. Filter by dates, guests, neighborhood, and amenities. No booking fees — book direct with Traverse Hospitality and save.",
+    "Browse 180+ vacation rentals across Colorado. Filter by dates, guests, neighborhood, and amenities. No booking fees — book direct with Traverse Hospitality and save.",
   alternates: { canonical: "/properties" },
   other: {
     keywords:
@@ -76,6 +92,52 @@ const propertiesBreadcrumbLd = JSON.stringify({
   ],
 });
 
+// BEAPI paginated search — drains the cursor up to 500 results.
+async function paginatedBeapiSearch(
+  opts: SearchListingsParams
+): Promise<BeapiListingResult[]> {
+  const data = await searchListings({ ...opts, limit: 100 });
+  let allResults = data.results || [];
+  let cursor = data.pagination?.cursor?.next;
+  while (cursor && allResults.length < 500) {
+    const more = await searchListings({ ...opts, limit: 100, cursor });
+    allResults = allResults.concat(more.results || []);
+    cursor = more.pagination?.cursor?.next;
+  }
+  return allResults;
+}
+
+// Pet-friendly OR semantics — when ?pets=true, return the union of:
+//   (a) listings with houseRules.petsAllowed.enabled === true (BEAPI's
+//       petsAllowed=true server filter), AND
+//   (b) listings tagged "pet friendly" (case where the host set the tag but
+//       hasn't toggled the houseRules flag — common for legacy listings).
+// Two parallel BEAPI queries, merged + deduped by _id.
+async function searchListingsPetFriendlyOr(
+  opts: SearchListingsParams
+): Promise<BeapiListingResult[]> {
+  if (!opts.petsAllowed) return paginatedBeapiSearch(opts);
+  const baseTags = opts.tags || [];
+  const [byFlag, byTag] = await Promise.all([
+    paginatedBeapiSearch({ ...opts, petsAllowed: true }),
+    paginatedBeapiSearch({
+      ...opts,
+      petsAllowed: undefined,
+      tags: [...baseTags, "pet friendly"],
+    }),
+  ]);
+  const seen = new Set<string>();
+  const out: BeapiListingResult[] = [];
+  for (const r of [...byFlag, ...byTag]) {
+    const id = (r as { _id?: string })._id;
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      out.push(r);
+    }
+  }
+  return out;
+}
+
 export default async function PropertiesPage({
   searchParams: searchParamsPromise,
 }: Props) {
@@ -92,7 +154,14 @@ export default async function PropertiesPage({
     allTags.push(...filterTags);
   }
 
-  // Common BEAPI params
+  // Common BEAPI params.
+  // NOTE: we intentionally do NOT pass `city` to BEAPI even when the URL
+  // has `?city=...`. BEAPI's city filter is too strict — a Crested Butte
+  // search returned 0 listings because most of our CB inventory has
+  // `address.city = "Mt. Crested Butte"` or other variants that don't
+  // exactly equal "Crested Butte". Instead we fetch all listings matching
+  // the other filters and then post-filter by city substring + tag
+  // membership below.
   const commonParams = {
     minOccupancy: searchParams.guests ? Number(searchParams.guests) : undefined,
     numberOfBedrooms: searchParams.bedrooms
@@ -102,8 +171,12 @@ export default async function PropertiesPage({
       ? Number(searchParams.bathrooms)
       : undefined,
     propertyType: searchParams.propertyType || undefined,
-    petsAllowed: searchParams.pets === "true" ? true : undefined,
-    includeAmenities: searchParams.amenities || undefined,
+    petsAllowed:
+      searchParams.pets === "true" || searchParams.petsAllowed === "true"
+        ? true
+        : undefined,
+    includeAmenities:
+      searchParams.amenities || searchParams.includeAmenities || undefined,
     tags: allTags.length > 0 ? allTags : undefined,
   };
 
@@ -112,7 +185,7 @@ export default async function PropertiesPage({
   if (hasDateFilter) {
     // Use BEAPI for real-time availability when dates are selected
     try {
-      const data = await searchListings({
+      let allResults = await searchListingsPetFriendlyOr({
         checkIn: searchParams.checkIn,
         checkOut: searchParams.checkOut,
         ...commonParams,
@@ -122,44 +195,45 @@ export default async function PropertiesPage({
         maxPrice: searchParams.maxPrice
           ? Number(searchParams.maxPrice)
           : undefined,
-        limit: 100,
       });
-      // Paginate through all results
-      let allResults = data.results || [];
-      let cursor = data.pagination?.cursor?.next;
-      while (cursor && allResults.length < 500) {
-        const more = await searchListings({
-          checkIn: searchParams.checkIn,
-          checkOut: searchParams.checkOut,
-          ...commonParams,
-          minPrice: searchParams.minPrice
-            ? Number(searchParams.minPrice)
-            : undefined,
-          maxPrice: searchParams.maxPrice
-            ? Number(searchParams.maxPrice)
-            : undefined,
-          limit: 100,
-          cursor,
-        });
-        allResults = allResults.concat(more.results || []);
-        cursor = more.pagination?.cursor?.next;
-      }
       // Filter out listings with no valid rate/pricing for these dates
-      allResults = allResults.filter(
-        (r: {
-          nightlyRates?: Record<string, number>;
-          prices?: { basePrice?: number };
-        }) => {
-          // When dates provided, must have nightlyRates (valid rate plan for the dates)
-          if (r.nightlyRates && typeof r.nightlyRates === "object") {
-            const rates = Object.values(r.nightlyRates) as number[];
-            if (rates.length > 0) return true;
-          }
-          return false;
+      allResults = allResults.filter((r) => {
+        // When dates provided, must have nightlyRates (valid rate plan for the dates)
+        if (r.nightlyRates && typeof r.nightlyRates === "object") {
+          const rates = Object.values(r.nightlyRates) as number[];
+          if (rates.length > 0) return true;
         }
-      );
+        return false;
+      });
 
       listings = allResults.map(mapBeapiToListing);
+
+      // Client-side city post-filter. We don't trust BEAPI's `city` param
+      // (see commonParams note above) so we do all city filtering here.
+      //
+      // Match logic — accept a listing if EITHER side substring-contains
+      // EITHER the requested city OR the listing's address-city (e.g.
+      // "Crested Butte" must match both downtown CB AND Mt. Crested
+      // Butte). Two-way substring catches:
+      //   - "Crested Butte" search → "Mt. Crested Butte" listing  ✓
+      //   - "Leadville" search → "Leadville" / "" tagged-Leadville ✓
+      //   - tag-only listings (city empty / unusual) → fallback to tags
+      if (searchParams.city) {
+        const wanted = searchParams.city.trim().toLowerCase();
+        listings = listings.filter((l) => {
+          const lcCity = (l.address?.city || "").trim().toLowerCase();
+          if (lcCity && (lcCity.includes(wanted) || wanted.includes(lcCity))) {
+            return true;
+          }
+          const tags = Array.isArray(l.tags) ? l.tags : [];
+          return tags.some(
+            (t) =>
+              typeof t === "string" &&
+              (t.toLowerCase().includes(wanted) ||
+                wanted.includes(t.toLowerCase()))
+          );
+        });
+      }
 
       // Filter by search query if provided
       if (searchParams.q) {
@@ -178,29 +252,22 @@ export default async function PropertiesPage({
   } else {
     // No dates — still use BEAPI so we only show bookable listings
     try {
-      const data = await searchListings({
-        ...commonParams,
-        limit: 100,
-      });
-      let allResults = data.results || [];
-      let cursor = data.pagination?.cursor?.next;
-      while (cursor && allResults.length < 500) {
-        const more = await searchListings({
-          ...commonParams,
-          limit: 100,
-          cursor,
-        });
-        allResults = allResults.concat(more.results || []);
-        cursor = more.pagination?.cursor?.next;
-      }
+      let allResults = await searchListingsPetFriendlyOr({ ...commonParams });
       // Filter out listings with no base price (no valid rate plan)
       allResults = allResults.filter(
-        (r: { prices?: { basePrice?: number } }) => {
-          return r.prices?.basePrice && r.prices.basePrice > 0;
-        }
+        (r) => !!(r.prices?.basePrice && r.prices.basePrice > 0)
       );
 
       listings = allResults.map(mapBeapiToListing);
+
+      // Defensive post-filter on city (same rationale as the
+      // date-filtered branch above).
+      if (searchParams.city) {
+        const wanted = searchParams.city.trim().toLowerCase();
+        listings = listings.filter(
+          (l) => (l.address?.city || "").trim().toLowerCase() === wanted
+        );
+      }
 
       // Filter by search query if provided
       if (searchParams.q) {
@@ -234,6 +301,22 @@ export default async function PropertiesPage({
 
   // Enrich with computed review averages from individual ratings (genuine precision)
   await enrichListingsWithReviewAverages(listings);
+
+  // Apply minimum-rating filter (added 2026-05-20). Filter values come in on
+  // the 5-star scale (e.g. "4.5"); listing.reviewAvg is stored on the BEAPI
+  // 0-10 scale, so we double the threshold before comparing. Listings without
+  // a review average yet are excluded when a minRating is applied — they have
+  // no signal to qualify.
+  const minRatingParam = searchParams.minRating
+    ? Number(searchParams.minRating)
+    : 0;
+  if (minRatingParam > 0 && Number.isFinite(minRatingParam)) {
+    const minRating10 = minRatingParam * 2;
+    listings = listings.filter((l) => {
+      const avg = typeof l.reviewAvg === "number" ? l.reviewAvg : 0;
+      return avg >= minRating10;
+    });
+  }
 
   // Rank listings with weighted composite scoring
   const mode: SearchMode = hasDateFilter
@@ -305,6 +388,7 @@ export default async function PropertiesPage({
           checkIn={searchParams.checkIn}
           checkOut={searchParams.checkOut}
           showCachedPricing={showCachedPricing}
+          cityParam={searchParams.city}
         />
       </Suspense>
     </div>

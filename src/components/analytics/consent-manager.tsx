@@ -56,7 +56,7 @@ function getAnonymousMatching(): Record<string, string> {
 const META_PIXEL_ID =
   process.env.NEXT_PUBLIC_META_PIXEL_ID || "1449075326140271";
 const KLAVIYO_COMPANY_ID =
-  process.env.NEXT_PUBLIC_KLAVIYO_COMPANY_ID || "T4kwLc";
+  process.env.NEXT_PUBLIC_KLAVIYO_COMPANY_ID || "UMUgtM";
 
 function loadScriptOnce(id: string, src: string) {
   if (document.getElementById(id)) return;

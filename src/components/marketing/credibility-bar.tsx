@@ -18,7 +18,7 @@ export function CredibilityBar({
         &middot; 80,000+ guests hosted
       </span>
       <span className="whitespace-nowrap px-2 sm:px-3">
-        &middot; Portland-based team
+        &middot; Colorado-based team
       </span>
     </div>
   );

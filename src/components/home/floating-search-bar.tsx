@@ -248,28 +248,29 @@ function MobileScrollCalendar({
   );
 }
 
-const DESTINATIONS = [
-  { tag: "Crested Butte", label: "Crested Butte, CO", subtitle: "70+ properties" },
-  { tag: "Leadville", label: "Leadville, CO", subtitle: "70+ properties" },
-  { tag: "Vail", label: "Vail, CO", subtitle: "Rentals available" },
-  { tag: "Avon", label: "Avon, CO", subtitle: "Near Beaver Creek" },
-  { tag: "Granby", label: "Granby, CO", subtitle: "Near Winter Park" },
+export const DESTINATIONS = [
+  { city: "Crested Butte", label: "Crested Butte, CO", subtitle: "70+ properties" },
+  { city: "Leadville", label: "Leadville, CO", subtitle: "70+ properties" },
+  { city: "Twin Lakes", label: "Twin Lakes, CO", subtitle: "14ers & alpine lakes" },
+  { city: "Vail", label: "Vail, CO", subtitle: "Rentals available" },
+  { city: "Avon", label: "Avon, CO", subtitle: "Near Beaver Creek" },
+  { city: "Granby", label: "Granby, CO", subtitle: "Near Winter Park" },
 ] as const;
 
-const CB_BUILDINGS = [
-  { tag: "Grand Lodge", label: "Grand Lodge Crested Butte" },
-  { tag: "The Plaza", label: "The Plaza Condominiums" },
-  { tag: "Lodge at Mountaineer Square", label: "Lodge at Mountaineer Square" },
+export const CB_BUILDINGS = [
+  { tag: "The Grand Lodge Crested Butte", label: "Grand Lodge Crested Butte" },
+  { tag: "The Plaza Crested Butte", label: "The Plaza Condominiums" },
+  { tag: "The Lodge at Mountaineer Square", label: "Lodge at Mountaineer Square" },
 ] as const;
 
-const LV_CATEGORIES = [
+export const LV_CATEGORIES = [
   { tag: "Grand West Village Resort", label: "Grand West Village" },
-  { tag: "OSV", label: "Old St Vincents" },
+  { tag: "OSV", label: "Old St Vincent's" },
   { tag: "cabin", label: "Cabin Rentals" },
 ] as const;
 
 const TAG_LABELS: Record<string, string> = Object.fromEntries([
-  ...DESTINATIONS.map((d) => [d.tag, d.label]),
+  ...DESTINATIONS.map((d) => [d.city, d.label]),
   ...CB_BUILDINGS.map((n) => [n.tag, n.label]),
   ...LV_CATEGORIES.map((n) => [n.tag, n.label]),
   ["Pet Friendly", "Pet-Friendly"],
@@ -302,7 +303,6 @@ export function FloatingSearchBar({
     if (tag && TAG_LABELS[tag]) return TAG_LABELS[tag];
     const city = searchParams.get("city");
     if (city) return city;
-    if (compact) return "Crested Butte, CO";
     return "";
   });
   const [suggestions, setSuggestions] = useState<{
@@ -362,6 +362,9 @@ export function FloatingSearchBar({
   }, []);
   const [selectedTag, setSelectedTag] = useState(
     () => searchParams.get("tag") || initialTag || ""
+  );
+  const [selectedCity, setSelectedCity] = useState(
+    () => searchParams.get("city") || ""
   );
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSection, setMobileSection] = useState<
@@ -455,7 +458,8 @@ export function FloatingSearchBar({
 
   function doSearch() {
     const params = new URLSearchParams();
-    if (selectedTag) params.set("tag", selectedTag);
+    if (selectedCity) params.set("city", selectedCity);
+    else if (selectedTag) params.set("tag", selectedTag);
     else if (search.trim()) params.set("q", search.trim());
     if (dateRange?.from)
       params.set("checkIn", format(dateRange.from, "yyyy-MM-dd"));
@@ -552,7 +556,7 @@ export function FloatingSearchBar({
                   setShowSuggestions(true);
                   if (search.length >= 2) fetchSuggestions(search);
                 }}
-                placeholder="Location"
+                placeholder="Search Destinations"
                 style={{ fontSize: `${fSz}px` }}
                 className="w-full min-w-0 bg-transparent leading-snug text-foreground outline-none placeholder:text-muted-foreground"
                 onKeyDown={(e) => {
@@ -601,6 +605,8 @@ export function FloatingSearchBar({
                       className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted"
                       onClick={() => {
                         setSearch(city);
+                        setSelectedCity(city);
+                        setSelectedTag("");
                         setShowSuggestions(false);
                         setLocationFocused(false);
                         setSuggestions({
@@ -645,11 +651,12 @@ export function FloatingSearchBar({
                   </p>
                   {DESTINATIONS.map((dest) => (
                     <button
-                      key={dest.tag}
+                      key={dest.city}
                       className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-muted"
                       onClick={() => {
                         setSearch(dest.label);
-                        setSelectedTag(dest.tag);
+                        setSelectedCity(dest.city);
+                        setSelectedTag("");
                         setShowSuggestions(false);
                         setLocationFocused(false);
                       }}
@@ -674,6 +681,7 @@ export function FloatingSearchBar({
                       className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-muted"
                       onClick={() => {
                         setSearch(hood.label);
+                        setSelectedCity("");
                         setSelectedTag(hood.tag);
                         setShowSuggestions(false);
                         setLocationFocused(false);
@@ -694,6 +702,7 @@ export function FloatingSearchBar({
                       className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-muted"
                       onClick={() => {
                         setSearch(hood.label);
+                        setSelectedCity("");
                         setSelectedTag(hood.tag);
                         setShowSuggestions(false);
                         setLocationFocused(false);
@@ -895,6 +904,8 @@ export function FloatingSearchBar({
 
   function mobileClear() {
     setSearch("");
+    setSelectedCity("");
+    setSelectedTag("");
     setDateRange(undefined);
     setAdults(0);
     setChildCount(0);
@@ -957,6 +968,7 @@ export function FloatingSearchBar({
                         value={search}
                         onChange={(e) => {
                           setSearch(e.target.value);
+                          setSelectedCity("");
                           setSelectedTag("");
                           fetchSuggestions(e.target.value);
                         }}
@@ -996,6 +1008,8 @@ export function FloatingSearchBar({
                             onMouseDown={(e) => {
                               e.preventDefault();
                               setSearch(city);
+                              setSelectedCity(city);
+                              setSelectedTag("");
                               setShowSuggestions(false);
                               setLocationFocused(false);
                               setSuggestions({
@@ -1045,11 +1059,12 @@ export function FloatingSearchBar({
                         </p>
                         {DESTINATIONS.map((dest) => (
                           <button
-                            key={dest.tag}
+                            key={dest.city}
                             className="flex w-full items-center gap-3 px-1 py-3 text-left active:bg-muted rounded-lg"
                             onClick={() => {
                               setSearch(dest.label);
-                              setSelectedTag(dest.tag);
+                              setSelectedCity(dest.city);
+                              setSelectedTag("");
                               setMobileSection("when");
                             }}
                           >
@@ -1075,6 +1090,7 @@ export function FloatingSearchBar({
                             className="flex w-full items-center gap-3 px-1 py-3 text-left active:bg-muted rounded-lg"
                             onClick={() => {
                               setSearch(hood.label);
+                              setSelectedCity("");
                               setSelectedTag(hood.tag);
                               setMobileSection("when");
                             }}
@@ -1096,6 +1112,7 @@ export function FloatingSearchBar({
                             className="flex w-full items-center gap-3 px-1 py-3 text-left active:bg-muted rounded-lg"
                             onClick={() => {
                               setSearch(hood.label);
+                              setSelectedCity("");
                               setSelectedTag(hood.tag);
                               setMobileSection("when");
                             }}
@@ -1362,7 +1379,7 @@ export function FloatingSearchBar({
               setShowSuggestions(true);
               if (search.length >= 2) fetchSuggestions(search);
             }}
-            placeholder="Location"
+            placeholder="Search Destinations"
             style={{ fontSize: "13.5px" }}
             className="w-full min-w-0 bg-transparent leading-snug text-foreground outline-none placeholder:text-muted-foreground"
             autoFocus={desktopExpanded && pendingSection.current === "location"}
@@ -1406,6 +1423,8 @@ export function FloatingSearchBar({
                       onMouseDown={(e) => {
                         e.preventDefault();
                         setSearch(city);
+                        setSelectedCity(city);
+                        setSelectedTag("");
                         setShowSuggestions(false);
                         setLocationFocused(false);
                         setSuggestions({
@@ -1451,12 +1470,13 @@ export function FloatingSearchBar({
                   </p>
                   {DESTINATIONS.map((dest) => (
                     <button
-                      key={dest.tag}
+                      key={dest.city}
                       className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-muted"
                       onMouseDown={(e) => {
                         e.preventDefault();
                         setSearch(dest.label);
-                        setSelectedTag(dest.tag);
+                        setSelectedCity(dest.city);
+                        setSelectedTag("");
                         setShowSuggestions(false);
                         setLocationFocused(false);
                       }}
@@ -1482,6 +1502,7 @@ export function FloatingSearchBar({
                       onMouseDown={(e) => {
                         e.preventDefault();
                         setSearch(hood.label);
+                        setSelectedCity("");
                         setSelectedTag(hood.tag);
                         setShowSuggestions(false);
                         setLocationFocused(false);
@@ -1503,6 +1524,7 @@ export function FloatingSearchBar({
                       onMouseDown={(e) => {
                         e.preventDefault();
                         setSearch(hood.label);
+                        setSelectedCity("");
                         setSelectedTag(hood.tag);
                         setShowSuggestions(false);
                         setLocationFocused(false);
