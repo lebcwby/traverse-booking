@@ -34,7 +34,7 @@ export const pageContent = `<h2>Your Complete Guide: What to Pack for a Colorado
 <li><strong>Polarized sunglasses</strong> year-round — essential for summer hiking and driving high-altitude passes</li>
 <li><strong>Sun-protective hat</strong> — wide-brim for summer, helmet-compatible for ski season</li>
 </ul>
-<p>If you're heading to Crested Butte for wildflower season (typically peak July), you'll be hiking exposed ridgelines for hours. Don't underestimate it.</p>
+<p>If you're heading to Crested Butte for wildflower season (typically peak in July), you'll be hiking exposed ridgelines for hours. Don't underestimate it.</p>
 <hr>
 <h2>Footwear by Season</h2>
 <p>Getting your footwear right might be the highest-stakes packing decision on a Colorado mountain trip.</p>
