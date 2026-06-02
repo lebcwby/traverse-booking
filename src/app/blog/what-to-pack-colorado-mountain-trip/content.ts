@@ -1,6 +1,6 @@
 export const pageContent = `<h2>Your Complete Guide: What to Pack for a Colorado Mountain Trip</h2>
 <p>Figuring out <strong>what to pack for a Colorado mountain trip</strong> is half the battle before you ever hit the road. Colorado's high-country towns sit between 8,900 and 10,152 feet above sea level — elevations that change how your body handles heat, cold, UV radiation, and hydration. Pack light in the wrong areas and you'll be shivering at a summer wildflower festival. Pack heavy in the wrong areas and you'll spend your ski week wrestling a suitcase you didn't need.</p>
-<p>This guide covers everything you actually need for a trip to Crested Butte, Leadville, or Vail — organized by category so you can pack once and spend your energy on the mountain instead of at the pharmacy.</p>
+<p>This guide covers everything you actually need for a Colorado mountain trip to Crested Butte, Leadville, or Vail — organized by category so you can pack once and spend your energy on the mountain instead of at the pharmacy.</p>
 <hr>
 <h2>Layering: The Core of Any Colorado Packing List</h2>
 <p>At altitude, temperatures can swing 30°F or more between morning and afternoon. The three-layer system isn't a trend — it's basic mountain survival.</p>
@@ -37,7 +37,7 @@ export const pageContent = `<h2>Your Complete Guide: What to Pack for a Colorado
 <p>If you're heading to Crested Butte for wildflower season (typically peak July), you'll be hiking exposed ridgelines for hours. Don't underestimate it.</p>
 <hr>
 <h2>Footwear by Season</h2>
-<p>Getting your footwear right might be the highest-stakes packing decision on a mountain trip.</p>
+<p>Getting your footwear right might be the highest-stakes packing decision on a Colorado mountain trip.</p>
 <h3>Winter (November–April)</h3>
 | Activity | Recommended Footwear |
 <p>|---|---|</p>
