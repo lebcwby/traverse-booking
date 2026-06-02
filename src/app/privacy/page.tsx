@@ -15,7 +15,7 @@ export default function PrivacyPage() {
       <h1 className="text-3xl font-bold tracking-tight text-foreground">
         Privacy Policy
       </h1>
-      <p className="mt-3 text-muted-foreground">Last updated: February 2026</p>
+      <p className="mt-3 text-muted-foreground">Last updated: June 2026</p>
 
       <div className="mt-10 space-y-8 text-sm leading-relaxed text-muted-foreground">
         <section>
@@ -78,6 +78,12 @@ export default function PrivacyPage() {
             </li>
             <li>Legal authorities when required by law</li>
           </ul>
+          <p className="mt-3">
+            <strong className="text-foreground">Text messaging opt-in data and consent:</strong>{" "}
+            Text messaging originator opt-in data and consent will not be shared
+            with any third parties, excluding aggregators and providers of the
+            Text Message services.
+          </p>
         </section>
 
         <section>
