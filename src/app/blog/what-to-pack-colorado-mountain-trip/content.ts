@@ -1,5 +1,5 @@
 export const pageContent = `<h2>Your Complete Guide: What to Pack for a Colorado Mountain Trip</h2>
-<p>Figuring out what to pack for a Colorado mountain trip is half the battle before you ever hit the road. Colorado's high-country towns sit between 8,900 and 10,152 feet above sea level — elevations that change how your body handles heat, cold, UV radiation, and hydration. Pack light in the wrong areas and you'll be shivering at a summer wildflower festival. Pack heavy in the wrong areas and you'll spend your ski week wrestling a suitcase you didn't need.</p>
+<p>Figuring out <strong>what to pack for a Colorado mountain trip</strong> is half the battle before you ever hit the road. Colorado's high-country towns sit between 8,900 and 10,152 feet above sea level — elevations that change how your body handles heat, cold, UV radiation, and hydration. Pack light in the wrong areas and you'll be shivering at a summer wildflower festival. Pack heavy in the wrong areas and you'll spend your ski week wrestling a suitcase you didn't need.</p>
 <p>This guide covers everything you actually need for a trip to Crested Butte, Leadville, or Vail — organized by category so you can pack once and spend your energy on the mountain instead of at the pharmacy.</p>
 <hr>
 <h2>Layering: The Core of Any Colorado Packing List</h2>
@@ -91,15 +91,15 @@ export const pageContent = `<h2>Your Complete Guide: What to Pack for a Colorado
 <p>Some travelers heading directly to high-elevation destinations like Leadville speak with their doctor about acetazolamide (Diamox) before arrival. This is a personal medical decision — but if you have a history of altitude sickness or are heading straight to 10,000+ feet from sea level, it's worth a conversation before you leave home. The <a href="https://wwwnc.cdc.gov/travel/page/yellowbook-home">CDC's travel health guidelines</a> and the <a href="https://wms.org">Wilderness Medical Society</a> both publish practical information on altitude illness prevention.</p>
 <hr>
 <h2>FAQ: Packing for a Colorado Mountain Trip</h2>
-<h3>What's the most important thing to pack for a Colorado mountain trip?</h3>
+<h3>What is the most important thing to pack for a Colorado mountain trip?</h3>
 <p>A waterproof outer shell and moisture-wicking base layers are the non-negotiables. Colorado weather changes fast at altitude, and staying dry keeps you warm. After that, SPF 30+ sunscreen and a reusable water bottle round out the absolute essentials regardless of season or which mountain town you're visiting.</p>
 <h3>Do I need to pack altitude sickness medication?</h3>
 <p>Not necessarily, but it's smart to carry ibuprofen or acetaminophen for arrival-day headaches, which are common. If you're heading to Leadville at 10,152 feet and coming from sea level, talk to your doctor beforehand. Staying hydrated and avoiding alcohol your first day makes a bigger difference than most people expect.</p>
 <h3>What shoes do I need for a winter trip to Crested Butte or Vail?</h3>
 <p>You need waterproof, insulated winter boots for walking around town — packed snow and ice are standard on sidewalks from November through March. Ski or snowboard boots are rented or brought separately. Pack warm slippers or sandals for the rental unit, especially if you're at Grand Lodge Crested Butte near the pool area.</p>
-<h3>Can I rent ski or outdoor gear once I arrive?</h3>
+<h3>Can I rent ski or outdoor gear once I arrive in Colorado?</h3>
 <p>Yes. Crested Butte, Vail, and Leadville all have ski and outdoor gear rental shops in town or on-mountain. If you're a casual or first-time skier, renting locally saves the hassle of traveling with boots and skis. For summer hiking, most guests bring their own footwear and use rental shops for bikes or specialty gear.</p>
-<h3>What should I NOT pack because the vacation rental provides it?</h3>
+<h3>What should I NOT pack because the vacation rental already provides it?</h3>
 <p>Skip the towels, extra pillows, hair dryer, full-size toiletries, cookware, and coffee setup. Most Traverse Hospitality rentals come with fully equipped kitchens. At Grand Lodge Crested Butte, you also have on-site fitness, spa, and pool access — leave the portable workout gear home.</p>
 <h3>Is there anything special to pack for a summer wildflower trip to Crested Butte?</h3>
 <p>Crested Butte is the Wildflower Capital of Colorado, and peak season typically means exposed high-altitude hiking. Pack a wide-brim sun hat, SPF 50 sunscreen, polarized sunglasses, trail runners or hiking boots, and a packable rain jacket for afternoon thunderstorms. A camera or phone with extra storage is worth it — the blooms are genuinely extraordinary.</p>
