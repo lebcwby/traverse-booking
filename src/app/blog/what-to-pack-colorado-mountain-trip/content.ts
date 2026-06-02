@@ -90,7 +90,7 @@ export const pageContent = `<h2>Your Complete Guide: What to Pack for a Colorado
 <h2>A Note on Altitude Medication</h2>
 <p>Some travelers heading directly to high-elevation destinations like Leadville speak with their doctor about acetazolamide (Diamox) before arrival. This is a personal medical decision — but if you have a history of altitude sickness or are heading straight to 10,000+ feet from sea level, it's worth a conversation before you leave home. The <a href="https://wwwnc.cdc.gov/travel/page/yellowbook-home">CDC's travel health guidelines</a> and the <a href="https://wms.org">Wilderness Medical Society</a> both publish practical information on altitude illness prevention.</p>
 <hr>
-<h2>FAQ: Packing for a Colorado Mountain Trip</h2>
+<h2>FAQ: What to Pack for a Colorado Mountain Trip</h2>
 <h3>What is the most important thing to pack for a Colorado mountain trip?</h3>
 <p>A waterproof outer shell and moisture-wicking base layers are the non-negotiables. Colorado weather changes fast at altitude, and staying dry keeps you warm. After that, SPF 30+ sunscreen and a reusable water bottle round out the absolute essentials regardless of season or which mountain town you're visiting.</p>
 <h3>Do I need to pack altitude sickness medication?</h3>
