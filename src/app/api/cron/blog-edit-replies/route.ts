@@ -20,23 +20,43 @@ import {
   fetchDraftContent,
   findOpenPrByBranch,
   updateDraftContent,
+  updateDraftCoverImage,
 } from "@/lib/blog-automation/github";
-import { sendDraftEmail } from "@/lib/blog-automation/email";
+import {
+  sendCoverUpdatedEmail,
+  sendDraftEmail,
+} from "@/lib/blog-automation/email";
 import { sendAlert } from "@/lib/alerts";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
+
+interface GmailPart {
+  partId?: string;
+  mimeType?: string;
+  filename?: string;
+  body?: { attachmentId?: string; size?: number; data?: string };
+  parts?: GmailPart[];
+}
 
 interface GmailMessage {
   id: string;
   threadId?: string;
   thread_id?: string;
   subject?: string;
-  payload?: { headers?: Array<{ name: string; value: string }> };
+  payload?: {
+    headers?: Array<{ name: string; value: string }>;
+    mimeType?: string;
+    filename?: string;
+    body?: { attachmentId?: string; data?: string };
+    parts?: GmailPart[];
+  };
   body?: string;
   snippet?: string;
   messageText?: string;
 }
+
+const IMG_EXT_RE = /\.(jpe?g|png|webp|gif)$/i;
 
 interface GmailListResponse {
   messages?: GmailMessage[];
@@ -88,10 +108,117 @@ function stripQuotedReply(body: string): string {
   return body.slice(0, cut).trim();
 }
 
+function base64UrlToBuffer(s: string): Buffer {
+  return Buffer.from(s.replace(/-/g, "+").replace(/_/g, "/"), "base64");
+}
+
+/** Walk MIME parts (recursively) for the first text/plain body. */
+function textFromParts(parts: GmailPart[] | undefined): string {
+  if (!parts) return "";
+  for (const p of parts) {
+    if (p.mimeType === "text/plain" && p.body?.data) {
+      return base64UrlToBuffer(p.body.data).toString("utf8");
+    }
+    const nested = textFromParts(p.parts);
+    if (nested) return nested;
+  }
+  return "";
+}
+
 function decodeGmailBody(msg: GmailMessage): string {
   // Composio's GMAIL_FETCH_EMAILS commonly returns a `messageText` field with
-  // plaintext extracted. Fall back to snippet if that's missing.
-  return (msg.messageText ?? msg.body ?? msg.snippet ?? "").trim();
+  // plaintext extracted. With include_payload on, dig text/plain out of the
+  // MIME parts as a fallback; finally fall back to the snippet.
+  return (
+    msg.messageText ??
+    msg.body ??
+    (textFromParts(msg.payload?.parts) || undefined) ??
+    msg.snippet ??
+    ""
+  ).trim();
+}
+
+/** Find the first image attachment (recursively) in a message's MIME parts. */
+function extractImageAttachment(
+  msg: GmailMessage,
+): { attachmentId: string; filename: string; ext: string } | null {
+  const stack: GmailPart[] = [];
+  if (msg.payload?.parts) stack.push(...msg.payload.parts);
+  if (msg.payload?.body?.attachmentId) {
+    stack.push({
+      mimeType: msg.payload.mimeType,
+      filename: msg.payload.filename,
+      body: msg.payload.body,
+    });
+  }
+  while (stack.length) {
+    const p = stack.shift()!;
+    if (p.parts) stack.push(...p.parts);
+    const attachmentId = p.body?.attachmentId;
+    const filename = p.filename ?? "";
+    const isImage =
+      (p.mimeType ?? "").startsWith("image/") || IMG_EXT_RE.test(filename);
+    if (attachmentId && isImage) {
+      const m = filename.match(IMG_EXT_RE);
+      const ext = (
+        m ? m[1] : (p.mimeType ?? "").split("/")[1] || "jpg"
+      )
+        .toLowerCase()
+        .replace("jpeg", "jpg");
+      return { attachmentId, filename: filename || `cover.${ext}`, ext };
+    }
+  }
+  return null;
+}
+
+/**
+ * Fetch an attachment's bytes as standard base64. Composio's GMAIL_GET_ATTACHMENT
+ * may return the data inline (base64/base64url) or as a hosted-file descriptor
+ * with a URL — handle both. Returns null if it can't be resolved.
+ */
+async function fetchAttachmentBase64(
+  messageId: string,
+  attachmentId: string,
+  fileName: string,
+): Promise<string | null> {
+  const res = await exec<Record<string, unknown>>("GMAIL_GET_ATTACHMENT", {
+    message_id: messageId,
+    attachment_id: attachmentId,
+    file_name: fileName,
+  });
+  if (!res.ok) {
+    console.warn(`[blog-edit-replies] attachment fetch failed: ${res.error}`);
+    return null;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const d = res.data as any;
+  const inline =
+    (typeof d?.data === "string" && d.data) ||
+    (typeof d?.data?.data === "string" && d.data.data) ||
+    (typeof d === "string" && d) ||
+    null;
+  if (inline && !/^https?:\/\//.test(inline)) {
+    // base64url → base64 round-trip via Buffer normalizes either encoding.
+    return base64UrlToBuffer(inline).toString("base64");
+  }
+  const url =
+    d?.file ?? d?.url ?? d?.uri ?? d?.s3url ?? d?.download_url ?? d?.data?.url;
+  if (typeof url === "string" && /^https?:\/\//.test(url)) {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(`download ${r.status}`);
+      return Buffer.from(await r.arrayBuffer()).toString("base64");
+    } catch (e) {
+      console.warn(
+        `[blog-edit-replies] attachment download failed: ${(e as Error).message}`,
+      );
+      return null;
+    }
+  }
+  console.warn(
+    `[blog-edit-replies] attachment had no usable data/url; keys=${Object.keys(d ?? {}).join(",")}`,
+  );
+  return null;
 }
 
 async function listUnreadDraftReplies(): Promise<GmailMessage[]> {
@@ -99,6 +226,8 @@ async function listUnreadDraftReplies(): Promise<GmailMessage[]> {
   const res = await exec<GmailListResponse>("GMAIL_FETCH_EMAILS", {
     query: "is:unread subject:\"[Draft]\" in:inbox",
     max_results: 25,
+    // Need the full MIME payload so we can detect photo attachments on replies.
+    include_payload: true,
   });
   if (!res.ok) throw new Error(`gmail fetch failed: ${res.error}`);
   return res.data.messages ?? res.data.data?.messages ?? [];
@@ -149,38 +278,85 @@ async function processReply(msg: GmailMessage): Promise<ProcessedResult> {
   }
 
   const edits = stripQuotedReply(decodeGmailBody(msg));
-  if (!edits || edits.length < 6) {
+  const hasEdits = !!edits && edits.length >= 6;
+  const attachment = extractImageAttachment(msg);
+
+  if (!hasEdits && !attachment) {
     return {
       messageId: msg.id,
       slug,
       status: "skipped",
-      detail: "reply body empty after quote-strip",
+      detail: "reply has no edit text or image attachment",
     };
   }
 
-  const currentHtml = await fetchDraftContent({ slug, branch });
-  const revised = await revisePost({ entry, currentHtml, edits });
+  // 1. If the reviewer attached a photo, swap the post's cover image.
+  let newCoverUrl: string | null = null;
+  if (attachment) {
+    const b64 = await fetchAttachmentBase64(
+      msg.id,
+      attachment.attachmentId,
+      attachment.filename,
+    );
+    if (b64) {
+      newCoverUrl = await updateDraftCoverImage({
+        slug,
+        branch,
+        contentBase64: b64,
+        ext: attachment.ext,
+      });
+    } else {
+      console.warn(
+        `[blog-edit-replies] ${slug}: image attachment found but could not be fetched/decoded`,
+      );
+    }
+  }
 
-  await updateDraftContent({
-    slug,
-    branch,
-    html: revised.html,
-    commitMessage: `blog(draft): revise ${slug} per reviewer edits`,
-  });
-
-  await sendDraftEmail({
-    entry,
-    draft: revised.draft,
-    prUrl: pr.url,
-    prNumber: pr.number,
-    coverImageUrl: null, // image already committed on first draft; no change here
-    issues: revised.issues.map((i) => `${i.kind}: ${i.detail}`),
-    isRevision: true,
-  });
+  // 2. If the reviewer wrote edits, revise the copy via Claude and email v2.
+  if (hasEdits) {
+    const currentHtml = await fetchDraftContent({ slug, branch });
+    const revised = await revisePost({ entry, currentHtml, edits });
+    await updateDraftContent({
+      slug,
+      branch,
+      html: revised.html,
+      commitMessage: `blog(draft): revise ${slug} per reviewer edits`,
+    });
+    await sendDraftEmail({
+      entry,
+      draft: revised.draft,
+      prUrl: pr.url,
+      prNumber: pr.number,
+      // Show the freshly-swapped cover if there was one; null otherwise keeps
+      // the prior text-only-revision behavior.
+      coverImageUrl: newCoverUrl,
+      issues: revised.issues.map((i) => `${i.kind}: ${i.detail}`),
+      isRevision: true,
+    });
+  } else if (newCoverUrl) {
+    // Photo-only reply: confirm the new cover, no text revision.
+    await sendCoverUpdatedEmail({
+      entry,
+      prUrl: pr.url,
+      prNumber: pr.number,
+      coverImageUrl: newCoverUrl,
+    });
+  } else {
+    // Attachment present but unusable, and no text edits → nothing to apply.
+    await markRead(msg.id);
+    return {
+      messageId: msg.id,
+      slug,
+      status: "skipped",
+      detail: "image attachment present but could not be applied",
+    };
+  }
 
   await markRead(msg.id);
-
-  return { messageId: msg.id, slug, status: "revised" };
+  const applied = [hasEdits ? "text" : null, newCoverUrl ? "cover" : null]
+    .filter(Boolean)
+    .join("+");
+  return { messageId: msg.id, slug, status: "revised", detail: applied };
 }
 
 export async function GET(request: Request): Promise<Response> {

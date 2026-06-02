@@ -322,6 +322,60 @@ export async function sendApprovalConfirmation(args: {
   });
 }
 
+/**
+ * Lightweight notice sent when a reviewer reply updated only the cover image
+ * (no text edits) — shows the new cover and keeps the approve/edit/PR buttons.
+ * Subject keeps the "[Draft] <title>" tag so further replies still route to
+ * the reply-watcher.
+ */
+export async function sendCoverUpdatedEmail(args: {
+  entry: CalendarEntry;
+  prUrl: string;
+  prNumber: number;
+  coverImageUrl: string;
+}): Promise<{ messageId?: string; threadId?: string }> {
+  const { entry, prUrl, prNumber, coverImageUrl } = args;
+  const token = signApprovalToken({ slug: entry.slug, prNumber });
+  const approveUrl = `${SITE_URL}/api/blog/approve?token=${encodeURIComponent(token)}`;
+  const editsHref = `mailto:marketing@traversehospitality.com?subject=${encodeURIComponent(`Re: [Draft] ${entry.slug}`)}`;
+  const subject = `[Draft] ${entry.title} — cover image updated`;
+
+  const html = `<!doctype html>
+<html>
+  <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:640px;margin:0 auto;padding:24px;color:#111827;line-height:1.5;">
+    <h1 style="font-size:22px;margin:0 0 8px 0;">Cover image updated: ${escapeHtml(entry.title)}</h1>
+    <div style="color:#6B7280;font-size:14px;margin-bottom:16px;">
+      Applied the photo from your reply. Text content is unchanged. Slug: <code>${escapeHtml(entry.slug)}</code>
+    </div>
+    <div style="margin:20px 0;">
+      <img src="${SITE_URL}${escapeHtml(coverImageUrl)}" alt="Updated cover image" style="max-width:100%;height:auto;border-radius:8px;display:block;" />
+    </div>
+    <div style="margin:28px 0;">
+      <a href="${approveUrl}" style="display:inline-block;background:#059669;color:#fff;padding:12px 22px;border-radius:6px;text-decoration:none;font-weight:600;margin-right:8px;">Approve &amp; Publish</a>
+      <a href="${editsHref}" style="display:inline-block;background:#F3F4F6;color:#111827;padding:12px 22px;border-radius:6px;text-decoration:none;font-weight:600;margin-right:8px;">Request edits</a>
+      <a href="${escapeHtml(prUrl)}" style="display:inline-block;color:#2563EB;padding:12px 6px;text-decoration:none;font-weight:600;">View PR &rarr;</a>
+    </div>
+    <div style="border-top:1px solid #E5E7EB;padding-top:16px;font-size:12px;color:#9CA3AF;">
+      Reply (keeping the <code>[Draft]</code> tag + slug in the subject) to request text edits or send another photo. Approval link is signed and valid for 30 days.
+    </div>
+  </body>
+</html>`;
+
+  const textFallback = [
+    `Cover image updated: ${entry.title}`,
+    `Approve & Publish: ${approveUrl}`,
+    `View PR: ${prUrl}`,
+  ].join("\n");
+
+  return gmailSend({
+    to: REVIEWER_EMAIL,
+    subject,
+    html,
+    textFallback,
+    cc: REVIEWER_CC,
+  });
+}
+
 export const __test = {
   previewFromBody,
   REVIEWER_EMAIL,

@@ -393,3 +393,70 @@ export async function fetchDraftContent(args: {
     .replace(/\\`/g, "`")
     .replace(/\\\\/g, "\\");
 }
+
+/**
+ * Replace the `image: "..."` value of the BLOG_POSTS entry whose slug matches,
+ * leaving every other field and post untouched. Pure + exported so it can be
+ * unit-tested without hitting GitHub. Returns the source unchanged if the slug
+ * (or its image field) isn't found.
+ */
+export function setPostImageInSource(
+  source: string,
+  slug: string,
+  imageUrl: string,
+): string {
+  const escUrl = imageUrl.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  const escSlug = slug.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+  // Anchor on this slug, then replace the first image: "..." that follows it
+  // (each BlogPost object has exactly one image field, after its slug).
+  const re = new RegExp(`(slug:\\s*"${escSlug}"[\\s\\S]*?image:\\s*)"[^"]*"`);
+  return re.test(source) ? source.replace(re, `$1"${escUrl}"`) : source;
+}
+
+/**
+ * Commit a reviewer-supplied cover image to a draft branch and point that
+ * post's `image` field at it. Used by the reply-watcher when a reviewer
+ * replies to a draft with a photo attachment. Returns the public URL written
+ * (or null if posts.ts couldn't be updated, e.g. slug not found).
+ */
+export async function updateDraftCoverImage(args: {
+  slug: string;
+  branch: string;
+  contentBase64: string;
+  ext: string;
+}): Promise<string | null> {
+  const c = cfg();
+  const safeExt = /^(jpg|jpeg|png|webp|gif)$/i.test(args.ext)
+    ? args.ext.toLowerCase()
+    : "jpg";
+  const repoPath = `public/blog/${args.slug}-cover.${safeExt}`;
+  const publicUrl = `/blog/${args.slug}-cover.${safeExt}`;
+
+  await putBinaryFile(
+    c,
+    args.branch,
+    repoPath,
+    args.contentBase64,
+    `blog(draft): update cover image for ${args.slug}`,
+  );
+
+  const postsPath = "src/app/blog/posts.ts";
+  const postsFile = await gh<FileGetResponse>(
+    c,
+    `/repos/${c.owner}/${c.repo}/contents/${encodeURIComponent(postsPath)}?ref=${args.branch}`,
+  );
+  const src = Buffer.from(postsFile.content, "base64").toString("utf8");
+  const updated = setPostImageInSource(src, args.slug, publicUrl);
+  if (updated === src) return null; // slug/image not found — caller decides
+
+  await gh(c, `/repos/${c.owner}/${c.repo}/contents/${encodeURIComponent(postsPath)}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      message: `blog(draft): set cover image for ${args.slug}`,
+      content: b64encode(updated),
+      branch: args.branch,
+      sha: postsFile.sha,
+    }),
+  });
+  return publicUrl;
+}
