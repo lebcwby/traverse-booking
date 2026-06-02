@@ -12,6 +12,15 @@ import type { ParsedDraft } from "./markdown";
 
 const REVIEWER_EMAIL =
   process.env.BLOG_REVIEWER_EMAIL ?? "ngtannous@gmail.com";
+// Additional reviewers CC'd on every draft + revision email. Comma-separated
+// in BLOG_REVIEWER_CC; defaults to Natasha. Their reply-all to a draft keeps
+// the [Draft] subject, so the reply-watcher picks it up like any other edit.
+const REVIEWER_CC = (
+  process.env.BLOG_REVIEWER_CC ?? "natasha@traversehospitality.com"
+)
+  .split(",")
+  .map((e) => e.trim())
+  .filter(Boolean);
 const SENDER_FROM = "Traverse Blog Bot <marketing@traversehospitality.com>";
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.booktraverse.com";
@@ -258,12 +267,14 @@ async function gmailSend(args: {
   subject: string;
   html: string;
   textFallback: string;
+  cc?: string[];
 }): Promise<{ messageId?: string; threadId?: string }> {
   const res = await exec<GmailSendResult>("GMAIL_SEND_EMAIL", {
     recipient_email: args.to,
     subject: args.subject,
     body: args.html,
     is_html: true,
+    ...(args.cc && args.cc.length ? { cc: args.cc } : {}),
     // Some Composio Gmail tool versions take `from`; including it is harmless
     // if ignored, and required to send-as the marketing@ alias on others.
     from: SENDER_FROM,
@@ -280,7 +291,13 @@ export async function sendDraftEmail(
 ): Promise<{ messageId?: string; threadId?: string }> {
   const { subject, html, textFallback } = renderDraftEmailHtml(args);
   void textFallback; // Gmail tool sends HTML; fallback kept in code for future plain-text mode.
-  return gmailSend({ to: REVIEWER_EMAIL, subject, html, textFallback });
+  return gmailSend({
+    to: REVIEWER_EMAIL,
+    subject,
+    html,
+    textFallback,
+    cc: REVIEWER_CC,
+  });
 }
 
 export async function sendApprovalConfirmation(args: {
