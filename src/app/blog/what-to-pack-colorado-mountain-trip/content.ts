@@ -105,7 +105,7 @@ export const pageContent = `<h2>Your Complete Guide: What to Pack for a Colorado
 <p>Crested Butte is the Wildflower Capital of Colorado, and peak season typically means exposed high-altitude hiking. Pack a wide-brim sun hat, SPF 50 sunscreen, polarized sunglasses, trail runners or hiking boots, and a packable rain jacket for afternoon thunderstorms. A camera or phone with extra storage is worth it — the blooms are genuinely extraordinary.</p>
 <hr>
 <h2>Plan Your Colorado Mountain Trip</h2>
-<p>Ready to stop planning and start packing? Browse properties across all our Colorado markets and book direct to save up to 15% compared to the major booking platforms.</p>
+<p>Ready to stop planning and start packing? Browse properties across all our Colorado markets — knowing what to pack for a Colorado mountain trip means you can hit the ground running from day one. Book direct to save up to 15% compared to the major booking platforms.</p>
 <ul>
 <li><a href="https://booktraverse.com/crested-butte/">Crested Butte vacation rentals</a> — including Grand Lodge Crested Butte, slopeside at CBMR</li>
 <li><a href="https://booktraverse.com/leadville/">Leadville vacation rentals</a> — historic homes at the top of North America</li>
