@@ -40,10 +40,15 @@ interface GmailPart {
 }
 
 interface GmailMessage {
-  id: string;
+  // Composio returns the message ID as `messageId` (camelCase), not `id`.
+  id?: string;
+  messageId?: string;
   threadId?: string;
   thread_id?: string;
   subject?: string;
+  // Top-level attachment list Composio provides (alongside MIME parts).
+  attachmentList?: Array<{ attachmentId: string; filename: string; mimeType?: string }>;
+  attachment_list?: Array<{ attachmentId: string; filename: string; mimeType?: string }>;
   payload?: {
     headers?: Array<{ name: string; value: string }>;
     mimeType?: string;
@@ -138,10 +143,32 @@ function decodeGmailBody(msg: GmailMessage): string {
   ).trim();
 }
 
-/** Find the first image attachment (recursively) in a message's MIME parts. */
+/** Resolve the Composio message ID (camelCase `messageId` or legacy `id`). */
+function resolveMessageId(msg: GmailMessage): string {
+  return msg.messageId ?? msg.id ?? "";
+}
+
+/**
+ * Find the first image attachment. Composio exposes a top-level `attachmentList`
+ * array (most reliable) as well as embedding attachment info in MIME parts —
+ * check the list first, fall back to MIME-part walking.
+ */
 function extractImageAttachment(
   msg: GmailMessage,
 ): { attachmentId: string; filename: string; ext: string } | null {
+  // 1. Top-level attachmentList (Composio-native, most reliable).
+  const list = msg.attachmentList ?? msg.attachment_list ?? [];
+  for (const a of list) {
+    const isImage =
+      (a.mimeType ?? "").startsWith("image/") || IMG_EXT_RE.test(a.filename ?? "");
+    if (isImage && a.attachmentId) {
+      const m = (a.filename ?? "").match(IMG_EXT_RE);
+      const ext = (m ? m[1] : (a.mimeType ?? "").split("/")[1] || "jpg")
+        .toLowerCase().replace("jpeg", "jpg");
+      return { attachmentId: a.attachmentId, filename: a.filename || `cover.${ext}`, ext };
+    }
+  }
+  // 2. MIME-part fallback.
   const stack: GmailPart[] = [];
   if (msg.payload?.parts) stack.push(...msg.payload.parts);
   if (msg.payload?.body?.attachmentId) {
@@ -160,11 +187,8 @@ function extractImageAttachment(
       (p.mimeType ?? "").startsWith("image/") || IMG_EXT_RE.test(filename);
     if (attachmentId && isImage) {
       const m = filename.match(IMG_EXT_RE);
-      const ext = (
-        m ? m[1] : (p.mimeType ?? "").split("/")[1] || "jpg"
-      )
-        .toLowerCase()
-        .replace("jpeg", "jpg");
+      const ext = (m ? m[1] : (p.mimeType ?? "").split("/")[1] || "jpg")
+        .toLowerCase().replace("jpeg", "jpg");
       return { attachmentId, filename: filename || `cover.${ext}`, ext };
     }
   }
@@ -256,9 +280,10 @@ async function processReply(msg: GmailMessage): Promise<ProcessedResult> {
   const subject =
     msg.subject ?? headerValue(msg.payload?.headers, "Subject") ?? "";
   const slug = slugFromSubject(subject);
+  const msgId = resolveMessageId(msg);
   if (!slug) {
     return {
-      messageId: msg.id,
+      messageId: msgId,
       slug: null,
       status: "skipped",
       detail: `no calendar slug in subject "${subject}"`,
@@ -270,7 +295,7 @@ async function processReply(msg: GmailMessage): Promise<ProcessedResult> {
   const pr = await findOpenPrByBranch(branch);
   if (!pr) {
     return {
-      messageId: msg.id,
+      messageId: msgId,
       slug,
       status: "skipped",
       detail: `no open PR for ${branch} (already merged/closed?)`,
@@ -283,7 +308,7 @@ async function processReply(msg: GmailMessage): Promise<ProcessedResult> {
 
   if (!hasEdits && !attachment) {
     return {
-      messageId: msg.id,
+      messageId: msgId,
       slug,
       status: "skipped",
       detail: "reply has no edit text or image attachment",
@@ -294,7 +319,7 @@ async function processReply(msg: GmailMessage): Promise<ProcessedResult> {
   let newCoverUrl: string | null = null;
   if (attachment) {
     const b64 = await fetchAttachmentBase64(
-      msg.id,
+      msgId,
       attachment.attachmentId,
       attachment.filename,
     );
@@ -344,20 +369,20 @@ async function processReply(msg: GmailMessage): Promise<ProcessedResult> {
     });
   } else {
     // Attachment present but unusable, and no text edits → nothing to apply.
-    await markRead(msg.id);
+    await markRead(msgId);
     return {
-      messageId: msg.id,
+      messageId: msgId,
       slug,
       status: "skipped",
       detail: "image attachment present but could not be applied",
     };
   }
 
-  await markRead(msg.id);
+  await markRead(msgId);
   const applied = [hasEdits ? "text" : null, newCoverUrl ? "cover" : null]
     .filter(Boolean)
     .join("+");
-  return { messageId: msg.id, slug, status: "revised", detail: applied };
+  return { messageId: msgId, slug, status: "revised", detail: applied };
 }
 
 export async function GET(request: Request): Promise<Response> {
@@ -386,7 +411,7 @@ export async function GET(request: Request): Promise<Response> {
     return NextResponse.json({
       status: "dry-run",
       candidates: messages.map((m) => ({
-        id: m.id,
+        id: resolveMessageId(m),
         subject:
           m.subject ?? headerValue(m.payload?.headers, "Subject") ?? "(no subject)",
         slug: slugFromSubject(
@@ -404,8 +429,9 @@ export async function GET(request: Request): Promise<Response> {
     } catch (e) {
       const detail = (e as Error).message;
       console.error("[blog-edit-replies] process failed:", e);
+      const errMsgId = resolveMessageId(msg);
       results.push({
-        messageId: msg.id,
+        messageId: errMsgId,
         slug: null,
         status: "error",
         detail,
@@ -414,8 +440,8 @@ export async function GET(request: Request): Promise<Response> {
       try {
         await sendAlert(
           "Blog edit-reply: FAILED",
-          `Failed to process reply ${msg.id}.\n\n${detail}`,
-          `blog-edit-reply-${msg.id}`,
+          `Failed to process reply ${errMsgId}.\n\n${detail}`,
+          `blog-edit-reply-${errMsgId}`,
         );
       } catch {
         /* swallow */
