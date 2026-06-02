@@ -225,8 +225,18 @@ async function fetchAttachmentBase64(
     // base64url → base64 round-trip via Buffer normalizes either encoding.
     return base64UrlToBuffer(inline).toString("base64");
   }
+  // Composio wraps the file descriptor as a JSON string: { mimetype, name, s3url }
+  let fileDescriptor: Record<string, string> = {};
+  if (typeof d?.file === "string") {
+    try { fileDescriptor = JSON.parse(d.file); } catch { /* ignore */ }
+  } else if (typeof d?.file === "object" && d.file) {
+    fileDescriptor = d.file as Record<string, string>;
+  }
   const url =
-    d?.file ?? d?.url ?? d?.uri ?? d?.s3url ?? d?.download_url ?? d?.data?.url;
+    fileDescriptor.s3url ??
+    fileDescriptor.url ??
+    fileDescriptor.download_url ??
+    d?.url ?? d?.uri ?? d?.s3url ?? d?.download_url ?? d?.data?.url;
   if (typeof url === "string" && /^https?:\/\//.test(url)) {
     try {
       const r = await fetch(url);
