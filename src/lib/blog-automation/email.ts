@@ -155,6 +155,10 @@ interface DraftEmailArgs {
   issues?: string[];
   /** True if this is a re-send after a revision. */
   isRevision?: boolean;
+  /** Rendered article HTML. When provided, the email embeds the FULL post so
+   *  the reviewer can read and mark up the whole thing — not a truncated
+   *  preview. Falls back to the short text preview when absent. */
+  articleHtml?: string;
 }
 
 export function renderDraftEmailHtml(args: DraftEmailArgs): {
@@ -194,6 +198,17 @@ export function renderDraftEmailHtml(args: DraftEmailArgs): {
          No cover image picked from Drive — add one manually before merging.
        </div>`;
 
+  // Full rendered post when available; otherwise the short text preview.
+  // The article's own h2/h3/p/ul render with default (readable) email styles
+  // inside a bordered container so the reviewer can read the whole draft.
+  const draftBlock = args.articleHtml
+    ? `<p style="font-size:14px;color:#4B5563;margin:24px 0 8px 0;"><strong>Full draft</strong> — read the whole post below, then hit <em>Request edits</em> with your notes (you can quote the parts you want changed).</p>
+       <div style="font-size:15px;line-height:1.65;color:#1f2937;border:1px solid #E5E7EB;border-radius:8px;padding:4px 22px;margin:0 0 8px 0;">
+         ${args.articleHtml}
+       </div>`
+    : `<p style="font-size:14px;color:#4B5563;margin:0 0 4px 0;"><strong>Preview</strong></p>
+       <p style="font-size:14px;color:#111827;margin:0 0 16px 0;">${escapeHtml(preview)}</p>`;
+
   const heading = isRevision
     ? `Revised draft ready: ${escapeHtml(entry.title)}`
     : `New draft ready: ${escapeHtml(entry.title)}`;
@@ -215,8 +230,7 @@ export function renderDraftEmailHtml(args: DraftEmailArgs): {
     <p style="font-size:14px;color:#4B5563;margin:0 0 4px 0;"><strong>Meta description</strong></p>
     <p style="font-size:14px;color:#111827;margin:0 0 16px 0;font-style:italic;">${escapeHtml(draft.frontmatter.meta_description)}</p>
 
-    <p style="font-size:14px;color:#4B5563;margin:0 0 4px 0;"><strong>Preview</strong></p>
-    <p style="font-size:14px;color:#111827;margin:0 0 16px 0;">${escapeHtml(preview)}</p>
+    ${draftBlock}
 
     ${issuesBlock}
 

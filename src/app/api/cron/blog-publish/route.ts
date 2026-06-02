@@ -87,6 +87,7 @@ export async function GET(request: Request) {
       await sendDraftEmail({
         entry: result.entry,
         draft: result.draft,
+        articleHtml: result.html,
         prUrl: pr.url,
         prNumber: pr.number,
         coverImageUrl: coverImage?.publicUrl ?? null,

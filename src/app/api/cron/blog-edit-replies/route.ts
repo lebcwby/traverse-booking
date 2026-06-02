@@ -325,6 +325,7 @@ async function processReply(msg: GmailMessage): Promise<ProcessedResult> {
     await sendDraftEmail({
       entry,
       draft: revised.draft,
+      articleHtml: revised.html,
       prUrl: pr.url,
       prNumber: pr.number,
       // Show the freshly-swapped cover if there was one; null otherwise keeps
