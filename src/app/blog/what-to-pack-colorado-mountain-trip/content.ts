@@ -34,7 +34,7 @@ export const pageContent = `<h2>Your Complete Guide: What to Pack for a Colorado
 <li><strong>Polarized sunglasses</strong> year-round — essential for summer hiking and driving high-altitude passes</li>
 <li><strong>Sun-protective hat</strong> — wide-brim for summer, helmet-compatible for ski season</li>
 </ul>
-<p>If you're heading to Crested Butte for the wildflower season (typically peak July), you'll be hiking exposed ridgelines for hours. Don't underestimate it.</p>
+<p>If you're heading to Crested Butte for wildflower season (typically peak July), you'll be hiking exposed ridgelines for hours. Don't underestimate it.</p>
 <hr>
 <h2>Footwear by Season</h2>
 <p>Getting your footwear right might be the highest-stakes packing decision on a mountain trip.</p>
@@ -44,7 +44,7 @@ export const pageContent = `<h2>Your Complete Guide: What to Pack for a Colorado
 | Skiing / snowboarding | Rental boots (on-mountain), or personal boots |
 | Walking in town | Waterproof insulated boots, ankle height or higher |
 | Around the rental | Warm slippers or sandals |
-<p>Crested Butte's base village and Leadville's historic downtown both involve walking on packed snow and ice. Waterproof is not optional. Insulation to at least -20°F rated comfort is smart for Leadville, where overnight lows can be punishing in deep winter.</p>
+<p>Crested Butte's base village and Leadville's historic downtown both involve walking on packed snow and ice. Waterproof is not optional. Insulation rated to at least -20°F is smart for Leadville, where overnight lows can be punishing in deep winter.</p>
 <h3>Summer (June–September)</h3>
 | Activity | Recommended Footwear |
 <p>|---|---|</p>
@@ -88,7 +88,7 @@ export const pageContent = `<h2>Your Complete Guide: What to Pack for a Colorado
 <p>Skip packing: full-size shampoo/conditioner bottles, towels (provided), extra pillows, a coffee setup, or a full toolkit. You won't need them.</p>
 <hr>
 <h2>A Note on Altitude Medication</h2>
-<p>Some travelers flying directly to high-elevation destinations like Leadville speak with their doctor about acetazolamide (Diamox) before arrival. This is a personal medical decision — but if you have a history of altitude sickness or are heading straight to 10,000+ feet from sea level, it's worth a conversation before you leave home. The <a href="https://wwwnc.cdc.gov/travel/page/yellowbook-home">CDC's travel health guidelines</a> and the <a href="https://wms.org">Wilderness Medical Society</a> both publish practical information on altitude illness prevention.</p>
+<p>Some travelers heading directly to high-elevation destinations like Leadville speak with their doctor about acetazolamide (Diamox) before arrival. This is a personal medical decision — but if you have a history of altitude sickness or are heading straight to 10,000+ feet from sea level, it's worth a conversation before you leave home. The <a href="https://wwwnc.cdc.gov/travel/page/yellowbook-home">CDC's travel health guidelines</a> and the <a href="https://wms.org">Wilderness Medical Society</a> both publish practical information on altitude illness prevention.</p>
 <hr>
 <h2>FAQ: Packing for a Colorado Mountain Trip</h2>
 <h3>What's the most important thing to pack for a Colorado mountain trip?</h3>
@@ -100,7 +100,7 @@ export const pageContent = `<h2>Your Complete Guide: What to Pack for a Colorado
 <h3>Can I rent ski or outdoor gear once I arrive?</h3>
 <p>Yes. Crested Butte, Vail, and Leadville all have ski and outdoor gear rental shops in town or on-mountain. If you're a casual or first-time skier, renting locally saves the hassle of traveling with boots and skis. For summer hiking, most guests bring their own footwear and use rental shops for bikes or specialty gear.</p>
 <h3>What should I NOT pack because the vacation rental provides it?</h3>
-<p>Skip the towels, extra pillows, hair dryer, full-size toiletries, cookware, and coffee setup. Most Traverse Hospitality rentals are fully equipped kitchens with everything you need to cook. At Grand Lodge Crested Butte, you also have on-site fitness, spa, and pool access — leave the portable workout gear home.</p>
+<p>Skip the towels, extra pillows, hair dryer, full-size toiletries, cookware, and coffee setup. Most Traverse Hospitality rentals come with fully equipped kitchens. At Grand Lodge Crested Butte, you also have on-site fitness, spa, and pool access — leave the portable workout gear home.</p>
 <h3>Is there anything special to pack for a summer wildflower trip to Crested Butte?</h3>
 <p>Crested Butte is the Wildflower Capital of Colorado, and peak season typically means exposed high-altitude hiking. Pack a wide-brim sun hat, SPF 50 sunscreen, polarized sunglasses, trail runners or hiking boots, and a packable rain jacket for afternoon thunderstorms. A camera or phone with extra storage is worth it — the blooms are genuinely extraordinary.</p>
 <hr>
