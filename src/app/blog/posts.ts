@@ -21,7 +21,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Traverse Hospitality",
     category: "Travel Tips",
     market: "company",
-    image: "",
+    image: "/blog/what-to-pack-colorado-mountain-trip-cover.jpg",
   },
   {
     slug: "crested-butte-wildflower-season-guide-2026",
