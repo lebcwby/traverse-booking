@@ -150,6 +150,10 @@ interface DraftEmailArgs {
   prNumber: number;
   /** Public path on the live site, e.g. "/blog/<slug>.jpg" — left null when no image found. */
   coverImageUrl: string | null;
+  /** Draft branch name (e.g. "blog-draft/my-slug"). When provided, cover images
+   *  are served via raw.githubusercontent.com on the branch rather than the
+   *  live site — the image only exists on the PR branch until it's merged. */
+  coverBranch?: string;
   coverImageReason?: string;
   /** Validation issues from the generator, if any. */
   issues?: string[];
@@ -167,6 +171,17 @@ export function renderDraftEmailHtml(args: DraftEmailArgs): {
   textFallback: string;
 } {
   const { entry, draft, prUrl, prNumber, coverImageUrl, isRevision } = args;
+
+  // Cover images live on the PR branch until merged — use raw.githubusercontent.com
+  // so the email img tag resolves before the PR is merged to main/production.
+  const ghOwner = process.env.GITHUB_OWNER ?? "lebcwby";
+  const ghRepo  = process.env.GITHUB_REPO  ?? "traverse-booking";
+  const coverImgSrc = coverImageUrl
+    ? args.coverBranch
+      ? `https://raw.githubusercontent.com/${ghOwner}/${ghRepo}/${encodeURIComponent(args.coverBranch)}/public${coverImageUrl}`
+      : `${SITE_URL}${coverImageUrl}`
+    : null;
+
   const token = signApprovalToken({ slug: entry.slug, prNumber });
   const approveUrl = `${SITE_URL}/api/blog/approve?token=${encodeURIComponent(token)}`;
   const editsSubject = `Re: [Draft] ${entry.slug}`;
@@ -189,9 +204,9 @@ export function renderDraftEmailHtml(args: DraftEmailArgs): {
        </div>`
     : "";
 
-  const coverBlock = coverImageUrl
+  const coverBlock = coverImgSrc
     ? `<div style="margin:20px 0;">
-         <img src="${SITE_URL}${escapeHtml(coverImageUrl)}" alt="Cover image" style="max-width:100%;height:auto;border-radius:8px;display:block;" />
+         <img src="${escapeHtml(coverImgSrc)}" alt="Cover image" style="max-width:100%;height:auto;border-radius:8px;display:block;" />
          ${args.coverImageReason ? `<div style="font-size:12px;color:#6B7280;margin-top:6px;text-align:center;font-style:italic;">${escapeHtml(args.coverImageReason)}</div>` : ""}
        </div>`
     : `<div style="background:#FEE2E2;border-left:4px solid #DC2626;padding:12px 16px;margin:20px 0;border-radius:4px;font-size:14px;color:#991B1B;">
@@ -347,8 +362,15 @@ export async function sendCoverUpdatedEmail(args: {
   prUrl: string;
   prNumber: number;
   coverImageUrl: string;
+  /** Draft branch — if provided, image URL is served via raw.githubusercontent.com */
+  coverBranch?: string;
 }): Promise<{ messageId?: string; threadId?: string }> {
   const { entry, prUrl, prNumber, coverImageUrl } = args;
+  const ghOwner = process.env.GITHUB_OWNER ?? "lebcwby";
+  const ghRepo  = process.env.GITHUB_REPO  ?? "traverse-booking";
+  const coverImgSrc = args.coverBranch
+    ? `https://raw.githubusercontent.com/${ghOwner}/${ghRepo}/${encodeURIComponent(args.coverBranch)}/public${coverImageUrl}`
+    : `${SITE_URL}${coverImageUrl}`;
   const token = signApprovalToken({ slug: entry.slug, prNumber });
   const approveUrl = `${SITE_URL}/api/blog/approve?token=${encodeURIComponent(token)}`;
   const editsHref = `mailto:marketing@traversehospitality.com?subject=${encodeURIComponent(`Re: [Draft] ${entry.slug}`)}`;
@@ -362,7 +384,7 @@ export async function sendCoverUpdatedEmail(args: {
       Applied the photo from your reply. Text content is unchanged. Slug: <code>${escapeHtml(entry.slug)}</code>
     </div>
     <div style="margin:20px 0;">
-      <img src="${SITE_URL}${escapeHtml(coverImageUrl)}" alt="Updated cover image" style="max-width:100%;height:auto;border-radius:8px;display:block;" />
+      <img src="${escapeHtml(coverImgSrc)}" alt="Updated cover image" style="max-width:100%;height:auto;border-radius:8px;display:block;" />
     </div>
     <div style="margin:28px 0;">
       <a href="${approveUrl}" style="display:inline-block;background:#059669;color:#fff;padding:12px 22px;border-radius:6px;text-decoration:none;font-weight:600;margin-right:8px;">Approve &amp; Publish</a>

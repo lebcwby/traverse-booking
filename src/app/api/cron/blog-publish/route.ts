@@ -91,6 +91,7 @@ export async function GET(request: Request) {
         prUrl: pr.url,
         prNumber: pr.number,
         coverImageUrl: coverImage?.publicUrl ?? null,
+        coverBranch: pr.branch,
         coverImageReason: coverImage
           ? `Picked ${coverImage.sourceName} from ${coverImage.sourceFolder} — ${coverImage.reason}`
           : undefined,

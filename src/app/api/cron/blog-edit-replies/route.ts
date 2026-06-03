@@ -363,9 +363,8 @@ async function processReply(msg: GmailMessage): Promise<ProcessedResult> {
       articleHtml: revised.html,
       prUrl: pr.url,
       prNumber: pr.number,
-      // Show the freshly-swapped cover if there was one; null otherwise keeps
-      // the prior text-only-revision behavior.
       coverImageUrl: newCoverUrl,
+      coverBranch: branch,
       issues: revised.issues.map((i) => `${i.kind}: ${i.detail}`),
       isRevision: true,
     });
@@ -376,6 +375,7 @@ async function processReply(msg: GmailMessage): Promise<ProcessedResult> {
       prUrl: pr.url,
       prNumber: pr.number,
       coverImageUrl: newCoverUrl,
+      coverBranch: branch,
     });
   } else {
     // Attachment present but unusable, and no text edits → nothing to apply.
