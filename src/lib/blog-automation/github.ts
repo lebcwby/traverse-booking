@@ -155,6 +155,73 @@ async function putBinaryFile(
   });
 }
 
+interface CompareResponse {
+  status: "identical" | "ahead" | "behind" | "diverged";
+  ahead_by: number;
+  behind_by: number;
+  commits: Array<{ sha: string; commit: { message: string } }>;
+}
+
+/**
+ * Re-base an existing draft branch onto the current base so it doesn't go
+ * stale. Draft PRs can sit unmerged across many main commits; once a branch's
+ * base drifts, its checked-out code imports modules that don't yet exist on
+ * that old base — the preview build fails — and its posts.ts drifts toward a
+ * merge conflict with main.
+ *
+ * Safe-guard: only hard-reset when every commit the branch carries beyond the
+ * base was made by this automation (commit messages all start with
+ * "blog(draft):"). If a human/review commit is present we leave the branch
+ * alone and log — the bot must never clobber review work; that branch needs a
+ * manual rebase. The caller re-writes content.ts + posts.ts on the refreshed
+ * base, so resetting loses nothing the bot can't regenerate.
+ */
+async function refreshStaleDraftBranch(
+  c: GhConfig,
+  branch: string,
+  baseSha: string,
+): Promise<void> {
+  let cmp: CompareResponse;
+  try {
+    cmp = await gh<CompareResponse>(
+      c,
+      `/repos/${c.owner}/${c.repo}/compare/${encodeURIComponent(c.base)}...${encodeURIComponent(branch)}`,
+    );
+  } catch (e) {
+    console.warn(
+      `[blog-automation] could not compare ${branch} to ${c.base}; leaving branch as-is:`,
+      (e as Error).message,
+    );
+    return;
+  }
+
+  // Branch already contains every base commit — not stale, nothing to do.
+  if (cmp.behind_by === 0) return;
+
+  // Stale. Only safe to reset if the branch carries no human/review commits.
+  const allFromBot = (cmp.commits ?? []).every((co) =>
+    /^blog\(draft\):/.test(co.commit?.message ?? ""),
+  );
+  if (!allFromBot) {
+    console.warn(
+      `[blog-automation] ${branch} is ${cmp.behind_by} commit(s) behind ${c.base} but carries non-bot commits; not auto-rebasing. Rebase it manually so its preview build passes.`,
+    );
+    return;
+  }
+
+  await gh(
+    c,
+    `/repos/${c.owner}/${c.repo}/git/refs/heads/${encodeURIComponent(branch)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ sha: baseSha, force: true }),
+    },
+  );
+  console.log(
+    `[blog-automation] refreshed stale draft branch ${branch} onto ${c.base} (${baseSha.slice(0, 7)}); content will be rewritten on the fresh base.`,
+  );
+}
+
 export async function openDraftPr(args: {
   entry: CalendarEntry;
   draft: ParsedDraft;
@@ -173,7 +240,12 @@ export async function openDraftPr(args: {
   );
   const baseSha = baseRef.object.sha;
 
-  // 2. Create branch (idempotent: ignore "already exists")
+  // 2. Create the branch from the current base. If it already exists from an
+  //    earlier run, refresh it onto the current base so the draft can't rot:
+  //    a branch left unmerged across several main commits ends up importing
+  //    modules that don't exist on its stale base (breaking the preview build)
+  //    and its posts.ts silently drifts toward a merge conflict.
+  let branchAlreadyExisted = false;
   try {
     await gh(c, `/repos/${c.owner}/${c.repo}/git/refs`, {
       method: "POST",
@@ -181,6 +253,10 @@ export async function openDraftPr(args: {
     });
   } catch (e) {
     if (!/already exists/i.test((e as Error).message)) throw e;
+    branchAlreadyExisted = true;
+  }
+  if (branchAlreadyExisted) {
+    await refreshStaleDraftBranch(c, branch, baseSha);
   }
 
   // 3. Write content.ts (create or update — fetch SHA if it exists)
