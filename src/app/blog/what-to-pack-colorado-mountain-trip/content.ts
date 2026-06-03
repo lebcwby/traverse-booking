@@ -1,4 +1,4 @@
-export const pageContent = `<h2>Your Complete Guide: What to Pack for a Colorado Mountain Trip</h2>
+export const pageContent = `<h2>Your Complete Colorado Mountain Packing Guide</h2>
 <p>Figuring out <strong>what to pack for a Colorado mountain trip</strong> is half the battle before you ever hit the road. Colorado's high-country towns sit between 8,900 and 10,152 feet above sea level — elevations that change how your body handles heat, cold, UV radiation, and hydration. Pack light in the wrong areas and you'll be shivering at a summer wildflower festival. Pack heavy in the wrong areas and you'll spend your ski week wrestling a suitcase you didn't need.</p>
 <p>This guide covers everything you actually need for a Colorado mountain trip to Crested Butte, Leadville, or Vail — organized by category so you can pack once and spend your energy on the mountain instead of at the pharmacy.</p>
 <hr>
