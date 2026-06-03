@@ -16,7 +16,7 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: "what-to-pack-colorado-mountain-trip",
     oldSlug: "what-to-pack-colorado-mountain-trip",
     title: "What to Pack for a Colorado Mountain Trip",
-    excerpt: "Packing for a Colorado mountain trip is a little different than any other vacation — altitude, afternoon thunderstorms, and four-season weather in a single day will humble you fast. Here's exactly what to bring (and what to leave at home).",
+    excerpt: "From layering systems to altitude prep, here's the packing list that actually works for a Colorado mountain trip — whether you're headed to Crested Butte, Leadville, or Vail.",
     date: "2026-05-15",
     author: "Traverse Hospitality",
     category: "Travel Tips",
