@@ -268,12 +268,21 @@ async function listUnreadDraftReplies(): Promise<GmailMessage[]> {
 }
 
 async function markRead(messageId: string): Promise<void> {
-  // Best-effort. If the tool isn't available, log and move on — but we'd
-  // process the same message every 5 minutes, so warn loudly.
-  const res = await exec("GMAIL_MODIFY_MESSAGE", {
-    message_id: messageId,
+  // GMAIL_MODIFY_MESSAGE doesn't exist in this Composio Gmail toolkit.
+  // Use GMAIL_BATCH_MODIFY_MESSAGES (operates on an array) as primary,
+  // fall back to GMAIL_REMOVE_LABEL. Both silently no-op if the message
+  // is already read, so this is safe to call multiple times.
+  let res = await exec("GMAIL_BATCH_MODIFY_MESSAGES", {
+    ids: [messageId],
     remove_label_ids: ["UNREAD"],
   });
+  if (!res.ok) {
+    // Fallback
+    res = await exec("GMAIL_REMOVE_LABEL", {
+      message_id: messageId,
+      label_id: "UNREAD",
+    });
+  }
   if (!res.ok) {
     console.warn(`[blog-edit-replies] failed to mark read ${messageId}: ${res.error}`);
   }
