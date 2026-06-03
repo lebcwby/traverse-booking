@@ -13,6 +13,17 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "best-hiking-near-leadville-colorado",
+    oldSlug: "best-hiking-near-leadville-colorado",
+    title: "Best Hiking Near Leadville, Colorado",
+    excerpt: "Leadville sits at 10,152 feet — higher than most Colorado summits — making it one of the best base camps for mountain hiking in the state. Here's every trail worth knowing.",
+    date: "2026-05-18",
+    author: "Traverse Hospitality",
+    category: "Leadville",
+    market: "leadville",
+    image: "",
+  },
+  {
     slug: "what-to-pack-colorado-mountain-trip",
     oldSlug: "what-to-pack-colorado-mountain-trip",
     title: "What to Pack for a Colorado Mountain Trip",
