@@ -25,7 +25,7 @@ export const pageContent = `<h2>Hiking Near Leadville, Colorado: A Local's Trail
 <p><strong>Best season:</strong> Mid-June through September</p>
 <p>Mount Massive (14,428 ft) is Colorado's second-highest peak and sits just north of Elbert in the Mount Massive Wilderness. The name fits — the summit ridge stretches nearly three miles, giving this mountain a presence on the skyline that Elbert, for all its height, doesn't quite match.</p>
 <p>The standard route leaves from the Halfmoon Creek trailhead area and follows a long, steady approach through spruce forest before breaking into alpine tundra. The final push to the summit involves a bit of boulder-hopping but nothing technically difficult.</p>
-<p>If you're already in Leadville and want to tick both Elbert and Massive in a single trip, the trailheads are close to each other. Most fit hikers treat them as separate days rather than a single push — the combined vertical gain is significant, and Massive's distance is longer than Elbert's.</p>
+<p>If you're already doing hiking near Leadville, Colorado and want to tick both Elbert and Massive in a single trip, the trailheads are close to each other. Most fit hikers treat them as separate days rather than a single push — the combined vertical gain is significant, and Massive's distance is longer than Elbert's.</p>
 <hr>
 <h2>Mineral Belt Trail: Leadville's Best-Kept Easy Secret</h2>
 <p><strong>Distance:</strong> 12.5-mile loop</p>
@@ -47,7 +47,7 @@ export const pageContent = `<h2>Hiking Near Leadville, Colorado: A Local's Trail
 <p>A lower-key CT access point southwest of town, good for shorter out-and-back days that stay in the trees and out of the exposed alpine.</p>
 <hr>
 <h2>Twin Lakes: Lakeside Hiking with 14er Views</h2>
-<p>About 20 minutes south of Leadville on US-24, Twin Lakes sits at the base of the Sawatch Range and offers a completely different kind of hiking than the summit routes.</p>
+<p>About 20 minutes south of Leadville on US-24, Twin Lakes sits at the base of the Sawatch Range and offers a completely different kind of hiking near Leadville, Colorado than the summit routes.</p>
 <p>The lake loop trail is a relatively flat walk along the shoreline with unobstructed views of Mount Hope and the surrounding peaks. It's the kind of walk that earns its place on the list not because it's hard, but because it's genuinely beautiful — wind-riffled alpine lakes, spruce ridgelines, and the Sawatch skyline as a backdrop.</p>
 <p>Twin Lakes is also the primary trailhead for <strong>Mount Hope</strong> (13,933 ft), a popular non-technical tundra walk that serves as a good acclimatization hike before attempting a 14er. From the same area, more experienced hikers access the <strong>La Plata Peak</strong> approach, though that route involves a longer drive around the reservoir.</p>
 <p><a href="https://booktraverse.com/leadville/">Traverse Hospitality manages vacation rentals near Twin Lakes</a> — staying on that side of the highway puts you close to the lake trails and makes early morning starts significantly easier.</p>
@@ -74,13 +74,13 @@ export const pageContent = `<h2>Hiking Near Leadville, Colorado: A Local's Trail
 <h2>FAQ: Hiking Near Leadville, Colorado</h2>
 <h3>Is Mount Elbert hard for beginners?</h3>
 <p>Mount Elbert is one of Colorado's more approachable 14ers — the trail is non-technical and well-marked — but it's still a strenuous, high-altitude hike with roughly 4,500 feet of gain. Beginners in good cardiovascular shape can complete it if they acclimatize properly, start early, and turn around if weather threatens. Don't underestimate the altitude.</p>
-<h3>When is the best time to hike near Leadville?</h3>
-<p>Mid-June through mid-September is the prime window for most trails. The Mineral Belt Trail opens earlier — typically by May — but the high alpine routes remain snow-covered into June most years. July and August offer the widest trail access, though afternoon thunderstorms are a daily reality. September brings cooler temps and fewer crowds.</p>
+<h3>When is the best time to hike near Leadville Colorado?</h3>
+<p>Mid-June through mid-September is the prime window for most trails near Leadville, Colorado. The Mineral Belt Trail opens earlier — typically by May — but the high alpine routes remain snow-covered into June most years. July and August offer the widest trail access, though afternoon thunderstorms are a daily reality. September brings cooler temps and fewer crowds.</p>
 <h3>Can I hike Mount Elbert and Mount Massive in the same day?</h3>
 <p>Technically possible for experienced, fit hikers who know the area, but most locals recommend separate days. The combined elevation gain is significant, both trails are long, and summit days should include early starts with wide turnaround margins for weather. Back-to-back days is a more enjoyable and safer approach.</p>
 <h3>Is the Mineral Belt Trail good for families?</h3>
 <p>Yes — the Mineral Belt Trail is one of the best family-friendly options near Leadville. The 12.5-mile paved loop is accessible for strollers, kids on bikes, and casual hikers. It offers real mountain scenery, historic mining sites, and views of the Sawatch without any technical terrain. You can also do partial loops instead of the full distance.</p>
-<h3>Where should I stay to access Leadville's hiking trails?</h3>
+<h3>Where should I stay to access hiking near Leadville, Colorado?</h3>
 <p>Staying in Leadville proper puts you walking distance from the Mineral Belt Trail and a short drive from every major trailhead. Properties near Twin Lakes shorten the approach to the lake loop and the southern Sawatch trailheads. <a href="https://booktraverse.com/leadville/">Traverse Hospitality's Leadville vacation rentals</a> include options in both locations, with locally managed service and up-to-date trail access information.</p>
 <h3>Do I need a permit to hike Mount Elbert or Mount Massive?</h3>
 <p>No permit is currently required for day hiking either peak via standard routes, though trailhead parking may require a fee or pass depending on current Forest Service rules — check the <a href="https://www.fs.usda.gov/psicc">USDA Forest Service website</a> before your trip. Overnight camping in the Mount Massive Wilderness follows Leave No Trace guidelines and may have group-size restrictions.</p>
