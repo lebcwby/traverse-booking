@@ -21,7 +21,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Traverse Hospitality",
     category: "Leadville",
     market: "leadville",
-    image: "/blog/best-hiking-near-leadville-colorado.jpg",
+    image: "/blog/best-hiking-near-leadville-colorado-cover.jpg",
   },
   {
     slug: "what-to-pack-colorado-mountain-trip",
