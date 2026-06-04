@@ -19,6 +19,8 @@ interface HeroSectionProps {
   initialCheckOut?: string;
   /** Optional above-the-fold trust line, e.g. "No booking fees · Best rate direct". */
   trustBadge?: string;
+  /** Optional aggregate guest rating to surface as above-the-fold social proof. */
+  rating?: { avg5: number; total: number; label?: string };
 }
 
 export function NoFeesHeroSection({
@@ -33,6 +35,7 @@ export function NoFeesHeroSection({
   initialCheckIn,
   initialCheckOut,
   trustBadge,
+  rating,
 }: HeroSectionProps) {
   return (
     <header className="hero-full">
@@ -43,6 +46,29 @@ export function NoFeesHeroSection({
       <div className="hero-overlay" />
       <div className="hero-inner">
         <div className="eyebrow">{eyebrow}</div>
+        {rating ? (
+          <p
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.35rem",
+              margin: "0 auto 0.6rem",
+              color: "#fff",
+              fontSize: "0.92rem",
+              fontWeight: 600,
+              textShadow: "0 1px 6px rgba(0,0,0,0.45)",
+            }}
+          >
+            <span style={{ color: "#FFC94D" }} aria-hidden="true">
+              ★
+            </span>
+            {rating.avg5.toFixed(1)} ·{" "}
+            <span style={{ fontWeight: 500 }}>
+              {rating.total.toLocaleString()} reviews
+              {rating.label ? ` ${rating.label}` : ""}
+            </span>
+          </p>
+        ) : null}
         <h1>
           {title}
           {titleEm ? (
