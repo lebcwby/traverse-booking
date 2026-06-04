@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { type Listing } from "@/lib/supabase";
-import { searchCardListingsCached } from "@/lib/guesty-beapi";
-import { mapBeapiToListing, type BeapiListingResult } from "@/lib/listing-utils";
-import { enrichListingsWithReviewAverages } from "@/lib/reviews";
+import { fetchUnitsForTag } from "@/lib/building-units";
 import { ServerPropertyCard } from "@/components/properties/server-property-card";
 
 /**
@@ -17,10 +15,11 @@ import { ServerPropertyCard } from "@/components/properties/server-property-card
  * date-filtered availability list, so high-intent (esp. GBP) visitors don't
  * dead-end on an empty search.
  *
- * Fetches the top units for a Guesty tag from BEAPI (the live source — the
- * Supabase `listings` table is empty by design) and only renders when there's
- * at least one priced unit. The BEAPI call is cached at the fetch layer
- * (revalidate 300s); any failure makes this a silent no-op.
+ * Units come from BEAPI via `fetchUnitsForTag` (the Supabase `listings` table
+ * is empty by design), cached at the fetch layer. Pass `units` to reuse a
+ * fetch the page already did (e.g. for the hero rating). When `checkIn`/
+ * `checkOut` are given, each card deep-links into the unit with those dates so
+ * the detail page opens on a live quote instead of an empty picker.
  */
 export async function FeaturedUnitsSection({
   tag,
@@ -29,6 +28,10 @@ export async function FeaturedUnitsSection({
   availabilityHref,
   ctaLabel = "See all available units",
   limit = 4,
+  units: providedUnits,
+  checkIn,
+  checkOut,
+  guests,
 }: {
   tag: string;
   heading: string;
@@ -36,21 +39,15 @@ export async function FeaturedUnitsSection({
   availabilityHref: string;
   ctaLabel?: string;
   limit?: number;
+  /** Pre-fetched units (skips the fetch). */
+  units?: Listing[];
+  /** Dates to carry into each unit-card link. */
+  checkIn?: string;
+  checkOut?: string;
+  guests?: number;
 }) {
-  let units: Listing[] = [];
-  try {
-    const data = await searchCardListingsCached({ tags: [tag], limit: 40 }, 300);
-    const results = (data.results || []) as BeapiListingResult[];
-    units = results
-      .filter((r) => !!(r.prices?.basePrice && r.prices.basePrice > 0))
-      .map(mapBeapiToListing);
-    await enrichListingsWithReviewAverages(units);
-    // Best-reviewed first; undated base price already on each card.
-    units.sort((a, b) => (b.reviewAvg ?? 0) - (a.reviewAvg ?? 0));
-    units = units.slice(0, limit);
-  } catch {
-    units = [];
-  }
+  const all = providedUnits ?? (await fetchUnitsForTag(tag));
+  const units = all.slice(0, limit);
 
   if (units.length === 0) return null;
 
@@ -83,6 +80,9 @@ export async function FeaturedUnitsSection({
             listing={listing}
             photoWidth={800}
             priority={i < 4}
+            checkIn={checkIn}
+            checkOut={checkOut}
+            guests={guests}
           />
         ))}
       </div>

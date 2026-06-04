@@ -13,10 +13,18 @@ export function ServerPropertyCard({
   listing,
   priority = false,
   photoWidth = 800,
+  checkIn,
+  checkOut,
+  guests,
 }: {
   listing: Listing;
   priority?: boolean;
   photoWidth?: number;
+  /** Optional dates to carry into the detail page so it opens on a live quote
+   *  instead of an empty date picker (collapses the date-selection step). */
+  checkIn?: string;
+  checkOut?: string;
+  guests?: number;
 }) {
   const photo = listing.pictures?.length
     ? getPhotoUrl(listing.pictures[0], photoWidth)
@@ -28,7 +36,12 @@ export function ServerPropertyCard({
     listing.title || listing.nickname,
     listing.guesty_id
   );
-  const href = `/properties/${slug}`;
+  const dateParams = new URLSearchParams();
+  if (checkIn) dateParams.set("checkIn", checkIn);
+  if (checkOut) dateParams.set("checkOut", checkOut);
+  if (guests) dateParams.set("guests", String(guests));
+  const qs = dateParams.toString();
+  const href = `/properties/${slug}${qs ? `?${qs}` : ""}`;
   const displayRating = listing.reviewAvg
     ? (listing.reviewAvg / 2).toFixed(2)
     : null;

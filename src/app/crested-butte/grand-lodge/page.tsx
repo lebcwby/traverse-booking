@@ -4,6 +4,7 @@ import { NoFeesHeader } from "@/components/no-fees/no-fees-header";
 import { NoFeesHeroSection } from "@/components/no-fees/no-fees-hero-section";
 import { FeaturedUnitsSection } from "@/components/no-fees/featured-units-section";
 import { MobileCallBar } from "@/components/no-fees/mobile-call-bar";
+import { fetchUnitsForTag, aggregateUnitRating } from "@/lib/building-units";
 import "../../no-fees/no-fees.css";
 import "./page.css";
 
@@ -47,7 +48,7 @@ function nextWeekend(): { checkIn: string; checkOut: string; label: string } {
   return { checkIn: iso(fri), checkOut: iso(sun), label };
 }
 
-export default function Page() {
+export default async function Page() {
   const { checkIn, checkOut, label } = nextWeekend();
   const availabilityHref = `/properties?${new URLSearchParams({
     tag: GRAND_LODGE_TAG,
@@ -55,6 +56,10 @@ export default function Page() {
     checkOut,
     guests: "2",
   }).toString()}`;
+
+  // Fetch once: drives both the hero aggregate rating and the units grid.
+  const units = await fetchUnitsForTag(GRAND_LODGE_TAG);
+  const ratingSummary = aggregateUnitRating(units);
 
   return (
     <div data-no-fees-layout="hide-chrome">
@@ -80,6 +85,15 @@ export default function Page() {
         initialCheckIn={checkIn}
         initialCheckOut={checkOut}
         trustBadge="No booking fees · Best rate, direct · Save 10–15% vs. Airbnb"
+        rating={
+          ratingSummary
+            ? {
+                avg5: ratingSummary.avg5,
+                total: ratingSummary.total,
+                label: "across Grand Lodge units",
+              }
+            : undefined
+        }
       />
       <FeaturedUnitsSection
         tag={GRAND_LODGE_TAG}
@@ -87,6 +101,11 @@ export default function Page() {
         subheading={`Book direct & save — no booking fees. Showing availability for this weekend (${label}).`}
         availabilityHref={availabilityHref}
         ctaLabel={`See all units available ${label}`}
+        units={units}
+        limit={8}
+        checkIn={checkIn}
+        checkOut={checkOut}
+        guests={2}
       />
       <div
         className="traverse-page"
