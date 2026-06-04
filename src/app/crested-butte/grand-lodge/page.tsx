@@ -3,6 +3,7 @@ import { pageContent, schemaBlocks } from "./content";
 import { NoFeesHeader } from "@/components/no-fees/no-fees-header";
 import { NoFeesHeroSection } from "@/components/no-fees/no-fees-hero-section";
 import { FeaturedUnitsSection } from "@/components/no-fees/featured-units-section";
+import { MobileCallBar } from "@/components/no-fees/mobile-call-bar";
 import "../../no-fees/no-fees.css";
 import "./page.css";
 
@@ -11,6 +12,9 @@ import "./page.css";
 export const revalidate = 3600;
 
 const GRAND_LODGE_TAG = "The Grand Lodge Crested Butte";
+// Crested Butte guest line (project convention for CB-area pages).
+const CB_PHONE_TEL = "+19704382241";
+const CB_PHONE_DISPLAY = "(970) 438-2241";
 
 export const metadata: Metadata = {
   title: "The Grand Lodge Crested Butte | Slope-Side Condos | Traverse Hospitality",
@@ -75,6 +79,7 @@ export default function Page() {
         directionsHref="#location"
         initialCheckIn={checkIn}
         initialCheckOut={checkOut}
+        trustBadge="No booking fees · Best rate, direct · Save 10–15% vs. Airbnb"
       />
       <FeaturedUnitsSection
         tag={GRAND_LODGE_TAG}
@@ -86,6 +91,12 @@ export default function Page() {
       <div
         className="traverse-page"
         dangerouslySetInnerHTML={{ __html: pageContent }}
+      />
+      <MobileCallBar
+        phoneTel={CB_PHONE_TEL}
+        phoneDisplay={CB_PHONE_DISPLAY}
+        availabilityHref={availabilityHref}
+        callSource="grand-lodge"
       />
     </div>
   );
