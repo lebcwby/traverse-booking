@@ -302,10 +302,18 @@ export async function openDraftPr(args: {
   const postsSource = Buffer.from(postsFile.content, "base64").toString("utf8");
   const row = renderPostRow(entry, draft, coverImage?.publicUrl ?? "");
 
-  // If the slug is already in the file (re-run on same draft), skip the insert.
+  // If the slug is already in the file (re-run on same draft), REPLACE the
+  // existing row rather than skipping. This lets re-runs backfill a freshly
+  // picked image, an updated title/excerpt after a revision pass, etc.
   let updatedSource = postsSource;
-  const slugRegex = new RegExp(`slug:\\s*"${entry.slug.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}"`);
-  if (!slugRegex.test(postsSource)) {
+  const escSlug = entry.slug.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+  const existingBlockRe = new RegExp(
+    `  \\{[^}]*slug:\\s*"${escSlug}"[^}]*\\},?\\n?`,
+    "m",
+  );
+  if (existingBlockRe.test(postsSource)) {
+    updatedSource = postsSource.replace(existingBlockRe, `${row}\n`);
+  } else {
     updatedSource = insertPostRow(postsSource, row);
   }
 

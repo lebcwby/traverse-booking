@@ -13,7 +13,7 @@ import type { CalendarEntry } from "./calendar";
 
 const ROOT_FOLDER_ID =
   process.env.DRIVE_BLOG_IMAGES_FOLDER_ID ?? "1NYFL4yN1t_BtoYi8Sh7VGxMdG_AqmmjM";
-const PICKER_MODEL = "claude-haiku-4-6"; // fast + cheap, the choice is shallow
+const PICKER_MODEL = "claude-haiku-4-5"; // fast + cheap, the choice is shallow
 
 const MIME_FOLDER = "application/vnd.google-apps.folder";
 
@@ -42,26 +42,45 @@ async function listDriveChildren(parentId: string): Promise<DriveFile[]> {
   return files;
 }
 
+/**
+ * Composio's GOOGLEDRIVE_DOWNLOAD_FILE doesn't return base64 inline — it
+ * uploads the file to a temporary R2 bucket and returns a presigned URL at
+ * `downloaded_file_content.s3url`. We fetch that URL ourselves.
+ */
 async function downloadDriveFile(
   fileId: string,
 ): Promise<{ contentBase64: string; mimeType: string }> {
   const res = await exec<{
-    file?: string;
-    data?: string;
+    downloaded_file_content?: {
+      s3url?: string;
+      mimetype?: string;
+      name?: string;
+    };
     mimeType?: string;
-    mime_type?: string;
-  }>("GOOGLEDRIVE_DOWNLOAD_FILE", { fileId });
+  }>("GOOGLEDRIVE_DOWNLOAD_FILE", { file_id: fileId });
   if (!res.ok) throw new Error(`drive download failed: ${res.error}`);
-  const b64 =
-    typeof res.data.file === "string"
-      ? res.data.file
-      : typeof res.data.data === "string"
-        ? res.data.data
-        : "";
-  if (!b64) throw new Error("drive download returned no base64 payload");
+
+  const dfc = res.data.downloaded_file_content;
+  const s3url = dfc?.s3url;
+  if (!s3url) {
+    throw new Error(
+      `drive download missing s3url — keys: ${Object.keys(res.data).join(",")}`,
+    );
+  }
+
+  const r = await fetch(s3url);
+  if (!r.ok) {
+    throw new Error(
+      `drive hosted-content fetch failed → HTTP ${r.status} ${r.statusText}`,
+    );
+  }
+  const buf = Buffer.from(await r.arrayBuffer());
   const mimeType =
-    res.data.mimeType ?? res.data.mime_type ?? "application/octet-stream";
-  return { contentBase64: b64, mimeType };
+    dfc?.mimetype ??
+    res.data.mimeType ??
+    r.headers.get("content-type") ??
+    "application/octet-stream";
+  return { contentBase64: buf.toString("base64"), mimeType };
 }
 
 function extensionForMime(mime: string, fallbackName: string): string {
@@ -166,69 +185,133 @@ export async function pickImageForEntry(
   // 1. List subfolders in the root.
   const rootChildren = await listDriveChildren(ROOT_FOLDER_ID);
   const subfolders = rootChildren.filter((c) => c.mimeType === MIME_FOLDER);
+  console.log(`[image-picker] root: ${rootChildren.length} items, ${subfolders.length} subfolders`);
   if (subfolders.length === 0) {
     console.warn("[image-picker] root folder has no subfolders");
     return null;
   }
 
-  // 2. Pick a subfolder by market.
+  // 2. Pick a market subfolder.
   const folderChoice = await askClaudePick(
     client,
     { entry, kind: "subfolder" },
     subfolders.map((f) => ({ name: f.name })),
   );
-  const chosenFolder = subfolders[folderChoice.index] ?? subfolders[0];
+  const marketFolder = subfolders[folderChoice.index] ?? subfolders[0];
+  console.log(`[image-picker] picked market: ${marketFolder.name} (reason: ${folderChoice.reason})`);
 
-  // 3. List image files in chosen subfolder.
-  const folderChildren = await listDriveChildren(chosenFolder.id);
-  const images = folderChildren.filter(
-    (c) =>
-      c.mimeType !== MIME_FOLDER &&
-      /\.(jpg|jpeg|png|webp|gif)$/i.test(c.name),
-  );
-  if (images.length === 0) {
-    // Subfolder might itself contain sub-subfolders (per-property). Walk
-    // one level deeper if so.
-    const nestedFolders = folderChildren.filter((c) => c.mimeType === MIME_FOLDER);
-    if (nestedFolders.length === 0) {
-      console.warn(`[image-picker] no images in ${chosenFolder.name}`);
-      return null;
-    }
-    const nestedChoice = await askClaudePick(
-      client,
-      { entry, kind: "subfolder" },
-      nestedFolders.map((f) => ({ name: f.name })),
-    );
-    const chosenNested = nestedFolders[nestedChoice.index] ?? nestedFolders[0];
-    const nestedChildren = await listDriveChildren(chosenNested.id);
-    const nestedImages = nestedChildren.filter(
-      (c) =>
-        c.mimeType !== MIME_FOLDER &&
-        /\.(jpg|jpeg|png|webp|gif)$/i.test(c.name),
-    );
-    if (nestedImages.length === 0) return null;
-    return finalize(client, entry, chosenNested.name, nestedImages);
+  // 3. Recursively gather every image under the market folder. Folder
+  // depth varies by property (some properties have a Photos/ subfolder,
+  // some put images directly), so we walk until we find leaves.
+  const allImages = await collectAllImages(marketFolder.id, marketFolder.name);
+  console.log(`[image-picker] ${marketFolder.name}: ${allImages.length} images across all depths`);
+  if (allImages.length === 0) {
+    console.warn(`[image-picker] no images anywhere under ${marketFolder.name}`);
+    return null;
   }
 
-  return finalize(client, entry, chosenFolder.name, images);
+  // Big markets (Leadville has 7k+ images) blow Claude's 200K context if
+  // we send every filename. Cap the candidate set at MAX_CANDIDATES via a
+  // deterministic, slug-seeded sample so re-runs on the same post pick
+  // consistently.
+  const MAX_CANDIDATES = 300;
+  const candidates =
+    allImages.length <= MAX_CANDIDATES
+      ? allImages
+      : sampleDeterministic(allImages, MAX_CANDIDATES, entry.slug);
+  if (candidates !== allImages) {
+    console.log(`[image-picker] sampled ${candidates.length}/${allImages.length} candidates for Claude`);
+  }
+
+  return finalize(client, entry, marketFolder.name, candidates);
+}
+
+/** Mulberry32 PRNG seeded from a string — small, deterministic, no deps. */
+function seedFromString(s: string): number {
+  let h = 1779033703 ^ s.length;
+  for (let i = 0; i < s.length; i++) {
+    h = Math.imul(h ^ s.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return h >>> 0;
+}
+function mulberry32(seed: number): () => number {
+  let t = seed;
+  return () => {
+    t = (t + 0x6d2b79f5) | 0;
+    let x = Math.imul(t ^ (t >>> 15), 1 | t);
+    x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function sampleDeterministic<T>(arr: T[], n: number, seedStr: string): T[] {
+  const rng = mulberry32(seedFromString(seedStr));
+  // Fisher-Yates first n
+  const copy = arr.slice();
+  for (let i = 0; i < n && i < copy.length - 1; i++) {
+    const j = i + Math.floor(rng() * (copy.length - i));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, n);
+}
+
+interface DriveImageWithPath extends DriveFile {
+  path: string; // "Crested Butte/Grand Lodge/exterior.jpg"
+}
+
+/**
+ * Walk the folder tree breadth-first under `rootId`, returning every image
+ * file with its display path. Bounded depth (5) and per-folder cap (200)
+ * to keep this from blowing up on a hypothetically massive tree.
+ */
+async function collectAllImages(
+  rootId: string,
+  rootName: string,
+  maxDepth = 5,
+  perFolderCap = 200,
+): Promise<DriveImageWithPath[]> {
+  const out: DriveImageWithPath[] = [];
+  const queue: Array<{ id: string; path: string; depth: number }> = [
+    { id: rootId, path: rootName, depth: 0 },
+  ];
+  while (queue.length) {
+    const { id, path, depth } = queue.shift()!;
+    const children = (await listDriveChildren(id)).slice(0, perFolderCap);
+    for (const c of children) {
+      const childPath = `${path}/${c.name}`;
+      if (c.mimeType === MIME_FOLDER) {
+        if (depth < maxDepth) {
+          queue.push({ id: c.id, path: childPath, depth: depth + 1 });
+        }
+      } else if (/\.(jpg|jpeg|png|webp|gif)$/i.test(c.name)) {
+        out.push({ ...c, path: childPath });
+      }
+    }
+  }
+  return out;
 }
 
 async function finalize(
   client: Anthropic,
   entry: CalendarEntry,
   folderName: string,
-  images: DriveFile[],
+  images: DriveImageWithPath[] | DriveFile[],
 ): Promise<PickedImage> {
+  // Use the path when available so Claude sees folder context (e.g. "Grand
+  // Lodge/exterior.jpg" — much easier to pick a hero shot from).
+  const labeled = images.map((f) =>
+    "path" in f ? { name: f.path } : { name: f.name },
+  );
   const imageChoice = await askClaudePick(
     client,
     { entry, kind: "image" },
-    images.map((f) => ({ name: f.name })),
+    labeled,
   );
   const chosen = images[imageChoice.index] ?? images[0];
   const { contentBase64, mimeType } = await downloadDriveFile(chosen.id);
   const ext = extensionForMime(mimeType, chosen.name);
   return {
-    sourceName: chosen.name,
+    sourceName: "path" in chosen ? chosen.path : chosen.name,
     sourceFolder: folderName,
     repoPath: `public/blog/${entry.slug}.${ext}`,
     publicUrl: `/blog/${entry.slug}.${ext}`,

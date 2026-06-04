@@ -56,7 +56,7 @@ export const CONTENT_CALENDAR: CalendarEntry[] = [
     category: "Travel Tips",
     brief:
       "Practical packing list for guests visiting Crested Butte, Leadville, Vail. Covers layers, altitude prep, sun protection, footwear by season, and what you can leave at home because the rental provides it.",
-    status: "pending",
+    status: "done",
   },
   {
     slug: "best-hiking-near-leadville-colorado",

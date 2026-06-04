@@ -154,8 +154,31 @@ export function validateDraft(
     if (opener.includes(o)) issues.push({ kind: "banned-opener", detail: o });
   }
 
-  if (!lower.includes(opts.primaryKeyword.toLowerCase())) {
-    issues.push({ kind: "missing-keyword", detail: opts.primaryKeyword });
+  // Fuzzy keyword match: tokens must appear in order with at most a couple
+  // of stopword/glue words between each. This lets natural English pass
+  // when the keyword phrase implies stopwords — e.g. "what to pack Colorado
+  // mountain trip" matches "what to pack for a Colorado mountain trip" —
+  // without matching scrambled prose that merely contains all the tokens.
+  const kwTokens = opts.primaryKeyword
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((t) => t.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&"));
+  if (kwTokens.length > 0) {
+    // Glue between tokens: optional stopwords ("for a", "in the", etc.) plus
+    // any run of whitespace/punctuation. This passes natural English like
+    // "hiking near Leadville, Colorado" or "what to pack for a Colorado mountain trip"
+    // but still requires the tokens to appear in order.
+    const glue =
+      "[\\s,;.:()\\-–—\"']*" + // leading punctuation/space
+      "(?:(?:for|a|an|the|in|on|to|of|and|with)[\\s,;.:()\\-–—\"']+){0,2}";
+    const fuzzy = new RegExp(
+      `\\b${kwTokens.join(`\\b${glue}\\b`)}\\b`,
+      "i",
+    );
+    if (!fuzzy.test(lower)) {
+      issues.push({ kind: "missing-keyword", detail: opts.primaryKeyword });
+    }
   }
 
   const words = body.split(/\s+/).filter(Boolean).length;
