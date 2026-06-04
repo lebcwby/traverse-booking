@@ -1555,6 +1555,29 @@ export function trackClickBookNow(data: {
 }
 
 /**
+ * Fired when a guest taps a click-to-call button (e.g. the Grand Lodge mobile
+ * call bar). A call is a strong, high-intent lead signal — especially from
+ * Google Business Profile mobile traffic — so we mirror it to the marketing
+ * pixels too. Mark `click_to_call` as a Key Event in GA4 to measure it.
+ */
+export function trackClickToCall(data: { source: string; phone?: string }) {
+  // GTM custom event for Microsoft Ads UET (gtag is invisible to GTM triggers)
+  if (hasMarketingConsent() && window.dataLayer) {
+    window.dataLayer.push({ event: "click_to_call" });
+  }
+  if (hasMarketingConsent() && window.uetq) {
+    window.uetq.push("event", "click_to_call", {});
+  }
+
+  if (!hasAnalyticsConsent() || !window.gtag) return;
+
+  window.gtag("event", "click_to_call", {
+    source: data.source,
+    phone_number: data.phone,
+  });
+}
+
+/**
  * Renamed 2026-04-25 from `trackAddGuestInfo` (custom event) to align with the
  * GA4 canonical recommended ecommerce event `add_shipping_info`. Renaming
  * populates the standard Checkout Funnel report (`begin_checkout` →
