@@ -61,13 +61,30 @@ export interface LockedDestination {
   label: string;
 }
 
+/** Parse a "YYYY-MM-DD" string as a local date (avoids UTC off-by-one). */
+function parseLocalDate(value?: string): Date | undefined {
+  if (!value) return undefined;
+  const d = new Date(`${value}T00:00:00`);
+  return Number.isNaN(d.getTime()) ? undefined : d;
+}
+
 export function NoFeesSearchBar({
   lockedDestination,
+  initialCheckIn,
+  initialCheckOut,
 }: {
   lockedDestination?: LockedDestination;
+  /** Optional "YYYY-MM-DD" dates to pre-fill the date picker (e.g. a landing
+   *  page seeding the next available weekend so visitors skip a blank search). */
+  initialCheckIn?: string;
+  initialCheckOut?: string;
 } = {}) {
   const router = useRouter();
-  const [range, setRange] = useState<DateRange | undefined>(undefined);
+  const [range, setRange] = useState<DateRange | undefined>(() => {
+    const from = parseLocalDate(initialCheckIn);
+    const to = parseLocalDate(initialCheckOut);
+    return from && to ? { from, to } : undefined;
+  });
   const [counts, setCounts] = useState<Record<GuestKey, number>>({
     adults: 2,
     children: 0,

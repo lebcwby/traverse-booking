@@ -14,6 +14,9 @@ interface HeroSectionProps {
   lockedDestination: LockedDestination;
   directionsHref?: string;
   directionsLabel?: string;
+  /** Optional "YYYY-MM-DD" dates to pre-fill the hero search (skip blank search). */
+  initialCheckIn?: string;
+  initialCheckOut?: string;
 }
 
 export function NoFeesHeroSection({
@@ -25,6 +28,8 @@ export function NoFeesHeroSection({
   lockedDestination,
   directionsHref = "#location",
   directionsLabel = "Get Directions",
+  initialCheckIn,
+  initialCheckOut,
 }: HeroSectionProps) {
   return (
     <header className="hero-full">
@@ -46,7 +51,11 @@ export function NoFeesHeroSection({
         </h1>
         <p className="hero-lede">{lede}</p>
         <div className="hero-search-wrap">
-          <NoFeesSearchBar lockedDestination={lockedDestination} />
+          <NoFeesSearchBar
+            lockedDestination={lockedDestination}
+            initialCheckIn={initialCheckIn}
+            initialCheckOut={initialCheckOut}
+          />
         </div>
         <div className="hero-cta hero-cta-stacked">
           <a href={directionsHref} className="btn btn-ghost-light">
