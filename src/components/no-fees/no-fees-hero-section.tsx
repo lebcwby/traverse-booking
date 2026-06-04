@@ -17,6 +17,8 @@ interface HeroSectionProps {
   /** Optional "YYYY-MM-DD" dates to pre-fill the hero search (skip blank search). */
   initialCheckIn?: string;
   initialCheckOut?: string;
+  /** Optional above-the-fold trust line, e.g. "No booking fees · Best rate direct". */
+  trustBadge?: string;
 }
 
 export function NoFeesHeroSection({
@@ -30,6 +32,7 @@ export function NoFeesHeroSection({
   directionsLabel = "Get Directions",
   initialCheckIn,
   initialCheckOut,
+  trustBadge,
 }: HeroSectionProps) {
   return (
     <header className="hero-full">
@@ -50,6 +53,28 @@ export function NoFeesHeroSection({
           ) : null}
         </h1>
         <p className="hero-lede">{lede}</p>
+        {trustBadge ? (
+          <p
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              margin: "0 auto 0.9rem",
+              padding: "0.32rem 0.9rem",
+              borderRadius: "999px",
+              background: "rgba(255,255,255,0.16)",
+              backdropFilter: "blur(4px)",
+              WebkitBackdropFilter: "blur(4px)",
+              border: "1px solid rgba(255,255,255,0.28)",
+              color: "#fff",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              letterSpacing: "0.01em",
+            }}
+          >
+            {trustBadge}
+          </p>
+        ) : null}
         <div className="hero-search-wrap">
           <NoFeesSearchBar
             lockedDestination={lockedDestination}
