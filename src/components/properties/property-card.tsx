@@ -14,8 +14,9 @@ import {
   Star,
 } from "lucide-react";
 import { type Listing } from "@/lib/supabase";
-import { formatCurrency, getPhotoUrl, getListingSlug } from "@/lib/utils";
+import { getPhotoUrl, getListingSlug } from "@/lib/utils";
 import { WishlistButton } from "@/components/wishlist-button";
+import { SavingsPrice } from "@/components/properties/savings-price";
 import { trackSelectListing } from "@/lib/tracking";
 
 export function PropertyCard({
@@ -351,12 +352,12 @@ export function PropertyCard({
               ) : null}
             </div>
             {!hidePrice && listing.totalPrice && listing.nightCount ? (
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground">
-                  {formatCurrency(listing.totalPrice)}
-                </span>
-                {` for ${listing.nightCount} nights`}
-              </p>
+              <SavingsPrice
+                className="mt-0.5"
+                compact
+                directTotal={listing.totalPrice}
+                suffix={`for ${listing.nightCount} night${listing.nightCount === 1 ? "" : "s"}`}
+              />
             ) : null}
           </>
         ) : (
@@ -414,16 +415,14 @@ export function PropertyCard({
                     )}
                   </p>
                 )}
-                <p className="text-sm">
-                  <span className="font-semibold text-foreground">
-                    {formatCurrency(listing.totalPrice)}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {listing.nightCount
-                      ? ` for ${listing.nightCount} night${listing.nightCount === 1 ? "" : "s"}`
-                      : " total"}
-                  </span>
-                </p>
+                <SavingsPrice
+                  directTotal={listing.totalPrice}
+                  suffix={
+                    listing.nightCount
+                      ? `for ${listing.nightCount} night${listing.nightCount === 1 ? "" : "s"}`
+                      : "total"
+                  }
+                />
                 {checkIn && (
                   <p className="text-xs text-muted-foreground">
                     before taxes & fees
@@ -435,12 +434,11 @@ export function PropertyCard({
               </div>
             ) : listing.prices?.basePrice ? (
               <>
-                <p className="mt-1 text-sm">
-                  <span className="font-semibold text-foreground">
-                    {formatCurrency(listing.prices.basePrice)}
-                  </span>
-                  <span className="text-muted-foreground"> / night</span>
-                </p>
+                <SavingsPrice
+                  className="mt-1"
+                  directTotal={listing.prices.basePrice}
+                  suffix="/ night"
+                />
                 <span className="inline-block rounded-md bg-muted/75 px-1 py-0.5 text-[11px] font-medium text-muted-foreground">
                   Free cancellation
                 </span>

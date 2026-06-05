@@ -2,7 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Users, Bed, Bath, Star } from "lucide-react";
 import { type Listing } from "@/lib/supabase";
-import { formatCurrency, getPhotoUrl, getListingSlug } from "@/lib/utils";
+import { getPhotoUrl, getListingSlug } from "@/lib/utils";
+import { SavingsPrice } from "@/components/properties/savings-price";
 
 /**
  * Server-rendered property card for collection pages.
@@ -174,12 +175,11 @@ export function ServerPropertyCard({
         </div>
         {listing.prices?.basePrice ? (
           <>
-            <p className="mt-1 text-sm">
-              <span className="font-semibold text-foreground">
-                {formatCurrency(listing.prices.basePrice)}
-              </span>
-              <span className="text-muted-foreground"> / night</span>
-            </p>
+            <SavingsPrice
+              className="mt-1"
+              directTotal={listing.prices.basePrice}
+              suffix="/ night"
+            />
             <span className="inline-block rounded-md bg-muted/75 px-1 py-0.5 text-[11px] font-medium text-muted-foreground">
               Free cancellation
             </span>

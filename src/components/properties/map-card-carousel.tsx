@@ -5,7 +5,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { X, ChevronLeft, ChevronRight, Loader2, Star } from "lucide-react";
 import { type Listing } from "@/lib/supabase";
-import { getPhotoUrl, getListingSlug, formatCurrency } from "@/lib/utils";
+import { getPhotoUrl, getListingSlug } from "@/lib/utils";
+import { SavingsPrice } from "@/components/properties/savings-price";
 
 interface MapCardCarouselProps {
   listings: Listing[];
@@ -287,14 +288,17 @@ export function MapCardCarousel({
                   bath &middot; {listing.accommodates || 0} guests
                 </p>
                 {!hidePrice && price > 0 && (
-                  <p className="mt-1 text-sm text-gray-900">
-                    <span className="font-bold">{formatCurrency(price)}</span>
-                    {listing.totalPrice && listing.nightCount
-                      ? ` for ${listing.nightCount} night${listing.nightCount === 1 ? "" : "s"}`
-                      : listing.totalPrice
-                        ? " total"
-                        : "/night"}
-                  </p>
+                  <SavingsPrice
+                    className="mt-1"
+                    directTotal={price}
+                    suffix={
+                      listing.totalPrice && listing.nightCount
+                        ? `for ${listing.nightCount} night${listing.nightCount === 1 ? "" : "s"}`
+                        : listing.totalPrice
+                          ? "total"
+                          : "/ night"
+                    }
+                  />
                 )}
               </div>
             </CardWithTap>
