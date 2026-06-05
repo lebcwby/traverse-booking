@@ -133,6 +133,8 @@ export function PropertyCard({
   return (
     <Link
       href={detailHref}
+      target="_blank"
+      rel="noopener noreferrer"
       className="group block"
       onTouchStart={(e) => {
         touchStartXRef.current = e.touches[0].clientX;

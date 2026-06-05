@@ -115,8 +115,8 @@ export function MapCardCarousel({
   const qs = linkParams.toString() ? `?${linkParams.toString()}` : "";
 
   const navigateTo = useCallback((href: string) => {
-    setNavigating(true);
-    window.location.href = href;
+    // Open the listing in a new tab so the map/search state is preserved.
+    window.open(href, "_blank", "noopener,noreferrer");
   }, []);
 
   // Clear spinner when returning via browser back (bfcache restore)

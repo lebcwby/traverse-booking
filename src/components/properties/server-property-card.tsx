@@ -48,7 +48,12 @@ export function ServerPropertyCard({
     : null;
 
   return (
-    <Link href={href} className="group block">
+    <Link
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group block"
+    >
       {/* Photo */}
       <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
         {photo && (

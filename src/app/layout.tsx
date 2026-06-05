@@ -4,7 +4,10 @@ import { Suspense } from "react";
 import { headers } from "next/headers";
 import Script from "next/script";
 import "./globals.css";
-import { Header } from "@/components/layout/header";
+// Loaded globally so the rich NoFeesHeader (now the default header on every
+// page except /properties*) is styled everywhere, not just on landing pages.
+import "./no-fees/no-fees.css";
+import { SiteHeaderSwitch } from "@/components/layout/site-header-switch";
 import { Footer } from "@/components/layout/footer";
 import { CartProvider } from "@/lib/cart/cart-store";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
@@ -200,7 +203,7 @@ export default async function RootLayout({
             Footer + MobileBottomNav don't read cart state, so leaving them
             outside is fine and keeps the provider tree narrow. */}
         <CartProvider>
-          <Header />
+          <SiteHeaderSwitch />
           <main id="main-content" className="min-h-screen pb-16 lg:pb-0">
             {children}
           </main>
