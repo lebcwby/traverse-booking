@@ -2,53 +2,75 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import {
+  Building2,
+  Waves,
+  PawPrint,
+  Tag,
+  MapPin,
+  Compass,
+  Camera,
+  Bike,
+  TreePine,
+  BedDouble,
+  Newspaper,
+  Briefcase,
+  LayoutDashboard,
+  type LucideIcon,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase-auth";
 import { HeaderCartButton } from "@/components/cart/header-cart-button";
 
-type NavMenu = {
+type NavItem = {
+  href: string;
   label: string;
-  items: { href: string; label: string; external?: boolean }[];
+  external?: boolean;
+  icon?: LucideIcon;
+  badge?: string;
 };
 
-const RENTALS_MENU: NavMenu["items"] = [
-  { href: "/properties", label: "Browse All Properties" },
-  { href: "/properties?amenities=HOT_TUB", label: "Hot Tub Rentals" },
-  { href: "/properties?pets=true", label: "Pet Friendly" },
-  { href: "/properties?maxPrice=100", label: "Starting under $100/night" },
+const RENTALS_MENU: NavItem[] = [
+  { href: "/properties", label: "Browse All Properties", icon: Building2 },
+  { href: "/properties?amenities=HOT_TUB", label: "Hot Tub Rentals", icon: Waves },
+  { href: "/properties?pets=true", label: "Pet Friendly", icon: PawPrint },
+  { href: "/properties?maxPrice=100", label: "Starting under $100/night", icon: Tag },
 ];
 
-const CB_MENU: NavMenu["items"] = [
-  { href: "/crested-butte", label: "All Crested Butte Rentals" },
-  { href: "/crested-butte/grand-lodge", label: "Grand Lodge" },
-  { href: "/crested-butte/lodge-at-mountaineer-square", label: "Lodge at Mountaineer Square" },
-  { href: "/crested-butte/the-plaza", label: "The Plaza" },
-  { href: "/crested-butte/guides/where-to-stay", label: "Where to Stay Guide" },
-  { href: "/crested-butte/things-to-do", label: "Things to Do" },
-  { href: "https://www.crestedbutteskirentals.com/", label: "Ski & Bike Rentals ↗", external: true },
+const CB_MENU: NavItem[] = [
+  { href: "/crested-butte", label: "All Crested Butte Rentals", icon: MapPin },
+  { href: "/crested-butte/grand-lodge", label: "Grand Lodge", icon: Building2 },
+  { href: "/crested-butte/lodge-at-mountaineer-square", label: "Lodge at Mountaineer Square", icon: Building2 },
+  { href: "/crested-butte/the-plaza", label: "The Plaza", icon: Building2 },
+  { href: "/crested-butte/guides/where-to-stay", label: "Where to Stay Guide", icon: Compass },
+  { href: "/crested-butte/things-to-do", label: "Things to Do", icon: Camera },
+  { href: "https://www.crestedbutteskirentals.com/", label: "Ski & Bike Rentals ↗", external: true, icon: Bike },
 ];
 
-const LV_MENU: NavMenu["items"] = [
-  { href: "/leadville", label: "All Leadville Rentals" },
-  { href: "/properties?city=Leadville&tag=Grand+West+Village+Resort", label: "Grand West Village" },
-  { href: "/properties?city=Leadville&tag=OSV", label: "Old St Vincents" },
-  { href: "/properties?city=Leadville&tag=cabin", label: "Cabin Rentals" },
-  { href: "/leadville/things-to-do", label: "Things to Do" },
+const LV_MENU: NavItem[] = [
+  { href: "/leadville", label: "All Leadville Rentals", icon: MapPin },
+  { href: "/properties?city=Leadville&tag=Grand+West+Village+Resort", label: "Grand West Village", icon: Building2 },
+  { href: "/properties?city=Leadville&tag=OSV", label: "Old St Vincents", icon: Building2 },
+  { href: "/properties?city=Leadville&tag=cabin", label: "Cabin Rentals", icon: TreePine },
+  { href: "/leadville/things-to-do", label: "Things to Do", icon: Camera },
   // Twin Lakes is a sub-market of Leadville (15 min south, shares trailheads
   // and is part of the same Lake County). Surface it as a related-stay
   // option within the Leadville dropdown rather than as a top-level entry.
-  { href: "/twin-lakes", label: "Twin Lakes" },
+  { href: "/twin-lakes", label: "Twin Lakes", icon: Waves },
 ];
 
-const GUIDES_MENU: NavMenu["items"] = [
-  { href: "/crested-butte/guides/where-to-stay", label: "Where to Stay in Crested Butte" },
-  { href: "/crested-butte/things-to-do", label: "Things to Do in Crested Butte" },
-  { href: "/leadville/things-to-do", label: "Things to Do in Leadville" },
-  { href: "/blog", label: "Blog" },
+const GUIDES_MENU: NavItem[] = [
+  // Plan My Trip moved here from the primary CTA (which is now "Check
+  // Availability"); it's a trip-planning guide tool, not the booking action.
+  { href: "/plan", label: "Plan My Trip", icon: Compass, badge: "New" },
+  { href: "/crested-butte/guides/where-to-stay", label: "Where to Stay in Crested Butte", icon: BedDouble },
+  { href: "/crested-butte/things-to-do", label: "Things to Do in Crested Butte", icon: Camera },
+  { href: "/leadville/things-to-do", label: "Things to Do in Leadville", icon: Camera },
+  { href: "/blog", label: "Blog", icon: Newspaper },
 ];
 
-const OWNERS_MENU: NavMenu["items"] = [
-  { href: "/property-management", label: "Property Management" },
-  { href: "https://dashboard.traversehospitality.com", label: "Owner Portal ↗", external: true },
+const OWNERS_MENU: NavItem[] = [
+  { href: "/property-management", label: "Property Management", icon: Briefcase },
+  { href: "https://dashboard.traversehospitality.com", label: "Owner Portal ↗", external: true, icon: LayoutDashboard },
 ];
 
 type MenuKey = "rentals" | "cb" | "lv" | "guides" | "owners" | null;
@@ -105,8 +127,17 @@ export function NoFeesHeader({ phoneOverride }: NoFeesHeaderProps = {}) {
   }: {
     id: MenuKey;
     label: string;
-    items: NavMenu["items"];
+    items: NavItem[];
   }) {
+    const renderInner = (item: NavItem) => (
+      <>
+        {item.icon ? (
+          <item.icon className="nav-menu-icon" aria-hidden="true" />
+        ) : null}
+        <span>{item.label}</span>
+        {item.badge ? <span className="nav-menu-badge">{item.badge}</span> : null}
+      </>
+    );
     return (
       <div className={`nav-item has-menu${openMenu === id ? " is-open" : ""}`}>
         <button
@@ -127,11 +158,11 @@ export function NoFeesHeader({ phoneOverride }: NoFeesHeaderProps = {}) {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {item.label}
+                {renderInner(item)}
               </a>
             ) : (
               <Link key={item.label} href={item.href} role="menuitem">
-                {item.label}
+                {renderInner(item)}
               </Link>
             )
           )}
@@ -222,12 +253,7 @@ export function NoFeesHeader({ phoneOverride }: NoFeesHeaderProps = {}) {
                 <span>Sign in</span>
               </Link>
             )}
-            <a
-              href="/plan"
-              target="_blank"
-              rel="noopener"
-              className="btn btn-primary btn-plan"
-            >
+            <Link href="/properties" className="btn btn-primary btn-plan">
               <svg
                 viewBox="0 0 24 24"
                 width="14"
@@ -238,12 +264,13 @@ export function NoFeesHeader({ phoneOverride }: NoFeesHeaderProps = {}) {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                <path d="M12 3v18M3 8h18M3 16h18" />
-                <circle cx="8" cy="8" r={1.4} fill="currentColor" />
-                <circle cx="16" cy="16" r={1.4} fill="currentColor" />
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
               </svg>
-              Plan My Trip
-            </a>
+              Check Availability
+            </Link>
             <button
               type="button"
               className="menu-toggle"
@@ -317,6 +344,9 @@ export function NoFeesHeader({ phoneOverride }: NoFeesHeaderProps = {}) {
           <strong style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--muted)", padding: "24px 0 8px", display: "block" }}>
             More
           </strong>
+          <Link href="/plan" onClick={() => setMobileOpen(false)}>
+            Plan My Trip
+          </Link>
           <Link href="/crested-butte/guides/where-to-stay" onClick={() => setMobileOpen(false)}>
             Where to Stay Guide
           </Link>
@@ -344,10 +374,9 @@ export function NoFeesHeader({ phoneOverride }: NoFeesHeaderProps = {}) {
             📞 {phoneDisplay}
           </a>
         </div>
-        <a
-          href="/plan"
-          target="_blank"
-          rel="noopener"
+        <Link
+          href="/properties"
+          onClick={() => setMobileOpen(false)}
           className="btn btn-plan mobile-nav-cta"
         >
           <svg
@@ -360,12 +389,13 @@ export function NoFeesHeader({ phoneOverride }: NoFeesHeaderProps = {}) {
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="M12 3v18M3 8h18M3 16h18" />
-            <circle cx="8" cy="8" r={1.4} fill="currentColor" />
-            <circle cx="16" cy="16" r={1.4} fill="currentColor" />
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
           </svg>
-          Plan My Trip →
-        </a>
+          Check Availability →
+        </Link>
       </div>
     </>
   );
