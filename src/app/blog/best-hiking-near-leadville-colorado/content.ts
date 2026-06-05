@@ -1,97 +1,89 @@
-export const pageContent = `<h2>Hiking Near Leadville, Colorado: A Local's Trail Guide</h2>
-<p>At 10,152 feet above sea level, Leadville is already higher than most mountain resorts when you walk out the front door. That starting elevation means the hiking near Leadville, Colorado is in a league of its own — two of Colorado's highest 14ers are within a short drive, a paved 12.5-mile trail loop runs right through the historic mining district, and the Colorado Trail cuts across the valley if you want something a little wilder. Whether you're chasing a summit, a lakeside stroll, or a long backcountry day, the options around this old silver-mining city deliver.</p>
-<p>What follows is a practical, trail-by-trail breakdown of the best hikes near Leadville — with difficulty ratings, season notes, and access tips so you can spend less time planning and more time moving.</p>
+export const pageContent = `<h2>Why Leadville is a Hiker's Base Camp</h2>
+<p>At 10,152 feet, Leadville is the highest incorporated city in North America, and that elevation isn't just a fun fact — it means the trailheads around town start where most mountain hikes finish. You step out of your rental already above treeline on some routes, and the peaks that ring the Arkansas Valley include two of Colorado's five tallest summits. If you're hunting for serious hiking near Leadville, Colorado, you've picked the right home base.</p>
+<p>The seasons here are short and sweet. Snow can linger on high passes well into June, and the first hard frosts typically return by late September. That leaves a golden window — roughly mid-July through mid-September — when the wildflowers are blazing, the creeks are full, and the trails above 12,000 feet are clear enough to tackle safely. Lower-elevation routes like the Mineral Belt Trail are walkable from early May onward.</p>
+<p>Whether you're chasing a 14er summit, a casual family loop, or a multi-day stretch of the Colorado Trail, the Leadville area delivers.</p>
 <hr>
 <h2>Mount Elbert: Colorado's Highest Peak</h2>
-<p><strong>Distance:</strong> ~4.3 miles one-way (North Trailhead route)</p>
-<p><strong>Elevation gain:</strong> ~4,500 ft</p>
-<p><strong>Difficulty:</strong> Strenuous</p>
-<p><strong>Best season:</strong> Mid-June through early October (weather-dependent)</p>
-<p>Mount Elbert tops out at 14,439 feet, making it the highest point in Colorado and the second-highest peak in the contiguous United States. The North Trailhead route — roughly 4.3 miles one-way — is the most popular approach, starting off a well-marked dirt road near Halfmoon Creek west of Leadville.</p>
-<p>The trail is not technical; there's no roped climbing required. What makes it demanding is the sustained altitude and relentless vertical gain. If you're coming from a lower elevation, spend at least one full night in Leadville before attempting the summit — arriving from Denver and trying Elbert the same day is a recipe for a miserable turnaround.</p>
-<p><strong>Practical notes:</strong></p>
+<h3>Trail Overview</h3>
+<p>Mount Elbert tops out at 14,440 feet, making it the highest point in Colorado and the second-highest peak in the contiguous United States. The North Elbert Trail — roughly 4.3 miles one-way — is the most popular route and widely considered the most approachable line on the mountain.</p>
+<p>The trailhead sits off Highway 24 and County Road 24, near the small community of Halfmoon. From the parking area, the trail climbs steadily through aspen and spruce forest before breaking into open tundra and following a long, rounded ridgeline to the summit. The grade is consistent rather than brutal, which is part of why first-time 14er hikers gravitate here.</p>
+<h3>Difficulty and Key Stats</h3>
+| Feature | Detail |
+<p>|---|---|</p>
+| Trailhead elevation | ~10,080 ft |
+| Summit elevation | 14,440 ft |
+| Round-trip distance | ~8.6 miles (North Trail) |
+| Elevation gain | ~4,300 ft |
+| Typical season | Mid-July – late September |
+| Difficulty | Strenuous |
+<h3>Tips for Summiting Elbert</h3>
 <ul>
-<li>Start before sunrise. Most hikers aim for a 5–6 a.m. departure to beat afternoon thunderstorms.</li>
-<li>The upper ridge is fully exposed above treeline. Watch the sky. If clouds build before you summit, turn around — lightning at 14,000 feet is not negotiable.</li>
-<li>Dogs are allowed on leash. Bring more water than you think you need; the upper sections are dry.</li>
-<li>Parking at the North Trailhead fills quickly on summer weekends. Arriving by 5 a.m. is not an overreaction.</li>
+<li><strong>Start before dawn.</strong> Afternoon thunderstorms roll in most summer days. Plan to be off the exposed ridge by noon.</li>
+<li><strong>Acclimatize first.</strong> If you're coming from lower elevation, spend a night or two in Leadville before attempting the summit. The altitude is real.</li>
+<li><strong>Bring layers.</strong> Wind on the upper ridge can be fierce even on warm days. A shell jacket and gloves belong in your pack year-round at this elevation.</li>
+<li>The summit register is a tradition worth signing. On a clear morning, you can see for well over 100 miles.</li>
 </ul>
-<p>The <a href="https://www.14ers.com/peaks/elbert">Colorado 14ers Initiative</a> maintains excellent condition reports and route details updated throughout the season — worth checking the week of your trip.</p>
 <hr>
-<h2>Mount Massive: The Long Ridge</h2>
-<p><strong>Distance:</strong> ~6.7 miles one-way (standard route)</p>
-<p><strong>Elevation gain:</strong> ~4,300 ft</p>
-<p><strong>Difficulty:</strong> Strenuous</p>
-<p><strong>Best season:</strong> Mid-June through September</p>
-<p>Mount Massive (14,428 ft) is Colorado's second-highest peak and sits just north of Elbert in the Mount Massive Wilderness. The name fits — the summit ridge stretches nearly three miles, giving this mountain a presence on the skyline that Elbert, for all its height, doesn't quite match.</p>
-<p>The standard route leaves from the Halfmoon Creek trailhead area and follows a long, steady approach through spruce forest before breaking into alpine tundra. The final push to the summit involves a bit of boulder-hopping but nothing technically difficult.</p>
-<p>If you're already doing hiking near Leadville, Colorado and want to tick both Elbert and Massive in a single trip, the trailheads are close to each other. Most fit hikers treat them as separate days rather than a single push — the combined vertical gain is significant, and Massive's distance is longer than Elbert's.</p>
+<h2>Mount Massive: The Second Summit</h2>
+<p>Mount Massive (14,428 ft) stands just east of Elbert and is, as its name implies, a broad, sprawling peak rather than a sharp pinnacle. The standard route via the West Ridge Trail is approximately 7 miles one-way with around 3,300 feet of gain from the Halfmoon Creek area trailhead. The approach shares some infrastructure with the Elbert trailhead, making it possible to hike one peak and scout the other on the same trip.</p>
+<p>Massive is technically slightly easier than Elbert in terms of route-finding, though the sheer width of the ridge means you cover a lot of ground. Most fit, acclimatized hikers allow six to eight hours for the round trip. The season and safety rules are the same as Elbert — early start, watch the weather, carry extra layers.</p>
 <hr>
-<h2>Mineral Belt Trail: Leadville's Best-Kept Easy Secret</h2>
-<p><strong>Distance:</strong> 12.5-mile loop</p>
-<p><strong>Elevation gain:</strong> ~600 ft</p>
-<p><strong>Difficulty:</strong> Easy–Moderate</p>
-<p><strong>Best season:</strong> May through October (paved; accessible most of the year)</p>
-<p>The Mineral Belt Trail is a 12.5-mile paved loop that winds through Leadville's historic mining district and into the surrounding high country. It's the ideal option if you want a genuine mountain experience without summit ambitions — or if you have kids, a casual companion, or just need to move your legs after a long drive.</p>
-<p>The trail passes dozens of historic mine sites from Leadville's late-19th-century silver boom, giving you a walking tour of the district as you go. Interpretive signs explain the history without being overwhelming. On a clear morning, the views of Mount Elbert and Mount Massive from the upper sections of the loop are legitimately stunning.</p>
-<p>Cyclists share the trail, so stay aware of your surroundings. The paved surface makes it accessible for strollers and road-bike tires, which is unusual at this elevation. You can pick up the Mineral Belt Trail from multiple access points in town, including near the National Mining Hall of Fame on West 9th Street.</p>
+<h2>Mineral Belt Trail: Leadville's Backyard Loop</h2>
+<h3>What It Is</h3>
+<p>Not every great hike near Leadville involves a 14,000-foot summit. The <a href="https://coloradotrails.org">Mineral Belt Trail</a> is a 12.5-mile paved and hard-packed loop that circles the historic mining district right outside downtown Leadville. It's one of the most underrated trail experiences in the state.</p>
+<h3>Why It's Worth Your Morning</h3>
+<p>The route passes dozens of historic mine sites, several of which have interpretive signs explaining Leadville's silver and lead mining boom of the 1880s. The trail winds through the National Historic Landmark District, past tailings piles that have been reclaimed by wildflowers, and offers continuous views of the Sawatch Range. On a clear day, you can pick out Elbert and Massive from the eastern sections.</p>
+<p>The loop is accessible to walkers, cyclists, and runners. Most people complete the full circuit in two to four hours on foot. Because the elevation stays roughly between 10,000 and 10,400 feet, it's one of the first trails in the area to be snow-free in spring — typically by late April or early May in average years.</p>
+| Feature | Detail |
+<p>|---|---|</p>
+| Distance | 12.5 miles (full loop) |
+| Surface | Paved and hard-pack gravel |
+| Elevation range | ~10,000–10,400 ft |
+| Difficulty | Easy to Moderate |
+| Season | Late April – November |
+| Access | Multiple entry points from downtown |
 <hr>
-<h2>Colorado Trail: Access Points Near Leadville</h2>
-<p>The <a href="https://coloradotrail.org/">Colorado Trail</a> is a 500-mile route from Denver to Durango, and it passes directly through Lake County, putting legitimate backcountry access minutes from downtown Leadville.</p>
-<p><strong>Key access points:</strong></p>
-<h3>Halfmoon Creek Trailhead</h3>
-<p>This is the most used Colorado Trail junction near Leadville. It sits west of town on the road toward the Elbert and Massive trailheads, and it gives you access to Segment 11 of the CT through the Mount Massive Wilderness. This stretch is popular for day hikes into the wilderness without committing to a full summit.</p>
-<h3>Tennessee Pass</h3>
-<p>About 10 miles north of Leadville on US-24, Tennessee Pass sits at 10,424 feet and is one of the Colorado Trail's most accessible entry points in this region. Segment 9 heads south from here toward Leadville; Segment 10 goes north toward Camp Hale. The Camp Hale section has its own historical interest — it's where the 10th Mountain Division trained during World War II.</p>
-<h3>Sugar Loafin' Campground Area</h3>
-<p>A lower-key CT access point southwest of town, good for shorter out-and-back days that stay in the trees and out of the exposed alpine.</p>
+<h2>Colorado Trail: Long-Distance Access from Leadville</h2>
+<p>The <a href="https://coloradotrail.org">Colorado Trail</a> — a 486-mile route from Denver to Durango — passes directly through the Leadville area, giving day hikers access to some genuinely remote terrain without needing a car shuttle or multi-day commitment.</p>
+<p>The segments near Leadville roll through high spruce-fir forest and open tundra meadows, with views down into the Arkansas River Valley. Trailheads along Highway 24 south of town and near the Mount Elbert and Halfmoon Creek areas connect to the CT within a mile or two of parking. Day hikers can walk out and back on any section; there's no requirement to tackle the whole thing.</p>
+<p>If you're staying in Leadville for a week, picking a new Colorado Trail segment each morning is a legitimate itinerary all by itself.</p>
 <hr>
-<h2>Twin Lakes: Lakeside Hiking with 14er Views</h2>
-<p>About 20 minutes south of Leadville on US-24, Twin Lakes sits at the base of the Sawatch Range and offers a completely different kind of hiking near Leadville, Colorado than the summit routes.</p>
-<p>The lake loop trail is a relatively flat walk along the shoreline with unobstructed views of Mount Hope and the surrounding peaks. It's the kind of walk that earns its place on the list not because it's hard, but because it's genuinely beautiful — wind-riffled alpine lakes, spruce ridgelines, and the Sawatch skyline as a backdrop.</p>
-<p>Twin Lakes is also the primary trailhead for <strong>Mount Hope</strong> (13,933 ft), a popular non-technical tundra walk that serves as a good acclimatization hike before attempting a 14er. From the same area, more experienced hikers access the <strong>La Plata Peak</strong> approach, though that route involves a longer drive around the reservoir.</p>
-<p><a href="https://booktraverse.com/leadville/">Traverse Hospitality manages vacation rentals near Twin Lakes</a> — staying on that side of the highway puts you close to the lake trails and makes early morning starts significantly easier.</p>
+<h2>Twin Lakes Trailheads: Scenery Without the Summit Grind</h2>
+<p>Twin Lakes Reservoir sits roughly 20 miles south of Leadville along Highway 82 and is surrounded by trails that offer big mountain views without demanding 14er fitness. The lakes themselves — remnants of a glacial valley shaped over thousands of years — back up against the eastern flank of Mount Elbert, and the reflections on a calm morning are genuinely arresting.</p>
+<p>Several informal trailheads along the reservoir road provide access to the lower slopes of Elbert, to the Colorado Trail, and to short nature walks along the water's edge. Twin Lakes is also a popular fishing and kayaking spot, making it an easy half-day addition if your hiking legs need a rest.</p>
+<p>The small community of Twin Lakes has historic roots stretching back to the mining era, and the drive down Highway 82 is one of the more scenic corridors in Lake County.</p>
 <hr>
-<h2>Difficulty &amp; Season Summary</h2>
-| Trail | Distance | Difficulty | Season Opens |
-<p>|---|---|---|---|</p>
-| Mount Elbert (North) | ~4.3 mi one-way | Strenuous | Mid-June |
-| Mount Massive | ~6.7 mi one-way | Strenuous | Mid-June |
-| Mineral Belt Trail | 12.5 mi loop | Easy–Moderate | May |
-| Colorado Trail (Tennessee Pass) | Varies | Moderate–Strenuous | Late May |
-| Twin Lakes Shore Loop | Short/Varies | Easy | May |
+<h2>Comparing the Best Hikes Near Leadville</h2>
+| Trail | Distance | Difficulty | Best For | Season |
+<p>|---|---|---|---|---|</p>
+| Mount Elbert North Trail | 8.6 mi RT | Strenuous | 14er summit | Mid-July – Sept |
+| Mount Massive West Ridge | ~14 mi RT | Strenuous | Second 14er | Mid-July – Sept |
+| Mineral Belt Trail | 12.5 mi loop | Easy–Moderate | History + views | Late April – Nov |
+| Colorado Trail (day segments) | Variable | Moderate | Remote scenery | June – October |
+| Twin Lakes area walks | Variable | Easy–Moderate | Families, scenery | May – October |
 <hr>
-<h2>Tips for Hiking at High Altitude</h2>
-<p>Leadville's base elevation changes the math on every hike here. A few things worth knowing:</p>
-<ul>
-<li><strong>Acclimatize first.</strong> Spend at least one full day in Leadville before a strenuous hike. Sleep, eat well, and drink water. If you feel a headache coming on, take it seriously.</li>
-<li><strong>Start early, always.</strong> Afternoon thunderstorms build quickly over the Sawatch and are most dangerous on exposed ridgelines above treeline. Most experienced Leadville hikers are moving by 6 a.m. on summit days.</li>
-<li><strong>Layer aggressively.</strong> Even in July, temperatures above 12,000 feet can drop fast when clouds roll in. A wind shell and mid-layer weigh almost nothing and matter a lot.</li>
-<li><strong>Sunscreen isn't optional.</strong> UV exposure at altitude is significantly higher than at sea level. Reapply.</li>
-</ul>
-<p>The <a href="https://coloradosun.com">Colorado Sun's high-altitude hiking guide</a> has regularly updated advice on altitude sickness symptoms and prevention worth reading before a first Leadville trip.</p>
+<h2>Practical Tips for Hiking at Altitude</h2>
+<p><strong>Acclimatize before you push hard.</strong> Coming from sea level or even Denver (5,280 ft) to Leadville's 10,152 feet is a serious jump. Give yourself 24–48 hours of light activity before any strenuous trail.</p>
+<p><strong>Hydrate aggressively.</strong> Dry mountain air and high UV exposure accelerate dehydration. Carry more water than you think you need — at least three liters for any full-day summit attempt.</p>
+<p><strong>Sun protection is non-negotiable.</strong> UV intensity at altitude is significantly higher than at sea level. Sunscreen, sunglasses, and a hat are as essential as hiking boots.</p>
+<p><strong>Trail conditions change fast.</strong> Even in August, a late-season snowstorm can dump several inches overnight. Check the forecast the evening before, and be prepared to turn around if weather rolls in.</p>
+<p><strong>Leave No Trace.</strong> The high tundra above treeline is fragile. Stay on established trails, pack out everything you pack in, and avoid shortcutting switchbacks.</p>
 <hr>
 <h2>FAQ: Hiking Near Leadville, Colorado</h2>
-<h3>Is Mount Elbert hard for beginners?</h3>
-<p>Mount Elbert is one of Colorado's more approachable 14ers — the trail is non-technical and well-marked — but it's still a strenuous, high-altitude hike with roughly 4,500 feet of gain. Beginners in good cardiovascular shape can complete it if they acclimatize properly, start early, and turn around if weather threatens. Don't underestimate the altitude.</p>
-<h3>When is the best time to hike near Leadville Colorado?</h3>
-<p>Mid-June through mid-September is the prime window for most trails near Leadville, Colorado. The Mineral Belt Trail opens earlier — typically by May — but the high alpine routes remain snow-covered into June most years. July and August offer the widest trail access, though afternoon thunderstorms are a daily reality. September brings cooler temps and fewer crowds.</p>
-<h3>Can I hike Mount Elbert and Mount Massive in the same day?</h3>
-<p>Technically possible for experienced, fit hikers who know the area, but most locals recommend separate days. The combined elevation gain is significant, both trails are long, and summit days should include early starts with wide turnaround margins for weather. Back-to-back days is a more enjoyable and safer approach.</p>
-<h3>Is the Mineral Belt Trail good for families?</h3>
-<p>Yes — the Mineral Belt Trail is one of the best family-friendly options near Leadville. The 12.5-mile paved loop is accessible for strollers, kids on bikes, and casual hikers. It offers real mountain scenery, historic mining sites, and views of the Sawatch without any technical terrain. You can also do partial loops instead of the full distance.</p>
-<h3>Where should I stay to access hiking near Leadville, Colorado?</h3>
-<p>Staying in Leadville proper puts you walking distance from the Mineral Belt Trail and a short drive from every major trailhead. Properties near Twin Lakes shorten the approach to the lake loop and the southern Sawatch trailheads. <a href="https://booktraverse.com/leadville/">Traverse Hospitality's Leadville vacation rentals</a> include options in both locations, with locally managed service and up-to-date trail access information.</p>
-<h3>Do I need a permit to hike Mount Elbert or Mount Massive?</h3>
-<p>No permit is currently required for day hiking either peak via standard routes, though trailhead parking may require a fee or pass depending on current Forest Service rules — check the <a href="https://www.fs.usda.gov/psicc">USDA Forest Service website</a> before your trip. Overnight camping in the Mount Massive Wilderness follows Leave No Trace guidelines and may have group-size restrictions.</p>
+<h3>Is Mount Elbert a good first 14er?</h3>
+<p>Mount Elbert is one of the most recommended first 14ers in Colorado. The North Trail has consistent, manageable grades without significant technical sections or cliff exposure. The main challenge is purely aerobic — it's a long climb at high elevation. Acclimatize in Leadville for a day or two before you attempt it, start early, and watch afternoon weather.</p>
+<h3>When is the best time to hike near Leadville?</h3>
+<p>Mid-July through mid-September is the prime window for high-elevation trails like Elbert and Massive. The Mineral Belt Trail is accessible from late April through early November in most years. June can work for lower routes, but snowpack on the high peaks is typically still significant until early July.</p>
+<h3>How hard is the Mineral Belt Trail?</h3>
+<p>The Mineral Belt Trail is a paved and hard-pack 12.5-mile loop around Leadville's historic mining district. It's rated easy to moderate — the elevation stays between roughly 10,000 and 10,400 feet, with no serious climbs. It's suitable for casual walkers, families with older kids, cyclists, and trail runners. Most people complete the full loop in two to four hours on foot.</p>
+<h3>Can I hike to Twin Lakes from Leadville?</h3>
+<p>Twin Lakes sits about 20 miles south of Leadville along Highway 82, so it's not walkable from town — you'll want to drive. Once there, several informal trailheads provide access to shoreside walks, the Colorado Trail, and the lower slopes of Mount Elbert. It's a quick and scenic drive that makes for an easy half-day outing.</p>
+<h3>What section of the Colorado Trail runs near Leadville?</h3>
+<p>The Colorado Trail passes through the Leadville area on its way between Denver and Durango. Accessible trailheads near town and along Highway 24 connect to the trail within a mile or two of parking. Day hikers can tackle any out-and-back section they like. The terrain here mixes high spruce-fir forest with open tundra, with consistent views of the Sawatch Range.</p>
+<h3>Do I need a permit to hike Mount Elbert?</h3>
+<p>No permit is required to hike Mount Elbert as of the time of writing. The trailhead parking area near Halfmoon Creek fills early on summer weekends, so an early-morning arrival (before 6 a.m.) is strongly recommended. Check the <a href="https://www.fs.usda.gov/detail/psicc/home/">USDA Forest Service San Isabel National Forest</a> page for any current updates on access or parking requirements.</p>
 <hr>
-<h2>Plan Your Leadville Hiking Trip</h2>
-<p>The trails around Leadville reward preparation. Secure lodging close to the trailheads, give yourself a night to acclimatize, and get out early. That's the whole formula.</p>
-<p>Traverse Hospitality manages a hand-picked collection of vacation rentals in and around Leadville — from downtown historic properties to quieter spots near Twin Lakes — all locally managed with people who actually know the area.</p>
-<ul>
-<li>Browse <a href="https://booktraverse.com/leadville/">Leadville vacation rentals at booktraverse.com</a></li>
-<li>Groups and extended families: check out the <a href="https://mountainhideaway.com">Mountain Hideaway Lodge</a> (10 bedrooms, sleeps a crowd)</li>
-<li>Looking for something more intimate? The <a href="https://governorsmansion.net">Governor's Mansion</a> is a three-unit historic property steps from the Mineral Belt Trail</li>
-<li>Ready to book? Head to <a href="https://reservations.booktraverse.com">reservations.booktraverse.com</a> for real-time availability — direct booking saves up to 15% versus OTAs</li>
-</ul>
-<p>Questions before you book? Call us at <strong>970-438-2241</strong>. Your dream vacation starts here.</p>`;
+<h2>Plan Your Leadville Trip</h2>
+<p>Leadville is the kind of place that rewards slow exploration — a summit in the morning, a walk through the National Historic Landmark District in the afternoon, and a good meal back in town at night. The hiking is world-class, the history is deep, and the altitude keeps the crowds manageable compared to resort towns nearby.</p>
+<p><a href="https://booktraverse.com/leadville/">Traverse Hospitality manages vacation rentals throughout Leadville</a>, including the historic <a href="https://governorsmansion.net">Governor's Mansion</a> and the group-ready <a href="https://mountainhideaway.com">Mountain Hideaway Lodge</a> — a 10-bedroom Victorian that's perfect for large parties tackling the 14ers together. Our team is local, our properties are personally managed, and direct booking saves you up to 15% compared to the OTAs.</p>
+<p>Ready to start planning? <a href="https://booktraverse.com/leadville/">Browse Leadville vacation rentals at Traverse Hospitality</a> or call us at 970-438-2241. Your mountain adventure is waiting.</p>`;
