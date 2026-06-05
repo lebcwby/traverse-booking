@@ -173,7 +173,7 @@ export function NoFeesHeader({ phoneOverride }: NoFeesHeaderProps = {}) {
 
   return (
     <>
-      <header className="site-header">
+      <header className="site-header" data-no-fees-layout="site">
         <div className="wrap header-inner">
           <Link href="/" className="logo" aria-label="Traverse Hospitality">
             <picture>
@@ -286,7 +286,10 @@ export function NoFeesHeader({ phoneOverride }: NoFeesHeaderProps = {}) {
         </div>
       </header>
 
-      <div className={`mobile-nav${mobileOpen ? " open" : ""}`}>
+      <div
+        className={`mobile-nav${mobileOpen ? " open" : ""}`}
+        data-no-fees-layout="site"
+      >
         <button
           type="button"
           className="mobile-nav-close"

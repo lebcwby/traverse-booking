@@ -15,6 +15,15 @@ body:has([data-no-fees-layout="hide-chrome"]) > main {
   padding-bottom: 0 !important;
 }
 
+/* NoFeesHeader is now the global default header (rendered in the root layout
+   for every page except /properties*). Landing/market pages that still render
+   their OWN NoFeesHeader inline (inside <main>) would otherwise show two — so
+   hide the global one whenever an inline .site-header is present. The global
+   header is a direct body child, so `main .site-header` never matches it. */
+body:has(main .site-header) > header {
+  display: none !important;
+}
+
 /* ============ DESIGN TOKENS (Traverse Hospitality brand) ============ */
 [data-no-fees-layout] {
   --ink: #1e293b;

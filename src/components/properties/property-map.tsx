@@ -465,6 +465,8 @@ export function PropertyMap({
           "text-decoration:none;color:inherit;display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #eee;",
       });
       link.href = `/properties/${slug}`;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
 
       if (thumb) {
         const img = createElement("img", {
@@ -543,6 +545,8 @@ export function PropertyMap({
             "text-decoration:none;color:inherit;display:block;margin-top:8px;",
         });
         link.href = `/properties/${slug}`;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
         link.appendChild(
           createElement("div", {
             textContent: listing.title || listing.nickname || "",
