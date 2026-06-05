@@ -511,7 +511,7 @@ export function PropertiesLayout({
           <PropertyMap
             listings={listings}
             onVisibleListingsChange={handleVisibleListingsChange}
-            hidePrice={!dateFiltered}
+            hidePrice={!dateFiltered && !showCachedPricing}
             initialCenter={initialCenter}
             initialZoom={cityParam ? 11 : undefined}
             key={mapKey}
@@ -529,7 +529,7 @@ export function PropertiesLayout({
           <PropertyMap
             listings={listings}
             onVisibleListingsChange={handleVisibleListingsChange}
-            hidePrice={!dateFiltered}
+            hidePrice={!dateFiltered && !showCachedPricing}
             initialCenter={initialCenter}
             initialZoom={cityParam ? 11 : undefined}
             key={`mobile-${mapKey}`}
@@ -623,7 +623,7 @@ export function PropertiesLayout({
               onSelectedChange={handleCarouselSelectedChange}
               onClose={handleCarouselClose}
               onDismissStart={handleCarouselDismissStart}
-              hidePrice={!dateFiltered}
+              hidePrice={!dateFiltered && !showCachedPricing}
               dismissing={carouselDismissing}
             />
           )}
