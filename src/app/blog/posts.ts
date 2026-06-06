@@ -13,6 +13,17 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "leadville-colorado-vacation-rentals-booking-guide",
+    oldSlug: "leadville-colorado-vacation-rentals-booking-guide",
+    title: "Leadville Colorado Vacation Rentals: The Complete Booking Guide",
+    excerpt: "At 10,152 feet, Leadville is North America's highest incorporated city — and one of Colorado's most underrated destinations. Here's everything you need to know to book the right vacation rental there.",
+    date: "2026-05-24",
+    author: "Traverse Hospitality",
+    category: "Leadville",
+    market: "leadville",
+    image: "/blog/leadville-colorado-vacation-rentals-booking-guide.jpg",
+  },
+  {
     slug: "crested-butte-vacation-rental-income",
     oldSlug: "crested-butte-vacation-rental-income",
     title: "How Much Can You Earn Renting Your Crested Butte Condo?",
