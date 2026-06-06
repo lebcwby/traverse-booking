@@ -13,6 +13,17 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "crested-butte-vacation-rental-income",
+    oldSlug: "crested-butte-vacation-rental-income",
+    title: "How Much Can You Earn Renting Your Crested Butte Condo?",
+    excerpt: "Crested Butte owners are sitting on serious short-term rental potential — but understanding the seasonal swings, booking mix, and management choices makes all the difference. Here's what you actually need to know before you list.",
+    date: "2026-05-21",
+    author: "Traverse Hospitality",
+    category: "For Owners",
+    market: "owners",
+    image: "/blog/crested-butte-vacation-rental-income.jpg",
+  },
+  {
     slug: "best-hiking-near-leadville-colorado",
     oldSlug: "best-hiking-near-leadville-colorado",
     title: "Best Hiking Near Leadville, Colorado",
