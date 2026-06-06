@@ -33,7 +33,13 @@ export async function GET(req: Request) {
   }
 
   try {
-    const upstream = await fetch(data.photo_url, { redirect: "follow" });
+    // The Places API key is HTTP-referrer-restricted to booktraverse.com, so a
+    // bare server-side fetch is rejected (403 API_KEY_HTTP_REFERRER_BLOCKED).
+    // Spoof a matching Referer so Google honours the restricted key here.
+    const upstream = await fetch(data.photo_url, {
+      redirect: "follow",
+      headers: { Referer: "https://www.booktraverse.com/" },
+    });
     if (!upstream.ok || !upstream.body) {
       return NextResponse.json(
         { error: "upstream failed" },
