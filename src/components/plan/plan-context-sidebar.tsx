@@ -216,7 +216,54 @@ export function PlanContextSidebar({
         </p>
       </section>
 
-      {/* Ask a follow-up composer — primary action surface. */}
+      {/* Conversation transcript — sits ABOVE the composer so the thread
+        reads top-to-bottom like a normal chat and the input is the last
+        thing before the user types. Only renders once the user has started
+        a follow-up after the first itinerary landed. Without this, clicking
+        a chip or typing a follow-up produced a silent pending state. */}
+      {(transcript.length > 0 || busy || errored) && (
+        <section className="flex flex-col gap-2 rounded-2xl border border-neutral-200 bg-white p-3">
+          <h3 className="text-[12.5px] font-semibold text-neutral-900">
+            Conversation
+          </h3>
+          <div
+            ref={transcriptScrollRef}
+            className="flex max-h-[280px] flex-col gap-2 overflow-y-auto pr-1"
+          >
+            {transcript.map((t) =>
+              t.role === "user" ? (
+                <div key={t.id} className="flex justify-end">
+                  <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-3 py-2 text-[12.5px] leading-snug text-primary-foreground">
+                    {t.text}
+                  </div>
+                </div>
+              ) : (
+                <div
+                  key={t.id}
+                  className="whitespace-pre-wrap text-[12.5px] leading-snug text-neutral-800"
+                >
+                  {t.text}
+                </div>
+              )
+            )}
+            {busy && (
+              <div className="flex items-center gap-2 text-[12px] text-neutral-500">
+                <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                <span>Working on it…</span>
+              </div>
+            )}
+            {errored && !busy && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11.5px] leading-snug text-amber-800">
+                Something broke on that last turn. Try rephrasing or click a
+                Quick refine chip below — we&apos;ll recover.
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Ask a follow-up composer — primary action surface, anchored beneath
+        the conversation thread. */}
       <section className="rounded-2xl border-2 border-primary/30 bg-white p-4 shadow-[0_4px_16px_rgba(43,74,78,0.08)]">
         <div className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-neutral-900">
           <Sparkles className="h-4 w-4 text-primary" strokeWidth={2} />
@@ -273,50 +320,6 @@ export function PlanContextSidebar({
           </div>
         </form>
       </section>
-
-      {/* Conversation transcript — only renders once the user has started a
-        follow-up after the first itinerary landed. Without this, clicking
-        a chip or typing a follow-up produced a silent pending state. */}
-      {(transcript.length > 0 || busy || errored) && (
-        <section className="flex flex-col gap-2 rounded-2xl border border-neutral-200 bg-white p-3">
-          <h3 className="text-[12.5px] font-semibold text-neutral-900">
-            Conversation
-          </h3>
-          <div
-            ref={transcriptScrollRef}
-            className="flex max-h-[280px] flex-col gap-2 overflow-y-auto pr-1"
-          >
-            {transcript.map((t) =>
-              t.role === "user" ? (
-                <div key={t.id} className="flex justify-end">
-                  <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-3 py-2 text-[12.5px] leading-snug text-primary-foreground">
-                    {t.text}
-                  </div>
-                </div>
-              ) : (
-                <div
-                  key={t.id}
-                  className="whitespace-pre-wrap text-[12.5px] leading-snug text-neutral-800"
-                >
-                  {t.text}
-                </div>
-              )
-            )}
-            {busy && (
-              <div className="flex items-center gap-2 text-[12px] text-neutral-500">
-                <Loader2 className="h-3 w-3 animate-spin text-primary" />
-                <span>Working on it…</span>
-              </div>
-            )}
-            {errored && !busy && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11.5px] leading-snug text-amber-800">
-                Something broke on that last turn. Try rephrasing or click a
-                Quick refine chip below — we&apos;ll recover.
-              </div>
-            )}
-          </div>
-        </section>
-      )}
 
       {/* Quick refine chips */}
       <section className="rounded-2xl border border-neutral-200 bg-white p-3">
