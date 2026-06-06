@@ -4,6 +4,12 @@
 
 const PLACES_BASE = "https://places.googleapis.com/v1/places:searchText";
 
+// The Google Places API key is restricted to the booktraverse.com HTTP
+// referrer, so server-side calls must spoof a matching Referer header or
+// Google rejects them with 403 API_KEY_HTTP_REFERRER_BLOCKED. Used here and
+// in the POI photo proxy (src/app/api/plan/poi-photo/route.ts).
+export const PLACES_REFERER = "https://www.booktraverse.com/";
+
 export type BusinessStatus =
   | "OPERATIONAL"
   | "CLOSED_TEMPORARILY"
@@ -45,6 +51,7 @@ export async function searchPlace(
       "Content-Type": "application/json",
       "X-Goog-Api-Key": apiKey,
       "X-Goog-FieldMask": FIELD_MASK,
+      Referer: PLACES_REFERER,
     },
     body: JSON.stringify({
       textQuery: `${query} in ${locationBias}`,

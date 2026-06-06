@@ -155,54 +155,61 @@ export function PropertySidebar({ itinerary }: { itinerary: Itinerary }) {
 
     const run = async () => {
       try {
-        // Primary path: server-side BEAPI + hydrate + rank + neighborhood
-        // boost. Replaces the old generate_itinerary tool-handler pipeline.
-        if (hasRealDates) {
-          try {
-            const res = await fetch("/api/plan/listings", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ itinerary }),
-            });
-            if (res.ok) {
-              const data = (await res.json()) as {
-                listings?: PlanListingsResponseRow[];
-                reason?: string;
-              };
-              const rows = data.listings ?? [];
-              if (rows.length >= 1 && !cancelled) {
-                const paired: SidebarItem[] = rows.slice(0, 3).map((row) => ({
-                  listing: {
-                    id: row.id,
-                    guesty_id: row.guesty_id,
-                    title: row.title ?? null,
-                    nickname: row.nickname ?? null,
-                    bedrooms: row.bedrooms ?? null,
-                    accommodates: row.accommodates ?? null,
-                    property_type: row.property_type ?? null,
-                    picture: row.picture ?? null,
-                    amenities: row.amenities ?? null,
-                    tags: row.tags ?? null,
-                    reviewAvg: row.reviewAvg ?? null,
-                    reviewTotal: row.reviewTotal ?? null,
-                  },
-                  checkIn: row.checkIn,
-                  checkOut: row.checkOut,
-                }));
-                setItems(paired);
-                setFallbackReason(
-                  data.reason === "date-shifted" ? "broadened" : "exact"
-                );
-                return;
-              }
+        // Primary path: server-side BEAPI search, market-filtered to the trip's
+        // town, ranked. The route handles tentative dates too (market-scoped,
+        // undated picks), so we always call it — and we HONOUR its result even
+        // when empty, so a "no rentals available in this market" never falls
+        // through to the unfiltered fallback (which could show another town).
+        try {
+          const res = await fetch("/api/plan/listings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ itinerary }),
+          });
+          if (res.ok) {
+            const data = (await res.json()) as {
+              listings?: PlanListingsResponseRow[];
+              reason?: string;
+            };
+            const rows = data.listings ?? [];
+            if (!cancelled) {
+              const paired: SidebarItem[] = rows.slice(0, 3).map((row) => ({
+                listing: {
+                  id: row.id,
+                  guesty_id: row.guesty_id,
+                  title: row.title ?? null,
+                  nickname: row.nickname ?? null,
+                  bedrooms: row.bedrooms ?? null,
+                  accommodates: row.accommodates ?? null,
+                  property_type: row.property_type ?? null,
+                  picture: row.picture ?? null,
+                  amenities: row.amenities ?? null,
+                  tags: row.tags ?? null,
+                  reviewAvg: row.reviewAvg ?? null,
+                  reviewTotal: row.reviewTotal ?? null,
+                },
+                checkIn: row.checkIn,
+                checkOut: row.checkOut,
+              }));
+              setItems(paired);
+              setFallbackReason(
+                rows.length === 0
+                  ? "none"
+                  : data.reason === "date-shifted"
+                    ? "broadened"
+                    : hasRealDates
+                      ? "exact"
+                      : "generic"
+              );
             }
-          } catch {
-            /* fall through to generic fallback */
+            return;
           }
+        } catch {
+          /* hard error — fall through to the generic fallback below */
         }
 
-        // Generic fallback: tentative dates, or the primary path returned
-        // zero inventory. Shows something bookable to keep the card alive.
+        // Generic fallback: only reached when the primary route errored. Keeps
+        // the card alive with something bookable (unscoped — last resort).
         const broadParams = new URLSearchParams({
           guests: String(guests),
           limit: "30",

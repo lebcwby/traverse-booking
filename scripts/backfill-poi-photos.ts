@@ -80,20 +80,27 @@ interface PoiRow {
 
 async function main() {
   const apply = process.argv.includes("--apply");
+  // --refresh re-fetches EVERY active POI, not just those missing a photo. Use
+  // it when the stored Google Places photo references have gone stale (Places
+  // (New) references expire — Google then returns 400 "photo resource invalid").
+  const refresh = process.argv.includes("--refresh");
   console.log(
-    `[backfill-poi-photos] mode=${apply ? "APPLY" : "dry-run (pass --apply to write)"}`
+    `[backfill-poi-photos] mode=${apply ? "APPLY" : "dry-run (pass --apply to write)"}` +
+      `${refresh ? " | refresh=ALL active rows" : " | only rows missing photo_url"}`
   );
 
-  const { data: rows, error } = await supabase
+  let query = supabase
     .from("sp_pois")
     .select("id, name, neighborhood")
-    .eq("status", "active")
-    .is("photo_url", null)
-    .order("neighborhood", { ascending: true });
+    .eq("status", "active");
+  if (!refresh) query = query.is("photo_url", null);
+  const { data: rows, error } = await query.order("neighborhood", {
+    ascending: true,
+  });
 
   if (error) throw error;
   if (!rows || rows.length === 0) {
-    console.log("[backfill-poi-photos] no active rows missing photo_url");
+    console.log("[backfill-poi-photos] no matching active rows");
     return;
   }
 
