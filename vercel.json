@@ -55,6 +55,10 @@
       "schedule": "0 8 * * *"
     },
     {
+      "path": "/api/cron/sync-listings",
+      "schedule": "0 9 * * *"
+    },
+    {
       "path": "/api/cron/smoke-content",
       "schedule": "0 */6 * * *"
     }
