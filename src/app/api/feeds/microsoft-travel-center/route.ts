@@ -34,9 +34,9 @@ const LISTING_COLUMNS = [
   "default_check_in_time",
   "default_check_out_time",
   "terms",
-  "computed_review_avg",
-  "computed_review_count",
-  "raw",
+  // Removed phantom columns that don't exist on the table and were never
+  // read here — selecting them 42703'd the whole feed: `computed_review_avg`,
+  // `computed_review_count`, and `raw`. Verified vs information_schema 2026-06-07.
 ].join(",");
 
 async function loadReviews(

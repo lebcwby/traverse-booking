@@ -192,7 +192,9 @@ export async function getListingsByTag(
     .eq("is_listed", true)
     .eq("beapi_enabled", true)
     .contains("tags", [tag])
-    .order("review_count", { ascending: false })
+    // No numeric review column on this table (review data is BEAPI-side);
+    // order by recency of the Guesty sync as a stable fallback.
+    .order("guesty_updated_at", { ascending: false })
     .limit(limit);
   if (error) return [];
   return (data as unknown as Listing[]) || [];
@@ -206,26 +208,33 @@ export async function getListingsByTag(
 // paths that show dozens of listings.
 //
 // BROWSE_RENDER_FIELDS — strict subset used by card grids + ranking.
-// Skips `pictures[]` and `terms` (only needed on /properties/[id]).
-// Cut avg row size from ~47KB → ~2KB.
+// Skips `terms` (only needed on /properties/[id]). Cut avg row size
+// from ~47KB → ~2KB.
+//
+// ⚠️ Every column named here MUST exist on the `listings` table. Postgres
+// rejects a SELECT that names an unknown column with 42703 — unlike the
+// old `select("*")`, which silently tolerated drift. The earlier version
+// of this list named `review_count`, `computed_review_avg`,
+// `computed_review_count`, `city`, `state`, `listing_category` and
+// `pictures`, none of which exist on this table, so EVERY getListings*
+// call 42703-errored and returned []. `city`/`state` live inside the
+// `address` JSONB (queried via address->>city); review counts/category
+// were never columns here. Verified against information_schema 2026-06-07.
 const BROWSE_RENDER_FIELDS =
   "id,guesty_id,nickname,title,property_type,room_type," +
   "bedrooms,bathrooms,beds,accommodates,area_square_feet," +
   "address,prices,active,is_listed,beapi_enabled," +
   "picture,picture_count,amenities,tags," +
   "default_check_in_time,default_check_out_time,timezone," +
-  "review_count,computed_review_avg,computed_review_count," +
-  "occupancy_stats,city,state,guesty_updated_at,listing_category,review_summary";
+  "occupancy_stats,guesty_updated_at,review_summary";
 
-// LISTING_FIELDS — superset matching the public `Listing` interface
-// (above). Adds `pictures[]` and `terms` for /properties/[id] +
-// /api/payment-intent flows that need the full photo array and terms
-// blob. Still skips the wide JSONB extras (`raw`, `wheelhouse_data`,
-// financials, owners, integrations, cleaning_status, custom_fields)
-// which no production consumer reads anymore — verified by grep on
-// 2026-05-27, only ms-travel-feed.ts touches `raw` and it does its own
-// explicit query.
-const LISTING_FIELDS = BROWSE_RENDER_FIELDS + ",pictures,terms";
+// LISTING_FIELDS — superset adding `terms` for /properties/[id] +
+// /api/payment-intent flows that need the terms blob. (There is no
+// `pictures[]` column on this table — only `picture` + `picture_count` —
+// so full photo arrays come from BEAPI, not here.) Still skips the wide
+// JSONB extras (`wheelhouse_data`, financials, owners, integrations,
+// cleaning_status, custom_fields) which no production consumer reads.
+const LISTING_FIELDS = BROWSE_RENDER_FIELDS + ",terms";
 
 export async function getListingsForBrowseRender(params: {
   tag?: string;
