@@ -344,9 +344,10 @@ export async function syncReviewsForListing(
 /**
  * Enumerate every listing from Guesty OpenAPI (active + inactive).
  *
- * booktraverse.com's local `listings` table is empty by design — the app
- * fetches listings from BEAPI on-the-fly. For a one-shot review backfill
- * we need the canonical list straight from Guesty.
+ * The local `listings` mirror is BEAPI-sourced (sync-listings cron) and holds
+ * only bookable inventory. Reviews can attach to inactive/delisted listings
+ * too, so for a complete backfill we enumerate the canonical list — including
+ * inactive — straight from Guesty OpenAPI.
  */
 async function getAllGuestyListingIds(): Promise<string[]> {
   const ids: string[] = [];
@@ -371,9 +372,9 @@ async function getAllGuestyListingIds(): Promise<string[]> {
 }
 
 /**
- * Sync reviews for every Guesty listing. Pulls the listing inventory
- * directly from Guesty OpenAPI (the local `listings` table is empty —
- * see comment on `getAllGuestyListingIds`). Iterates serially to avoid
+ * Sync reviews for every Guesty listing. Enumerates the inventory from the
+ * local `listings` mirror (BEAPI-sourced via sync-listings), falling back to
+ * Guesty OpenAPI only if the mirror is empty. Iterates serially to avoid
  * hammering Guesty's rate limit.
  */
 export async function syncAllListingReviews(opts?: {
@@ -392,8 +393,11 @@ export async function syncAllListingReviews(opts?: {
   nextSkip: number | null;
   perListing: SyncResult[];
 }> {
-  // Fall back to local `listings` table first (lets future state-when-we-cache
-  // listings still work). If empty, ask Guesty.
+  // Enumerate from the local `listings` mirror first (BEAPI-sourced, populated
+  // by the sync-listings cron). This covers active/bookable inventory — what
+  // accrues new reviews — and avoids the OpenAPI dependency, whose creds aren't
+  // configured in prod. Only fall back to OpenAPI enumeration if the mirror is
+  // empty (e.g. before the first sync-listings run).
   const pool = getPool();
   const local = await pool.query<{ guesty_id: string }>(
     `SELECT guesty_id FROM listings

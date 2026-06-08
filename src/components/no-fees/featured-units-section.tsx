@@ -15,8 +15,9 @@ import { ServerPropertyCard } from "@/components/properties/server-property-card
  * date-filtered availability list, so high-intent (esp. GBP) visitors don't
  * dead-end on an empty search.
  *
- * Units come from BEAPI via `fetchUnitsForTag` (the Supabase `listings` table
- * is empty by design), cached at the fetch layer. Pass `units` to reuse a
+ * Units come from BEAPI via `fetchUnitsForTag` (live availability + pricing;
+ * the Supabase `listings` mirror backs SEO/feed surfaces, not this live card),
+ * cached at the fetch layer. Pass `units` to reuse a
  * fetch the page already did (e.g. for the hero rating). When `checkIn`/
  * `checkOut` are given, each card deep-links into the unit with those dates so
  * the detail page opens on a live quote instead of an empty picker.
