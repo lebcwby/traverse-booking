@@ -71,11 +71,12 @@ export async function GET(request: NextRequest) {
     }
 
     // No dates: prefer BEAPI when only catalog filters are passed (guests/
-    // bedrooms/propertyType). The local `listings` Supabase mirror is empty,
-    // so the Supabase path was returning zero rows for callers like the
-    // /plan PropertySidebar broad fallback. BEAPI accepts no-date queries
-    // and returns active inventory; cached for 5min to keep the rate hit
-    // off the hot path.
+    // bedrooms/propertyType). BEAPI is the live source of truth for inventory +
+    // pricing, so we read it directly here rather than the Supabase `listings`
+    // mirror (the mirror is refreshed nightly by sync-listings and backs
+    // SEO/feed surfaces, but can lag live availability). BEAPI accepts no-date
+    // queries and returns active inventory; cached for 5min to keep the rate
+    // hit off the hot path.
     if (!q && !skip) {
       const data = (await searchListingsCached({
         minOccupancy: guests ? Number(guests) : undefined,

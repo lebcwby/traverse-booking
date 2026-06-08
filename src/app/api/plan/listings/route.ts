@@ -2,10 +2,12 @@
 // Rental matching for /plan, called client-side by PropertySidebar after the
 // itinerary renders.
 //
-// Listing data comes straight from BEAPI search results (the `listings`
-// Supabase table is empty by design — the site fetches from BEAPI on the fly),
-// and we HARD-FILTER to the trip's market (derived from the itinerary's POI
-// neighborhoods) so a Crested Butte trip never surfaces a Leadville rental.
+// Listing data comes straight from BEAPI search results — the booking/
+// availability surface always reads BEAPI live for fresh pricing + bookability
+// (the Supabase `listings` mirror, populated nightly by the sync-listings cron,
+// backs SEO/feed surfaces, not live quoting). We HARD-FILTER to the trip's
+// market (derived from the itinerary's POI neighborhoods) so a Crested Butte
+// trip never surfaces a Leadville rental.
 //
 // Pipeline:
 //   1. Derive the trip's market from the POI mix.

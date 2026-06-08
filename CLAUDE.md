@@ -215,6 +215,50 @@ Cities require BOTH params: `city=Crested Butte&country=United States`
 
 ---
 
+### Listings table (Supabase mirror) & sync — IMPORTANT
+
+The Supabase `listings` table is a **BEAPI-sourced mirror of the bookable
+catalog**, populated nightly by `/api/cron/sync-listings` (`0 9 * * *` UTC).
+As of 2026-06-08 it holds ~186 rows.
+
+⚠️ **Correcting prior docs/comments:** older code comments said the table was
+"empty by design." That was the *symptom of a missing populator*, NOT an
+intentional choice — nothing was syncing it, so it sat at 0 rows and silently
+emptied the SEO/feed surfaces that read it. The sync (PR #25) fixed that.
+
+Two distinct data paths — don't conflate them:
+- **Live booking / availability / pricing** → always reads **BEAPI on the fly**
+  (`/properties`, `/properties/[id]`, `/plan`, quotes, checkout). This is the
+  source of truth and is unchanged.
+- **SEO / feed surfaces** → read the **Supabase `listings` mirror**:
+  `/s/[slug]` landing pages, **sitemap property URLs**, Microsoft/Bing travel +
+  price feeds, search-suggestions, featured. These were blank while the table
+  was empty.
+
+Sync details (`src/lib/guesty-listings-sync.ts`):
+- Source: BEAPI search (cursor pagination), mapped via `mapBeapiToListing`,
+  **upsert on `guesty_id`**. Reuses the cached BEAPI token (no OAuth mint).
+- Writes only BEAPI-derived columns; Open-API-only columns (`owners`,
+  `financials`, `custom_fields`, `wheelhouse_data`, `host_name`,
+  `contact_phone`, `timezone`) are left untouched.
+- Delisted listings are soft-deactivated via a `last_synced_at` watermark,
+  guarded against mass-deactivation on a partial fetch (needs ≥80% of reported
+  total on a clean run).
+- ⚠️ **Schema discipline:** explicit `select(...)` lists on `listings` must name
+  only real columns — Postgres 42703s on unknown columns (this bit us:
+  `review_count`/`computed_review_*`/`city`/`state`/`listing_category`/`pictures`
+  were phantom and broke every `getListings*`, PR #24). The mirror has NO
+  numeric review columns and NO top-level `city`/`state` (city/state live in the
+  `address` JSONB).
+- Side-effect: nightly **reviews-sync** now enumerates from this populated
+  mirror instead of OpenAPI (whose creds aren't set in prod), so it's
+  functional again for active listings without OpenAPI.
+
+Manual repopulate: `curl -H "Authorization: Bearer $CRON_SECRET"
+https://www.booktraverse.com/api/cron/sync-listings`
+
+---
+
 ## Environment Variables
 
 ### In Vercel Production (confirmed)

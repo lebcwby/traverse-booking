@@ -175,9 +175,10 @@ export async function getOpenAPIReservation(reservationId: string) {
  * Fetch one page of all listings from Guesty OpenAPI.
  *
  * Endpoint: GET /v1/listings?fields=<comma-separated>&limit=<n>&skip=<n>
- * Used by review sync to enumerate every listing (active + inactive)
- * since the local `listings` table on booktraverse.com is empty by design
- * (the app fetches listings from BEAPI on-the-fly rather than caching).
+ * Used by review sync to enumerate every listing INCLUDING inactive/delisted
+ * ones. The local `listings` mirror is BEAPI-sourced (sync-listings cron) and
+ * so only holds bookable inventory; OpenAPI is still the way to reach inactive
+ * listings that may carry historical reviews.
  */
 export async function getOpenAPIListingsPage(params: {
   fields?: string;
