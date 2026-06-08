@@ -21,11 +21,18 @@ export default function CheckoutPage() {
   // carries. Lets an expired-quote landing re-quote the exact listing+dates
   // in one click instead of dumping the guest on a generic property list.
   const [recoveryHref, setRecoveryHref] = useState<string | null>(null);
+  // True once we've kicked off the auto-redirect back to the recovery dates,
+  // so the render shows a "taking you back" state instead of the dead-end
+  // "expired" interstitial.
+  const [redirecting, setRedirecting] = useState(false);
   useEffect(() => {
     try {
       const sp = new URLSearchParams(window.location.search);
       const lid = sp.get("lid");
-      if (lid) {
+      // Only treat lid as recovery context if it's a plausible listing id.
+      // We redirect to `/properties/${lid}` programmatically below, so this
+      // also guards against an open-redirect via a crafted lid.
+      if (lid && /^[A-Za-z0-9_-]+$/.test(lid)) {
         const qs = new URLSearchParams();
         const ci = sp.get("ci");
         const co = sp.get("co");
@@ -89,6 +96,18 @@ export default function CheckoutPage() {
 
     setQuote(data);
   }, [quoteId]);
+
+  // Expired quote + recovery context (lid/ci/co/g from the abandoned-cart
+  // email) → skip the "expired, click again" interstitial and send the guest
+  // straight back to their dates to re-quote. Removes a click from the
+  // recovery path; the interstitial below remains as a no-JS / slow-nav
+  // fallback.
+  useEffect(() => {
+    if (error && recoveryHref && !redirecting) {
+      setRedirecting(true);
+      router.replace(recoveryHref);
+    }
+  }, [error, recoveryHref, redirecting, router]);
 
   // Fetch listing detail (photos + per-listing pet config) once the quote
   // is loaded — runs whether the quote came from sessionStorage or the
@@ -167,16 +186,18 @@ export default function CheckoutPage() {
     });
   }, [quote]);
 
-  if (error) {
+  // Expired quote WITH recovery context: we're auto-redirecting back to the
+  // guest's dates. Show a brief "taking you back" state (not the dead-end
+  // interstitial), and keep a manual link as a no-JS / slow-nav fallback.
+  if (redirecting || (error && recoveryHref)) {
     return (
       <div className="mx-auto max-w-md px-4 py-16 text-center sm:px-6">
         <h1 className="text-2xl font-bold text-foreground">Checkout</h1>
         <p className="mt-4 text-sm text-muted-foreground">
-          {recoveryHref
-            ? "Your saved quote expired — but your dates are one click away. Pick up right where you left off."
-            : error}
+          Your saved quote expired — taking you right back to your dates to
+          pick up where you left off…
         </p>
-        {recoveryHref ? (
+        {recoveryHref && (
           <div className="mt-6 flex flex-col items-center gap-3">
             <Link
               href={recoveryHref}
@@ -191,14 +212,23 @@ export default function CheckoutPage() {
               Browse all properties
             </Link>
           </div>
-        ) : (
-          <Link
-            href="/properties"
-            className="mt-6 inline-block rounded-full bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-          >
-            Browse Properties
-          </Link>
         )}
+      </div>
+    );
+  }
+
+  // Expired quote with NO recovery context: generic message + browse.
+  if (error) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-16 text-center sm:px-6">
+        <h1 className="text-2xl font-bold text-foreground">Checkout</h1>
+        <p className="mt-4 text-sm text-muted-foreground">{error}</p>
+        <Link
+          href="/properties"
+          className="mt-6 inline-block rounded-full bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          Browse Properties
+        </Link>
       </div>
     );
   }
