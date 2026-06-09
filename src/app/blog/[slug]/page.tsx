@@ -17,11 +17,28 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = getPost(slug);
   if (!post) return {};
+  const url = `https://www.booktraverse.com/blog/${post.slug}`;
+  const ogImage = post.image || "/markets/crested-butte.jpg";
   return {
     // Layout title template appends " | Traverse Hospitality"; don't repeat it.
     title: post.title,
     description: post.excerpt,
-    alternates: { canonical: `https://www.booktraverse.com/blog/${post.slug}` },
+    alternates: { canonical: url },
+    openGraph: {
+      type: "article",
+      url,
+      title: post.title,
+      description: post.excerpt,
+      images: [{ url: ogImage }],
+      publishedTime: post.date,
+      authors: [post.author],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.excerpt,
+      images: [ogImage],
+    },
   };
 }
 
@@ -43,9 +60,58 @@ export default async function BlogPostPage({
   }
 
   const heroImg = post.image || "/markets/crested-butte.jpg";
+  const postUrl = `https://www.booktraverse.com/blog/${post.slug}`;
+  const blogSchema = [
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "@id": `${postUrl}#blogposting`,
+      headline: post.title,
+      description: post.excerpt,
+      ...(post.image
+        ? { image: `https://www.booktraverse.com${post.image}` }
+        : {}),
+      datePublished: post.date,
+      dateModified: post.date,
+      author: post.author.includes("Traverse")
+        ? { "@type": "Organization", name: post.author }
+        : { "@type": "Person", name: post.author },
+      publisher: { "@id": "https://www.booktraverse.com/#organization" },
+      mainEntityOfPage: postUrl,
+      url: postUrl,
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: "https://www.booktraverse.com/",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Blog",
+          item: "https://www.booktraverse.com/blog",
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: post.title,
+          item: postUrl,
+        },
+      ],
+    },
+  ];
 
   return (
     <div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogSchema) }}
+      />
       {/* ═══ HERO HEADER ═══ */}
       <div
         style={{

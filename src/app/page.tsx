@@ -43,6 +43,10 @@ export const metadata: Metadata = {
 const orgSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
+  // Canonical entity anchor — the single source of truth for the brand entity,
+  // referenced by other nodes (landing-page `provider`, building-page
+  // Organization blocks). Keep this exact @id everywhere.
+  "@id": "https://www.booktraverse.com/#organization",
   name: "Traverse Hospitality",
   alternateName: ["Book Traverse", "High Rocky Homes"],
   url: "https://www.booktraverse.com",
@@ -73,6 +77,29 @@ const orgSchema = {
     },
   ],
   telephone: ["+1-720-759-2013", "+1-970-438-2241", "+1-970-533-3583"],
+  // Consolidates the fragmented brand across owned legacy domains + social
+  // profiles so Google/LLMs tie them to one entity. NOTE: a Wikidata link
+  // belongs here once the entity is created — the previously-referenced
+  // Q139544827 is a 404 (does not exist) and was intentionally omitted.
+  sameAs: [
+    "https://traversehospitality.com",
+    "https://www.leadvillevacationhomes.com",
+    "https://www.thegrandlodgeatcb.com",
+    "https://www.crestedbutteskirentals.com",
+    "https://www.governorsmansion.net",
+    "https://www.mountainhideaway.com",
+    "https://www.instagram.com/traversehospitality/",
+    "https://www.facebook.com/traversehospitality/",
+    "https://www.linkedin.com/company/traversehospitality",
+    "https://www.tripadvisor.com/Hotel_Review-g33377-d483065-Reviews-The_Grand_Lodge_by_Traverse_Hospitality-Crested_Butte_Colorado.html",
+  ],
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: "4.9",
+    bestRating: "5",
+    ratingCount: "214",
+    reviewCount: "214",
+  },
 };
 
 /* ────────── Five Stars SVG ────────── */
