@@ -13,6 +13,17 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "best-restaurants-leadville-colorado",
+    oldSlug: "best-restaurants-leadville-colorado",
+    title: "Best Restaurants in Leadville CO: Where Locals Actually Eat",
+    excerpt: "At 10,152 feet, Leadville is North America's highest city — and its dining scene punches well above its altitude. Here's where locals actually eat.",
+    date: "2026-05-27",
+    author: "Traverse Hospitality",
+    category: "Leadville",
+    market: "leadville",
+    image: "/blog/best-restaurants-leadville-colorado.jpg",
+  },
+  {
     slug: "crested-butte-vacation-rental-income",
     oldSlug: "crested-butte-vacation-rental-income",
     title: "How Much Can You Earn Renting Your Crested Butte Condo?",
