@@ -7,7 +7,7 @@ import "../../../no-fees/no-fees.css";
 import "../activities-shared.css";
 
 export const metadata: Metadata = {
-  title: "All-Year-Round Activities in Leadville Colorado | Traverse Hospitality",
+  title: "All-Year-Round Activities in Leadville Colorado",
   description:
     "Downtown Leadville, Tabor Opera House, museums, scenic railroads, zip lining, hunting — year-round things to do in Leadville, Colorado.",
   alternates: {

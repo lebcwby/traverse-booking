@@ -366,6 +366,41 @@ runtime handling. Stage them together.
 - `vercel deploy --prod --yes` also works without git push.
 - Never use TextEdit on config files (corrupts URLs with mailto: links).
 
+### SEO conventions — adding pages, sitemap, canonicals, titles
+
+**🚨 New statically-routed page → you MUST add it to the sitemap.** The
+`static` sitemap segment is a hardcoded list. When you create a new indexable
+`page.tsx` (a market hub, building page, guide, or any evergreen content page),
+add its path to `CONTENT_PAGES` (or `CORE_PAGES`) in `src/app/sitemap.ts`.
+Forgetting this is invisible — the page still builds and renders, it's just
+undiscoverable by crawlers via the sitemap. This bit us pre-2026-06-09 (the
+`/vail`, `/avon`, building, and `things-to-do` pages were in NO segment).
+
+What is auto-included vs. manual:
+
+| New thing | Sitemap segment | Manual sitemap edit? |
+|---|---|---|
+| Static `page.tsx` (market/building/guide/content) | `static` | **YES — edit sitemap.ts** |
+| Listing | `properties` | No — nightly BEAPI sync |
+| Blog post (added to `BLOG_POSTS` in `src/app/blog/posts.ts`) | `blog` | No — sourced from that array |
+| Landing page `/s/*` (added to landing-pages config) | `landing-pages` | No |
+| Neighborhood / stay / event (Supabase `sp_*`) | those segments | No |
+
+**Two more rules when adding any indexable page** (both were sitewide bugs
+fixed 2026-06-09):
+1. **Canonical = the no-trailing-slash URL.** Pages serve at the no-slash path;
+   the trailing-slash variant 308-redirects to it. Set
+   `alternates: { canonical: "https://www.booktraverse.com/your-path" }` with
+   NO trailing slash (homepage canonical is the bare origin).
+2. **Don't repeat the brand in the title.** `src/app/layout.tsx` has a title
+   template `"%s | Traverse Hospitality"`, so set the page `title` to just the
+   page name (e.g. `"Winter Activities in Leadville Colorado"`). Do NOT append
+   `" | Traverse Hospitality"` or `" — Traverse Hospitality"` yourself — the
+   template adds it, and hardcoding it double-brands the `<title>`.
+3. **Never list a noindexed page in the sitemap** (anything with
+   `robots: { index: false }` — `/terms`, `/privacy`, `/book`, `/account`,
+   etc.). Sitemap should advertise only indexable URLs.
+
 ### Phone numbers
 - **B2C (guests)**: `(720) 759-2013` — in header, footer, property pages
 - **B2C (Crested Butte)**: `(970) 438-2241`

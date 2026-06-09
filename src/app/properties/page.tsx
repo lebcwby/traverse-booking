@@ -52,7 +52,7 @@ interface Props {
 }
 
 export const metadata: Metadata = {
-  title: "Colorado Vacation Rentals — Browse & Book Direct | Traverse Hospitality",
+  title: "Colorado Vacation Rentals — Browse & Book Direct",
   description:
     "Browse 180+ vacation rentals across Colorado. Filter by dates, guests, neighborhood, and amenities. No booking fees — book direct with Traverse Hospitality and save.",
   alternates: { canonical: "/properties" },

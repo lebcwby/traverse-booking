@@ -6,9 +6,9 @@ import "../no-fees/no-fees.css";
 import "./page.css";
 
 export const metadata: Metadata = {
-  title: "Crested Butte Vacation Rentals & Lodging | Traverse Hospitality",
+  title: "Crested Butte Vacation Rentals & Lodging",
   description: "Slope-side condos and locally managed vacation rentals at Crested Butte Mountain Resort. Browse the Grand Lodge, Lodge at Mountaineer Square, and Plaza Condominiums.",
-  alternates: { canonical: "https://www.booktraverse.com/crested-butte/" },
+  alternates: { canonical: "https://www.booktraverse.com/crested-butte" },
 };
 
 export default function Page() {

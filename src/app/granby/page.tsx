@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "Granby Colorado Vacation Rentals | Rocky Mountain National Park & Winter Park | Traverse Hospitality",
   description:
     "Locally managed vacation rentals in Granby, Colorado — basecamp for the quieter west side of Rocky Mountain National Park, Winter Park Resort (25 min), Lake Granby, and Grand Lake. ~90 minutes from Denver via US-40 over Berthoud Pass.",
-  alternates: { canonical: "https://www.booktraverse.com/granby/" },
+  alternates: { canonical: "https://www.booktraverse.com/granby" },
 };
 
 export default function GranbyPage() {

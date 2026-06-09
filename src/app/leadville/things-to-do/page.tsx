@@ -5,11 +5,11 @@ import "../../no-fees/no-fees.css";
 import "./page.css";
 
 export const metadata: Metadata = {
-  title: "Things to Do in Leadville Colorado | Traverse Hospitality",
+  title: "Things to Do in Leadville Colorado",
   description:
     "Summer hiking and fishing, winter skiing and dog sledding, year-round museums and downtown — local-favorite things to do in Leadville, Colorado.",
   alternates: {
-    canonical: "https://www.booktraverse.com/leadville/things-to-do/",
+    canonical: "https://www.booktraverse.com/leadville/things-to-do",
   },
 };
 

@@ -3,10 +3,10 @@ import Link from "next/link";
 import { BLOG_POSTS } from "./posts";
 
 export const metadata: Metadata = {
-  title: "Blog — Traverse Hospitality",
+  title: "Blog",
   description:
     "Travel guides, property spotlights, and tips for vacation rental owners. Written by the Traverse Hospitality team from Crested Butte and Leadville, Colorado.",
-  alternates: { canonical: "https://www.booktraverse.com/blog/" },
+  alternates: { canonical: "https://www.booktraverse.com/blog" },
 };
 
 export default function BlogIndex() {
