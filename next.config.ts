@@ -249,6 +249,36 @@ const nextConfig: NextConfig = {
       { source: "/owners-portal", destination: "/contact", permanent: true },
       { source: "/myai-account", destination: "/", permanent: true },
       { source: "/evergreen", destination: "/", permanent: true },
+      // Legacy WordPress URLs still in Google's index but now 404 (verified
+      // 2026-06-09) → 301 to their new equivalents so they pass equity instead
+      // of soft-404ing. Specific rules MUST precede the catch-alls (Next.js
+      // redirects are first-match-wins, in array order).
+      {
+        source: "/leadville-colorado-vacation-rentals",
+        destination: "/leadville",
+        permanent: true,
+      },
+      {
+        source: "/traversehospitality/blog/:path*",
+        destination: "/blog",
+        permanent: true,
+      },
+      {
+        // Note the legacy typo "activitites" — kept exactly as the old slug.
+        source: "/cb-things-to-do/cb-winter-activitites",
+        destination: "/crested-butte/things-to-do/winter-activities",
+        permanent: true,
+      },
+      {
+        source: "/cb-things-to-do/:path*",
+        destination: "/crested-butte/things-to-do",
+        permanent: true,
+      },
+      {
+        source: "/cb-things-to-do",
+        destination: "/crested-butte/things-to-do",
+        permanent: true,
+      },
       // ─── End of WordPress legacy redirects ──────────────────────────
       {
         source: "/plan/chat",
