@@ -10,10 +10,13 @@ import {
   getAllNeighborhoodSlugs,
   getAllUseCaseSlugs,
   getAllEventSlugs,
-  getAllBlogSlugs,
 } from "@/lib/seo-content";
 import { shouldSkipCiSupabaseFetches } from "@/lib/build-environment";
+import { BLOG_POSTS } from "./blog/posts";
 
+const BASE = "https://www.booktraverse.com";
+
+type ChangeFreq = NonNullable<MetadataRoute.Sitemap[number]["changeFrequency"]>;
 
 // Generate sitemap index with segments
 export async function generateSitemaps() {
@@ -29,7 +32,81 @@ export async function generateSitemaps() {
   ];
 }
 
-const SITE_LAUNCH = new Date("2026-02-23");
+// Core, always-present pages (no Supabase dependency). Excludes the legal
+// pages (/terms, /privacy, /cancellation, /accessibility) — those set
+// robots:{index:false}, so advertising them in the sitemap sends a mixed
+// signal. NOTE: URLs are canonical no-trailing-slash (the trailing-slash
+// variant 308-redirects to these).
+const CORE_PAGES: { path: string; changeFrequency: ChangeFreq; priority: number }[] =
+  [
+    { path: "", changeFrequency: "weekly", priority: 1 },
+    { path: "/properties", changeFrequency: "daily", priority: 0.9 },
+    { path: "/reviews", changeFrequency: "weekly", priority: 0.8 },
+    { path: "/plan", changeFrequency: "weekly", priority: 0.8 },
+    { path: "/property-management", changeFrequency: "monthly", priority: 0.8 },
+    { path: "/contact", changeFrequency: "monthly", priority: 0.5 },
+    { path: "/blog", changeFrequency: "weekly", priority: 0.7 },
+  ];
+
+// Statically-rendered, indexable content pages — market hubs, building pages,
+// and guides. These are real app-router routes that were previously in NO
+// sitemap segment, so Google could only discover them via internal links.
+const CONTENT_PAGES: { path: string; changeFrequency: ChangeFreq; priority: number }[] =
+  [
+    // Market hubs
+    { path: "/crested-butte", changeFrequency: "weekly", priority: 0.85 },
+    { path: "/leadville", changeFrequency: "weekly", priority: 0.85 },
+    { path: "/vail", changeFrequency: "weekly", priority: 0.8 },
+    { path: "/avon", changeFrequency: "weekly", priority: 0.8 },
+    { path: "/granby", changeFrequency: "weekly", priority: 0.8 },
+    { path: "/twin-lakes", changeFrequency: "weekly", priority: 0.8 },
+    // Buildings (Crested Butte base area)
+    { path: "/crested-butte/grand-lodge", changeFrequency: "weekly", priority: 0.8 },
+    { path: "/crested-butte/the-plaza", changeFrequency: "weekly", priority: 0.8 },
+    {
+      path: "/crested-butte/lodge-at-mountaineer-square",
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    // Guides
+    {
+      path: "/crested-butte/guides/where-to-stay",
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    { path: "/crested-butte/things-to-do", changeFrequency: "monthly", priority: 0.7 },
+    {
+      path: "/crested-butte/things-to-do/winter-activities",
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+    {
+      path: "/crested-butte/things-to-do/summer-activities",
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+    {
+      path: "/crested-butte/things-to-do/all-year-round-activities",
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+    { path: "/leadville/things-to-do", changeFrequency: "monthly", priority: 0.7 },
+    {
+      path: "/leadville/things-to-do/winter-activities",
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+    {
+      path: "/leadville/things-to-do/summer-activities",
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+    {
+      path: "/leadville/things-to-do/all-year-round-activities",
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+  ];
 
 export default async function sitemap(props: {
   id: Promise<string>;
@@ -37,72 +114,11 @@ export default async function sitemap(props: {
   const id = await props.id;
 
   if (id === "static") {
-    return [
-      {
-        url: "https://www.booktraverse.com",
-        changeFrequency: "weekly",
-        priority: 1,
-      },
-      {
-        url: "https://www.booktraverse.com/properties",
-        changeFrequency: "daily",
-        priority: 0.9,
-      },
-      {
-        url: "https://www.booktraverse.com/reviews",
-        changeFrequency: "weekly",
-        priority: 0.8,
-      },
-      {
-        url: "https://www.booktraverse.com/plan",
-        changeFrequency: "weekly",
-        priority: 0.8,
-      },
-      {
-        url: "https://www.booktraverse.com/property-management",
-        changeFrequency: "monthly",
-        priority: 0.8,
-      },
-      {
-        url: "https://www.booktraverse.com/crested-butte",
-        changeFrequency: "weekly",
-        priority: 0.85,
-      },
-      {
-        url: "https://www.booktraverse.com/leadville",
-        changeFrequency: "weekly",
-        priority: 0.85,
-      },
-      {
-        url: "https://www.booktraverse.com/contact",
-        changeFrequency: "monthly",
-        priority: 0.5,
-      },
-      {
-        url: "https://www.booktraverse.com/terms",
-        lastModified: SITE_LAUNCH,
-        changeFrequency: "yearly",
-        priority: 0.3,
-      },
-      {
-        url: "https://www.booktraverse.com/privacy",
-        lastModified: SITE_LAUNCH,
-        changeFrequency: "yearly",
-        priority: 0.3,
-      },
-      {
-        url: "https://www.booktraverse.com/cancellation",
-        lastModified: SITE_LAUNCH,
-        changeFrequency: "yearly",
-        priority: 0.3,
-      },
-      {
-        url: "https://www.booktraverse.com/accessibility",
-        lastModified: SITE_LAUNCH,
-        changeFrequency: "yearly",
-        priority: 0.3,
-      },
-    ];
+    return [...CORE_PAGES, ...CONTENT_PAGES].map((p) => ({
+      url: `${BASE}${p.path}`,
+      changeFrequency: p.changeFrequency,
+      priority: p.priority,
+    }));
   }
 
   if (id === "landing-pages") {
@@ -112,7 +128,7 @@ export default async function sitemap(props: {
           !landingPageHasCanonicalOverride(slug) && !isRetiredLandingSlug(slug)
       )
       .map((slug) => ({
-        url: `https://www.booktraverse.com/s/${slug}`,
+        url: `${BASE}/s/${slug}`,
         changeFrequency: "weekly" as const,
         priority: 0.8,
       }));
@@ -129,7 +145,7 @@ export default async function sitemap(props: {
     try {
       const slugs = await getAllNeighborhoodSlugs();
       return slugs.map((slug) => ({
-        url: `https://www.booktraverse.com/neighborhoods/${slug}`,
+        url: `${BASE}/neighborhoods/${slug}`,
         changeFrequency: "monthly" as const,
         priority: 0.7,
       }));
@@ -143,7 +159,7 @@ export default async function sitemap(props: {
     try {
       const slugs = await getAllUseCaseSlugs();
       return slugs.map((slug) => ({
-        url: `https://www.booktraverse.com/stays/${slug}`,
+        url: `${BASE}/stays/${slug}`,
         changeFrequency: "monthly" as const,
         priority: 0.7,
       }));
@@ -157,7 +173,7 @@ export default async function sitemap(props: {
     try {
       const slugs = await getAllEventSlugs();
       return slugs.map((slug) => ({
-        url: `https://www.booktraverse.com/events/${slug}`,
+        url: `${BASE}/events/${slug}`,
         changeFrequency: "monthly" as const,
         priority: 0.7,
       }));
@@ -167,17 +183,17 @@ export default async function sitemap(props: {
   }
 
   if (id === "blog") {
-    if (shouldSkipCiSupabaseFetches()) return [];
-    try {
-      const slugs = await getAllBlogSlugs();
-      return slugs.map((slug) => ({
-        url: `https://www.booktraverse.com/guide/${slug}`,
-        changeFrequency: "monthly" as const,
-        priority: 0.7,
-      }));
-    } catch {
-      return [];
-    }
+    // Source from the live, statically-defined posts (`src/app/blog/posts.ts`)
+    // — the canonical list rendered at /blog/[slug]. The previous version
+    // queried an empty Supabase table and emitted /guide/{slug} URLs (which
+    // 301-redirect to /plan), so all ~24 real posts were missing from the
+    // sitemap entirely.
+    return BLOG_POSTS.map((post) => ({
+      url: `${BASE}/blog/${post.slug}`,
+      lastModified: post.date ? new Date(post.date) : undefined,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    }));
   }
 
   // id === "properties"
@@ -186,7 +202,7 @@ export default async function sitemap(props: {
   try {
     const listings = await getListings({ limit: 1000 });
     return listings.map((listing) => ({
-      url: `https://www.booktraverse.com/properties/${getListingSlug(listing.title || listing.nickname, listing.guesty_id)}`,
+      url: `${BASE}/properties/${getListingSlug(listing.title || listing.nickname, listing.guesty_id)}`,
       lastModified: listing.guesty_updated_at
         ? new Date(listing.guesty_updated_at)
         : undefined,

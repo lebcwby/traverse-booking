@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "Avon Colorado Vacation Rentals | Beaver Creek Gondola & Vail Valley | Traverse Hospitality",
   description:
     "Locally managed vacation rentals in Avon, Colorado — at the base of Beaver Creek Resort with the Riverfront Express gondola in town. Ten minutes east of Vail, ~2 hours from Denver. Condos, townhouses, and family homes near Nottingham Park.",
-  alternates: { canonical: "https://www.booktraverse.com/avon/" },
+  alternates: { canonical: "https://www.booktraverse.com/avon" },
 };
 
 export default function AvonPage() {

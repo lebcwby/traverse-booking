@@ -6,9 +6,9 @@ import "../no-fees/no-fees.css";
 import "./page.css";
 
 export const metadata: Metadata = {
-  title: "Leadville Colorado Vacation Rentals | Cabins, Homes & Hot Tubs | Traverse Hospitality",
+  title: "Leadville Colorado Vacation Rentals | Cabins, Homes & Hot Tubs",
   description: "70+ locally managed vacation rentals in Leadville, Colorado — America's highest city. Cabins, historic homes, hot tub rentals near Ski Cooper, Vail & Copper Mountain.",
-  alternates: { canonical: "https://www.booktraverse.com/leadville/" },
+  alternates: { canonical: "https://www.booktraverse.com/leadville" },
 };
 
 export default function Page() {

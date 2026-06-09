@@ -7,7 +7,7 @@ import "../../../no-fees/no-fees.css";
 import "../../../leadville/things-to-do/activities-shared.css";
 
 export const metadata: Metadata = {
-  title: "Winter Activities in Crested Butte Colorado | Traverse Hospitality",
+  title: "Winter Activities in Crested Butte Colorado",
   description:
     "Skiing, snowboarding, snowshoeing, dog sledding, ice skating and holiday events — winter things to do in Crested Butte, Colorado.",
   alternates: {

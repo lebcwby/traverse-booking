@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "Vail Colorado Vacation Rentals | Slope-Side Condos & Back Bowls Access | Traverse Hospitality",
   description:
     "Locally managed vacation rentals in Vail, Colorado — at the base of North America's largest single ski resort (5,317 acres). Vail Village + Lionshead pedestrian villages, Back Bowls, Blue Sky Basin, Bravo! Vail summer music festival. ~2 hours from Denver via I-70.",
-  alternates: { canonical: "https://www.booktraverse.com/vail/" },
+  alternates: { canonical: "https://www.booktraverse.com/vail" },
 };
 
 export default function VailPage() {

@@ -6,9 +6,9 @@ import "../../no-fees/no-fees.css";
 import "./page.css";
 
 export const metadata: Metadata = {
-  title: "The Plaza Condominiums Crested Butte | Spacious Ski-In Condos | Traverse Hospitality",
+  title: "The Plaza Condominiums Crested Butte | Spacious Ski-In Condos",
   description: "The Plaza Condominiums — spacious 2 and 3-bedroom ski-in condos. Hot tubs, sauna, Iron Horse Tap, tennis & pickleball. From $95/night.",
-  alternates: { canonical: "https://www.booktraverse.com/crested-butte/the-plaza/" },
+  alternates: { canonical: "https://www.booktraverse.com/crested-butte/the-plaza" },
 };
 
 export default function Page() {

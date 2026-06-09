@@ -6,9 +6,9 @@ import "../../no-fees/no-fees.css";
 import "./page.css";
 
 export const metadata: Metadata = {
-  title: "Lodge at Mountaineer Square | Luxury Ski-In Condos | Traverse Hospitality",
+  title: "Lodge at Mountaineer Square | Luxury Ski-In Condos",
   description: "Lodge at Mountaineer Square — luxury condos steps from the lifts at CBMR. Pool, hot tub, sauna, A/C, heated parking. From $95/night.",
-  alternates: { canonical: "https://www.booktraverse.com/crested-butte/lodge-at-mountaineer-square/" },
+  alternates: { canonical: "https://www.booktraverse.com/crested-butte/lodge-at-mountaineer-square" },
 };
 
 export default function Page() {

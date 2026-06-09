@@ -18,9 +18,10 @@ export async function generateMetadata({
   const post = getPost(slug);
   if (!post) return {};
   return {
-    title: `${post.title} — Traverse Hospitality`,
+    // Layout title template appends " | Traverse Hospitality"; don't repeat it.
+    title: post.title,
     description: post.excerpt,
-    alternates: { canonical: `https://www.booktraverse.com/blog/${post.slug}/` },
+    alternates: { canonical: `https://www.booktraverse.com/blog/${post.slug}` },
   };
 }
 

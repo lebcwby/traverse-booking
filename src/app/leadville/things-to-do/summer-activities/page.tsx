@@ -7,7 +7,7 @@ import "../../../no-fees/no-fees.css";
 import "../activities-shared.css";
 
 export const metadata: Metadata = {
-  title: "Summer Activities in Leadville Colorado | Traverse Hospitality",
+  title: "Summer Activities in Leadville Colorado",
   description:
     "Hiking, mountain biking, fly fishing, golf, horseback riding and more — summer things to do in Leadville, Colorado. Local-favorite picks from Traverse Hospitality.",
   alternates: {

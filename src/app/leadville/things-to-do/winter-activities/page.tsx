@@ -7,7 +7,7 @@ import "../../../no-fees/no-fees.css";
 import "../activities-shared.css";
 
 export const metadata: Metadata = {
-  title: "Winter Activities in Leadville Colorado | Traverse Hospitality",
+  title: "Winter Activities in Leadville Colorado",
   description:
     "Skiing, dog sledding, fat tire biking, ice castles, ski joring and more — winter things to do in Leadville, Colorado. Local picks from Traverse Hospitality.",
   alternates: {

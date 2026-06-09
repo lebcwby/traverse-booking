@@ -5,9 +5,9 @@ import "../../../no-fees/no-fees.css";
 import "./page.css";
 
 export const metadata: Metadata = {
-  title: "Where to Stay in Crested Butte: A Local Guide (2026) | Traverse Hospitality",
+  title: "Where to Stay in Crested Butte: A Local Guide (2026)",
   description: "An honest comparison of slope-side lodging at Crested Butte — Grand Lodge vs. Lodge at Mountaineer Square vs. the Plaza.",
-  alternates: { canonical: "https://www.booktraverse.com/crested-butte/guides/where-to-stay/" },
+  alternates: { canonical: "https://www.booktraverse.com/crested-butte/guides/where-to-stay" },
 };
 
 export default function Page() {

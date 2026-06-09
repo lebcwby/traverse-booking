@@ -18,9 +18,9 @@ const CB_PHONE_TEL = "+19704382241";
 const CB_PHONE_DISPLAY = "(970) 438-2241";
 
 export const metadata: Metadata = {
-  title: "The Grand Lodge Crested Butte | Slope-Side Condos | Traverse Hospitality",
+  title: "The Grand Lodge Crested Butte | Slope-Side Condos",
   description: "The Grand Lodge Crested Butte — slope-side condo building. Indoor/outdoor pool, hot tub, steam room. 50+ Traverse-managed units from $95/night.",
-  alternates: { canonical: "https://www.booktraverse.com/crested-butte/grand-lodge/" },
+  alternates: { canonical: "https://www.booktraverse.com/crested-butte/grand-lodge" },
 };
 
 /**

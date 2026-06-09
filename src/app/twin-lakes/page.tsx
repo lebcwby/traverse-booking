@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "Twin Lakes Colorado Vacation Rentals | Mt Elbert Basecamp & Lakeside Cabins | Traverse Hospitality",
   description:
     "Locally managed cabins in Twin Lakes, Colorado — at the base of Mount Elbert (14,440 ft, highest 14er in Colorado). Two glacial lakes, Independence Pass to Aspen, 25 min south of Leadville. Pet-friendly stays with hot tubs and wood stoves.",
-  alternates: { canonical: "https://www.booktraverse.com/twin-lakes/" },
+  alternates: { canonical: "https://www.booktraverse.com/twin-lakes" },
 };
 
 export default function TwinLakesPage() {

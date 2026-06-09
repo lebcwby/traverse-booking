@@ -5,11 +5,11 @@ import "../../no-fees/no-fees.css";
 import "../../leadville/things-to-do/page.css";
 
 export const metadata: Metadata = {
-  title: "Things to Do in Crested Butte Colorado | Traverse Hospitality",
+  title: "Things to Do in Crested Butte Colorado",
   description:
     "Summer hiking, winter skiing, year-round museums and scenic drives — local-favorite things to do in Crested Butte, Colorado.",
   alternates: {
-    canonical: "https://www.booktraverse.com/crested-butte/things-to-do/",
+    canonical: "https://www.booktraverse.com/crested-butte/things-to-do",
   },
 };
 
