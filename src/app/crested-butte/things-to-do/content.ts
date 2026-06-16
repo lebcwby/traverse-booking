@@ -43,6 +43,34 @@ export const pageContent = `
   </div>
 </section>
 
+<section class="ttd-section">
+  <div style="max-width:820px;margin:0 auto;padding:0 20px;">
+    <h2 style="text-align:center;margin-bottom:8px;">Crested Butte Things to Do: FAQ</h2>
+    <div style="margin-top:28px;display:grid;gap:22px;">
+      <div>
+        <h3>What is there to do in Crested Butte in the summer?</h3>
+        <p>Crested Butte is known as the Wildflower Capital of Colorado, with peak blooms in July. Summer favorites include hiking and wildflower walks, world-class mountain biking, scenic drives over Kebler Pass, golf, and fly-fishing on the Slate and Gunnison rivers.</p>
+      </div>
+      <div>
+        <h3>What winter activities are there in Crested Butte?</h3>
+        <p>Crested Butte Mountain Resort offers some of Colorado's most challenging lift-served terrain. Beyond skiing and snowboarding you can snowshoe, cross-country ski, snowmobile, ice skate, and try dog sledding, plus seasonal holiday events in the historic downtown.</p>
+      </div>
+      <div>
+        <h3>What is there to do in Crested Butte if you don't ski?</h3>
+        <p>Plenty, year-round — explore the historic Elk Avenue downtown, visit the Crested Butte Mountain Heritage Museum, tour local breweries and a distillery, take a scenic drive, or browse the arts and gallery scene.</p>
+      </div>
+      <div>
+        <h3>When is wildflower season in Crested Butte?</h3>
+        <p>Wildflower season runs from roughly mid-June through August and peaks in July, when the Crested Butte Wildflower Festival takes place — the best window for guided hikes and photography among the meadows.</p>
+      </div>
+      <div>
+        <h3>How do you get around Crested Butte?</h3>
+        <p>A free year-round shuttle (Mountain Express) connects the town of Crested Butte with the Mt. Crested Butte base area, so you can stay slope-side or downtown without a car. The base-area lifts, dining, and shops are all walkable.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="ttd-cta-band">
   <div class="ttd-cta-inner">
     <h2>Need a Place to Stay?</h2>
@@ -68,5 +96,51 @@ export const schemaBlocks: Array<Record<string, unknown>> = [
         { "@type": "ListItem", position: 3, name: "Things to Do", item: "https://www.booktraverse.com/crested-butte/things-to-do/" },
       ],
     },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "What is there to do in Crested Butte in the summer?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Crested Butte is known as the Wildflower Capital of Colorado, with peak blooms in July. Summer favorites include hiking and wildflower walks, world-class mountain biking, scenic drives over Kebler Pass, golf, and fly-fishing on the Slate and Gunnison rivers.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "What winter activities are there in Crested Butte?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Crested Butte Mountain Resort offers some of Colorado's most challenging lift-served terrain. Beyond skiing and snowboarding you can snowshoe, cross-country ski, snowmobile, ice skate, and try dog sledding, plus seasonal holiday events in the historic downtown.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "What is there to do in Crested Butte if you don't ski?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Plenty, year-round — explore the historic Elk Avenue downtown, visit the Crested Butte Mountain Heritage Museum, tour local breweries and a distillery, take a scenic drive, or browse the arts and gallery scene.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "When is wildflower season in Crested Butte?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Wildflower season runs from roughly mid-June through August and peaks in July, when the Crested Butte Wildflower Festival takes place — the best window for guided hikes and photography among the meadows.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "How do you get around Crested Butte?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "A free year-round shuttle (Mountain Express) connects the town of Crested Butte with the Mt. Crested Butte base area, so you can stay slope-side or downtown without a car. The base-area lifts, dining, and shops are all walkable.",
+        },
+      },
+    ],
   },
 ];
