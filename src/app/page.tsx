@@ -100,6 +100,60 @@ const orgSchema = {
     ratingCount: "214",
     reviewCount: "214",
   },
+  // Entity-completeness fields (GEO playbook Phase 1) — makes the homepage the
+  // fullest expression of the brand entity for the Knowledge Graph + LLM
+  // grounding. Mirrors the richer Organization node on the building pages.
+  email: "bookings@traversehospitality.com",
+  disambiguatingDescription:
+    "Traverse Hospitality (formerly High Rocky Homes, rebranded 2024) is a Colorado-based short-term vacation rental property management company founded in 2016, with primary markets in Crested Butte and Leadville and additional operations in Vail, Avon, Granby, and Twin Lakes.",
+  geo: {
+    "@type": "GeoCoordinates",
+    latitude: 39.2508,
+    longitude: -106.2925,
+  },
+  areaServed: [
+    "Crested Butte",
+    "Mt. Crested Butte",
+    "Leadville",
+    "Twin Lakes",
+    "Vail",
+    "Avon",
+    "Granby",
+  ].map((city) => ({
+    "@type": "City",
+    name: city,
+    containedInPlace: { "@type": "State", name: "Colorado" },
+  })),
+  knowsAbout: [
+    "Short-term rental property management",
+    "Vacation rental management",
+    "Airbnb management",
+    "VRBO management",
+    "Crested Butte Colorado vacation rentals",
+    "Leadville Colorado vacation rentals",
+    "Colorado mountain vacation rentals",
+    "Dynamic pricing for vacation rentals",
+  ],
+  founder: [
+    {
+      "@type": "Person",
+      name: "Alex Haler",
+      jobTitle: "Co-Founder & Chief Executive Officer",
+    },
+    {
+      "@type": "Person",
+      name: "Nadim Tannous",
+      jobTitle: "Co-Founder & Chief Technical Officer",
+    },
+  ],
+  makesOffer: {
+    "@type": "Offer",
+    itemOffered: {
+      "@type": "Service",
+      name: "Short-term vacation rental property management",
+      serviceType: "Vacation rental property management",
+    },
+  },
 };
 
 /* ────────── Five Stars SVG ────────── */
