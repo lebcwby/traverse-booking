@@ -70,6 +70,11 @@ const CONTENT_PAGES: { path: string; changeFrequency: ChangeFreq; priority: numb
     },
     // Guides
     {
+      path: "/crested-butte/property-management",
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
       path: "/crested-butte/guides/where-to-stay",
       changeFrequency: "monthly",
       priority: 0.7,
