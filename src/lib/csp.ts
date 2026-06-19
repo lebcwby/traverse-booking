@@ -178,6 +178,10 @@ export const FRAME_SOURCES = [
   "https://maps.google.com",
   // Facebook pixel iframe injected by GTM on conversion pages
   "https://www.facebook.com",
+  // Adobe Sign (Acrobat Sign) e-signature widget embedded on
+  // /w9-and-payment-authorization-form. Wildcard covers regional subdomains
+  // (na1/na2/na3.documents.adobe.com).
+  "https://*.documents.adobe.com",
 ];
 
 const SENSITIVE_CSP_PATH_PREFIXES = [
