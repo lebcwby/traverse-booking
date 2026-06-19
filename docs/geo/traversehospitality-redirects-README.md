@@ -29,7 +29,26 @@ All redirects are **301 (permanent)**, target **www.booktraverse.com**, and use
 `www`. Cloudflare evaluates the **longest matching source first**, so the
 specific rows automatically win over the catch-alls — no manual ordering needed.
 
-## How to upload (Cloudflare)
+## ⭐ Cloudflare Free plan — use Redirect Rules, not the CSV (chosen approach)
+The CSV below needs **Bulk Redirects**, which Free caps at **20 items** (this
+list has 36 → "maximum number of items" error). On Free, set up **Redirect
+Rules** instead (Rules → Redirect Rules on the traversehospitality.com zone) —
+separate quota, wildcard support, only ~5 rules needed. **Order matters: the
+catch-all goes LAST.** Each is `Static redirect`, status `301`, preserve query
+string `off`.
+
+1. **Leadville (highest value)** — `(http.host eq "traversehospitality.com" or http.host eq "www.traversehospitality.com") and http.request.uri.path eq "/leadville-colorado-vacation-rentals/"` → `https://www.booktraverse.com/leadville`
+2. **Property management** — `(http.host eq "traversehospitality.com" or http.host eq "www.traversehospitality.com") and http.request.uri.path eq "/property-management/"` → `https://www.booktraverse.com/property-management`
+3. **Blog** — `(http.host eq "traversehospitality.com" or http.host eq "www.traversehospitality.com") and starts_with(http.request.uri.path, "/traversehospitality/blog")` → `https://www.booktraverse.com/blog`
+4. **Old booking subdomain** — `http.host eq "reservations.traversehospitality.com"` → `https://www.booktraverse.com/properties` (ensure the subdomain is proxied / orange-cloud)
+5. **Catch-all (LAST)** — `http.host eq "traversehospitality.com" or http.host eq "www.traversehospitality.com"` → `https://www.booktraverse.com/`
+
+`reservations.traversehospitality.com` confirmed NOT taking live bookings
+(2026-06-19), so rule #4 is safe. The CSV below is retained for if you upgrade
+to **Cloudflare Pro** (500 Bulk Redirect items) and want the full 22-blog 1:1
+mapping.
+
+## How to upload the CSV (Pro/Business — Bulk Redirects)
 1. Cloudflare dashboard → your **account** (not a single zone) → **Bulk
    Redirects**.
 2. **Create a bulk redirect list** → name it e.g. `traversehospitality-migration`.
