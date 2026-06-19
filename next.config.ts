@@ -69,6 +69,13 @@ const nextConfig: NextConfig = {
     ],
   },
   async redirects() {
+    // Host condition for the old traversehospitality.com domain. The regex is
+    // anchored by Next.js (full-host match) and matches the apex + www ONLY —
+    // it deliberately does NOT match team.traversehospitality.com (its own
+    // separate Vercel project), petfriendly.* (Guesty), or any other subdomain.
+    const oldDomainHost = [
+      { type: "host" as const, value: "(www\\.)?traversehospitality\\.com" },
+    ];
     return [
       // ─── reservations.booktraverse.com — old Guesty Booking Engine ──────
       // Subdomain was added as a custom domain to this Vercel project on
@@ -94,6 +101,70 @@ const nextConfig: NextConfig = {
         destination: "https://www.booktraverse.com/:path*",
         permanent: true,
       },
+
+      // ─── traversehospitality.com → booktraverse.com — full domain migration ─
+      // The old WordPress/Guesty site only ever 301'd its homepage; every deep
+      // page 404'd or redirected to a dead URL, so booktraverse inherited almost
+      // none of the old domain's SEO equity. The single biggest lost asset was
+      // /leadville-colorado-vacation-rentals (~half the old domain's organic
+      // traffic: 1,084 clicks / 31k impressions over 16 months in GSC).
+      //
+      // To complete the migration, traversehospitality.com (apex + www) is
+      // pointed at THIS Vercel project (GoDaddy apex A → 76.76.21.21, www CNAME
+      // → cname.vercel-dns.com, GoDaddy Forwarding OFF) and these host-scoped
+      // 301s map each old path to its booktraverse equivalent.
+      //
+      // ⚠️ SUBDOMAINS ARE UNAFFECTED: `oldDomainHost` matches apex + www only.
+      // team.traversehospitality.com has its own separate Vercel deployment and
+      // DNS record (its traffic never reaches this app); petfriendly.* (Guesty)
+      // and reservations./hottubs.* keep their own records too.
+      //
+      // Order matters — Next.js redirects are first-match-wins. Specific maps
+      // first, the blog catch-all next, the homepage catch-all LAST.
+      //
+      // High-value pages mapped 1:1.
+      { source: "/leadville-colorado-vacation-rentals", has: oldDomainHost, destination: "https://www.booktraverse.com/leadville", permanent: true },
+      { source: "/property-management", has: oldDomainHost, destination: "https://www.booktraverse.com/property-management", permanent: true },
+      { source: "/traverse-vail-modern-property-management", has: oldDomainHost, destination: "https://www.booktraverse.com/vail", permanent: true },
+      { source: "/about", has: oldDomainHost, destination: "https://www.booktraverse.com/property-management", permanent: true },
+      { source: "/about-old", has: oldDomainHost, destination: "https://www.booktraverse.com/property-management", permanent: true },
+      { source: "/owners-portal", has: oldDomainHost, destination: "https://www.booktraverse.com/property-management", permanent: true },
+      { source: "/summer-activities", has: oldDomainHost, destination: "https://www.booktraverse.com/crested-butte/things-to-do/summer-activities", permanent: true },
+      { source: "/press-room-2", has: oldDomainHost, destination: "https://www.booktraverse.com/contact", permanent: true },
+      { source: "/job-opportunities-2", has: oldDomainHost, destination: "https://www.booktraverse.com/contact", permanent: true },
+      { source: "/evergreen", has: oldDomainHost, destination: "https://www.booktraverse.com/properties", permanent: true },
+      { source: "/w9-and-payment-authorization-form", has: oldDomainHost, destination: "https://www.booktraverse.com/w9-and-payment-authorization-form", permanent: true },
+
+      // All 22 blog posts: old /traversehospitality/blog/<old-slug> → new /blog/<slug>.
+      { source: "/traversehospitality/blog/crested-butte-vacation-rental-income", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/crested-butte-vacation-rental-income", permanent: true },
+      { source: "/traversehospitality/blog/best-hiking-near-leadville-colorado", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/best-hiking-near-leadville-colorado", permanent: true },
+      { source: "/traversehospitality/blog/what-to-pack-colorado-mountain-trip", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/what-to-pack-colorado-mountain-trip", permanent: true },
+      { source: "/traversehospitality/blog/crested-butte-wildflower-season-guide-2026", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/crested-butte-wildflower-season-guide-2026", permanent: true },
+      { source: "/traversehospitality/blog/grand-lodge-crested-butte-condos-traverse-vs-vail-resorts-what-s-the-difference", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/grand-lodge-traverse-vs-vail-resorts", permanent: true },
+      { source: "/traversehospitality/blog/pet-friendly-crested-butte-condo-grand-lodge-studio-153-walk-to-the-lifts-pool-hot-tub", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/pet-friendly-crested-butte-grand-lodge-153", permanent: true },
+      { source: "/traversehospitality/blog/leadville-colorado-the-complete-visitor-s-guide-2026-2", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/leadville-complete-visitors-guide", permanent: true },
+      { source: "/traversehospitality/blog/budget-friendly-ski-vacation-affordable-leadville-rentals-near-top-resorts", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/budget-friendly-ski-vacation-leadville", permanent: true },
+      { source: "/traversehospitality/blog/10-cozy-vacation-rentals-in-leadville-for-the-ultimate-winter-getaway", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/cozy-winter-rentals-leadville", permanent: true },
+      { source: "/traversehospitality/blog/ultimate-guide-to-a-cozy-christmas-2024-getaway-in-leadville-top-vacation-rentals-for-families", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/christmas-getaway-leadville", permanent: true },
+      { source: "/traversehospitality/blog/thrilling-fall-adventures-vacation-rentals-near-leadvilles-best-hiking-and-biking-trails", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/fall-adventures-leadville-hiking-biking", permanent: true },
+      { source: "/traversehospitality/blog/top-5-cozy-vacation-rentals-in-leadville-for-winter-ski-enthusiasts", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/top-5-winter-ski-rentals-leadville", permanent: true },
+      { source: "/traversehospitality/blog/thanksgiving-in-leadville-family-friendly-vacation-rentals-for-a-mountain-holiday-getaway", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/thanksgiving-leadville-family-rentals", permanent: true },
+      { source: "/traversehospitality/blog/romantic-getaways-in-leadville-cozy-vacation-rentals-for-two", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/romantic-getaways-leadville", permanent: true },
+      { source: "/traversehospitality/blog/10-reasons-to-book-a-leadville-vacation-rental-for-labor-day-weekend", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/labor-day-leadville", permanent: true },
+      { source: "/traversehospitality/blog/from-solo-retreats-to-group-getaways-sizing-up-leadvilles-vacation-rental-options", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/solo-to-group-getaways-leadville", permanent: true },
+      { source: "/traversehospitality/blog/top-10-airbnb-properties-in-leadville-co", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/top-10-leadville-vacation-rentals", permanent: true },
+      { source: "/traversehospitality/blog/top-7-ski-resorts-that-are-less-than-an-hour-drive-from-leadville-colorado", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/ski-resorts-near-leadville", permanent: true },
+      { source: "/traversehospitality/blog/introducing-traverse-hospitality-a-new-chapter-in-our-journey", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/introducing-traverse-hospitality", permanent: true },
+      { source: "/traversehospitality/blog/dos-and-donts-of-vacation-rental-interior-design", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/vacation-rental-interior-design-tips", permanent: true },
+      { source: "/traversehospitality/blog/pros-and-cons-of-online-reviews", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/pros-and-cons-online-reviews", permanent: true },
+      { source: "/traversehospitality/blog/historic-houses-in-leadville", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/historic-houses-leadville", permanent: true },
+
+      // Any other blog URL on the old domain → the blog index.
+      { source: "/traversehospitality/blog/:path*", has: oldDomainHost, destination: "https://www.booktraverse.com/blog", permanent: true },
+      { source: "/traversehospitality/blog", has: oldDomainHost, destination: "https://www.booktraverse.com/blog", permanent: true },
+
+      // Catch-all (MUST be last): everything else on apex/www → homepage.
+      { source: "/:path*", has: oldDomainHost, destination: "https://www.booktraverse.com/", permanent: true },
 
       // ─── 301 redirects from legacy WordPress URLs (booktraverse.com) ────
       // Map old WP page paths to their Next.js equivalents so backlinks and
