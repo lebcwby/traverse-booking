@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { pageContent, schemaBlocks } from "./content";
 import { NoFeesHeader } from "@/components/no-fees/no-fees-header";
 import { NoFeesHeroSection } from "@/components/no-fees/no-fees-hero-section";
-import { FeaturedUnitsSection } from "@/components/no-fees/featured-units-section";
+import { BookableUnitsGrid } from "@/components/no-fees/bookable-units-grid";
 import { MobileCallBar } from "@/components/no-fees/mobile-call-bar";
 import { fetchUnitsForTag, aggregateUnitRating } from "@/lib/building-units";
 import "../../no-fees/no-fees.css";
@@ -95,17 +95,16 @@ export default async function Page() {
             : undefined
         }
       />
-      <FeaturedUnitsSection
-        tag={GRAND_LODGE_TAG}
+      <BookableUnitsGrid
         heading="Available units at The Grand Lodge"
-        subheading={`Book direct & save — no booking fees. Showing availability for this weekend (${label}).`}
+        subheading={`Pick your dates — see live prices and book direct, no booking fees. Starting with this weekend (${label}).`}
         availabilityHref={availabilityHref}
         ctaLabel={`See all units available ${label}`}
         units={units}
         limit={8}
-        checkIn={checkIn}
-        checkOut={checkOut}
-        guests={2}
+        initialCheckIn={checkIn}
+        initialCheckOut={checkOut}
+        initialGuests={2}
       />
       <div
         className="traverse-page"
