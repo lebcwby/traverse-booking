@@ -82,7 +82,7 @@ The site itself is fine — this is purely a Guesty-internal data issue.
 
 4. **Klaviyo abandoned-cart flow — LIVE and sending (verified 2026-05-31).** Flow "Abandoned Cart — Single Listing" (`Xpdwza`) is live; last 30d: 16 recipients, 14 delivered, 57% open, but 0 clicks/conversions. It reaches only ~26% of "Started Checkout" events (62→16) because the rest are anonymous (guest left before entering a usable email) or non-marketing-consented — inherent to abandoned-cart. Open improvements: (a) **add the 2nd-touch email** (template `SdNCVn`, already built + on-brand) as a delayed message in the flow — UI-only, Klaviyo API can't edit flow structure; (b) checkout page now offers expired-quote recovery via `lid/ci/co/g` params on the Started-Checkout URL (shipped 2026-05-31) so late email clicks re-quote instead of dead-ending; (c) capture email earlier to lift reach.
 
-5. **Stripe still in test mode** — Live bookings won't process until all 3 Stripe env vars are swapped. See `~/.claude/projects/-Users-Nadim/memory/project_traverse_stripe_live_mode.md` for the full procedure. Do this as a single atomic pass: `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (new live-mode secret).
+5. **Stripe is LIVE (corrected 2026-06-24).** Prod is processing real charges — confirmed `livemode: true` on real PaymentIntents (e.g. GY-CvXxRDxw, two $361.63 charges 2026-05-31). Prod `STRIPE_SECRET_KEY` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` are **live keys** (`.env.local` still holds `sk_test`/`pk_test` — local is test, prod is live; don't assume local == prod). The earlier "still in test mode" note was stale. `project_traverse_stripe_live_mode.md` is now history, not a TODO.
 
 6. **GA4 historical property preserved** — G-C5098JP52V (formerly assumed canonical) is kept untouched as a read-only archive of WordPress-era purchase data. Do **not** retry routing events to it — its gtag.js CDN returns 404 and we don't know why. New tracking flows to G-8NK72KVMJJ. See memory `project_traverse_ga4_duplicate_property.md` for the full history.
 
@@ -96,12 +96,12 @@ The site itself is fine — this is purely a Guesty-internal data issue.
 
 1. **Fix Supabase auth URLs** (5 min) — See "Known issues #1" above. This unblocks sign-in everywhere on booktraverse.com.
 2. **Activate Klaviyo abandoned-cart flow** — After Supabase fix, flip Draft → Live in Klaviyo flow builder.
-3. **Switch Stripe to live mode** — When ready to accept real payments. See memory `project_traverse_stripe_live_mode.md`.
+3. ~~Switch Stripe to live mode~~ — **DONE.** Prod is live and processing real charges (see Known issues #5).
 
 ### P2 polish
 
 - **Owner testimonials** — Real quotes pending from Nadim. Placeholder cards on `/property-management` `reviews` array. Memory: `project_traverse_owner_reviews_pending.md`.
-- **Booking confirmation emails** — `RESEND_API_KEY` needed (Resend is set up; domain verified). See memory `reference_resend_setup.md`.
+- **Booking confirmation emails** — `RESEND_API_KEY` **is set in Vercel prod** (confirmed via `vercel env ls`, added ~2026-05; corrects the old "needed" note). `sendAlert` ops emails deliver. If confirmation emails still don't arrive, check key *validity*, not presence. See memory `reference_resend_setup.md`.
 - **Re-seed `sp_plans` cache** — Run `npx tsx --env-file=.env.local scripts/seed-popular-ideas.ts`. Requires `ANTHROPIC_API_KEY` in `.env.local` (not yet added). Without this, "Instant" popular-trip cards fall through to live agent (~15s) instead of cached templates (~200ms).
 - **`src/lib/plan/slug-content.ts`** — Long-form prose body per slug is still Portland-era placeholder text. These are the static `/plan/[slug]` page bodies.
 - **`src/lib/plan/favorites.ts`** — 793 lines of Portland-curated POI favorites. POI IDs don't match Colorado seed data. Plan still works without favorite-anchoring.
@@ -265,8 +265,8 @@ https://www.booktraverse.com/api/cron/sync-listings`
 
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`
 - `DATABASE_URL` (postgres://, fixed from typo)
-- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (test mode `pk_test_...`)
-- `STRIPE_SECRET_KEY` (test mode `sk_test_...`)
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (**live** `pk_live_...` in prod; `.env.local` is `pk_test_...`)
+- `STRIPE_SECRET_KEY` (**live** `sk_live_...` in prod; `.env.local` is `sk_test_...`)
 - `STRIPE_WEBHOOK_SECRET` = `whsec_UJYKJk2eMXLtgBmV8nv5Ygu4q5cXOvIZ`
 - `GUESTY_BEAPI_CLIENT_ID`, `GUESTY_BEAPI_CLIENT_SECRET`, `GUESTY_BEAPI_BACKUP_CLIENT_ID`, `GUESTY_BEAPI_BACKUP_CLIENT_SECRET`
 - `KLAVIYO_PRIVATE_KEY`
@@ -279,7 +279,7 @@ https://www.booktraverse.com/api/cron/sync-listings`
 
 ### Still needed
 
-- `RESEND_API_KEY` — booking confirmation emails (domain verified; see memory `reference_resend_setup.md`)
+- ~~`RESEND_API_KEY`~~ — **already set in prod** (confirmed `vercel env ls`); moved out of "still needed". Powers `sendAlert` ops emails + booking confirmation emails.
 - `ANTHROPIC_API_KEY` — `/plan` popular-ideas cache seeding via `scripts/seed-popular-ideas.ts`
 - `SENTRY_AUTH_TOKEN` — source map upload
 - `GUESTY_CLIENT_ID`, `GUESTY_CLIENT_SECRET` — OpenAPI branch of token refresh cron (currently silently skipped)
@@ -424,7 +424,7 @@ fixed 2026-06-09):
 2. Check `~/.claude/projects/-Users-Nadim/memory/MEMORY.md` for any deferred items.
 3. **First task: fix Supabase auth URLs** (see "Immediate" open work above). This is the highest-impact blocker — sign-in is broken on the live site.
 4. **Second task: activate Klaviyo abandoned-cart flow** after Supabase fix.
-5. **Third task: Stripe live mode** when Nadim confirms readiness.
+5. ~~Third task: Stripe live mode~~ — **DONE** (prod is live; see Known issues #5).
 
 ### Key memories to review
 
