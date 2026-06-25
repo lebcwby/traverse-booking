@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import type Stripe from "stripe";
 import { buildStripeIdempotencyKey, getStripeServer } from "@/lib/stripe";
+import { sendAlert } from "@/lib/alerts";
 import { getQuote, getListingDetail } from "@/lib/guesty-beapi";
 import { getUpsellTotal, resolvePetFeePerPet } from "@/lib/upsells";
 import {
@@ -181,6 +183,57 @@ async function resolvePetFeePerPetForListing(
   }
 }
 
+/**
+ * Stripe-source-of-truth double-charge guard. Returns an existing SUCCEEDED,
+ * un-refunded PaymentIntent for the same stay (listing + check-in + check-out),
+ * or null. Used to block handing the client a fresh chargeable PI when the stay
+ * is already paid — the gap that double-charged GY-CvXxRDxw (2026-05-31): the
+ * pending_checkouts-based guard missed an orphan charge (charge succeeded but
+ * finalize failed, so no/erased pending row), and the retry minted a new
+ * quote → new PI → second charge. Stripe Search is eventually consistent
+ * (~seconds–1min); the retry that hurt us was minutes later, well past indexing.
+ */
+async function findSucceededPaymentIntentForStay(
+  stripe: ReturnType<typeof getStripeServer>,
+  stay: { listingId: string; checkIn: string; checkOut: string }
+): Promise<Stripe.PaymentIntent | null> {
+  const { listingId, checkIn, checkOut } = stay;
+  if (!listingId || !checkIn || !checkOut) return null;
+  // Stay fields are listing ids / formatted dates — no single quotes — so they
+  // embed safely in the Search query string.
+  const query =
+    `status:'succeeded'` +
+    ` AND metadata['listingId']:'${listingId}'` +
+    ` AND metadata['checkIn']:'${checkIn}'` +
+    ` AND metadata['checkOut']:'${checkOut}'`;
+  const result = await stripe.paymentIntents.search({
+    query,
+    limit: 10,
+    expand: ["data.latest_charge"],
+  });
+  for (const pi of result.data) {
+    // Only block on an ORPHAN charge — succeeded but with NO confirmation code,
+    // i.e. no reservation exists yet (charge orphaned, or mid-finalize). A PI
+    // that already has a confirmationCode is either (a) an active booking — in
+    // which case the dates are unavailable and the guest can't even quote them
+    // here — or (b) a CANCELLED booking, where the dates are freed and a new
+    // guest must be allowed to re-book (esp. non-refundable last-minute cancels,
+    // whose charge is succeeded + un-refunded). Skipping coded PIs avoids
+    // false-blocking those legitimate re-bookings.
+    if (pi.metadata?.confirmationCode) continue;
+    const charge = pi.latest_charge;
+    // A fully-refunded orphan frees the stay to be re-booked — skip it.
+    if (charge && typeof charge !== "string") {
+      const fullyRefunded =
+        charge.refunded ||
+        (charge.amount_refunded ?? 0) >= (charge.amount ?? 0);
+      if (fullyRefunded) continue;
+    }
+    return pi;
+  }
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     let body: { quoteId?: string; upsellIds?: string[]; pets?: number };
@@ -261,6 +314,46 @@ export async function POST(request: NextRequest) {
     const totalAmountCents = Math.round(totalAmount * 100);
 
     const stripe = getStripeServer();
+
+    // ─── Double-charge prevention (Stripe source of truth) ──────────
+    // findBlockingPendingCheckout (above) catches the already-paid case via our
+    // pending_checkouts table — but that table can be missing/cleaned for an
+    // orphan charge (charge succeeded, finalize failed). Ask Stripe directly: if
+    // this stay already has a succeeded, un-refunded PaymentIntent, do NOT hand
+    // the client a fresh chargeable PI. Reuses the existing `pendingRecovery`
+    // 409 shape, which the checkout UI already renders (no clientSecret → the
+    // guest can't confirm a second charge). Guard failures never block a booking.
+    try {
+      const alreadyPaid = await findSucceededPaymentIntentForStay(stripe, {
+        listingId,
+        checkIn,
+        checkOut,
+      });
+      if (alreadyPaid) {
+        await sendAlert(
+          "BLOCKED DOUBLE-CHARGE ATTEMPT",
+          `A new payment was requested for a stay that already has a paid, un-refunded charge — the second charge was blocked before creation.<br><br>Listing <code>${listingId}</code>, ${checkIn} → ${checkOut}.<br>Existing PaymentIntent: <code>${alreadyPaid.id}</code> ($${(
+            (alreadyPaid.amount ?? 0) / 100
+          ).toFixed(2)}, confirmation ${
+            alreadyPaid.metadata?.confirmationCode ||
+            "(none — orphan charge; may need recovery or refund)"
+          }).`,
+          `blocked-double-charge-${listingId}-${checkIn}-${checkOut}`
+        ).catch(() => {});
+        return NextResponse.json(
+          {
+            error:
+              "A payment for this stay has already been received. Please don't pay again — call us at (970) 759-2013 and our team will confirm your reservation.",
+            pendingRecovery: true,
+            pendingPaymentIntentId: alreadyPaid.id,
+          },
+          { status: 409 }
+        );
+      }
+    } catch (err) {
+      // The guard must never block a legitimate booking on its own failure.
+      console.error("[PaymentIntent] double-charge guard error:", err);
+    }
 
     const metadata = buildPaymentIntentMetadata({
       quoteId,
