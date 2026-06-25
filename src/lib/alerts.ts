@@ -735,7 +735,8 @@ export async function sendBookingConfirmation(details: {
 export async function sendAlert(
   subject: string,
   body: string,
-  alertKey?: string
+  alertKey?: string,
+  options?: { to?: string | string[] }
 ) {
   const key = alertKey || subject;
   const now = Date.now();
@@ -760,11 +761,28 @@ export async function sendAlert(
     return;
   }
 
+  // Recipients: the configured ALERT_TO_EMAIL plus any per-alert override
+  // (additive — `options.to` is added to, not a replacement for, ALERT_TO).
+  const overrideTo = options?.to
+    ? Array.isArray(options.to)
+      ? options.to
+      : [options.to]
+    : [];
+  const recipients = Array.from(
+    new Set(
+      [ALERT_TO, ...overrideTo].map((e) => (e || "").trim()).filter(Boolean)
+    )
+  );
+  if (recipients.length === 0) {
+    console.error(`ALERT (no recipients configured): ${subject} — ${body}`);
+    return;
+  }
+
   try {
     const resend = new Resend(apiKey);
     await resend.emails.send({
       from: ALERT_FROM,
-      to: ALERT_TO,
+      to: recipients,
       subject: `[BookTraverse Alert] ${subject}`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px;">

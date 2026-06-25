@@ -87,7 +87,9 @@ async function detectDoubleCharge(paymentIntent: Stripe.PaymentIntent) {
       2
     )}</b>.<br><br><ul>${rows}</ul>One charge per stay is expected. Review in Stripe and <b>refund the duplicate</b> — the charge with no confirmation code is usually the orphan to refund.`,
     // Cooldown per STAY (not per PI) so both PIs' webhooks don't double-send.
-    `double-charge-${listingId}-${checkIn}-${checkOut}`
+    `double-charge-${listingId}-${checkIn}-${checkOut}`,
+    // Double-charge alerts go to the ops inbox (added to ALERT_TO_EMAIL).
+    { to: "admin@traversehospitality.com" }
   ).catch(() => {});
 }
 
