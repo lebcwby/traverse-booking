@@ -338,7 +338,9 @@ export async function POST(request: NextRequest) {
             alreadyPaid.metadata?.confirmationCode ||
             "(none — orphan charge; may need recovery or refund)"
           }).`,
-          `blocked-double-charge-${listingId}-${checkIn}-${checkOut}`
+          `blocked-double-charge-${listingId}-${checkIn}-${checkOut}`,
+          // Double-charge alerts go to the ops inbox (added to ALERT_TO_EMAIL).
+          { to: "admin@traversehospitality.com" }
         ).catch(() => {});
         return NextResponse.json(
           {
