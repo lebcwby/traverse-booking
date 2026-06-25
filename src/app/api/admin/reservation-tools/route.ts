@@ -17,7 +17,9 @@
  */
 
 import { NextResponse } from "next/server";
+import type Stripe from "stripe";
 import { getPool } from "@/lib/db";
+import { getStripeServer } from "@/lib/stripe";
 import { getOpenAPIReservation, recordPayment } from "@/lib/guesty-openapi";
 import {
   authorizeAdminRequest,
@@ -112,6 +114,107 @@ export async function GET(request: Request) {
         : null,
       guestyError,
     });
+  }
+
+  // ─── STRIPE CHARGES (read-only) — double-charge investigation ────
+  // Lists every PaymentIntent + Charge for the reservation's Stripe customer
+  // so we can spot a SECOND charge that never produced a 2nd reservation row
+  // (the orphan-PI double-charge case). Read-only; creates/modifies nothing.
+  if (action === "stripe-charges") {
+    const stripe = getStripeServer();
+    const piId =
+      url.searchParams.get("pi") ||
+      (localRow?.stripe_payment_intent_id as string | undefined) ||
+      "";
+    if (!piId) {
+      return NextResponse.json(
+        { error: "No Stripe PI on the reservation (provide ?pi=pi_xxx)" },
+        { status: 400 }
+      );
+    }
+    try {
+      const basePi = await stripe.paymentIntents.retrieve(piId, {
+        expand: ["customer"],
+      });
+      const customerId =
+        typeof basePi.customer === "string"
+          ? basePi.customer
+          : (basePi.customer?.id ?? null);
+
+      const summarizePi = (pi: Stripe.PaymentIntent) => ({
+        id: pi.id,
+        livemode: pi.livemode,
+        status: pi.status,
+        amount: (pi.amount ?? 0) / 100,
+        amountReceived: (pi.amount_received ?? 0) / 100,
+        currency: pi.currency,
+        created_mt: new Date(pi.created * 1000).toLocaleString("en-US", {
+          timeZone: "America/Denver",
+        }),
+        quoteId: pi.metadata?.quoteId ?? null,
+        checkIn: pi.metadata?.checkIn ?? null,
+        checkOut: pi.metadata?.checkOut ?? null,
+        listingId: pi.metadata?.listingId ?? null,
+        confirmationCode: pi.metadata?.confirmationCode ?? null,
+      });
+
+      const recorded = summarizePi(basePi);
+      let customerPis: ReturnType<typeof summarizePi>[] = [];
+      let customerCharges: Record<string, unknown>[] = [];
+      if (customerId) {
+        const piList = await stripe.paymentIntents.list({
+          customer: customerId,
+          limit: 50,
+        });
+        customerPis = piList.data.map(summarizePi);
+        const chList = await stripe.charges.list({
+          customer: customerId,
+          limit: 50,
+        });
+        customerCharges = chList.data.map((c) => ({
+          id: c.id,
+          paymentIntent:
+            typeof c.payment_intent === "string"
+              ? c.payment_intent
+              : (c.payment_intent?.id ?? null),
+          amount: (c.amount ?? 0) / 100,
+          amountRefunded: (c.amount_refunded ?? 0) / 100,
+          status: c.status,
+          paid: c.paid,
+          refunded: c.refunded,
+          created_mt: new Date(c.created * 1000).toLocaleString("en-US", {
+            timeZone: "America/Denver",
+          }),
+          paymentMethod: c.payment_method_details?.type ?? null,
+          receiptUrl: c.receipt_url,
+        }));
+      }
+
+      // A real double-charge = >1 SUCCEEDED PI for the same stay (checkIn+out).
+      const succeededForStay = customerPis.filter(
+        (p) =>
+          p.status === "succeeded" &&
+          p.checkIn === recorded.checkIn &&
+          p.checkOut === recorded.checkOut
+      );
+
+      return NextResponse.json({
+        action,
+        livemode: basePi.livemode,
+        recordedPaymentIntent: piId,
+        customerId,
+        recorded,
+        possibleDoubleCharge: succeededForStay.length > 1,
+        succeededPaymentIntentsForStay: succeededForStay,
+        allCustomerPaymentIntents: customerPis,
+        allCustomerCharges: customerCharges,
+      });
+    } catch (err) {
+      return NextResponse.json(
+        { action, error: err instanceof Error ? err.message : String(err) },
+        { status: 500 }
+      );
+    }
   }
 
   // ─── FORCE RECORD PAYMENT ───────────────────────────────────────
@@ -209,7 +312,12 @@ export async function GET(request: Request) {
   return NextResponse.json(
     {
       error: `Unknown action: ${action}`,
-      validActions: ["diagnose", "force-record-payment", "update-guest"],
+      validActions: [
+        "diagnose",
+        "stripe-charges",
+        "force-record-payment",
+        "update-guest",
+      ],
     },
     { status: 400 }
   );
