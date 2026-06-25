@@ -26,9 +26,78 @@ function getPaymentErrorMessage(paymentIntent: Stripe.PaymentIntent) {
   );
 }
 
+/**
+ * Real-time double-charge guard. When a PaymentIntent succeeds, check whether
+ * the SAME Stripe customer already has another SUCCEEDED PaymentIntent for the
+ * SAME stay (listing + check-in + check-out). Two succeeded PIs for one stay
+ * means the guest was charged twice — e.g. attempt #1 charged but failed to
+ * finalize, the guest retried with a fresh quote, and attempt #2 charged again
+ * (this is exactly what happened to GY-CvXxRDxw on 2026-05-31).
+ *
+ * Why this is needed: reservation-level dedup (stay_key / payment_intent_id)
+ * prevents a duplicate RESERVATION, but NOT a duplicate CHARGE — each checkout
+ * attempt mints a new quote → new PaymentIntent → new chargeable idempotency
+ * key. Nothing else watches the charge layer. Best-effort + read-only: it never
+ * blocks or alters the booking, only emails an ops alert so the extra charge
+ * can be refunded.
+ */
+async function detectDoubleCharge(paymentIntent: Stripe.PaymentIntent) {
+  const customerId =
+    typeof paymentIntent.customer === "string"
+      ? paymentIntent.customer
+      : (paymentIntent.customer?.id ?? null);
+  const listingId = paymentIntent.metadata?.listingId;
+  const checkIn = paymentIntent.metadata?.checkIn;
+  const checkOut = paymentIntent.metadata?.checkOut;
+  // Without a customer + stay we can't correlate a duplicate reliably; skip.
+  if (!customerId || !listingId || !checkIn || !checkOut) return;
+
+  const stripe = getStripeServer();
+  const list = await stripe.paymentIntents.list({
+    customer: customerId,
+    limit: 50,
+  });
+  const sameStaySucceeded = list.data.filter(
+    (pi) =>
+      pi.status === "succeeded" &&
+      pi.metadata?.listingId === listingId &&
+      pi.metadata?.checkIn === checkIn &&
+      pi.metadata?.checkOut === checkOut
+  );
+  if (sameStaySucceeded.length < 2) return;
+
+  const rows = sameStaySucceeded
+    .map(
+      (pi) =>
+        `<li><code>${pi.id}</code> — $${((pi.amount ?? 0) / 100).toFixed(
+          2
+        )} — ${new Date(pi.created * 1000).toLocaleString("en-US", {
+          timeZone: "America/Denver",
+        })} MT — confirmation: ${
+          pi.metadata?.confirmationCode || "(none — likely the orphan charge)"
+        }</li>`
+    )
+    .join("");
+  const total =
+    sameStaySucceeded.reduce((s, pi) => s + (pi.amount ?? 0), 0) / 100;
+
+  await sendAlert(
+    "POSSIBLE DOUBLE CHARGE",
+    `Stripe customer <code>${customerId}</code> has <b>${sameStaySucceeded.length} succeeded payments</b> for the SAME stay (listing <code>${listingId}</code>, ${checkIn} → ${checkOut}), totaling <b>$${total.toFixed(
+      2
+    )}</b>.<br><br><ul>${rows}</ul>One charge per stay is expected. Review in Stripe and <b>refund the duplicate</b> — the charge with no confirmation code is usually the orphan to refund.`,
+    // Cooldown per STAY (not per PI) so both PIs' webhooks don't double-send.
+    `double-charge-${listingId}-${checkIn}-${checkOut}`
+  ).catch(() => {});
+}
+
 async function handlePaymentIntentSucceeded(
   paymentIntent: Stripe.PaymentIntent
 ) {
+  // Double-charge guard runs first, independent of pending/finalize state, so
+  // it fires even when the duplicate's pending row is missing. Never throws.
+  await detectDoubleCharge(paymentIntent).catch(() => {});
+
   const pending = await getPendingCheckout(paymentIntent.id);
   if (!pending) {
     await sendAlert(
