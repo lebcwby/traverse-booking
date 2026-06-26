@@ -105,7 +105,9 @@ async function handlePaymentIntentSucceeded(
     await sendAlert(
       "PAID BOOKING MISSING PENDING CHECKOUT",
       `Stripe webhook received <code>payment_intent.succeeded</code> for <code>${paymentIntent.id}</code>, but no pending checkout row was found.<br><br>Quote: ${paymentIntent.metadata.quoteId || "(missing)"}<br>Guest email: ${paymentIntent.metadata.guestEmail || "(missing)"}<br>Total charged: $${(paymentIntent.amount / 100).toFixed(2)}`,
-      `missing-pending-checkout-${paymentIntent.id}`
+      `missing-pending-checkout-${paymentIntent.id}`,
+      // Orphan-charge alert → ops inbox (a paid booking with no reservation).
+      { to: "admin@traversehospitality.com" }
     ).catch(() => {});
     return;
   }
@@ -128,7 +130,9 @@ async function handlePaymentIntentSucceeded(
     await sendAlert(
       "PAID BOOKING MISSING GUEST DETAILS",
       `Stripe webhook received <code>payment_intent.succeeded</code> for <code>${paymentIntent.id}</code>, but the pending checkout record is missing full guest details.<br><br>Quote: ${pending.quoteId}<br>Guest email: ${guest.email || "(missing)"}<br>Total charged: $${(paymentIntent.amount / 100).toFixed(2)}<br><br>The booking was not auto-refunded. The recovery path remains active.`,
-      `missing-pending-guest-${paymentIntent.id}`
+      `missing-pending-guest-${paymentIntent.id}`,
+      // Orphan-charge alert → ops inbox (a paid booking with no reservation).
+      { to: "admin@traversehospitality.com" }
     ).catch(() => {});
     return;
   }
