@@ -36,6 +36,117 @@ export async function GET(request: Request) {
   const reservationId = url.searchParams.get("id");
   const action = url.searchParams.get("action") || "diagnose";
 
+  // ─── ORPHAN AUDIT (read-only, no id) — find paid-but-no-reservation ──
+  // Scans succeeded LIVE PaymentIntents in a window and flags any with NO
+  // confirmationCode AND no matching reservations row (i.e. the guest paid but
+  // a reservation was never created — like GY-CvXxRDxw / Kyle Toth). Surfaces
+  // the most urgent first (soonest/past check-in, unrefunded).
+  if (action === "orphan-audit") {
+    const stripe = getStripeServer();
+    const sinceDays = Math.min(
+      365,
+      Math.max(1, parseInt(url.searchParams.get("sinceDays") || "90", 10) || 90)
+    );
+    const nowSec = Math.floor(Date.now() / 1000);
+    const createdGte = nowSec - sinceDays * 86400;
+    // Ignore very recent PIs — a just-succeeded payment may still be
+    // mid-finalize (confirmationCode/reservation row not written yet).
+    const tooRecent = nowSec - 600;
+
+    type Candidate = {
+      id: string;
+      amount: number;
+      created: number;
+      guestEmail: string | null;
+      listingId: string | null;
+      checkIn: string | null;
+      checkOut: string | null;
+      refunded: boolean;
+    };
+    const candidates: Candidate[] = [];
+    let scanned = 0;
+    for await (const pi of stripe.paymentIntents.list({
+      created: { gte: createdGte },
+      limit: 100,
+      expand: ["data.latest_charge"],
+    })) {
+      if (++scanned > 3000) break; // hard backstop
+      if (pi.status !== "succeeded") continue;
+      if (pi.created > tooRecent) continue;
+      if (pi.metadata?.confirmationCode) continue;
+      const charge = pi.latest_charge;
+      const refunded =
+        charge && typeof charge !== "string"
+          ? charge.refunded ||
+            (charge.amount_refunded ?? 0) >= (charge.amount ?? 0)
+          : false;
+      candidates.push({
+        id: pi.id,
+        amount: (pi.amount ?? 0) / 100,
+        created: pi.created,
+        guestEmail: pi.metadata?.guestEmail ?? null,
+        listingId: pi.metadata?.listingId ?? null,
+        checkIn: pi.metadata?.checkIn ?? null,
+        checkOut: pi.metadata?.checkOut ?? null,
+        refunded,
+      });
+    }
+
+    // Keep only those with NO reservation row (true orphans).
+    let orphans = candidates;
+    if (candidates.length > 0) {
+      try {
+        const pool = getPool();
+        const res = await pool.query(
+          `SELECT stripe_payment_intent_id FROM reservations
+            WHERE stripe_payment_intent_id = ANY($1)`,
+          [candidates.map((c) => c.id)]
+        );
+        const haveRes = new Set(
+          res.rows.map((r) => r.stripe_payment_intent_id as string)
+        );
+        orphans = candidates.filter((c) => !haveRes.has(c.id));
+      } catch (err) {
+        return NextResponse.json(
+          {
+            action,
+            error: `reservations cross-check failed: ${err instanceof Error ? err.message : String(err)}`,
+            candidateCount: candidates.length,
+          },
+          { status: 500 }
+        );
+      }
+    }
+
+    const todayMs = Date.now();
+    const enriched = orphans
+      .map((o) => ({
+        ...o,
+        created_mt: new Date(o.created * 1000).toLocaleString("en-US", {
+          timeZone: "America/Denver",
+        }),
+        daysUntilCheckIn: o.checkIn
+          ? Math.round(
+              (new Date(`${o.checkIn}T12:00:00`).getTime() - todayMs) /
+                86_400_000
+            )
+          : null,
+      }))
+      .sort((a, b) => {
+        if (a.refunded !== b.refunded) return a.refunded ? 1 : -1;
+        return (a.daysUntilCheckIn ?? 99999) - (b.daysUntilCheckIn ?? 99999);
+      });
+
+    return NextResponse.json({
+      action,
+      sinceDays,
+      scannedPaymentIntents: scanned,
+      orphanCount: enriched.length,
+      unrefundedOrphanCount: enriched.filter((o) => !o.refunded).length,
+      orphans: enriched,
+    });
+  }
+
   if (!reservationId) {
     return NextResponse.json(
       { error: "Missing required ?id=<guesty_id-or-confirmation_code>" },
@@ -315,6 +426,7 @@ export async function GET(request: Request) {
       validActions: [
         "diagnose",
         "stripe-charges",
+        "orphan-audit",
         "force-record-payment",
         "update-guest",
       ],
