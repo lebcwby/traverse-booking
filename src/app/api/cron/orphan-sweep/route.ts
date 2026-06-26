@@ -71,6 +71,7 @@ export async function GET(request: Request) {
   const nowSec = Math.floor(Date.now() / 1000);
   const createdGte = nowSec - SINCE_DAYS * 86400;
   const tooRecentSec = nowSec - Math.floor(MIN_AGE_MS / 1000);
+  const todayISO = new Date(nowSec * 1000).toISOString().slice(0, 10);
 
   // 1) Succeeded booking PIs (have stay metadata), old enough, not yet
   //    finalized (no confirmationCode), not refunded/disputed.
@@ -96,6 +97,11 @@ export async function GET(request: Request) {
     const checkIn = pi.metadata?.checkIn;
     const checkOut = pi.metadata?.checkOut;
     if (!listingId || !checkIn || !checkOut) continue; // not a booking charge
+    // Only act on UPCOMING stays. A stay that has already ended can't be
+    // recovered (can't re-quote past dates → INVALID_DATES) and may already be
+    // resolved another way (chargeback/manual) — so skip it rather than
+    // re-alerting forever (e.g. the McClintock chargeback, Jun 2-4).
+    if (checkOut < todayISO) continue;
     const charge =
       pi.latest_charge && typeof pi.latest_charge !== "string"
         ? pi.latest_charge
