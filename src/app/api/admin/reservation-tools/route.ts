@@ -147,6 +147,89 @@ export async function GET(request: Request) {
     });
   }
 
+  // ─── WALLET MIX (read-only, no id) — Apple/Google Pay share ─────
+  // Scans succeeded BOOKING PaymentIntents and tallies how guests paid
+  // (plain card vs apple_pay / google_pay / link). Informs the Guesty Pay
+  // go/no-go: GuestyPay tokenization is card-only, so this is what we'd lose.
+  if (action === "wallet-mix") {
+    const stripe = getStripeServer();
+    const sinceDays = Math.min(
+      365,
+      Math.max(1, parseInt(url.searchParams.get("sinceDays") || "120", 10) || 120)
+    );
+    const createdGte = Math.floor(Date.now() / 1000) - sinceDays * 86400;
+    const tally: Record<string, { count: number; amount: number }> = {};
+    let scanned = 0;
+    let bookings = 0;
+    for await (const pi of stripe.paymentIntents.list({
+      created: { gte: createdGte },
+      limit: 100,
+      expand: ["data.latest_charge"],
+    })) {
+      if (++scanned > 3000) break;
+      if (pi.status !== "succeeded") continue;
+      // Booking payments only (have stay metadata) — excludes deposits/add-ons.
+      if (
+        !pi.metadata?.listingId ||
+        !pi.metadata?.checkIn ||
+        !pi.metadata?.checkOut
+      )
+        continue;
+      bookings++;
+      let type = "card";
+      const ch = pi.latest_charge;
+      if (ch && typeof ch !== "string") {
+        const wallet = ch.payment_method_details?.card?.wallet?.type;
+        const pmType = ch.payment_method_details?.type;
+        if (wallet) type = wallet; // apple_pay | google_pay | samsung_pay | ...
+        else if (pmType && pmType !== "card") type = pmType; // link, etc.
+      }
+      const t = tally[type] || { count: 0, amount: 0 };
+      t.count++;
+      t.amount += (pi.amount ?? 0) / 100;
+      tally[type] = t;
+    }
+
+    const byType = Object.entries(tally)
+      .map(([type, v]) => ({
+        type,
+        count: v.count,
+        pctOfBookings: bookings
+          ? Math.round((v.count / bookings) * 1000) / 10
+          : 0,
+        amount: Math.round(v.amount * 100) / 100,
+      }))
+      .sort((a, b) => b.count - a.count);
+    const walletTypes = new Set([
+      "apple_pay",
+      "google_pay",
+      "samsung_pay",
+      "link",
+    ]);
+    const walletCount = byType
+      .filter((r) => walletTypes.has(r.type))
+      .reduce((s, r) => s + r.count, 0);
+    const applePay =
+      byType.find((r) => r.type === "apple_pay")?.count ?? 0;
+    const googlePay =
+      byType.find((r) => r.type === "google_pay")?.count ?? 0;
+
+    return NextResponse.json({
+      action,
+      sinceDays,
+      scannedPaymentIntents: scanned,
+      bookingPayments: bookings,
+      applePayGooglePayCount: applePay + googlePay,
+      applePayGooglePaySharePct: bookings
+        ? Math.round(((applePay + googlePay) / bookings) * 1000) / 10
+        : 0,
+      anyOneClickSharePct: bookings
+        ? Math.round((walletCount / bookings) * 1000) / 10
+        : 0,
+      byType,
+    });
+  }
+
   if (!reservationId) {
     return NextResponse.json(
       { error: "Missing required ?id=<guesty_id-or-confirmation_code>" },
@@ -427,6 +510,7 @@ export async function GET(request: Request) {
         "diagnose",
         "stripe-charges",
         "orphan-audit",
+        "wallet-mix",
         "force-record-payment",
         "update-guest",
       ],
