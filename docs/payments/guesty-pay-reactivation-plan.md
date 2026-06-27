@@ -29,8 +29,12 @@ Resolved the de-risk questions via the installed SDK + Guesty's official docs
    embeddable GuestyPay tokenization **removes one-tap Apple/Google Pay**. (Wallets may
    exist only via Guesty's fully-*hosted* booking engine, which would mean giving up the
    custom checkout — confirm with Guesty, but not available on the embeddable path.)
-   **Next: quantify the hit — pull the % of current bookings that pay via Apple/Google Pay
-   from Stripe before deciding.**
+   **MEASURED (last 120 days, `action=wallet-mix`):** of 56 booking payments — card **85.7%**,
+   **Apple Pay 12.5%** (7), Amazon Pay 1.8% (1), Google Pay 0%. ~1 in 8 bookings use a wallet.
+   Caveats: small sample; Apple Pay skews **mobile** (our key audience) so the mobile-specific
+   share is likely higher; most wallet users would still convert by card, so the true cost is
+   the marginal conversion lift, not the full 12.5%. Verdict: real but manageable — de-risk via
+   the canaried cutover (watch mobile conversion). Decision is risk-appetite, recommendation = go.
 2. **`paymentProviderId` source — RESOLVED.** `GET open-api.guesty.com/v1/payment-providers/
    provider-by-listing?listingId={id}` returns it (we have working OpenAPI). BEAPI also
    exposes `getpaymentproviderbylistingid`. Easy to wire.
