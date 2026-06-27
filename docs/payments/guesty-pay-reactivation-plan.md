@@ -14,6 +14,58 @@ and a phased plan to switch.
 
 ---
 
+## Phase 0 — findings (2026-06-27)
+
+Resolved the de-risk questions via the installed SDK + Guesty's official docs
+([GuestyPay tokenization flow](https://booking-api-docs.guesty.com/docs/tokenizing-payment-methods),
+[booking flow](https://booking-api-docs.guesty.com/docs/booking-flow),
+[provider-by-listing](https://open-api-docs.guesty.com/docs/retrieving-the-payment-provider-id)).
+
+1. **Apple Pay / Google Pay — NOT supported. [RESOLVED — this is the decision point]**
+   The `@guestyorg/tokenization-js` SDK (installed v1.1.1) is **card-only** — its entire
+   type surface is `cardNumber`/`expirationDate`/`csc`/billing-address, loaded from
+   `pay.guesty.com`. Guesty's docs confirm: "credit and debit cards only," processors
+   "GuestyPay and Merchant Warrior," zero wallet references. → Moving checkout to the
+   embeddable GuestyPay tokenization **removes one-tap Apple/Google Pay**. (Wallets may
+   exist only via Guesty's fully-*hosted* booking engine, which would mean giving up the
+   custom checkout — confirm with Guesty, but not available on the embeddable path.)
+   **Next: quantify the hit — pull the % of current bookings that pay via Apple/Google Pay
+   from Stripe before deciding.**
+2. **`paymentProviderId` source — RESOLVED.** `GET open-api.guesty.com/v1/payment-providers/
+   provider-by-listing?listingId={id}` returns it (we have working OpenAPI). BEAPI also
+   exposes `getpaymentproviderbylistingid`. Easy to wire.
+3. **SDK version — RESOLVED.** v1.1.1 supports the v2 namespace + v3 submit payload the
+   dormant component uses. SDK is fine as-is. BUT the component does **not** pass a `threeDS`
+   object (see #5) — needs updating.
+4. **Charge semantics + a NEW gotcha. [code+docs]** Flow: tokenize → `_id` (ccToken) →
+   `createReservationInstant()` (`/quotes/{id}/instant`, already wrapped). **Gotcha:** Guesty
+   docs say "the reservation will still be created even if the payment method is invalid" —
+   creation and charge are decoupled. So the new flow MUST **verify the charge succeeded
+   after creating the reservation** (check payment status/balance) and handle failures —
+   otherwise we'd create the *inverse* of an orphan (a reservation with no payment). The
+   repo's `createInstantChargeReservation()` + `verifyPayment()` (`/instant-charge` +
+   `/verify-payment`) is the verification-aware path to use.
+5. **3D Secure / SCA — supported, needs wiring. [docs]** The tokenization request takes a
+   `threeDS` object (amount, currency, success/failure URLs); the response may return an
+   `authURL` to redirect the guest for authentication (if absent, no auth needed). The
+   dormant component doesn't send `threeDS` or handle `authURL` yet — must be added for live
+   US cards.
+6. **Per-listing processor. [docs]** Guesty supports GuestyPay **vs** Stripe **per listing**.
+   So "switch to Guesty Pay" = set the listings' payment provider to GuestyPay in the Guesty
+   account, then tokenize against that provider. **[VERIFY w/ Guesty]** that the negotiated
+   provider is GuestyPay and have them set it on the Traverse listings.
+
+**Still needs Nadim / Guesty (commercial + account):** confirm the negotiated **fee** and that
+the provider is **GuestyPay**; **payout/dispute/reserve** terms; have Guesty set the provider on
+the listings; run one **sandbox booking** end-to-end (tokenize → instant → verify charge → 3DS).
+
+**Phase 0 verdict:** technically green — the integration is real, the provider lookup exists, the
+booking call already takes a ccToken, and 3DS/verification are documented (added work, not
+blockers). **The single go/no-go is the Apple Pay conversion trade-off.** Recommend pulling the
+wallet-payment share from Stripe to make that call with data.
+
+---
+
 ## 1. How payments work today (Stripe) — and why the team can't extend in Guesty
 
 The live checkout charges through **your own Stripe account (HALTAN LLC)**, then creates
