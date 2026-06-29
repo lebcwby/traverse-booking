@@ -1,0 +1,226 @@
+// Create + charge a reservation via Guesty Pay from a tokenized card.
+//
+// Phase 1 of the Guesty Pay re-activation (docs/payments/guesty-pay-reactivation-plan.md).
+// This is the piece that doesn't exist yet: a client→server route that takes the
+// Guesty `ccToken` (from the GuestyPayPayment tokenization component) and creates
+// the reservation through Guesty — which charges via Guesty Pay and vaults the card
+// on the reservation (so the team can extend/refund natively). The Stripe path
+// finalizes from a webhook instead; this finalizes inline.
+//
+// 🔒 FLAG-GATED: inert (404) unless GUESTY_PAY_ENABLED="true". Do NOT enable until
+// a Guesty sandbox booking has validated the charge + 3DS behaviour (see the
+// TODO(sandbox) notes below). The live Stripe checkout is untouched.
+
+import { NextRequest, NextResponse } from "next/server";
+import { createReservationInstant, getQuote } from "@/lib/guesty-beapi";
+import { getPool, withAdvisoryLock } from "@/lib/db";
+import { trackBookingServerSide } from "@/lib/server-tracking";
+import { sendAlert } from "@/lib/alerts";
+import { toE164US } from "@/lib/phone";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+const ENABLED = process.env.GUESTY_PAY_ENABLED === "true";
+
+interface Body {
+  quoteId?: string;
+  ratePlanId?: string;
+  ccToken?: string;
+  guest?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+  };
+  marketingOptIn?: boolean;
+  tracking?: {
+    listingId?: string;
+    listingTitle?: string;
+    listingNickname?: string;
+    checkIn?: string;
+    checkOut?: string;
+    guests?: number;
+    eventId?: string;
+  };
+}
+
+export async function POST(request: NextRequest) {
+  if (!ENABLED) {
+    return NextResponse.json(
+      { error: "Guesty Pay is not enabled" },
+      { status: 404 }
+    );
+  }
+
+  let body: Body;
+  try {
+    body = (await request.json()) as Body;
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  const { quoteId, ratePlanId, ccToken, guest, marketingOptIn } = body;
+  const tracking = body.tracking || {};
+  if (!quoteId || !ratePlanId || !ccToken || !guest?.email || !guest?.firstName) {
+    return NextResponse.json(
+      {
+        error:
+          "quoteId, ratePlanId, ccToken, and guest (firstName + email) are required",
+        code: "INVALID_REQUEST",
+      },
+      { status: 400 }
+    );
+  }
+
+  // Serialize per-quote so a double-submit can't create two reservations.
+  // Guesty quotes are single-use, so a racing second call also fails at Guesty.
+  return withAdvisoryLock(`guesty-instant:${quoteId}`, async () => {
+    const pool = getPool();
+
+    // Authoritative quote (listing/dates) — never trust the client.
+    let quote: Record<string, unknown>;
+    try {
+      quote = (await getQuote(quoteId)) as Record<string, unknown>;
+    } catch {
+      return NextResponse.json(
+        { error: "Quote not found or expired", code: "INVALID_DATES" },
+        { status: 400 }
+      );
+    }
+    const listingId =
+      (quote.unitTypeId as string) || tracking.listingId || null;
+
+    // Create + charge via Guesty Pay.
+    let reservation: Record<string, unknown>;
+    try {
+      reservation = (await createReservationInstant({
+        quoteId,
+        ratePlanId,
+        ccToken,
+        guest: {
+          firstName: guest.firstName as string,
+          lastName: guest.lastName || "",
+          email: guest.email as string,
+          phone: toE164US(guest.phone),
+        },
+        policy: {
+          privacy: {
+            version: 1,
+            dateOfAcceptance: new Date().toISOString(),
+            isAccepted: true,
+          },
+          termsAndConditions: {
+            dateOfAcceptance: new Date().toISOString(),
+            isAccepted: true,
+          },
+          ...(marketingOptIn ? { marketing: { isAccepted: true } } : {}),
+        },
+      })) as Record<string, unknown>;
+    } catch (err) {
+      await sendAlert(
+        "GUESTY PAY — RESERVATION CREATE FAILED",
+        `createReservationInstant failed for quote <code>${quoteId}</code> (${guest.email}).<br>${err instanceof Error ? err.message : String(err)}`,
+        `guesty-instant-fail-${quoteId}`,
+        { to: "admin@traversehospitality.com" }
+      ).catch(() => {});
+      return NextResponse.json(
+        { error: "We couldn't complete your booking. Please try again.", code: "RESERVATION_FAILED" },
+        { status: 502 }
+      );
+    }
+
+    const reservationId = String(
+      reservation._id || reservation.id || reservation.reservationId || ""
+    );
+    const confirmationCode =
+      (reservation.confirmationCode as string) ||
+      (reservation.confirmation_code as string) ||
+      null;
+
+    // TODO(sandbox): Guesty creates the reservation EVEN IF the charge fails
+    // ("the reservation will still be created even if the payment method is
+    // invalid"). Before treating this as paid, verify the charge succeeded —
+    // check reservation.money balanceDue == 0 / payment status, or use the
+    // /instant-charge + verifyPayment flow. Confirm the exact field in sandbox.
+    // TODO(sandbox): 3D Secure — if tokenization returns an authURL, the guest
+    // must authenticate first; wire that into GuestyPayPayment before enabling.
+    const money = (reservation.money as Record<string, unknown>) || {};
+    const amount =
+      Number(money.hostPayout) ||
+      Number((money.money as Record<string, unknown>)?.hostPayout) ||
+      0;
+
+    // Persist locally. No stripe_payment_intent_id — Guesty Pay charged natively,
+    // so payment is already recorded on Guesty (no recordPayment needed).
+    try {
+      await pool.query(
+        `INSERT INTO reservations (guesty_id, confirmation_code, listing_id, guest_id, status, source, check_in, check_out, guests_count, guest, money, last_synced_at, payment_recorded_at, listing_title, listing_photo)
+         VALUES ($1, $2, $3, $4, $5, 'BE-API', $6, $7, $8, $9, $10, $11, $11, $12, $13)
+         ON CONFLICT (guesty_id) DO UPDATE SET
+           status = EXCLUDED.status,
+           confirmation_code = EXCLUDED.confirmation_code,
+           guest = EXCLUDED.guest,
+           money = COALESCE(reservations.money, EXCLUDED.money),
+           payment_recorded_at = COALESCE(reservations.payment_recorded_at, EXCLUDED.payment_recorded_at),
+           last_synced_at = $11`,
+        [
+          reservationId,
+          confirmationCode,
+          listingId,
+          ((reservation.guestId || reservation.bookerId) as string) || null,
+          (reservation.status as string) || "confirmed",
+          (reservation.checkInDateLocalized as string) || tracking.checkIn || null,
+          (reservation.checkOutDateLocalized as string) || tracking.checkOut || null,
+          tracking.guests || null,
+          JSON.stringify({
+            email: guest.email,
+            firstName: guest.firstName,
+            lastName: guest.lastName || null,
+            fullName: [guest.firstName, guest.lastName].filter(Boolean).join(" "),
+            phone: guest.phone || null,
+          }),
+          JSON.stringify({ total_paid: amount, currency: "USD" }),
+          Date.now(),
+          tracking.listingTitle || null,
+          null,
+        ]
+      );
+    } catch (dbErr) {
+      // Reservation exists in Guesty; local write failed → alert, don't fail the booking.
+      await sendAlert(
+        "GUESTY PAY — RESERVATION DB WRITE FAILED",
+        `Guesty reservation <code>${reservationId}</code> (${confirmationCode || "?"}) was created + charged, but the local DB write failed. ${dbErr instanceof Error ? dbErr.message : String(dbErr)}`,
+        `guesty-instant-db-${reservationId}`,
+        { to: "admin@traversehospitality.com" }
+      ).catch(() => {});
+    }
+
+    // Purchase tracking (best-effort).
+    await trackBookingServerSide({
+      reservationId,
+      confirmationCode,
+      listingId: listingId || "",
+      listingTitle: tracking.listingTitle || "",
+      listingNickname: tracking.listingNickname,
+      checkIn:
+        (reservation.checkInDateLocalized as string) || tracking.checkIn || "",
+      checkOut:
+        (reservation.checkOutDateLocalized as string) ||
+        tracking.checkOut ||
+        "",
+      guests: tracking.guests || 0,
+      total: amount,
+      eventId: tracking.eventId || `purchase_${reservationId}`,
+      guest: {
+        email: guest.email as string,
+        phone: guest.phone || "",
+        firstName: guest.firstName as string,
+        lastName: guest.lastName || "",
+      },
+    }).catch((err) => console.error("[GuestyPay tracking] error:", err));
+
+    return NextResponse.json({ reservationId, confirmationCode });
+  });
+}
