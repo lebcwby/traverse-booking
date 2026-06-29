@@ -171,6 +171,10 @@ export async function getOpenAPIReservation(reservationId: string) {
   return openapiFetch(`/v1/reservations/${reservationId}`);
 }
 
+export async function getOpenAPIListing(listingId: string) {
+  return openapiFetch(`/v1/listings/${listingId}`);
+}
+
 /**
  * Fetch one page of all listings from Guesty OpenAPI.
  *
