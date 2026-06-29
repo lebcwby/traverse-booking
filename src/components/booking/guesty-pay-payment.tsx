@@ -34,6 +34,10 @@ interface GuestyPayPaymentProps {
 
 const CONTAINER_ID = "guesty-tokenization-container";
 
+// Load the SDK in sandbox mode for the test booking (NEXT_PUBLIC_GUESTY_PAY_SANDBOX).
+// Sandbox tokenizes against Guesty's test environment with test card numbers.
+const SANDBOX = process.env.NEXT_PUBLIC_GUESTY_PAY_SANDBOX === "true";
+
 export function GuestyPayPayment({
   listingId,
   paymentProviderId,
@@ -60,7 +64,7 @@ export function GuestyPayPayment({
 
     async function init() {
       try {
-        const sdk = await loadScript({ version: "v2" });
+        const sdk = await loadScript({ version: "v2", sandbox: SANDBOX });
         if (destroyed || !sdk) return;
         sdkRef.current = sdk;
 

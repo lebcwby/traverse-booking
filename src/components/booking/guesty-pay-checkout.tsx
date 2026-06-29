@@ -115,6 +115,13 @@ export function GuestyPayCheckout({ quote }: { quote: QuoteData }) {
         }),
       });
       const data = await res.json();
+      // 3D Secure: the card needs authentication — send the guest to Guesty's
+      // auth page; it redirects back to finalize. (TODO(sandbox): confirm the
+      // return flow.)
+      if (data.requiresAuth && data.authUrl) {
+        window.location.href = data.authUrl;
+        return;
+      }
       if (!res.ok || !data.reservationId) {
         setError(data.error || "We couldn't complete your booking. Please try again.");
         setSubmitting(false);
