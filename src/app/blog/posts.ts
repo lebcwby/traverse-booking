@@ -13,6 +13,17 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "leadville-100-race-weekend-where-to-stay",
+    oldSlug: "leadville-100-race-weekend-where-to-stay",
+    title: "Leadville 100 Race Weekend: Where to Stay and What to Expect",
+    excerpt: "The Leadville Trail 100 Run is one of the most legendary ultramarathons in the world — and race weekend in this tiny high-altitude town fills up fast. Here's how to plan lodging, crew logistics, and spectator stops for August 22, 2026.",
+    date: "2026-05-30",
+    author: "Traverse Hospitality",
+    category: "Leadville",
+    market: "leadville",
+    image: "/blog/leadville-100-race-weekend-where-to-stay.jpg",
+  },
+  {
     slug: "crested-butte-vacation-rental-income",
     oldSlug: "crested-butte-vacation-rental-income",
     title: "How Much Can You Earn Renting Your Crested Butte Condo?",
