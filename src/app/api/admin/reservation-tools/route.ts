@@ -20,7 +20,11 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getPool } from "@/lib/db";
 import { getStripeServer } from "@/lib/stripe";
-import { getOpenAPIReservation, recordPayment } from "@/lib/guesty-openapi";
+import {
+  getOpenAPIReservation,
+  getOpenAPIListing,
+  recordPayment,
+} from "@/lib/guesty-openapi";
 import {
   authorizeAdminRequest,
   unauthorizedAdminResponse,
@@ -228,6 +232,71 @@ export async function GET(request: Request) {
         : 0,
       byType,
     });
+  }
+
+  // ─── LISTING CHANNELS (read-only) — find OTA deep-link URLs ──────
+  // Dumps the OpenAPI listing's channel/integration data so we can see the
+  // exact field that holds the Airbnb/VRBO/Booking.com listing URLs (for the
+  // "verify on the OTA" deep-links feature).
+  if (action === "listing-channels") {
+    const listingId = url.searchParams.get("listingId");
+    if (!listingId) {
+      return NextResponse.json(
+        { error: "?listingId=<guesty_listing_id> required" },
+        { status: 400 }
+      );
+    }
+    try {
+      const listing = (await getOpenAPIListing(listingId)) as Record<
+        string,
+        unknown
+      >;
+      const hits: Record<string, unknown> = {};
+      const KEYS = [
+        "airbnb",
+        "vrbo",
+        "homeaway",
+        "booking",
+        "channel",
+        "integration",
+        "url",
+        "platform",
+        "listingid",
+        "externalid",
+        "published",
+        "expedia",
+      ];
+      const walk = (o: unknown, path: string, depth: number) => {
+        if (depth > 6 || o === null || typeof o !== "object") return;
+        if (Array.isArray(o)) {
+          o.slice(0, 10).forEach((v, i) => walk(v, `${path}[${i}]`, depth + 1));
+          return;
+        }
+        for (const [k, v] of Object.entries(o as Record<string, unknown>)) {
+          const kl = k.toLowerCase();
+          if (
+            KEYS.some((s) => kl.includes(s)) &&
+            (typeof v !== "object" || v === null)
+          ) {
+            hits[`${path}.${k}`] = v;
+          }
+          walk(v, `${path}.${k}`, depth + 1);
+        }
+      };
+      walk(listing, "listing", 0);
+      return NextResponse.json({
+        action,
+        listingId,
+        integrations: listing.integrations ?? null,
+        channelFieldHits: hits,
+        topLevelKeys: Object.keys(listing),
+      });
+    } catch (err) {
+      return NextResponse.json(
+        { action, error: err instanceof Error ? err.message : String(err) },
+        { status: 502 }
+      );
+    }
   }
 
   if (!reservationId) {
@@ -511,6 +580,7 @@ export async function GET(request: Request) {
         "stripe-charges",
         "orphan-audit",
         "wallet-mix",
+        "listing-channels",
         "force-record-payment",
         "update-guest",
       ],
