@@ -22,7 +22,9 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const ENABLED = process.env.GUESTY_PAY_ENABLED === "true";
+// Single flag for both the client checkout branch (/book) and this route, so
+// they can never be half-enabled. NEXT_PUBLIC_ is readable server-side too.
+const ENABLED = process.env.NEXT_PUBLIC_GUESTY_PAY_ENABLED === "true";
 
 interface Body {
   quoteId?: string;

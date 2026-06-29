@@ -8,6 +8,11 @@ import {
   CheckoutForm,
   type QuoteData,
 } from "@/components/booking/checkout-form";
+import { GuestyPayCheckout } from "@/components/booking/guesty-pay-checkout";
+
+// Flag: route checkout through the Guesty Pay rail instead of Stripe. Off by
+// default — when unset, the live Stripe CheckoutForm renders unchanged.
+const GUESTY_PAY = process.env.NEXT_PUBLIC_GUESTY_PAY_ENABLED === "true";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trackStartedCheckout, trackCheckoutError } from "@/lib/tracking";
 
@@ -265,7 +270,11 @@ export default function CheckoutPage() {
             Confirm and pay
           </h1>
         </div>
-        <CheckoutForm quote={quote} />
+        {GUESTY_PAY ? (
+          <GuestyPayCheckout quote={quote} />
+        ) : (
+          <CheckoutForm quote={quote} />
+        )}
       </div>
     </>
   );
