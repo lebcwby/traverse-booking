@@ -472,8 +472,13 @@ export async function addCouponToQuote(quoteId: string, coupon: string) {
 
 // ─── 5. PAYMENT PROVIDER ──────────────────────────────────────────
 
+// `_id` on the response = the `paymentProviderId` the GuestyPay tokenization
+// SDK render needs; `processor` reveals GuestyPay vs Stripe. Cached 1h — a
+// listing's provider rarely changes, and this is hit on every checkout load.
 export async function getListingPaymentProvider(listingId: string) {
-  return beapiFetch(`/api/listings/${listingId}/payment-provider`);
+  return beapiFetch(`/api/listings/${listingId}/payment-provider`, {
+    next: { revalidate: 3600 },
+  });
 }
 
 // ─── 6. PAYOUT SCHEDULE ───────────────────────────────────────────
