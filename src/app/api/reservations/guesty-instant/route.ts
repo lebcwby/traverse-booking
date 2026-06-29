@@ -141,18 +141,76 @@ export async function POST(request: NextRequest) {
       (reservation.confirmation_code as string) ||
       null;
 
-    // TODO(sandbox): Guesty creates the reservation EVEN IF the charge fails
-    // ("the reservation will still be created even if the payment method is
-    // invalid"). Before treating this as paid, verify the charge succeeded —
-    // check reservation.money balanceDue == 0 / payment status, or use the
-    // /instant-charge + verifyPayment flow. Confirm the exact field in sandbox.
-    // TODO(sandbox): 3D Secure — if tokenization returns an authURL, the guest
-    // must authenticate first; wire that into GuestyPayPayment before enabling.
+    // ── 3D Secure (SCA) ─────────────────────────────────────────────
+    // Some cards require authentication. The installed tokenization SDK returns
+    // only a token (no client-side authURL), so 3DS surfaces here. If the create
+    // response carries an authentication/redirect URL, bounce the guest to it
+    // before treating the booking as done — the client redirects to `authUrl`.
+    // TODO(sandbox): confirm the exact field name + the post-auth return flow
+    //   (Guesty redirects back to a success URL → verifyPayment to finalize).
+    const authUrl =
+      (reservation.authURL as string) ||
+      (reservation.authUrl as string) ||
+      (reservation.redirectUrl as string) ||
+      ((reservation.payment as Record<string, unknown>)?.authURL as string) ||
+      "";
+    if (authUrl) {
+      return NextResponse.json({
+        requiresAuth: true,
+        authUrl,
+        reservationId,
+        confirmationCode,
+      });
+    }
+
+    // ── Charge verification ─────────────────────────────────────────
+    // Guesty creates the reservation EVEN IF the charge fails, so confirm the
+    // payment before treating it as a booking. Defensive on field names (mark
+    // sandbox-confirmed): block on a CLEAR failed/unpaid signal; if we can't
+    // positively confirm "paid", proceed but alert ops to eyeball it (so we
+    // never reject a genuinely-paid booking on an unexpected response shape).
     const money = (reservation.money as Record<string, unknown>) || {};
+    const nestedMoney = (money.money as Record<string, unknown>) || {};
+    const balanceDue = Number(money.balanceDue ?? nestedMoney.balanceDue ?? NaN);
+    const paymentStatus = String(
+      money.paymentStatus || reservation.paymentStatus || ""
+    ).toUpperCase();
+    const clearlyUnpaid =
+      paymentStatus === "FAILED" ||
+      paymentStatus === "UNPAID" ||
+      paymentStatus === "DECLINED" ||
+      (Number.isFinite(balanceDue) && balanceDue > 0.01);
+    if (clearlyUnpaid) {
+      await sendAlert(
+        "GUESTY PAY — CHARGE FAILED",
+        `Reservation <code>${reservationId}</code> (${confirmationCode || "?"}) was created but the charge did NOT go through (status=${paymentStatus || "?"}, balanceDue=${balanceDue}). The dates may be held in Guesty without payment — review/cancel.`,
+        `guesty-charge-failed-${reservationId}`,
+        { to: "admin@traversehospitality.com" }
+      ).catch(() => {});
+      return NextResponse.json(
+        {
+          error:
+            "Your payment couldn't be processed. Please try a different card.",
+          code: "PAYMENT_FAILED",
+        },
+        { status: 402 }
+      );
+    }
+    const positivelyPaid =
+      paymentStatus === "PAID" ||
+      paymentStatus === "SUCCEEDED" ||
+      (Number.isFinite(balanceDue) && balanceDue <= 0.01);
+    if (!positivelyPaid) {
+      await sendAlert(
+        "GUESTY PAY — CHARGE STATUS UNCONFIRMED (review)",
+        `Reservation <code>${reservationId}</code> (${confirmationCode || "?"}) was created and treated as booked, but we couldn't positively confirm the charge from the response (status=${paymentStatus || "?"}, balanceDue=${balanceDue}). Verify it was paid in Guesty. If this fires for normal bookings, fix the field check in the route.`,
+        `guesty-charge-unconfirmed-${reservationId}`,
+        { to: "admin@traversehospitality.com" }
+      ).catch(() => {});
+    }
+
     const amount =
-      Number(money.hostPayout) ||
-      Number((money.money as Record<string, unknown>)?.hostPayout) ||
-      0;
+      Number(money.hostPayout) || Number(nestedMoney.hostPayout) || 0;
 
     // Persist locally. No stripe_payment_intent_id — Guesty Pay charged natively,
     // so payment is already recorded on Guesty (no recordPayment needed).
