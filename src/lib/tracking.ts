@@ -1533,6 +1533,16 @@ export function trackCheckAvailability(data: {
   });
 }
 
+/** Guest clicked through to verify the price on an OTA (Airbnb/Vrbo/Booking).
+ *  A strong confidence signal — mark `compare_on_ota` a Key Event in GA4. */
+export function trackCompareOnOta(ota: string, listingId: string) {
+  if (!hasAnalyticsConsent() || !window.gtag) return;
+  window.gtag("event", "compare_on_ota", {
+    ota,
+    listing_id: listingId,
+  });
+}
+
 export function trackClickBookNow(data: {
   listingId: string;
   listingTitle: string;
