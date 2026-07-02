@@ -16,7 +16,16 @@ import { CheckCircle2, Umbrella, Tag } from "lucide-react";
  *  - full_picture:     "Total price shown · No hidden fees"  (default/control)
  *  - no_sticker_shock: "This price is the real price." + subtitle
  */
-export function PricingBadge({ className = "" }: { className?: string }) {
+export function PricingBadge({
+  className = "",
+  priced = true,
+}: {
+  className?: string;
+  // `priced` is true once a real dated quote is shown. When false (the
+  // "starting from" base price), soften copy that would otherwise claim the
+  // displayed number is the final total.
+  priced?: boolean;
+}) {
   const variant = getVariant(PRICING_BADGE_TEST);
   const tracked = useRef(false);
 
@@ -31,7 +40,7 @@ export function PricingBadge({ className = "" }: { className?: string }) {
     case "rain_check":
       return <RainCheckBadge className={className} />;
     case "no_sticker_shock":
-      return <NoStickerShockBadge className={className} />;
+      return <NoStickerShockBadge className={className} priced={priced} />;
     case "full_picture":
     default:
       return <FullPictureBadge className={className} />;
@@ -104,7 +113,13 @@ function FullPictureBadge({ className }: { className: string }) {
 }
 
 /** Option 5: "No Sticker Shock" — peach bg, price tag, two-line */
-function NoStickerShockBadge({ className }: { className: string }) {
+function NoStickerShockBadge({
+  className,
+  priced,
+}: {
+  className: string;
+  priced: boolean;
+}) {
   return (
     <div
       className={`flex items-center gap-2.5 rounded-t-lg bg-[#f4d7c3] px-4 py-3 ${className}`}
@@ -125,10 +140,12 @@ function NoStickerShockBadge({ className }: { className: string }) {
       </div>
       <div>
         <p className="text-[13px] font-semibold text-[#1c1d1d] leading-tight">
-          This price is the real price.
+          {priced ? "This price is the real price." : "No hidden fees."}
         </p>
         <p className="text-[12px] text-[#404f52] leading-tight">
-          All fees included — no surprises at checkout.
+          {priced
+            ? "All fees included — no surprises at checkout."
+            : "See your all-in total when you pick dates."}
         </p>
       </div>
     </div>

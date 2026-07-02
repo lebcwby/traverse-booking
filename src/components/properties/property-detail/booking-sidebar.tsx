@@ -820,7 +820,7 @@ export function BookingSidebar({
 
   return (
     <Card className="sticky top-24 pt-0 gap-0">
-      <PricingBadge />
+      <PricingBadge priced={!!pricing} />
       <CardHeader className="pb-2 pt-3">
         <CardTitle className="flex items-baseline gap-2">
           {pricing ? (
@@ -839,6 +839,9 @@ export function BookingSidebar({
             </span>
           ) : (
             <>
+              <span className="text-base font-normal text-muted-foreground">
+                starting from
+              </span>
               <span className="text-3xl font-bold">
                 {formatCurrency(basePrice)}
               </span>
