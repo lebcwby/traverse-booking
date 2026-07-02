@@ -108,20 +108,28 @@ export interface QuoteData {
   petFeePerPet?: number | null;
 }
 
+// Traverse Direct uses ONE unified cancellation policy on all direct bookings:
+// full refund up to 14 days before check-in (matches the property sidebar and
+// /cancellation page). BEAPI's per-listing policy enums (flexible/moderate/firm/
+// strict) reflect OTA-channel terms and do NOT apply here — using them produced a
+// refund deadline that contradicted the stated 14-day policy.
+const TRAVERSE_DIRECT_CANCEL_DAYS = 14;
+
 function getCheckoutCancellationText(
   _policy: string | undefined,
   checkIn: string
 ): string {
-  // Traverse Direct uses ONE unified cancellation policy on all direct bookings:
-  // full refund up to 14 days before check-in (matches the property sidebar and
-  // /cancellation page). BEAPI's per-listing policy enums (flexible/moderate/
-  // firm/strict) reflect OTA-channel terms and do NOT apply here — using them
-  // produced a refund deadline that contradicted the stated 14-day policy.
-  const TRAVERSE_DIRECT_CANCEL_DAYS = 14;
   const checkInDate = new Date(checkIn + "T12:00:00");
   const deadline = addDays(checkInDate, -TRAVERSE_DIRECT_CANCEL_DAYS);
-  if (deadline <= new Date()) return "";
+  if (deadline <= new Date())
+    return "This booking is non-refundable — you're within 14 days of check-in. ";
   return `Cancel before check-in on ${format(deadline, "MMM d")} for a full refund. `;
+}
+
+/** True when the booking is still inside the free-cancellation window. */
+function isCheckoutRefundable(checkIn: string): boolean {
+  const checkInDate = new Date(checkIn + "T12:00:00");
+  return addDays(checkInDate, -TRAVERSE_DIRECT_CANCEL_DAYS) > new Date();
 }
 
 export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
@@ -1690,21 +1698,26 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
                 quote.pricing.cancellationPolicy,
                 quote.checkIn
               );
+              const refundable = isCheckoutRefundable(quote.checkIn);
               return text ? (
                 <div className="flex items-center gap-2 mb-2">
-                  <svg
-                    className="h-4 w-4 text-green-600 flex-shrink-0"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                  {refundable && (
+                    <svg
+                      className="h-4 w-4 text-green-600 flex-shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+                      <path d="m9 12 2 2 4-4" />
+                    </svg>
+                  )}
+                  <span
+                    className={`text-sm font-medium ${refundable ? "text-green-600" : "text-amber-700"}`}
                   >
-                    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-                    <path d="m9 12 2 2 4-4" />
-                  </svg>
-                  <span className="text-sm text-green-600 font-medium">
                     {text.trim()}
                   </span>
                 </div>
@@ -2153,20 +2166,25 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
               quote.pricing.cancellationPolicy,
               quote.checkIn
             );
+            const refundable = isCheckoutRefundable(quote.checkIn);
             return text ? (
-              <p className="flex items-center justify-center gap-1.5 text-[13px] text-green-600 mb-2.5">
-                <svg
-                  className="h-3.5 w-3.5 flex-shrink-0"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-                  <path d="m9 12 2 2 4-4" />
-                </svg>
+              <p
+                className={`flex items-center justify-center gap-1.5 text-[13px] mb-2.5 ${refundable ? "text-green-600" : "text-amber-700"}`}
+              >
+                {refundable && (
+                  <svg
+                    className="h-3.5 w-3.5 flex-shrink-0"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                )}
                 {text.trim()}
               </p>
             ) : null;

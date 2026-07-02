@@ -6,6 +6,7 @@ import Link from "next/link";
 import { NoFeesHeader } from "@/components/no-fees/no-fees-header";
 import { NoFeesSearchBar } from "@/components/no-fees/no-fees-search-bar";
 import { UnitLink } from "@/components/properties/unit-link";
+import { getListingPricingCache } from "@/lib/supabase";
 import { NoFeesEmailSignup } from "@/components/no-fees/no-fees-email-signup";
 import { GoogleReviewsCarousel } from "@/components/google-reviews-carousel";
 import "./no-fees/no-fees.css";
@@ -281,7 +282,10 @@ const FEATURED = [
    HOME PAGE
    ═══════════════════════════════════════════════════════════════════════════ */
 
-export default function HomePage() {
+export default async function HomePage() {
+  // Live "from" nightly prices for the featured units (falls back to the
+  // hardcoded price until the pricing cache has an entry).
+  const pricing = await getListingPricingCache();
   return (
     <div data-no-fees-layout="hide-chrome" className={`${jakarta.variable} ${inter.variable}`}>
       {/* JSON-LD */}
@@ -411,7 +415,13 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="stay-grid">
-          {FEATURED.map((s) => (
+          {FEATURED.map((s) => {
+            const listingId = s.href.split("/").pop();
+            const liveNightly = listingId
+              ? pricing.get(listingId)?.nightlyFrom
+              : undefined;
+            const priceLabel = liveNightly ? `$${liveNightly}` : s.price;
+            return (
             <UnitLink key={s.href} href={s.href} className="stay-card">
               <div className="stay-media">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -431,12 +441,13 @@ export default function HomePage() {
                   </span>
                 </div>
                 <div className="stay-price">
-                  From <strong>{s.price}</strong>
+                  From <strong>{priceLabel}</strong>
                   <span>/night</span>
                 </div>
               </div>
             </UnitLink>
-          ))}
+            );
+          })}
         </div>
       </section>
 
