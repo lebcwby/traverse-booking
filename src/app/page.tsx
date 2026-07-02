@@ -5,6 +5,7 @@ import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import Link from "next/link";
 import { NoFeesHeader } from "@/components/no-fees/no-fees-header";
 import { NoFeesSearchBar } from "@/components/no-fees/no-fees-search-bar";
+import { UnitLink } from "@/components/properties/unit-link";
 import { NoFeesEmailSignup } from "@/components/no-fees/no-fees-email-signup";
 import { GoogleReviewsCarousel } from "@/components/google-reviews-carousel";
 import "./no-fees/no-fees.css";
@@ -411,7 +412,7 @@ export default function HomePage() {
         </div>
         <div className="stay-grid">
           {FEATURED.map((s) => (
-            <Link key={s.href} href={s.href} className="stay-card">
+            <UnitLink key={s.href} href={s.href} className="stay-card">
               <div className="stay-media">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={s.img} alt={s.alt} loading="lazy" />
@@ -434,7 +435,7 @@ export default function HomePage() {
                   <span>/night</span>
                 </div>
               </div>
-            </Link>
+            </UnitLink>
           ))}
         </div>
       </section>

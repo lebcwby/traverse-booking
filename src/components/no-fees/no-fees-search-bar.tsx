@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { addDays, format } from "date-fns";
 import type { DateRange } from "react-day-picker";
+import { saveSearchSelection } from "@/lib/search-selection";
 import {
   Popover,
   PopoverContent,
@@ -120,6 +121,20 @@ export function NoFeesSearchBar({
             ? `, ${counts.infants} infant${counts.infants === 1 ? "" : "s"}`
             : ""
         }${counts.pets > 0 ? `, ${counts.pets} pet${counts.pets === 1 ? "" : "s"}` : ""}`;
+
+  // Persist the current selection so clicking ANY unit (incl. homepage featured
+  // units that link without params) keeps the entered dates/guests — even if the
+  // guest never presses Search. Only save once real dates are picked, so landing
+  // on an empty search bar doesn't wipe a selection from earlier in the session.
+  useEffect(() => {
+    if (range?.from && range?.to) {
+      saveSearchSelection({
+        checkIn: format(range.from, "yyyy-MM-dd"),
+        checkOut: format(range.to, "yyyy-MM-dd"),
+        guests: totalGuests,
+      });
+    }
+  }, [range?.from, range?.to, totalGuests]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

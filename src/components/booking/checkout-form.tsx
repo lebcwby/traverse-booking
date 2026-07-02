@@ -109,20 +109,17 @@ export interface QuoteData {
 }
 
 function getCheckoutCancellationText(
-  policy: string | undefined,
+  _policy: string | undefined,
   checkIn: string
 ): string {
-  const daysMap: Record<string, number> = {
-    flexible: 1,
-    semi_flexible: 2,
-    moderate: 5,
-    firm: 30,
-    strict: 60,
-  };
-  const days = daysMap[policy || "semi_flexible"];
-  if (days === undefined) return "";
+  // Traverse Direct uses ONE unified cancellation policy on all direct bookings:
+  // full refund up to 14 days before check-in (matches the property sidebar and
+  // /cancellation page). BEAPI's per-listing policy enums (flexible/moderate/
+  // firm/strict) reflect OTA-channel terms and do NOT apply here — using them
+  // produced a refund deadline that contradicted the stated 14-day policy.
+  const TRAVERSE_DIRECT_CANCEL_DAYS = 14;
   const checkInDate = new Date(checkIn + "T12:00:00");
-  const deadline = addDays(checkInDate, -days);
+  const deadline = addDays(checkInDate, -TRAVERSE_DIRECT_CANCEL_DAYS);
   if (deadline <= new Date()) return "";
   return `Cancel before check-in on ${format(deadline, "MMM d")} for a full refund. `;
 }

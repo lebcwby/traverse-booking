@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { type Listing } from "@/lib/supabase";
 import { getPhotoUrl, getListingSlug } from "@/lib/utils";
+import { readSearchSelection, buildSearchQuery } from "@/lib/search-selection";
 import { WishlistButton } from "@/components/wishlist-button";
 import { SavingsPrice } from "@/components/properties/savings-price";
 import { trackSelectListing } from "@/lib/tracking";
@@ -76,7 +77,17 @@ export function PropertyCard({
     listing.title || listing.nickname,
     listing.guesty_id
   );
-  const detailHref = `/properties/${slug}${qs ? `?${qs}` : ""}`;
+  // Fall back to the persisted hero selection when this card has no dates of its
+  // own (URL or cached) — upgraded post-mount to avoid a hydration mismatch.
+  const hasDates = !!(linkCheckIn && linkCheckOut);
+  const [storedQs, setStoredQs] = useState("");
+  useEffect(() => {
+    if (hasDates) return;
+    const s = buildSearchQuery(readSearchSelection());
+    if (s) setStoredQs(s);
+  }, [hasDates]);
+  const effectiveQs = hasDates ? qs : storedQs || qs;
+  const detailHref = `/properties/${slug}${effectiveQs ? `?${effectiveQs}` : ""}`;
 
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return;
