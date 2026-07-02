@@ -278,6 +278,11 @@ export interface PricingCacheEntry {
   nightCount: number;
   estimatedTotal: number;
   basePrice: number;
+  // Real quoted accommodation-only nightly rate for the sampled window — used as
+  // the property page's "starting from" price (Guesty's static prices.basePrice
+  // is a placeholder for ~40% of listings). Optional: absent until the pricing
+  // cache is refreshed after this field shipped.
+  nightlyFrom?: number;
 }
 
 export async function getListingPricingCache(): Promise<

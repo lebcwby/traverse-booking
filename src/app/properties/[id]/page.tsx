@@ -21,6 +21,7 @@ import Link from "next/link";
 import {
   getListing,
   getListingByTitleSlug,
+  getListingPricingCache,
   getSimilarListings,
 } from "@/lib/supabase";
 import { getListingDetail } from "@/lib/guesty-beapi";
@@ -535,6 +536,15 @@ export default async function PropertyDetailPage({
     );
   }
 
+  // "Starting from" nightly price — prefer the real quoted rate cached by the
+  // pricing-cache cron over Guesty's static prices.basePrice (a $95 placeholder
+  // on ~40% of listings). Falls back to basePrice until the cache warms.
+  const cachedPricing = await getListingPricingCache()
+    .then((m) => m.get(listing!.guesty_id))
+    .catch(() => undefined);
+  const startingPrice =
+    cachedPricing?.nightlyFrom ?? listing.prices?.basePrice ?? 0;
+
   // Photos from BEAPI or Supabase fallback
   let photos: { original: string; thumbnail: string; caption?: string }[] = [];
   if (beapiListing?.pictures?.length) {
@@ -974,7 +984,7 @@ export default async function PropertyDetailPage({
       <StickyNav
         displayRating={displayRating}
         reviewTotal={reviewTotal}
-        basePrice={listing.prices?.basePrice || 0}
+        basePrice={startingPrice}
       />
       <h1 className="sr-only">{listing.title || listing.nickname}</h1>
       <div className="mx-auto max-w-7xl px-4 pt-0 pb-24 sm:px-6 sm:py-5 lg:px-8 lg:pb-8">
@@ -1161,7 +1171,7 @@ export default async function PropertyDetailPage({
             <BookingSidebar
               listingId={listing.guesty_id}
               listingTitle={listing.title || listing.nickname || ""}
-              basePrice={listing.prices?.basePrice || 0}
+              basePrice={startingPrice}
               pointofsale={sp.pointofsale}
               picture={listing.picture}
               isRareFind={isRareFind}
@@ -1765,7 +1775,7 @@ export default async function PropertyDetailPage({
         listingId={listing.guesty_id}
         listingTitle={listing.title || listing.nickname || ""}
         listingNickname={listing.nickname ?? null}
-        basePrice={listing.prices?.basePrice || 0}
+        basePrice={startingPrice}
         pointofsale={sp.pointofsale}
         picture={listing.picture}
         bedrooms={listing.bedrooms ?? null}

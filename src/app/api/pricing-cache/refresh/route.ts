@@ -17,6 +17,7 @@ interface PricingCacheEntry {
   nightCount: number;
   estimatedTotal: number;
   basePrice: number;
+  nightlyFrom?: number; // accommodation-only nightly for the sampled window
 }
 
 function findFirst5NightWindow(
@@ -186,6 +187,17 @@ export async function GET(request: Request) {
               return null;
             }
 
+            // Accommodation-only nightly for this window — the real "starting
+            // from" rate shown on the property page (vs. the placeholder
+            // prices.basePrice). Falls back to basePrice if the fare is missing.
+            const fareAccommodation = Number(
+              money.fareAccommodationAdjusted ?? money.fareAccommodation ?? 0
+            );
+            const nightlyFrom =
+              fareAccommodation > 0
+                ? Math.round(fareAccommodation / 5)
+                : w.basePrice;
+
             return {
               guesty_id: w.guesty_id,
               checkIn: w.checkIn,
@@ -193,6 +205,7 @@ export async function GET(request: Request) {
               nightCount: 5,
               estimatedTotal: Math.round(estimatedTotal),
               basePrice: w.basePrice,
+              nightlyFrom,
             };
           } catch {
             quoteErrors++;
