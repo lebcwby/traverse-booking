@@ -51,6 +51,7 @@ export interface Listing {
   nightCount?: number | null;
   cachedCheckIn?: string | null;
   cachedCheckOut?: string | null;
+  promoPct?: number | null;
   reviewAvg?: number | null;
   reviewTotal?: number | null;
   review_summary?: string | null;
@@ -283,6 +284,9 @@ export interface PricingCacheEntry {
   // is a placeholder for ~40% of listings). Optional: absent until the pricing
   // cache is refreshed after this field shipped.
   nightlyFrom?: number;
+  // Active direct-booking promo % (early-bird/last-minute) on the sampled window,
+  // for the "Save X%" card ribbon. Absent when no promo applied.
+  promoPct?: number;
 }
 
 export async function getListingPricingCache(): Promise<

@@ -348,6 +348,7 @@ export default async function PropertiesPage({
             nightCount: cached.nightCount,
             cachedCheckIn: cached.checkIn,
             cachedCheckOut: cached.checkOut,
+            promoPct: cached.promoPct ?? null,
           };
         }
         return l;

@@ -11,6 +11,7 @@ import {
   Mail,
   Bell,
   CheckCircle2,
+  Tag,
 } from "lucide-react";
 import { useDateRange } from "./date-range-context";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import type { DayButton as DayButtonType } from "react-day-picker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { extractTaxBreakdown } from "@/lib/quote-response";
+import { promoDisplay } from "@/lib/promotions";
 import Image from "next/image";
 import { PricingBadge } from "./pricing-badge";
 import {
@@ -607,6 +609,28 @@ export function BookingSidebar({
     };
   }, [quote]);
 
+  // Active promotion (early-bird / last-minute) on the current quote — drives the
+  // price-header strikethrough + badge so the deal is visible before checkout.
+  const promo = useMemo(
+    () => promoDisplay((quote as { promotions?: unknown } | null)?.promotions),
+    [quote]
+  );
+  const promoDiscount = useMemo(() => {
+    if (!pricing || !promo) return 0;
+    const items =
+      (pricing.invoiceItems as unknown as Array<Record<string, unknown>>) || [];
+    const line = items.find(
+      (i) =>
+        /PROMOTION/i.test(String(i?.type)) ||
+        /PROMOTION/i.test(String(i?.normalType))
+    );
+    if (line) return Math.abs(Number(line.amount) || 0);
+    return Math.max(
+      0,
+      (pricing.accommodation || 0) - (pricing.accommodationAdjusted || 0)
+    );
+  }, [pricing, promo]);
+
   // Sync pricing to shared context for sticky nav
   useEffect(() => {
     setQuotePricing(
@@ -825,6 +849,11 @@ export function BookingSidebar({
         <CardTitle className="flex items-baseline gap-2">
           {pricing ? (
             <>
+              {promo && promoDiscount > 0 && (
+                <span className="text-xl font-normal text-muted-foreground line-through">
+                  {formatCurrency(pricing.total + promoDiscount)}
+                </span>
+              )}
               <span className="text-3xl font-bold">
                 {formatCurrency(pricing.total)}
               </span>
@@ -851,6 +880,12 @@ export function BookingSidebar({
             </>
           )}
         </CardTitle>
+        {pricing && promo && promoDiscount > 0 && (
+          <span className="mt-1.5 inline-flex w-fit items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700">
+            <Tag className="h-3.5 w-3.5" />
+            {promo.badge} · {promo.label}
+          </span>
+        )}
       </CardHeader>
       {isRareFind && <RareFindBadge className="mx-6 mb-2" />}
       <CardContent className="space-y-4">

@@ -7,6 +7,7 @@ import {
   type CalendarDay,
 } from "@/lib/guesty-beapi";
 import { format, addDays } from "date-fns";
+import { promoDisplay } from "@/lib/promotions";
 
 export const maxDuration = 300;
 
@@ -18,6 +19,7 @@ interface PricingCacheEntry {
   estimatedTotal: number;
   basePrice: number;
   nightlyFrom?: number; // accommodation-only nightly for the sampled window
+  promoPct?: number; // active direct promo % on the sampled window (early-bird/last-minute)
 }
 
 function findFirst5NightWindow(
@@ -198,6 +200,12 @@ export async function GET(request: Request) {
                 ? Math.round(fareAccommodation / 5)
                 : w.basePrice;
 
+            // Active direct-booking promotion (early-bird / last-minute) on the
+            // sampled window — drives the "Save X%" ribbon on cards. Card copy
+            // stays generic (percent only), since a guest's actual dates may hit
+            // a different promo than this sampled window.
+            const promoPct = promoDisplay(quote?.promotions)?.pct;
+
             return {
               guesty_id: w.guesty_id,
               checkIn: w.checkIn,
@@ -206,6 +214,7 @@ export async function GET(request: Request) {
               estimatedTotal: Math.round(estimatedTotal),
               basePrice: w.basePrice,
               nightlyFrom,
+              ...(promoPct ? { promoPct } : {}),
             };
           } catch {
             quoteErrors++;

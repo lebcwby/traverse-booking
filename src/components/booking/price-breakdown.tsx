@@ -5,6 +5,7 @@ import { ChevronDown } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/utils";
 import { OTA_SAVINGS_FRACTION } from "@/lib/savings";
+import { promoDisplay } from "@/lib/promotions";
 
 const $ = (amount: number) => formatCurrency(amount, { cents: true });
 
@@ -71,7 +72,7 @@ export function PriceBreakdown({
       </div>
       {hasDiscount && promotion && (
         <div className="flex justify-between text-green-600">
-          <span>{promotion.name}</span>
+          <span>{promoDisplay(promotion)?.label ?? promotion.name}</span>
           <span>-{$(accommodation - accommodationAdjusted)}</span>
         </div>
       )}

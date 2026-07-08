@@ -257,6 +257,15 @@ export function PropertyCard({
           </div>
         )}
 
+        {/* Direct-booking promo ribbon (early-bird / last-minute % off) */}
+        {listing.promoPct ? (
+          <span
+            className={`absolute right-2 top-2 z-10 inline-flex items-center whitespace-nowrap rounded-full bg-green-600 font-semibold text-white shadow-md ${compact ? "px-2 py-1 text-[10px]" : "px-2.5 py-1.5 text-xs"}`}
+          >
+            Save {listing.promoPct}%
+          </span>
+        ) : null}
+
         {/* Traverse Favorite badge — fir 4.8+, rose 4.85+, bridge 4.95+ */}
         {listing.reviewAvg && listing.reviewAvg / 2 >= 4.8 && (
           <span

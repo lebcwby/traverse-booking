@@ -417,10 +417,10 @@ export default async function HomePage() {
         <div className="stay-grid">
           {FEATURED.map((s) => {
             const listingId = s.href.split("/").pop();
-            const liveNightly = listingId
-              ? pricing.get(listingId)?.nightlyFrom
-              : undefined;
+            const cached = listingId ? pricing.get(listingId) : undefined;
+            const liveNightly = cached?.nightlyFrom;
             const priceLabel = liveNightly ? `$${liveNightly}` : s.price;
+            const promoPct = cached?.promoPct;
             return (
             <UnitLink key={s.href} href={s.href} className="stay-card">
               <div className="stay-media">
@@ -429,6 +429,11 @@ export default async function HomePage() {
                 <span className="sp-badge sp-badge-favorite">
                   📍 {s.badge}
                 </span>
+                {promoPct ? (
+                  <span className="absolute right-2.5 top-2.5 z-10 rounded-full bg-green-600 px-2.5 py-1 text-xs font-semibold text-white shadow-md">
+                    Save {promoPct}%
+                  </span>
+                ) : null}
               </div>
               <div className="stay-info">
                 <h3>{s.title}</h3>
