@@ -85,7 +85,9 @@ export function NoFeesHeroSection({
               display: "inline-flex",
               alignItems: "center",
               gap: "0.4rem",
-              margin: "0 auto 0.9rem",
+              // Bottom clearance > the search bar's upward float (-44px desktop /
+              // -30px mobile) so the bar lands below the badge, not over it.
+              margin: "0 auto 3.4rem",
               padding: "0.32rem 0.9rem",
               borderRadius: "999px",
               background: "rgba(255,255,255,0.16)",

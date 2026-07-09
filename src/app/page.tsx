@@ -430,7 +430,7 @@ export default async function HomePage() {
                   📍 {s.badge}
                 </span>
                 {promoPct ? (
-                  <span className="absolute right-2.5 top-2.5 z-10 rounded-full bg-green-600 px-2.5 py-1 text-xs font-semibold text-white shadow-md">
+                  <span className="absolute bottom-2.5 left-2.5 z-10 rounded-full bg-green-600 px-2.5 py-1 text-xs font-semibold text-white shadow-md">
                     Save {promoPct}%
                   </span>
                 ) : null}

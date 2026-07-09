@@ -260,7 +260,7 @@ export function PropertyCard({
         {/* Direct-booking promo ribbon (early-bird / last-minute % off) */}
         {listing.promoPct ? (
           <span
-            className={`absolute right-2 top-2 z-10 inline-flex items-center whitespace-nowrap rounded-full bg-green-600 font-semibold text-white shadow-md ${compact ? "px-2 py-1 text-[10px]" : "px-2.5 py-1.5 text-xs"}`}
+            className={`absolute bottom-2 left-2 z-10 inline-flex items-center whitespace-nowrap rounded-full bg-green-600 font-semibold text-white shadow-md ${compact ? "px-2 py-1 text-[10px]" : "px-2.5 py-1.5 text-xs"}`}
           >
             Save {listing.promoPct}%
           </span>
