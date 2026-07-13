@@ -42,7 +42,6 @@ import { AmenitiesGrid } from "@/components/properties/property-detail/amenities
 import { PropertyDescription } from "@/components/properties/property-detail/property-description";
 import { WhereYoullSleep } from "@/components/properties/property-detail/where-youll-sleep";
 import { BookingSidebar } from "@/components/properties/property-detail/booking-sidebar";
-import { OtaVerifyLinks } from "@/components/properties/property-detail/ota-verify-links";
 import { AvailabilityCalendar } from "@/components/properties/property-detail/availability-calendar";
 import { DateRangeProvider } from "@/components/properties/property-detail/date-range-context";
 // PageLoader removed — splash screen was blocking LCP by 1.5-2s
@@ -1160,11 +1159,6 @@ export default async function PropertyDetailPage({
         {/* Mobile price comparison — shown below title when dates produce a quote */}
         <MobilePriceComparison />
 
-        {/* Mobile: verify the same home on the OTAs */}
-        <div className="mt-4 lg:hidden">
-          <OtaVerifyLinks listingId={listing.guesty_id} />
-        </div>
-
         <div className="mt-4 sm:mt-5 grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
           {/* Booking sidebar — desktop only */}
           <div id="booking-sidebar" className="hidden lg:block lg:order-last">
@@ -1189,10 +1183,6 @@ export default async function PropertyDetailPage({
                   : undefined
               }
             />
-            {/* Desktop: verify the same home on the OTAs, under the price box */}
-            <div className="mt-4">
-              <OtaVerifyLinks listingId={listing.guesty_id} />
-            </div>
           </div>
 
           {/* Main content */}
