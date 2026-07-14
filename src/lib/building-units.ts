@@ -58,3 +58,33 @@ export function aggregateUnitRating(units: Listing[]): UnitRatingSummary | null 
   if (total === 0) return null;
   return { avg5: weighted / total / 2, total, unitCount };
 }
+
+/**
+ * Upcoming Friday → Sunday (2 nights). Used to seed a building landing page's
+ * hero search and "see availability" CTA so high-intent visitors land on a
+ * date-filtered, real-availability list instead of a blank search. Always a
+ * future weekend (never "this" Friday).
+ */
+export function nextWeekend(): {
+  checkIn: string;
+  checkOut: string;
+  label: string;
+} {
+  const now = new Date();
+  let daysUntilFriday = (5 - now.getDay() + 7) % 7;
+  if (daysUntilFriday === 0) daysUntilFriday = 7; // never "this" Friday — always next
+  const fri = new Date(now);
+  fri.setHours(0, 0, 0, 0);
+  fri.setDate(now.getDate() + daysUntilFriday);
+  const sun = new Date(fri);
+  sun.setDate(fri.getDate() + 2);
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+      d.getDate()
+    ).padStart(2, "0")}`;
+  const label = `${fri.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  })}–${sun.toLocaleDateString("en-US", { day: "numeric" })}`;
+  return { checkIn: iso(fri), checkOut: iso(sun), label };
+}
