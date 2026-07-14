@@ -6,7 +6,7 @@ export const pageContent = `
     <div class="fact"><span class="fact-num">14</span><span class="fact-label">Traverse-managed condos — 2BR and 3BR suites</span></div>
     <div class="fact"><span class="fact-num">100</span><span class="fact-label">Yards to the Silver Queen lift</span></div>
     <div class="fact"><span class="fact-num">6–8</span><span class="fact-label">Guests per unit — built for families & groups</span></div>
-    <div class="fact"><span class="fact-num">$95</span><span class="fact-label">Per night starting price</span></div>
+    <div class="fact"><span class="fact-num">$0</span><span class="fact-label">Booking fees, ever. Book direct and save.</span></div>
   </div>
 </section>
 
@@ -104,7 +104,7 @@ export const pageContent = `
     <div style="margin-bottom:64px;">
       <span class="section-tag">Traverse-Managed Units</span>
       <h2 style="font-size:clamp(34px,4.5vw,52px);margin-top:14px;">Our collection at the Plaza.</h2>
-      <p style="max-width:60ch;margin-top:16px;font-size:16px;color:var(--ink-soft);">We manage 14 individually owned condos in the building — spacious 2 and 3-bedroom suites built for families and groups. From $95/night.</p>
+      <p style="max-width:60ch;margin-top:16px;font-size:16px;color:var(--ink-soft);">We manage 14 individually owned condos in the building — spacious 2 and 3-bedroom suites built for families and groups. Book direct, no fees.</p>
     </div>
 
     <div class="unit-grid">
@@ -141,7 +141,7 @@ export const pageContent = `
           </div>
           <p>Beautifully appointed three-bedroom condo with contemporary finishes. Full kitchen, fireplace, balcony, and in-unit washer/dryer. Steps to the lifts.</p>
           <div class="unit-footer">
-            <span class="unit-price">$95 <small>/night</small></span>
+            <span class="unit-price"><small>Book direct</small></span>
             <a href="/properties/68c05fdbf48561001117e177" class="unit-link">Book →</a>
           </div>
         </div>
@@ -178,7 +178,7 @@ export const pageContent = `
           </div>
           <p>Two-bedroom condo with stunning valley and mountain views. Full kitchen, fireplace, balcony, and washer/dryer. One of our most popular Plaza units.</p>
           <div class="unit-footer">
-            <span class="unit-price">$95 <small>/night</small></span>
+            <span class="unit-price"><small>Book direct</small></span>
             <a href="/properties/68772cc34b0b0000109cc6c5" class="unit-link">Book →</a>
           </div>
         </div>
@@ -197,7 +197,7 @@ export const pageContent = `
           </div>
           <p>Beautiful condo with mountain views, full kitchen, fireplace, and all the comforts of home. Close to the lifts and on the free bus route.</p>
           <div class="unit-footer">
-            <span class="unit-price">$95 <small>/night</small></span>
+            <span class="unit-price"><small>Book direct</small></span>
             <a href="/properties/68fb07a72f5f3a0012d790fc" class="unit-link">Book →</a>
           </div>
         </div>
@@ -216,7 +216,7 @@ export const pageContent = `
           </div>
           <p>Two-bedroom condo a 3-minute walk from the lifts. Access to pickleball, tennis, hot tubs, sauna, and steam room. Family-friendly with full kitchen and in-unit laundry.</p>
           <div class="unit-footer">
-            <span class="unit-price">$95 <small>/night</small></span>
+            <span class="unit-price"><small>Book direct</small></span>
             <a href="/properties/691521fd6bc2bd00132eba6f" class="unit-link">Book →</a>
           </div>
         </div>
@@ -376,7 +376,7 @@ export const pageContent = `
 <!-- ══════ CTA ══════ -->
 <section class="cta-band">
   <h2>Stay at the Plaza with Traverse</h2>
-  <p>14 spacious condos for families and groups, locally managed, starting from $95/night. Book direct — no platform markups.</p>
+  <p>14 spacious condos for families and groups, locally managed. Book direct — no platform markups.</p>
   <a href="/properties?city=Crested+Butte&country=United+States&minOccupancy=1&tag=The+Plaza+Crested+Butte" class="btn btn-primary">Search Available Dates</a>
 </section>
 

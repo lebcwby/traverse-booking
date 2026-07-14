@@ -73,7 +73,7 @@ export const CONTENT_CALENDAR: CalendarEntry[] = [
     category: "Leadville",
     brief:
       "Hiking guide for Leadville: Mount Elbert (14er, 4.3 mi North Trail), Mount Massive, Mineral Belt Trail (12.5 mi loop), Colorado Trail access points, Twin Lakes trailheads. Difficulty + season + access notes.",
-    status: "pending",
+    status: "done",
   },
   {
     slug: "crested-butte-vacation-rental-income",
@@ -89,7 +89,7 @@ export const CONTENT_CALENDAR: CalendarEntry[] = [
     category: "For Owners",
     brief:
       "Owner-education post on revenue expectations for a Crested Butte short-term rental. Covers seasonality (Dec–Feb peak, July wildflower peak), occupancy norms, OTA vs direct mix, the case for Traverse management. No fabricated stats.",
-    status: "pending",
+    status: "done",
   },
   {
     slug: "leadville-colorado-vacation-rentals-booking-guide",
@@ -154,15 +154,20 @@ export const CONTENT_CALENDAR: CalendarEntry[] = [
     status: "pending",
   },
   {
-    slug: "pet-friendly-cabins-crested-butte",
+    slug: "pet-friendly-condos-crested-butte",
     publishDate: "2026-06-08",
-    title: "Pet-Friendly Cabin Rentals Near Crested Butte",
-    primaryKeyword: "pet-friendly cabins Crested Butte",
+    title: "Pet-Friendly Condo Rentals in Crested Butte",
+    primaryKeyword: "pet-friendly condos Crested Butte",
+    secondaryKeywords: [
+      "pet-friendly rentals Crested Butte",
+      "dog-friendly condos Crested Butte",
+      "Grand Lodge pet policy",
+    ],
     pillar: "seo-anchor",
     market: "crested-butte",
     category: "Crested Butte",
     brief:
-      "SEO anchor for pet-friendly seekers. Reference existing post `pet-friendly-crested-butte-grand-lodge-153`. Cover pet policies at Grand Lodge units Traverse manages, dog-friendly trails, vet/groomer notes for the area.",
+      "SEO anchor for pet-friendly seekers. Traverse manages CONDOS at Grand Lodge Crested Butte (some units are pet-friendly) — we do NOT manage any cabins, so this post must NOT use the word 'cabin' anywhere. Focus on: pet policies at Grand Lodge units Traverse manages, dog-friendly trails around Mt Crested Butte and Gothic Road, vet/groomer notes for the area, tips for arriving with a dog at a slopeside condo (no yard, walkable path to town). Reference the existing detail post `pet-friendly-crested-butte-grand-lodge-153`.",
     status: "pending",
   },
 ];
