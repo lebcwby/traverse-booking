@@ -21,7 +21,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Traverse Hospitality",
     category: "Travel Guides",
     market: "company",
-    image: "/blog/things-to-do-granby-colorado.jpg",
+    image: "/blog/things-to-do-granby-colorado-cover.jpg",
   },
   {
     slug: "crested-butte-vacation-rental-income",
