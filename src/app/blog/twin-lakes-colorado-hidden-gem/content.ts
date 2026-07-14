@@ -9,7 +9,7 @@ export const pageContent = `<h2>Twin Lakes, Colorado: A Local's Favorite 15 Mile
 <hr>
 <h2>Getting There from Leadville</h2>
 <p>From downtown Leadville, take US-24 South to Highway 82 West. The drive is about 15 miles and typically takes 20–25 minutes. There's no technical driving involved — it's a paved two-lane highway. Pull off at the Twin Lakes State Wildlife Area access points on the south shore for the best lake access, or continue into the village itself.</p>
-<p>If you're staying at <a href="https://governorsmansion.net">Governor's Mansion</a> or <a href="https://mountainhideaway.com">Mountain Hideaway Lodge</a> on 8th Street in Leadville, you're already well-positioned: you can be at the lakeshore before a first cup of coffee has cooled.</p>
+<p>If you're staying in a Leadville vacation rental, you're already well-positioned: you can be at the lakeshore before a first cup of coffee has cooled.</p>
 <hr>
 <h2>Things to Do at Twin Lakes Colorado</h2>
 <h3>Kayaking and Canoeing</h3>
@@ -30,25 +30,37 @@ export const pageContent = `<h2>Twin Lakes, Colorado: A Local's Favorite 15 Mile
 <hr>
 <h2>A Day-Trip Itinerary from Leadville</h2>
 <p>Here's a straightforward plan for a full day at Twin Lakes, starting from a Leadville rental:</p>
-| Time | Activity |
-<p>|------|----------|</p>
-| 6:30 AM | Wake up, pack lunch and layers. Weather moves fast above 9,000 ft. |
-| 7:00 AM | Depart Leadville south on US-24 to Hwy 82. |
-| 7:30 AM | Arrive South Mount Elbert Trailhead. Begin hike. |
-| 11:30 AM | Return to trailhead. Drive to Twin Lakes village. |
-| 12:00 PM | Lunch on the lake — a picnic spot near the channel or a bench in the village. |
-| 1:00 PM | Kayak or fish on Lower Twin Lake. |
-| 3:30 PM | Walk the Interlaken trail on the north shore. |
-| 5:30 PM | Optional: drive up Independence Pass for sunset views. |
-| 7:00 PM | Return to Leadville for dinner. |
+<p><strong>6:30 AM</strong></p>
+<p>Wake up, pack lunch and layers. Weather moves fast above 9,000 ft.</p>
+<p><strong>7:00 AM</strong></p>
+<p>Depart Leadville south on US-24 to Hwy 82.</p>
+<p><strong>7:30 AM</strong></p>
+<p>Arrive South Mount Elbert Trailhead. Begin hike.</p>
+<p><strong>11:30 AM</strong></p>
+<p>Return to trailhead. Drive to Twin Lakes village.</p>
+<p><strong>12:00 PM</strong></p>
+<p>Lunch on the lake — a picnic spot near the channel or a bench in the village.</p>
+<p><strong>1:00 PM</strong></p>
+<p>Kayak or fish on Lower Twin Lake.</p>
+<p><strong>3:30 PM</strong></p>
+<p>Walk the Interlaken trail on the north shore.</p>
+<p><strong>5:30 PM</strong></p>
+<p>Optional: drive up Independence Pass for sunset views.</p>
+<p><strong>7:00 PM</strong></p>
+<p>Return to Leadville for dinner.</p>
 <p>This leaves time to adjust based on energy levels and weather — which you should always factor in at this elevation.</p>
 <hr>
-<h2>Where to Stay: Leadville as Your Base Camp</h2>
-<p>Twin Lakes doesn't have large-scale lodging — that's part of its appeal, and part of why Leadville makes such a smart base. At 10,152 feet, Leadville is the highest incorporated city in North America and sits squarely between Twin Lakes to the south and the Tennessee Pass corridor to the north.</p>
-<p>Traverse Hospitality manages several properties in Leadville, including two addresses with genuine character:</p>
-<p><strong>Governor's Mansion</strong> (129 W 8th St) is a three-unit historic property that sleeps smaller groups or couples traveling together. It books up fast in summer, particularly around events like the Leadville Trail 100 Run in August 2026.</p>
-<p><strong>Mountain Hideaway Lodge</strong> (201 W 8th St) is a 10-bedroom Victorian-era home — ideal for large groups who want to share a base camp for the whole Leadville region, including day trips to Twin Lakes, Ski Cooper, and beyond.</p>
-<p>Both properties are within walking distance of Leadville's Harrison Avenue, the town's historic main street. You can browse all available dates and units at <a href="https://leadvillevacationhomes.com">leadvillevacationhomes.com</a> or book directly at <a href="https://reservations.booktraverse.com">reservations.booktraverse.com</a> and save up to 15% versus third-party booking sites.</p>
+<h2>Where to Stay: Twin Lakes and Leadville as Your Base Camp</h2>
+<p>Twin Lakes doesn't have large-scale lodging — that's part of its appeal. But you have two solid options: stay right in Twin Lakes village itself, or use Leadville as your base camp. At 10,152 feet, Leadville is the highest incorporated city in North America and sits squarely between Twin Lakes to the south and the Tennessee Pass corridor to the north.</p>
+<p>Traverse Hospitality manages vacation rentals in both areas. If you want to wake up with the lakes right outside your window, here are four Twin Lakes properties worth a look:</p>
+<ul>
+<li><a href="https://www.booktraverse.com/properties/6660cb33429ba6002f79b907"><strong>Peak View — 124 Peak View</strong></a> — 2BR, sleeps 6</li>
+<li><a href="https://www.booktraverse.com/properties/6650c68508ec0400130d6bc0"><strong>796 Spruce St</strong></a> — 4BR, sleeps 6</li>
+<li><a href="https://www.booktraverse.com/properties/628c0ee644f6e10034a87cea"><strong>Twin Peaks Dr</strong></a> — 3BR, sleeps 6</li>
+<li><a href="https://www.booktraverse.com/properties/697d006cf7fb0b0014b96ea6"><strong>853 Spruce St</strong></a> — 2BR, sleeps 4</li>
+</ul>
+<p><a href="https://www.booktraverse.com/properties?city=Twin+Lakes&amp;guests=2">Browse all Twin Lakes rentals</a></p>
+<p>Prefer Leadville's historic main street as your anchor? Browse the full selection of <a href="https://booktraverse.com/leadville/">Leadville vacation rentals</a> and book directly at <a href="https://reservations.booktraverse.com">reservations.booktraverse.com</a> to save up to 15% versus third-party booking sites.</p>
 <hr>
 <h2>FAQ: Twin Lakes Colorado</h2>
 <h3>How far is Twin Lakes from Leadville?</h3>
@@ -62,10 +74,11 @@ export const pageContent = `<h2>Twin Lakes, Colorado: A Local's Favorite 15 Mile
 <h3>Is the Interlaken ghost town difficult to reach?</h3>
 <p>Not at all. The trail to Interlaken is a roughly 1.5-mile dirt path along the north shore of Upper Twin Lake, with minimal elevation gain. It's suitable for most fitness levels and can be done in trail runners or sturdy sneakers. The structures are maintained by the Bureau of Land Management and are open to visitors — just respect the historic buildings and pack out everything you bring in.</p>
 <h3>Is there cell service at Twin Lakes?</h3>
-<p>Cell coverage in the Twin Lakes area is limited and varies significantly by carrier. Download any maps or trail information before you leave your Leadville rental. If you're heading up the South Mount Elbert Trail or driving Independence Pass, treat the day as an off-grid adventure and plan accordingly — let someone know your itinerary if you're going above treeline.</p>
+<p>Cell coverage in the Twin Lakes area is limited and varies significantly by carrier. Download any maps or trail information before you leave your rental. If you're heading up the South Mount Elbert Trail or driving Independence Pass, treat the day as an off-grid adventure and plan accordingly — let someone know your itinerary if you're going above treeline.</p>
 <hr>
-<h2>Plan Your Leadville Trip</h2>
+<h2>Plan Your Twin Lakes Trip</h2>
 <p>Twin Lakes Colorado is the kind of place that earns a second visit before you've even finished the first one. The combination of glacial water, Colorado's highest peak, Victorian ghost-town history, and the open valley light on a clear summer morning is genuinely hard to match anywhere in the state.</p>
-<p>Leadville gives you a home base with real character — historic architecture, an actual community, and the highest altitude starting point in North America. Book a Leadville vacation rental through Traverse Hospitality and you'll be 20 minutes from everything in this guide, with up to 15% in direct-book savings compared to booking through a third-party site.</p>
-<p>Browse available Leadville properties at <a href="https://booktraverse.com/leadville">booktraverse.com/leadville</a> or reserve your dates directly at <a href="https://reservations.booktraverse.com">reservations.booktraverse.com</a>. Questions? Call the team at 970-438-2241.</p>
+<p>Whether you want to sleep with the lakes right outside your door or use Leadville's historic streets as your home base, Traverse Hospitality has you covered. Book directly and save up to 15% compared to booking through a third-party site.</p>
+<p><a href="https://www.booktraverse.com/properties?city=Twin+Lakes&amp;guests=2">Browse Twin Lakes rentals</a> · <a href="https://booktraverse.com/leadville/">See all Leadville properties</a> · <a href="https://reservations.booktraverse.com">Reserve your dates</a></p>
+<p>Questions? Call the team at 970-438-2241.</p>
 <p><em>Your dream vacation starts here.</em></p>`;
