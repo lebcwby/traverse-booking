@@ -13,6 +13,17 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "pet-friendly-condos-crested-butte",
+    oldSlug: "pet-friendly-condos-crested-butte",
+    title: "Pet-Friendly Condo Rentals in Crested Butte",
+    excerpt: "Bringing your dog to Crested Butte? Traverse Hospitality manages pet-friendly condos at Grand Lodge Crested Butte — slopeside, walkable, and ready for four-legged guests.",
+    date: "2026-06-08",
+    author: "Traverse Hospitality",
+    category: "Crested Butte",
+    market: "crested-butte",
+    image: "/blog/pet-friendly-condos-crested-butte.jpg",
+  },
+  {
     slug: "crested-butte-vacation-rental-income",
     oldSlug: "crested-butte-vacation-rental-income",
     title: "How Much Can You Earn Renting Your Crested Butte Condo?",
