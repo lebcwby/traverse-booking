@@ -13,6 +13,17 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "pet-friendly-cabins-crested-butte",
+    oldSlug: "pet-friendly-cabins-crested-butte",
+    title: "Pet-Friendly Cabin Rentals Near Crested Butte",
+    excerpt: "Bringing your dog to the mountains just got easier. Here's everything you need to know about pet-friendly cabins near Crested Butte — from Grand Lodge unit policies to the best trails to run with your four-legged hiking partner.",
+    date: "2026-06-08",
+    author: "Traverse Hospitality",
+    category: "Crested Butte",
+    market: "crested-butte",
+    image: "/blog/pet-friendly-cabins-crested-butte.jpg",
+  },
+  {
     slug: "crested-butte-vacation-rental-income",
     oldSlug: "crested-butte-vacation-rental-income",
     title: "How Much Can You Earn Renting Your Crested Butte Condo?",
