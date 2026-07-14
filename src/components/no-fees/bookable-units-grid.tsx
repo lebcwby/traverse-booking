@@ -433,7 +433,7 @@ export function BookableUnitsGrid({
                     <button
                       type="button"
                       onClick={() => handleBookNow(listing, q)}
-                      className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                      className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90"
                     >
                       Book now
                       <ArrowRight className="h-3.5 w-3.5" />
@@ -482,7 +482,7 @@ export function BookableUnitsGrid({
       <div className="mt-8 flex justify-center">
         <Link
           href={availabilityHref}
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+          className="inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90"
         >
           {ctaLabel}
           <ArrowRight className="h-4 w-4" />
