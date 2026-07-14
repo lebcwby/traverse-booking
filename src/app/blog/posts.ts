@@ -13,6 +13,17 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "things-to-do-granby-colorado",
+    oldSlug: "things-to-do-granby-colorado",
+    title: "A Weekend in Granby: Mountain Lakes and Trails",
+    excerpt: "Granby, Colorado sits at the heart of Grand County, where high-altitude lakes, Rocky Mountain National Park's quiet west entrance, and long summer trails add up to one of Colorado's most underrated mountain weekends. Here's how to make the most of two days.",
+    date: "2026-06-05",
+    author: "Traverse Hospitality",
+    category: "Travel Guides",
+    market: "company",
+    image: "/blog/things-to-do-granby-colorado-cover.jpg",
+  },
+  {
     slug: "crested-butte-vacation-rental-income",
     oldSlug: "crested-butte-vacation-rental-income",
     title: "How Much Can You Earn Renting Your Crested Butte Condo?",
