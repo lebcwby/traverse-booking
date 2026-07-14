@@ -103,8 +103,8 @@ The site itself is fine — this is purely a Guesty-internal data issue.
 - **Owner testimonials** — Real quotes pending from Nadim. Placeholder cards on `/property-management` `reviews` array. Memory: `project_traverse_owner_reviews_pending.md`.
 - **Booking confirmation emails** — `RESEND_API_KEY` **is set in Vercel prod** (confirmed via `vercel env ls`, added ~2026-05; corrects the old "needed" note). `sendAlert` ops emails deliver. If confirmation emails still don't arrive, check key *validity*, not presence. See memory `reference_resend_setup.md`.
 - **Re-seed `sp_plans` cache** — Run `npx tsx --env-file=.env.local scripts/seed-popular-ideas.ts`. Requires `ANTHROPIC_API_KEY` in `.env.local` (not yet added). Without this, "Instant" popular-trip cards fall through to live agent (~15s) instead of cached templates (~200ms).
-- **`src/lib/plan/slug-content.ts`** — Long-form prose body per slug is still Portland-era placeholder text. These are the static `/plan/[slug]` page bodies.
-- **`src/lib/plan/favorites.ts`** — 793 lines of Portland-curated POI favorites. POI IDs don't match Colorado seed data. Plan still works without favorite-anchoring.
+- ~~**`src/lib/plan/slug-content.ts`**~~ — **DONE (2026-07-14).** All 5 routed `/plan/<slug>` bodies now have Colorado long-form copy + 5 FAQs each (render visibly + as FAQPage JSON-LD). Was an empty map post-rebrand. Venue names should get a periodic open/closed spot-check (see `project_traverse_crested_butte_businesses_status`).
+- **`src/lib/plan/favorites.ts`** — Intentionally **empty** (`FAVORITES = []`) since the Portland POIs were stripped 2026-05-26; plan works fine without favorite-anchoring. Not a cleanup task — optionally add Colorado local-pick entries later if we want favorite-anchored recs.
 
 ### P3 deferred
 
