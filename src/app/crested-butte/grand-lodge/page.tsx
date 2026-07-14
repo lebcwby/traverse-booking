@@ -19,7 +19,7 @@ const CB_PHONE_DISPLAY = "(970) 438-2241";
 
 export const metadata: Metadata = {
   title: "The Grand Lodge Crested Butte | Slope-Side Condos",
-  description: "The Grand Lodge Crested Butte — slope-side condo building. Indoor/outdoor pool, hot tub, steam room. 50+ Traverse-managed units from $95/night.",
+  description: "The Grand Lodge Crested Butte — slope-side condo building. Indoor/outdoor pool, hot tub, steam room. 50+ Traverse-managed units, booked direct with no fees.",
   alternates: { canonical: "https://www.booktraverse.com/crested-butte/grand-lodge" },
 };
 
@@ -76,7 +76,7 @@ export default async function Page() {
         eyebrow="6 Emmons Loop · Mt. Crested Butte, CO 81225"
         title="The Grand Lodge"
         titleEm="Crested Butte."
-        lede="A slope-side condominium building at the foot of Crested Butte Mountain Resort — 200 yards from the Silver Queen Gondola. Heated pool, hot tub, steam room, on-site breakfast & lunch, and 50+ Traverse-managed units starting from $95/night."
+        lede="A slope-side condominium building at the foot of Crested Butte Mountain Resort — 200 yards from the Silver Queen Gondola. Heated pool, hot tub, steam room, on-site breakfast & lunch, and 50+ Traverse-managed units — see live prices below."
         lockedDestination={{
           tag: GRAND_LODGE_TAG,
           label: "The Grand Lodge",

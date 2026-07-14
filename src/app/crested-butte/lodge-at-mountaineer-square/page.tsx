@@ -7,7 +7,7 @@ import "./page.css";
 
 export const metadata: Metadata = {
   title: "Lodge at Mountaineer Square | Luxury Ski-In Condos",
-  description: "Lodge at Mountaineer Square — luxury condos steps from the lifts at CBMR. Pool, hot tub, sauna, A/C, heated parking. From $95/night.",
+  description: "Lodge at Mountaineer Square — luxury condos steps from the lifts at CBMR. Pool, hot tub, sauna, A/C, heated parking. Book direct, no fees.",
   alternates: { canonical: "https://www.booktraverse.com/crested-butte/lodge-at-mountaineer-square" },
 };
 
@@ -27,7 +27,7 @@ export default function Page() {
         eyebrow="620 Gothic Road · Mt. Crested Butte, CO 81225"
         title="Lodge at Mountaineer Square."
         titleEm="Steps from the lifts."
-        lede="Crested Butte's newest luxury condo building — adjacent to the Red Lady Express and Silver Queen lifts. Front desk and concierge, indoor/outdoor pool, sauna, air conditioning, and heated underground parking. Traverse-managed units from $95/night."
+        lede="Crested Butte's newest luxury condo building — adjacent to the Red Lady Express and Silver Queen lifts. Front desk and concierge, indoor/outdoor pool, sauna, air conditioning, and heated underground parking. Book direct — no booking fees."
         lockedDestination={{
           tag: "The Lodge at Mountaineer Square",
           label: "Lodge at Mountaineer Square",

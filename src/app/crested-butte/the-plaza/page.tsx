@@ -7,7 +7,7 @@ import "./page.css";
 
 export const metadata: Metadata = {
   title: "The Plaza Condominiums Crested Butte | Spacious Ski-In Condos",
-  description: "The Plaza Condominiums — spacious 2 and 3-bedroom ski-in condos. Hot tubs, sauna, Iron Horse Tap, tennis & pickleball. From $95/night.",
+  description: "The Plaza Condominiums — spacious 2 and 3-bedroom ski-in condos. Hot tubs, sauna, Iron Horse Tap, tennis & pickleball. Book direct, no fees.",
   alternates: { canonical: "https://www.booktraverse.com/crested-butte/the-plaza" },
 };
 
@@ -27,7 +27,7 @@ export default function Page() {
         eyebrow="11 Snowmass Road · Mt. Crested Butte, CO 81225"
         title="The Plaza Condominiums."
         titleEm="Space to spread out."
-        lede="Spacious 2 and 3-bedroom ski-in condos at the base of Crested Butte Mountain Resort — 100 yards from the Silver Queen lift. Full kitchens, fireplaces, hot tubs, Iron Horse Tap on-site, and the Traverse Hospitality office right at the entrance. From $95/night."
+        lede="Spacious 2 and 3-bedroom ski-in condos at the base of Crested Butte Mountain Resort — 100 yards from the Silver Queen lift. Full kitchens, fireplaces, hot tubs, Iron Horse Tap on-site, and the Traverse Hospitality office right at the entrance. Book direct — no booking fees."
         lockedDestination={{
           tag: "The Plaza Crested Butte",
           label: "The Plaza",
