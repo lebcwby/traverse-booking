@@ -13,6 +13,17 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "twin-lakes-colorado-hidden-gem",
+    oldSlug: "twin-lakes-colorado-hidden-gem",
+    title: "Twin Lakes Colorado: The Hidden Gem Near Leadville",
+    excerpt: "Just 15 miles south of Leadville on Highway 82, Twin Lakes is one of Colorado's most quietly stunning destinations — glacial reservoirs, a historic ghost town, and the trail to the state's highest peak, all packed into a single day.",
+    date: "2026-06-02",
+    author: "Traverse Hospitality",
+    category: "Leadville",
+    market: "leadville",
+    image: "/blog/twin-lakes-colorado-hidden-gem.jpg",
+  },
+  {
     slug: "things-to-do-granby-colorado",
     oldSlug: "things-to-do-granby-colorado",
     title: "A Weekend in Granby: Mountain Lakes and Trails",
