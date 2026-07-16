@@ -17,6 +17,7 @@
 // the plan doc. Card-only (no Apple/Google Pay — that's the known trade-off).
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -223,7 +224,23 @@ export function GuestyPayCheckout({ quote }: { quote: QuoteData }) {
             className="mt-0.5"
           />
           <span>
-            I agree to the booking terms and cancellation policy.
+            I agree to the{" "}
+            <Link
+              href="/terms"
+              target="_blank"
+              className="underline text-foreground/70 hover:text-foreground"
+            >
+              booking terms
+            </Link>{" "}
+            and{" "}
+            <Link
+              href="/cancellation"
+              target="_blank"
+              className="underline text-foreground/70 hover:text-foreground"
+            >
+              cancellation policy
+            </Link>
+            .
           </span>
         </label>
         <label className="flex items-start gap-2 text-sm text-muted-foreground">
