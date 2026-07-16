@@ -13,6 +13,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createReservationInstant, getQuote } from "@/lib/guesty-beapi";
+import { getOpenAPIReservation } from "@/lib/guesty-openapi";
 import { getPool, withAdvisoryLock } from "@/lib/db";
 import { trackBookingServerSide } from "@/lib/server-tracking";
 import { sendAlert } from "@/lib/alerts";
@@ -163,54 +164,77 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // ── Charge verification ─────────────────────────────────────────
-    // Guesty creates the reservation EVEN IF the charge fails, so confirm the
-    // payment before treating it as a booking. Defensive on field names (mark
-    // sandbox-confirmed): block on a CLEAR failed/unpaid signal; if we can't
-    // positively confirm "paid", proceed but alert ops to eyeball it (so we
-    // never reject a genuinely-paid booking on an unexpected response shape).
-    const money = (reservation.money as Record<string, unknown>) || {};
-    const nestedMoney = (money.money as Record<string, unknown>) || {};
-    const balanceDue = Number(money.balanceDue ?? nestedMoney.balanceDue ?? NaN);
-    const paymentStatus = String(
-      money.paymentStatus || reservation.paymentStatus || ""
-    ).toUpperCase();
-    const clearlyUnpaid =
-      paymentStatus === "FAILED" ||
-      paymentStatus === "UNPAID" ||
-      paymentStatus === "DECLINED" ||
-      (Number.isFinite(balanceDue) && balanceDue > 0.01);
-    if (clearlyUnpaid) {
+    // ── Charge verification + amount (authoritative via Open API) ────
+    // The BE-API create/details response only carries a `moneyId` REFERENCE,
+    // not the money object — so `reservation.money` is always empty and reading
+    // amount/balance off it yields 0. That shipped a $0 GA4 purchase + $0
+    // total_paid on the first live test (GY-PkaVd6eX). The money object
+    // (totalPaid / balanceDue / isFullyPaid) is only exposed on Open API, so
+    // fetch it there for both the tracked amount and the charge check. Open API
+    // creds are set in prod (absent in Preview) — degrade gracefully: fall back
+    // to the quote's own hostPayout (exactly what the guest was quoted +
+    // charged) and skip the hard reject rather than block a genuinely-paid
+    // booking. Guesty creates the reservation EVEN IF the charge fails, so when
+    // we DO have authoritative money we reject an unpaid one.
+    const openApiMoney = (await getOpenAPIReservation(reservationId)
+      .then((r) => (r as Record<string, unknown>)?.money)
+      .catch(() => null)) as Record<string, unknown> | null;
+
+    // Quote fallback: rates.ratePlans[<booked>].ratePlan.money.hostPayout.
+    const ratePlans =
+      ((quote.rates as Record<string, unknown>)?.ratePlans as Array<
+        Record<string, unknown>
+      >) || [];
+    const bookedRp =
+      ratePlans.find(
+        (r) =>
+          ((r.ratePlan as Record<string, unknown>)?._id as string) === ratePlanId
+      ) || ratePlans[0];
+    const quoteAmount =
+      Number(
+        (
+          (bookedRp?.ratePlan as Record<string, unknown>)?.money as Record<
+            string,
+            unknown
+          >
+        )?.hostPayout
+      ) || 0;
+
+    if (openApiMoney) {
+      const balanceDue = Number(openApiMoney.balanceDue ?? NaN);
+      const unpaid =
+        openApiMoney.isFullyPaid === false ||
+        (Number.isFinite(balanceDue) && balanceDue > 0.01);
+      if (unpaid) {
+        await sendAlert(
+          "GUESTY PAY — CHARGE FAILED",
+          `Reservation <code>${reservationId}</code> (${confirmationCode || "?"}) was created but is NOT fully paid (balanceDue=${balanceDue}, isFullyPaid=${openApiMoney.isFullyPaid}). The dates may be held in Guesty without payment — review/cancel.`,
+          `guesty-charge-failed-${reservationId}`,
+          { to: "admin@traversehospitality.com" }
+        ).catch(() => {});
+        return NextResponse.json(
+          {
+            error:
+              "Your payment couldn't be processed. Please try a different card.",
+            code: "PAYMENT_FAILED",
+          },
+          { status: 402 }
+        );
+      }
+    } else {
+      // No authoritative money (Preview has no Open API creds, or a transient
+      // error). The BE-API create call already throws on a hard decline (caught
+      // above → RESERVATION_FAILED), so proceed on the quote amount, but alert
+      // ops once to eyeball that it actually settled.
       await sendAlert(
-        "GUESTY PAY — CHARGE FAILED",
-        `Reservation <code>${reservationId}</code> (${confirmationCode || "?"}) was created but the charge did NOT go through (status=${paymentStatus || "?"}, balanceDue=${balanceDue}). The dates may be held in Guesty without payment — review/cancel.`,
-        `guesty-charge-failed-${reservationId}`,
-        { to: "admin@traversehospitality.com" }
-      ).catch(() => {});
-      return NextResponse.json(
-        {
-          error:
-            "Your payment couldn't be processed. Please try a different card.",
-          code: "PAYMENT_FAILED",
-        },
-        { status: 402 }
-      );
-    }
-    const positivelyPaid =
-      paymentStatus === "PAID" ||
-      paymentStatus === "SUCCEEDED" ||
-      (Number.isFinite(balanceDue) && balanceDue <= 0.01);
-    if (!positivelyPaid) {
-      await sendAlert(
-        "GUESTY PAY — CHARGE STATUS UNCONFIRMED (review)",
-        `Reservation <code>${reservationId}</code> (${confirmationCode || "?"}) was created and treated as booked, but we couldn't positively confirm the charge from the response (status=${paymentStatus || "?"}, balanceDue=${balanceDue}). Verify it was paid in Guesty. If this fires for normal bookings, fix the field check in the route.`,
-        `guesty-charge-unconfirmed-${reservationId}`,
+        "GUESTY PAY — CHARGE NOT VERIFIED (Open API unavailable)",
+        `Reservation <code>${reservationId}</code> (${confirmationCode || "?"}) was created and treated as booked, but Open API was unavailable to confirm payment. Verify it was paid in Guesty.`,
+        `guesty-charge-unverified-${reservationId}`,
         { to: "admin@traversehospitality.com" }
       ).catch(() => {});
     }
 
-    const amount =
-      Number(money.hostPayout) || Number(nestedMoney.hostPayout) || 0;
+    const amount = Number(openApiMoney?.totalPaid) || quoteAmount || 0;
 
     // Persist locally. No stripe_payment_intent_id — Guesty Pay charged natively,
     // so payment is already recorded on Guesty (no recordPayment needed).
