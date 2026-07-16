@@ -28,6 +28,16 @@ const FALLBACK_HERO = "/markets/crested-butte.jpg";
 
 export const revalidate = 300;
 
+// Landing-page slugs come from a finite config (getAllSlugs), so the params
+// below are exhaustive. force-static makes the route SSG (it has no request-data
+// needs — no searchParams/cookies), and dynamicParams:false then rejects any
+// unknown slug at the routing layer with a REAL 404. Without force-static the
+// route renders dynamically and notFound() only resolves after the 200 response
+// has begun streaming — a soft 404 Google can index. (revalidate:300 still
+// applies to the ISR data refresh for the real, prerendered slugs.)
+export const dynamic = "force-static";
+export const dynamicParams = false;
+
 export function generateStaticParams() {
   return getAllSlugs().map((slug) => ({ slug }));
 }
