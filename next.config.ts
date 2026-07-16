@@ -266,6 +266,25 @@ const nextConfig: NextConfig = {
       { source: "/about-old", destination: "/", permanent: true },
       { source: "/blog-old", destination: "/blog", permanent: true },
       { source: "/recent-news", destination: "/blog", permanent: true },
+
+      // ─── Old WP blog SLUGS requested under the NEW /blog/ path ──────────
+      // Distinct from the /traversehospitality/blog/* rules above: these are
+      // hits to /blog/<old-wordpress-slug>, where the path prefix is already
+      // the new one but the slug never made it into BLOG_POSTS. GA4 (May 10 –
+      // Jul 14 2026) shows real traffic on each of these, all landing on the
+      // 404 body with ~0s engagement. Map each to its migrated equivalent —
+      // titles matched 1:1 unless noted.
+      { source: "/blog/dos-and-donts-of-vacation-rental-interior-design", destination: "/blog/vacation-rental-interior-design-tips", permanent: true },
+      { source: "/blog/historic-houses-in-leadville", destination: "/blog/historic-houses-leadville", permanent: true },
+      { source: "/blog/exploring-leadville-colorado-your-ultimate-guide-to-vacation-rentals", destination: "/blog/leadville-complete-visitors-guide", permanent: true },
+      { source: "/blog/romantic-getaways-leadville-cozy-vacation-rentals-two", destination: "/blog/romantic-getaways-leadville", permanent: true },
+      { source: "/blog/pet-friendly-condos-crested-butte", destination: "/blog/pet-friendly-crested-butte-grand-lodge-153", permanent: true },
+      { source: "/blog/top-10-airbnb-properties-in-leadville-co", destination: "/blog/top-10-leadville-vacation-rentals", permanent: true },
+      // No 1:1 successor for these two — pointed at the closest topical post
+      // rather than left to 404.
+      { source: "/blog/the-best-way-to-explore-leadville", destination: "/blog/leadville-complete-visitors-guide", permanent: true },
+      { source: "/blog/luxury-in-the-mountains-high-end-vacation-rentals-in-leadville-36359", destination: "/blog/top-10-leadville-vacation-rentals", permanent: true },
+
       { source: "/traversehospitality/blog", destination: "/blog", permanent: true },
       { source: "/traversehospitality", destination: "/", permanent: true },
       { source: "/vacation-rentals", destination: "/properties", permanent: true },

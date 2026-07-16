@@ -9,6 +9,17 @@ export function generateStaticParams() {
   return BLOG_POSTS.map((post) => ({ slug: post.slug }));
 }
 
+// The full set of posts is a static array in posts.ts, so generateStaticParams
+// above is exhaustive — a slug that isn't one of them can never become valid
+// without a deploy. Force static generation + reject unknown params so Next
+// serves a real routing-level 404 (not a rendered 200 "soft 404", which it did
+// while the route was dynamic: notFound() resolved after the 200 response had
+// begun streaming, letting Google index an unbounded space of 200-OK "not
+// found" URLs). New posts still only need a posts.ts entry + a content dir;
+// generateStaticParams picks them up at build.
+export const dynamic = "force-static";
+export const dynamicParams = false;
+
 export async function generateMetadata({
   params,
 }: {
