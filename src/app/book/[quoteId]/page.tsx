@@ -263,7 +263,10 @@ export default function CheckoutPage() {
 
   return (
     <>
-      <style>{`footer { display: none !important; } header nav { display: none !important; }`}</style>
+      {/* Strip the site chrome on checkout: the full header (logo + "Check
+          Availability" CTA + nav) isn't relevant mid-checkout and the sticky
+          header was overlapping the Apple Pay express button on mobile. */}
+      <style>{`footer { display: none !important; } header { display: none !important; }`}</style>
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-12">
         <div className="mb-8 hidden items-center gap-4 md:flex">
           <button
