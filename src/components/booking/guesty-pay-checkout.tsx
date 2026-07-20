@@ -24,9 +24,23 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { trackClickBookNow } from "@/lib/tracking";
 import { GuestyPayPayment } from "./guesty-pay-payment";
+import {
+  StripePayment,
+  type ExpressCheckoutBillingDetails,
+} from "./stripe-payment";
 import type { QuoteData } from "./checkout-form";
 
-export function GuestyPayCheckout({ quote }: { quote: QuoteData }) {
+// `withWallets` (hybrid mode) layers a Stripe Apple/Google Pay express zone on
+// top of the GuestyPay card form: wallets → Stripe (GuestyPay tokenization is
+// card-only), cards → GuestyPay. Base booking only on both rails, so the
+// charged amount is identical regardless of payment method.
+export function GuestyPayCheckout({
+  quote,
+  withWallets,
+}: {
+  quote: QuoteData;
+  withWallets?: boolean;
+}) {
   const router = useRouter();
   const [guest, setGuest] = useState({
     firstName: "",
@@ -64,6 +78,91 @@ export function GuestyPayCheckout({ quote }: { quote: QuoteData }) {
       cancelled = true;
     };
   }, [quote.listingId]);
+
+  // Hybrid: a base-amount Stripe PaymentIntent that backs the Apple/Google Pay
+  // express zone. upsellIds:[] / pets:0 → the PI equals the quote total, so a
+  // wallet tap charges exactly what the GuestyPay card path would.
+  const [walletClientSecret, setWalletClientSecret] = useState<string | null>(
+    null
+  );
+  useEffect(() => {
+    if (!withWallets) return;
+    let cancelled = false;
+    fetch("/api/payment-intent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ quoteId: quote.quoteId, upsellIds: [], pets: 0 }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && d?.clientSecret) setWalletClientSecret(d.clientSecret);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [withWallets, quote.quoteId]);
+
+  // Apple/Google Pay tap → the existing Stripe reservation path (charge in
+  // Traverse's Stripe, card vaulted in Stripe). The wallet supplies billing
+  // details; fall back to any typed guest fields. Base booking only.
+  async function handleWalletSuccess(
+    piId: string,
+    billing: ExpressCheckoutBillingDetails
+  ) {
+    setSubmitting(true);
+    setError(null);
+    const walletGuest = {
+      firstName: billing.firstName || guest.firstName,
+      lastName: billing.lastName || guest.lastName,
+      email: billing.email || guest.email,
+      phone: billing.phone || guest.phone,
+    };
+    try {
+      const res = await fetch("/api/reservations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentIntentId: piId,
+          quoteId: quote.quoteId,
+          ratePlanId: quote.ratePlanId,
+          guest: walletGuest,
+          upsells: [],
+          pets: 0,
+          tracking: {
+            listingId: quote.listingId,
+            listingTitle: quote.listingTitle,
+            listingNickname: quote.listingNickname,
+            checkIn: quote.checkIn,
+            checkOut: quote.checkOut,
+            guests: quote.guests,
+            total: quote.pricing.total,
+          },
+          marketingOptIn,
+        }),
+      });
+      const data = await res.json();
+      if (res.status === 202 && data.pendingRecovery) {
+        setError(
+          data.error ||
+            "Your payment was received and your reservation is being finalized. Please don't retry."
+        );
+        setSubmitting(false);
+        return;
+      }
+      if (!res.ok || !data.reservationId) {
+        setError(
+          data.error || "We couldn't complete your booking. Please try again."
+        );
+        setSubmitting(false);
+        return;
+      }
+      router.push(`/book/confirmation/${data.reservationId}`);
+    } catch {
+      setError("Something went wrong completing your booking. Please try again.");
+      setSubmitting(false);
+    }
+  }
 
   const guestValid =
     guest.firstName.trim() &&
@@ -143,6 +242,42 @@ export function GuestyPayCheckout({ quote }: { quote: QuoteData }) {
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
       {/* Left: guest details + payment */}
       <div className="space-y-6 lg:col-span-2">
+        {/* Hybrid wallet zone — Apple/Google Pay via Stripe. Auto-hides on
+            devices without a wallet, so desktop-no-wallet users just see the
+            card form below. */}
+        {withWallets && walletClientSecret && (
+          <section>
+            <StripePayment
+              clientSecret={walletClientSecret}
+              walletsOnly
+              billingDetails={{
+                firstName: guest.firstName,
+                lastName: guest.lastName,
+                email: guest.email,
+                phone: guest.phone,
+              }}
+              onExpressPaymentSuccess={handleWalletSuccess}
+              onPaymentSuccess={() => {}}
+              onError={(msg) => {
+                setError(msg);
+                setSubmitting(false);
+              }}
+              loading={submitting}
+              disabled={submitting}
+            />
+            <div className="relative mt-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or pay with card
+                </span>
+              </div>
+            </div>
+          </section>
+        )}
+
         <section>
           <h2 className="mb-3 text-lg font-semibold text-foreground">
             Your details

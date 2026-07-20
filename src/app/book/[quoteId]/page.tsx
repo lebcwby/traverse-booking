@@ -12,7 +12,15 @@ import { GuestyPayCheckout } from "@/components/booking/guesty-pay-checkout";
 
 // Flag: route checkout through the Guesty Pay rail instead of Stripe. Off by
 // default — when unset, the live Stripe CheckoutForm renders unchanged.
-const GUESTY_PAY = process.env.NEXT_PUBLIC_GUESTY_PAY_ENABLED === "true";
+// Checkout routing: `hybrid` = GuestyPay cards + Stripe Apple/Google Pay;
+// `guestypay` = GuestyPay card-only; `stripe`/unset = the current live Stripe
+// checkout. Falls back to the legacy GUESTY_PAY_ENABLED flag when
+// NEXT_PUBLIC_CHECKOUT_MODE is unset, so nothing changes without an explicit opt-in.
+const CHECKOUT_MODE =
+  process.env.NEXT_PUBLIC_CHECKOUT_MODE ||
+  (process.env.NEXT_PUBLIC_GUESTY_PAY_ENABLED === "true"
+    ? "guestypay"
+    : "stripe");
 import { Skeleton } from "@/components/ui/skeleton";
 import { trackStartedCheckout, trackCheckoutError } from "@/lib/tracking";
 
@@ -270,7 +278,9 @@ export default function CheckoutPage() {
             Confirm and pay
           </h1>
         </div>
-        {GUESTY_PAY ? (
+        {CHECKOUT_MODE === "hybrid" ? (
+          <GuestyPayCheckout quote={quote} withWallets />
+        ) : CHECKOUT_MODE === "guestypay" ? (
           <GuestyPayCheckout quote={quote} />
         ) : (
           <CheckoutForm quote={quote} />
