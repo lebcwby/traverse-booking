@@ -13,6 +13,17 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "governors-mansion-leadville-guide",
+    oldSlug: "governors-mansion-leadville-guide",
+    title: "Governor's Mansion Leadville: Inside a Historic Colorado Rental",
+    excerpt: "The Governor's Mansion at 129 W 8th Street isn't just a place to sleep in Leadville — it's a century-old piece of Colorado history you can actually stay in. Here's what makes this 3-unit historic rental unlike anything else at 10,152 feet.",
+    date: "2026-07-24",
+    author: "Traverse Hospitality",
+    category: "Leadville",
+    market: "leadville",
+    image: "/blog/governors-mansion-leadville-guide.jpg",
+  },
+  {
     slug: "pet-friendly-condos-crested-butte",
     oldSlug: "pet-friendly-condos-crested-butte",
     title: "Pet-Friendly Condo Rentals in Crested Butte",
