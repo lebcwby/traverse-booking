@@ -13,6 +13,17 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "mountain-hideaway-lodge-large-groups-leadville",
+    oldSlug: "mountain-hideaway-lodge-large-groups-leadville",
+    title: "Mountain Hideaway Lodge: The 10-Bedroom Leadville Rental for Big Groups",
+    excerpt: "When your crew is too big for a standard cabin, Mountain Hideaway Lodge at 201 W 8th St in Leadville puts 10 bedrooms under one Victorian roof — ideal for family reunions, wedding parties, race weekends, and ski groups who'd rather share a kitchen than coordinate across three different houses.",
+    date: "2026-07-27",
+    author: "Traverse Hospitality",
+    category: "Leadville",
+    market: "leadville",
+    image: "/blog/mountain-hideaway-lodge-large-groups-leadville.jpg",
+  },
+  {
     slug: "pet-friendly-condos-crested-butte",
     oldSlug: "pet-friendly-condos-crested-butte",
     title: "Pet-Friendly Condo Rentals in Crested Butte",
