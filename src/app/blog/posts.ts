@@ -13,6 +13,17 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "vail-vacation-rentals-guide",
+    oldSlug: "vail-vacation-rentals-guide",
+    title: "Vail Vacation Rentals: A Local's Guide to Where to Stay",
+    excerpt: "Vail has four distinct neighborhoods — and where you stay changes everything about your trip. Here's how to match your group to the right rental.",
+    date: "2026-07-15",
+    author: "Traverse Hospitality",
+    category: "Travel Guides",
+    market: "company",
+    image: "/blog/vail-vacation-rentals-guide.jpg",
+  },
+  {
     slug: "pet-friendly-condos-crested-butte",
     oldSlug: "pet-friendly-condos-crested-butte",
     title: "Pet-Friendly Condo Rentals in Crested Butte",
