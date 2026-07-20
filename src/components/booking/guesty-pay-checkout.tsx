@@ -118,6 +118,36 @@ export function GuestyPayCheckout({
       email: billing.email || guest.email,
       phone: billing.phone || guest.phone,
     };
+    const walletTracking = {
+      listingId: quote.listingId,
+      listingTitle: quote.listingTitle,
+      listingNickname: quote.listingNickname,
+      checkIn: quote.checkIn,
+      checkOut: quote.checkOut,
+      guests: quote.guests,
+      total: quote.pricing.total,
+    };
+    // CRITICAL: persist the recovery row BEFORE attempting the reservation.
+    // The card is already charged by this point (the express element confirms
+    // the PI before this callback), so if reservation finalization fails and no
+    // pending_checkouts row exists, the charge orphans with no way to recover —
+    // which is exactly what happened on the first hybrid test. With the row in
+    // place, finalizer failures are marked `paid_pending_reservation` and the
+    // recover-checkouts cron retries them (and last_error is captured for
+    // diagnosis). Awaited so the row exists before the finalizer runs.
+    await fetch("/api/pending-checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paymentIntentId: piId,
+        quoteId: quote.quoteId,
+        ratePlanId: quote.ratePlanId,
+        guest: walletGuest,
+        tracking: walletTracking,
+        upsells: [],
+        pets: 0,
+      }),
+    }).catch(() => {});
     try {
       const res = await fetch("/api/reservations", {
         method: "POST",
