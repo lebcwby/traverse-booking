@@ -13,6 +13,17 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "crested-butte-property-management-guide",
+    oldSlug: "crested-butte-property-management-guide",
+    title: "Crested Butte Property Management: What to Look For",
+    excerpt: "Owning a short-term rental in Crested Butte is a real opportunity — but the right property management company makes all the difference. Here's what to look for before you sign anything.",
+    date: "2026-07-21",
+    author: "Traverse Hospitality",
+    category: "For Owners",
+    market: "owners",
+    image: "/blog/crested-butte-property-management-guide.jpg",
+  },
+  {
     slug: "pet-friendly-condos-crested-butte",
     oldSlug: "pet-friendly-condos-crested-butte",
     title: "Pet-Friendly Condo Rentals in Crested Butte",
