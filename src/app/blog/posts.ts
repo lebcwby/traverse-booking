@@ -13,6 +13,17 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "avon-colorado-vacation-rentals",
+    oldSlug: "avon-colorado-vacation-rentals",
+    title: "Avon Colorado Vacation Rentals: Base Camp for Beaver Creek and Vail",
+    excerpt: "Avon sits right at the foot of Beaver Creek and a quick shuttle ride from Vail — and its vacation rentals typically run 20–40% less than ski-village addresses. Here's why smart Colorado skiers are making it their base camp.",
+    date: "2026-07-18",
+    author: "Traverse Hospitality",
+    category: "Travel Guides",
+    market: "company",
+    image: "/blog/avon-colorado-vacation-rentals.jpg",
+  },
+  {
     slug: "pet-friendly-condos-crested-butte",
     oldSlug: "pet-friendly-condos-crested-butte",
     title: "Pet-Friendly Condo Rentals in Crested Butte",
