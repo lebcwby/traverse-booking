@@ -55,6 +55,13 @@ interface StripePaymentProps {
    *  no Stripe card PaymentElement, no divider/middleContent/submit button. The
    *  card path is handled by GuestyPay in the parent. */
   walletsOnly?: boolean;
+  /** Gate opening the wallet sheet on prerequisites (e.g. a complete guest
+   *  form). Return an error message to block the tap (shown via onError) and
+   *  keep the sheet closed, or null to proceed. Wallets can return incomplete
+   *  billing (e.g. no name), so we must have the guest details BEFORE charging —
+   *  otherwise the reservation is created with a bad guest and Guesty rejects it
+   *  AFTER the card is charged. */
+  expressClickGuard?: () => string | null;
 }
 
 function PaymentForm({
@@ -71,6 +78,7 @@ function PaymentForm({
   middleContent,
   piVersion,
   walletsOnly,
+  expressClickGuard,
 }: Omit<StripePaymentProps, "clientSecret">) {
   const stripe = useStripe();
   const elements = useElements();
@@ -306,7 +314,16 @@ function PaymentForm({
             },
           }}
           onConfirm={handleExpressConfirm}
-          onClick={(event) => event.resolve()}
+          onClick={(event) => {
+            // Block the wallet sheet until prerequisites are met (complete guest
+            // form). Not resolving keeps the sheet closed — no charge happens.
+            const guardError = expressClickGuard?.();
+            if (guardError) {
+              onError(guardError);
+              return;
+            }
+            event.resolve();
+          }}
           onReady={(event) => {
             const methods = event.availablePaymentMethods;
             setExpressAvailable(

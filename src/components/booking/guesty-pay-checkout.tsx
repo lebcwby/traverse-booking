@@ -272,42 +272,6 @@ export function GuestyPayCheckout({
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
       {/* Left: guest details + payment */}
       <div className="space-y-6 lg:col-span-2">
-        {/* Hybrid wallet zone — Apple/Google Pay via Stripe. Auto-hides on
-            devices without a wallet, so desktop-no-wallet users just see the
-            card form below. */}
-        {withWallets && walletClientSecret && (
-          <section>
-            <StripePayment
-              clientSecret={walletClientSecret}
-              walletsOnly
-              billingDetails={{
-                firstName: guest.firstName,
-                lastName: guest.lastName,
-                email: guest.email,
-                phone: guest.phone,
-              }}
-              onExpressPaymentSuccess={handleWalletSuccess}
-              onPaymentSuccess={() => {}}
-              onError={(msg) => {
-                setError(msg);
-                setSubmitting(false);
-              }}
-              loading={submitting}
-              disabled={submitting}
-            />
-            <div className="relative mt-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or pay with card
-                </span>
-              </div>
-            </div>
-          </section>
-        )}
-
         <section>
           <h2 className="mb-3 text-lg font-semibold text-foreground">
             Your details
@@ -341,6 +305,49 @@ export function GuestyPayCheckout({
             />
           </div>
         </section>
+
+        {/* Hybrid wallet zone — Apple/Google Pay via Stripe, placed AFTER the
+            guest form. Wallets can return incomplete billing (often no name), so
+            we gate the tap on a complete guest form: the reservation is created
+            with the typed guest details, never with whatever the wallet omitted.
+            Auto-hides on devices without a wallet. */}
+        {withWallets && walletClientSecret && (
+          <section>
+            <StripePayment
+              clientSecret={walletClientSecret}
+              walletsOnly
+              expressClickGuard={() =>
+                guestValid
+                  ? null
+                  : "Please enter your name, email, and phone above before paying with Apple Pay / Google Pay."
+              }
+              billingDetails={{
+                firstName: guest.firstName,
+                lastName: guest.lastName,
+                email: guest.email,
+                phone: guest.phone,
+              }}
+              onExpressPaymentSuccess={handleWalletSuccess}
+              onPaymentSuccess={() => {}}
+              onError={(msg) => {
+                setError(msg);
+                setSubmitting(false);
+              }}
+              loading={submitting}
+              disabled={submitting}
+            />
+            <div className="relative mt-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or pay with card
+                </span>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* TODO(upsells): pet fee + add-ons aren't handled on the Guesty Pay
             rail yet — they'd be added as Guesty invoice items or folded into the
