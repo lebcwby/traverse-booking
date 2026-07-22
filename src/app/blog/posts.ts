@@ -21,7 +21,7 @@ export const BLOG_POSTS: BlogPost[] = [
     author: "Traverse Hospitality",
     category: "Travel Guides",
     market: "company",
-    image: "/blog/avon-colorado-vacation-rentals.jpg",
+    image: "/blog/avon-colorado-vacation-rentals-cover.jpg",
   },
   {
     slug: "pet-friendly-condos-crested-butte",
