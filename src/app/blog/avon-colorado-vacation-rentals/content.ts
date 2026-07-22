@@ -60,7 +60,7 @@ export const pageContent = `<h2>Why Avon Is the Smartest Base Camp in the Vail V
 <hr>
 <h2>FAQ: Avon Colorado Vacation Rentals</h2>
 <h3>How far is Avon from Beaver Creek ski resort?</h3>
-<p>Avon sits about 4 miles from the Beaver Creek Resort base area via Avon Road. By car that's typically 10–15 minutes. The free ECO Transit bus connects Avon's transit center directly to the resort base, so most guests ski Beaver Creek without driving a single day of their trip.</p>
+<p>Avon sits about 4 miles from the Beaver Creek Resort base area via Avon Road. By car that's typically 10–15 minutes. The free <a href="https://www.eaglecounty.us/ECO">ECO Transit</a> bus connects Avon's transit center directly to the resort base, so most guests ski Beaver Creek without driving a single day of their trip.</p>
 <h3>Is Avon really cheaper than staying in Beaver Creek or Vail Village?</h3>
 <p>Generally, yes — by a meaningful margin. Comparable vacation rentals (same bedroom count, similar amenities) in Avon typically run 20–40% less than equivalent units in the Beaver Creek resort core or Vail Village. That gap tends to widen during peak holiday periods when resort-zone demand spikes.</p>
 <h3>Can I ski Vail from Avon without a car?</h3>
