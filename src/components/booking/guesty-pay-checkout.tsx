@@ -85,6 +85,10 @@ export function GuestyPayCheckout({
   const [walletClientSecret, setWalletClientSecret] = useState<string | null>(
     null
   );
+  // Errors for the wallet zone render next to the Apple/Google Pay button (not
+  // in the global error slot at the bottom of the form) so guard messages
+  // appear where the guest tapped.
+  const [walletMsg, setWalletMsg] = useState<string | null>(null);
   useEffect(() => {
     if (!withWallets) return;
     let cancelled = false;
@@ -112,6 +116,7 @@ export function GuestyPayCheckout({
   ) {
     setSubmitting(true);
     setError(null);
+    setWalletMsg(null);
     const walletGuest = {
       firstName: billing.firstName || guest.firstName,
       lastName: billing.lastName || guest.lastName,
@@ -306,20 +311,62 @@ export function GuestyPayCheckout({
           </div>
         </section>
 
+        {/* Terms + marketing live ABOVE the payment methods so they gate BOTH
+            rails — the wallet is tapped up here, so a bottom checkbox couldn't
+            require it. */}
+        <label className="flex items-start gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            I agree to the{" "}
+            <Link
+              href="/terms"
+              target="_blank"
+              className="underline text-foreground/70 hover:text-foreground"
+            >
+              booking terms
+            </Link>{" "}
+            and{" "}
+            <Link
+              href="/cancellation"
+              target="_blank"
+              className="underline text-foreground/70 hover:text-foreground"
+            >
+              cancellation policy
+            </Link>
+            .
+          </span>
+        </label>
+        <label className="flex items-start gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={marketingOptIn}
+            onChange={(e) => setMarketingOptIn(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>Send me travel tips and special offers.</span>
+        </label>
+
         {/* Hybrid wallet zone — Apple/Google Pay via Stripe, placed AFTER the
-            guest form. Wallets can return incomplete billing (often no name), so
-            we gate the tap on a complete guest form: the reservation is created
-            with the typed guest details, never with whatever the wallet omitted.
-            Auto-hides on devices without a wallet. */}
+            guest form + terms. Wallets can return incomplete billing (often no
+            name), so we gate the tap on a complete guest form AND accepted terms;
+            the reservation is created with the typed guest details. Guard errors
+            render right here (not the bottom slot). Auto-hides without a wallet. */}
         {withWallets && walletClientSecret && (
           <section>
             <StripePayment
               clientSecret={walletClientSecret}
               walletsOnly
               expressClickGuard={() =>
-                guestValid
-                  ? null
-                  : "Please enter your name, email, and phone above before paying with Apple Pay / Google Pay."
+                !guestValid
+                  ? "Please enter your name, email, and phone above first."
+                  : !acceptedTerms
+                    ? "Please accept the booking terms and cancellation policy above first."
+                    : null
               }
               billingDetails={{
                 firstName: guest.firstName,
@@ -330,12 +377,15 @@ export function GuestyPayCheckout({
               onExpressPaymentSuccess={handleWalletSuccess}
               onPaymentSuccess={() => {}}
               onError={(msg) => {
-                setError(msg);
+                setWalletMsg(msg);
                 setSubmitting(false);
               }}
               loading={submitting}
               disabled={submitting}
             />
+            {walletMsg && (
+              <p className="mt-2 text-sm text-red-600">{walletMsg}</p>
+            )}
             <div className="relative mt-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-border" />
@@ -387,43 +437,6 @@ export function GuestyPayCheckout({
               threeDS object yet, so SCA-required cards won't authenticate. Wire
               the threeDS payload + authURL redirect after the sandbox test. */}
         </section>
-
-        <label className="flex items-start gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={acceptedTerms}
-            onChange={(e) => setAcceptedTerms(e.target.checked)}
-            className="mt-0.5"
-          />
-          <span>
-            I agree to the{" "}
-            <Link
-              href="/terms"
-              target="_blank"
-              className="underline text-foreground/70 hover:text-foreground"
-            >
-              booking terms
-            </Link>{" "}
-            and{" "}
-            <Link
-              href="/cancellation"
-              target="_blank"
-              className="underline text-foreground/70 hover:text-foreground"
-            >
-              cancellation policy
-            </Link>
-            .
-          </span>
-        </label>
-        <label className="flex items-start gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={marketingOptIn}
-            onChange={(e) => setMarketingOptIn(e.target.checked)}
-            className="mt-0.5"
-          />
-          <span>Send me travel tips and special offers.</span>
-        </label>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
