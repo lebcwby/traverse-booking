@@ -200,10 +200,17 @@ async function fetchLandingPageListings(
       if (cached) {
         return {
           ...l,
-          totalPrice: cached.estimatedTotal,
-          nightCount: cached.nightCount,
-          cachedCheckIn: cached.checkIn,
-          cachedCheckOut: cached.checkOut,
+          // Price-only, no prefill (see /properties/page.tsx): per-night
+          // "starting from" price, no cached-date total or prefill.
+          ...(l.prices
+            ? {
+                prices: {
+                  ...l.prices,
+                  basePrice: cached.nightlyFrom ?? l.prices.basePrice,
+                },
+              }
+            : {}),
+          promoPct: cached.promoPct ?? null,
         };
       }
       return l;

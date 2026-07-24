@@ -344,10 +344,19 @@ export default async function PropertiesPage({
         if (cached) {
           return {
             ...l,
-            totalPrice: cached.estimatedTotal,
-            nightCount: cached.nightCount,
-            cachedCheckIn: cached.checkIn,
-            cachedCheckOut: cached.checkOut,
+            // Price-only, no prefill: show the real per-night "starting from"
+            // price and DON'T surface/prefill the cached quote's specific dates
+            // (guests were booking those exact dates by mistake). nightlyFrom
+            // drives the card's "starting from $X / night"; the detail page reads
+            // the cache directly, so its price is unaffected.
+            ...(l.prices
+              ? {
+                  prices: {
+                    ...l.prices,
+                    basePrice: cached.nightlyFrom ?? l.prices.basePrice,
+                  },
+                }
+              : {}),
             promoPct: cached.promoPct ?? null,
           };
         }
