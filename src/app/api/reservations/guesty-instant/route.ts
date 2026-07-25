@@ -23,9 +23,17 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-// Single flag for both the client checkout branch (/book) and this route, so
-// they can never be half-enabled. NEXT_PUBLIC_ is readable server-side too.
-const ENABLED = process.env.NEXT_PUBLIC_GUESTY_PAY_ENABLED === "true";
+// Enable whenever the checkout uses the GuestyPay rail — driven by
+// NEXT_PUBLIC_CHECKOUT_MODE (hybrid | guestypay), with the legacy
+// NEXT_PUBLIC_GUESTY_PAY_ENABLED flag kept as a fallback. Previously this route
+// only honored the legacy flag while /book routed on CHECKOUT_MODE, so setting
+// CHECKOUT_MODE=hybrid rendered the card form but 404'd its charge API
+// ("Guesty Pay is not enabled"). Honoring CHECKOUT_MODE here keeps them in sync.
+const CHECKOUT_MODE = process.env.NEXT_PUBLIC_CHECKOUT_MODE;
+const ENABLED =
+  CHECKOUT_MODE === "hybrid" ||
+  CHECKOUT_MODE === "guestypay" ||
+  process.env.NEXT_PUBLIC_GUESTY_PAY_ENABLED === "true";
 
 interface Body {
   quoteId?: string;
