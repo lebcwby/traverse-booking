@@ -4,11 +4,7 @@ import { NoFeesHeader } from "@/components/no-fees/no-fees-header";
 import { NoFeesHeroSection } from "@/components/no-fees/no-fees-hero-section";
 import { BookableUnitsGrid } from "@/components/no-fees/bookable-units-grid";
 import { MobileCallBar } from "@/components/no-fees/mobile-call-bar";
-import {
-  fetchUnitsForTag,
-  aggregateUnitRating,
-  nextWeekend,
-} from "@/lib/building-units";
+import { fetchUnitsForTag, aggregateUnitRating } from "@/lib/building-units";
 import "../../no-fees/no-fees.css";
 import "./page.css";
 
@@ -28,11 +24,11 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  const { checkIn, checkOut, label } = nextWeekend();
+  // Price-only, no prefill: link to the building's units without pre-selecting
+  // dates so the guest picks their own (the previous "next weekend" seed showed
+  // dates that were often unavailable).
   const availabilityHref = `/properties?${new URLSearchParams({
     tag: LODGE_TAG,
-    checkIn,
-    checkOut,
     guests: "2",
   }).toString()}`;
 
@@ -61,8 +57,6 @@ export default async function Page() {
           label: "Lodge at Mountaineer Square",
         }}
         directionsHref="#location"
-        initialCheckIn={checkIn}
-        initialCheckOut={checkOut}
         trustBadge="No booking fees · Best rate, direct · Save 10–15% vs. Airbnb"
         rating={
           ratingSummary
@@ -75,14 +69,12 @@ export default async function Page() {
         }
       />
       <BookableUnitsGrid
-        heading="Available units at the Lodge at Mountaineer Square"
-        subheading={`Pick your dates — see live prices and book direct, no booking fees. Starting with this weekend (${label}).`}
+        heading="Units at the Lodge at Mountaineer Square"
+        subheading="Starting-from nightly prices below — book direct, no booking fees. Pick your dates for live availability."
         availabilityHref={availabilityHref}
-        ctaLabel={`See all units available ${label}`}
+        ctaLabel="See all units"
         units={units}
         limit={8}
-        initialCheckIn={checkIn}
-        initialCheckOut={checkOut}
         initialGuests={2}
       />
       <div
