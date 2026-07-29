@@ -178,7 +178,14 @@ async function subscribeBatch(
 export async function syncGuestsToKlaviyo(options: {
   sinceISO: string;
   dryRun?: boolean;
+  /** Max pages PER date slice (100 reservations/page). */
   maxPages?: number;
+  /**
+   * Days per date slice. Guesty's deep pagination fails past ~12k records, so
+   * the range is walked in slices to keep `skip` shallow. ~90 days ≈ 4k
+   * reservations in peak season — comfortably under the limit.
+   */
+  sliceDays?: number;
 }): Promise<GuestSyncResult> {
   const { sinceISO, dryRun = false, maxPages = 200 } = options;
   const result: GuestSyncResult = {
@@ -214,30 +221,44 @@ export async function syncGuestsToKlaviyo(options: {
     "money.hostPayout",
   ].join(" ");
 
-  // Explicit filter is REQUIRED — the unfiltered endpoint is capped at a
-  // default subset and would silently miss most of the history.
-  const filters = [
-    {
-      field: "checkInDateLocalized",
-      operator: "$gte",
-      value: sinceISO,
-    },
-  ];
-
+  // Guesty's deep pagination dies past roughly 12k records ("multiplanner ...
+  // operation exceeded time limit" — a deep-$skip cost problem), so we can't
+  // page a multi-year window in one pass. Instead walk the range in bounded
+  // date SLICES, newest first: each slice keeps `skip` shallow. Explicit
+  // filters are also REQUIRED regardless — the unfiltered endpoint returns a
+  // capped default subset and would silently miss most of the history.
   const limit = 100;
-  for (let page = 0; page < maxPages; page++) {
-    const { results, count } = await getOpenAPIReservationsPage({
-      fields,
-      limit,
-      skip: page * limit,
-      sort: "-checkInDateLocalized",
-      filters,
-    });
-    if (page === 0) result.reportedTotal = count;
-    if (!results.length) break;
-    result.reservationsScanned += results.length;
+  const sliceDays = options.sliceDays ?? 90;
+  const startMs = Date.parse(`${sinceISO}T00:00:00Z`);
+  const iso = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
-    for (const raw of results) {
+  const slices: Array<{ from: string; to: string }> = [];
+  // Walk backwards from tomorrow (include future/upcoming stays) to sinceISO.
+  let cursorMs = Date.now() + 86400_000;
+  while (cursorMs > startMs && slices.length < 200) {
+    const fromMs = Math.max(startMs, cursorMs - sliceDays * 86400_000);
+    slices.push({ from: iso(fromMs), to: iso(cursorMs) });
+    cursorMs = fromMs - 86400_000;
+  }
+
+  outer: for (const slice of slices) {
+    const filters = [
+      { field: "checkInDateLocalized", operator: "$gte", value: slice.from },
+      { field: "checkInDateLocalized", operator: "$lte", value: slice.to },
+    ];
+    for (let page = 0; page < maxPages; page++) {
+      const { results, count } = await getOpenAPIReservationsPage({
+        fields,
+        limit,
+        skip: page * limit,
+        sort: "-checkInDateLocalized",
+        filters,
+      });
+      if (page === 0) result.reportedTotal += count;
+      if (!results.length) break;
+      result.reservationsScanned += results.length;
+
+      for (const raw of results) {
       const r = raw as {
         guest?: {
           email?: string;
@@ -285,11 +306,15 @@ export async function syncGuestsToKlaviyo(options: {
         if (!agg.firstStay || checkIn < agg.firstStay) agg.firstStay = checkIn;
         if (!agg.lastStay || checkIn > agg.lastStay) agg.lastStay = checkIn;
       }
-      byEmail.set(email, agg);
-    }
+        byEmail.set(email, agg);
+      }
 
-    if (results.length < limit) break;
-    if (page === maxPages - 1) result.truncated = true;
+      if (results.length < limit) break;
+      if (page === maxPages - 1) {
+        result.truncated = true;
+        break outer;
+      }
+    }
   }
 
   // Detect the capped-endpoint trap: if Guesty reports far more than we paged.
