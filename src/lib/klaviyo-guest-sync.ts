@@ -62,7 +62,10 @@ interface GuestAggregate {
   phone?: string;
   stayCount: number;
   firstStay?: string;
+  /** Most recent check-in in the PAST — what win-back targeting keys off. */
   lastStay?: string;
+  /** Earliest check-in in the FUTURE — what pre-arrival date-triggers key off. */
+  nextCheckIn?: string;
   markets: Set<string>;
   sources: Set<string>;
   totalValue: number;
@@ -136,6 +139,7 @@ async function importProfileBatch(
         guesty_stay_count: g.stayCount,
         ...(g.firstStay ? { guesty_first_stay: g.firstStay } : {}),
         ...(g.lastStay ? { guesty_last_stay: g.lastStay } : {}),
+        ...(g.nextCheckIn ? { guesty_next_checkin: g.nextCheckIn } : {}),
         ...(g.markets.size
           ? { guesty_markets: Array.from(g.markets).sort() }
           : {}),
@@ -259,6 +263,7 @@ export async function syncGuestsToKlaviyo(options: {
 
   const marketMap = await buildListingMarketMap();
   const byEmail = new Map<string, GuestAggregate>();
+  const today = new Date().toISOString().slice(0, 10);
 
   const fields = [
     "guest.email",
@@ -355,7 +360,14 @@ export async function syncGuestsToKlaviyo(options: {
       if (r.source) agg.sources.add(String(r.source));
       if (checkIn) {
         if (!agg.firstStay || checkIn < agg.firstStay) agg.firstStay = checkIn;
-        if (!agg.lastStay || checkIn > agg.lastStay) agg.lastStay = checkIn;
+        // Split past vs future. Win-back must NOT treat an upcoming booking as
+        // a recent stay (that would silently exclude the guest from re-engagement),
+        // and pre-arrival needs a future date to trigger on.
+        if (checkIn <= today) {
+          if (!agg.lastStay || checkIn > agg.lastStay) agg.lastStay = checkIn;
+        } else if (!agg.nextCheckIn || checkIn < agg.nextCheckIn) {
+          agg.nextCheckIn = checkIn;
+        }
       }
         byEmail.set(email, agg);
       }
