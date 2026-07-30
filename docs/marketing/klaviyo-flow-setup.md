@@ -17,9 +17,11 @@ Build order = value order. **#1 (win-back) is the single highest-value flow** gi
 
 | Template | ID | Status |
 |---|---|---|
-| Win-Back — Come back to the mountains | `T6Zdip` | ✅ new |
-| Post-Stay — Thanks + review request | `UqeNLS` | ✅ new |
-| Pre-Arrival — Your stay is coming up | `Xrh3qs` | ✅ new |
+| Win-Back — Come back to the mountains | `T6Zdip` | ✅ **live in flow `YaZ63h`** |
+| Post-Stay — Thanks + review request | `UqeNLS` | ✅ ready |
+| Pre-Arrival — Your stay is coming up | `Xrh3qs` | ✅ ready |
+| Browse Abandonment — Still thinking it over | `SSYrsq` | ✅ ready |
+| Availability Alert — We're watching those dates | `YgRk2d` | ✅ ready |
 | Welcome Series — Day 0 | `X3VSS9` | ⚠️ built May, never used |
 | Welcome Series — Day 3 (booking-direct math) | `UD6cMp` | ⚠️ built May, never used |
 | Welcome Series — Day 7 (from Alex & Nadim) | `VFQMbk` | ⚠️ built May, never used |
@@ -162,25 +164,46 @@ where `consent_source` is **not** `suiteop_portal`, so only genuinely new signup
 
 ## 5. Browse Abandonment
 
-**Trigger: Metric — `Viewed Listing`**
+**Trigger: Metric — `Viewed Listing` (`QQxkdN`)** · **Template: `SSYrsq`**
 
 ```
 Viewed Listing
-  └─ Delay 4 hours
+  └─ Time delay: 4 hours
        └─ Conditional split: has NOT done "Started Checkout" since starting this flow
-            └─ Email: (needs a template — not built yet)
+            └─ Email: template SSYrsq
+                 Subject: "Still thinking about {{ event.Title }}?"
 ```
-Trigger data is already flowing and nothing uses it today.
+⚠️ **Add a flow filter:** has NOT done `Booked Reservation` since starting — don't chase
+someone who already booked. Also cap frequency (Klaviyo's "don't re-enter within X days")
+so a heavy browser isn't emailed daily.
+
+The template uses live event data: the listing photo (`event.ImageURL`), title, city, and a
+**price-comparison strip** (direct vs `event.AirbnbPrice` / `event.VrboPrice`) — all already
+sent with the event. It degrades gracefully via `{% if %}` when a field is missing.
 
 ---
 
-## 6. Availability Alert
+## 6. Availability Alert ⭐ highest-intent signal in the account
 
-**Trigger: Metric — `Requested Availability Notification` (`Y5vn5X`)**
+**Trigger: Metric — `Requested Availability Notification` (`Y5vn5X`)** · **Template: `YgRk2d`**
 
-Guests explicitly asked to be told when dates open — this is the highest-intent signal in
-the account and currently has **no flow at all**. Needs a template + a check that the dates
-actually freed up.
+```
+Requested Availability Notification
+  └─ Email: template YgRk2d   (send immediately — they just asked)
+       Subject: "We're watching those dates"
+```
+
+**Design note — deliberately honest:** we have no mechanism to detect when dates actually
+free up, so the email does **not** promise a notification we can't deliver. Instead it
+confirms the request, sets a realistic expectation (cancellations happen), and pivots to
+the 189 homes that *are* available for those dates. That converts better than a dead-end
+"we'll let you know" — and doesn't over-promise.
+
+Uses `{{ event|lookup:'Listing Title' }}` / `'Check-In'` / `'Check-Out'` (the property
+names have spaces, hence `lookup`).
+
+**Future upgrade:** if we ever add real availability polling, this becomes a genuine alert
+flow — the trigger and template are already in place.
 
 ---
 
