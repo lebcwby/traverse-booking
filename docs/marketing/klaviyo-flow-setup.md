@@ -57,25 +57,56 @@ Build order = value order. **#1 (win-back) is the single highest-value flow** gi
 
 ## 1. Win-Back — rebook lapsed guests ⭐ highest value
 
-**Create → Flow → From scratch. Trigger: Segment (build the segment first).**
+**Why it matters:** only 1,220 of 18,403 guests have booked twice (6.6%). A returning guest
+costs ~nothing to acquire and **books direct by default** — straight at the 7.2% direct-share
+problem. Moving repeat rate to 9% is ~500 extra commission-free stays/year.
 
-**Segment "Lapsed Guests":**
-- `guesty_last_stay` is **before** `360 days ago`, AND
-- `guesty_next_checkin` **is not set** (don't nag someone already booked), AND
-- Email marketing consent = subscribed
+### 🚨 Do NOT send this to everyone at once
 
-**Flow:**
+Measured audience sizes (guests with a past stay and **no upcoming booking**):
+
+| Cohort | Size | Notes |
+|---|---|---|
+| Lapsed **12–18mo AND repeat guest** | **202** | ⭐ best first send — proven rebookers |
+| **All** repeat + lapsed >6mo | **724** | week 2 |
+| Lapsed **6–12mo** | 2,894 | freshest addresses |
+| Lapsed **12–18mo** | 3,226 | |
+| Lapsed **>18mo** | 7,926 | coldest; expect higher bounces |
+| **Total lapsed >12mo** | **11,121** | ⚠️ never send this in one shot |
+
+On a domain with ~16 emails of history, an 11k blast is a permanent spam-folder sentence.
+**Ramp weekly**, watching bounce + spam rate before each widening:
+
+> **wk1 → 202 · wk2 → 724 · wk3 → 2,894 · wk4 → 3,226 · then the >18mo tail**
+
+This also front-loads the highest-converting audiences, so you learn from your best cohort
+first.
+
+### Build the segment
+
+**Lists & Segments → Create Segment → "Win-Back — Tier 1 (repeat, 12–18mo)":**
+- `guesty_last_stay` **is before** `360 days ago`, AND
+- `guesty_last_stay` **is after** `540 days ago`, AND
+- `guesty_next_checkin` **is not set** ← don't nag someone already booked, AND
+- `guesty_is_repeat_guest` **equals** `true`, AND
+- is subscribed to email marketing
+
+Later tiers = the same segment with the date window widened / the repeat condition dropped.
+
+### Build the flow
+
 ```
-Segment: Lapsed Guests
+Trigger: Segment "Win-Back — Tier 1"
   └─ Email: template T6Zdip
-       Subject: "The mountains miss you"
-       Preview: "No booking fees — your next Colorado trip starts here"
+       Subject:  "The mountains miss you"
+       Preview:  "No booking fees — your next Colorado trip starts here"
 ```
-Optionally add a 2nd touch 5–7 days later with a market-specific angle (ski vs summer),
-using a conditional split on `guesty_markets`.
 
-**Why it matters:** 1,210 of 19,297 guests have booked twice (6.3%). Moving that to 9% is
-~500 extra stays/year, commission-free.
+Optional 2nd touch 5–7 days later, with a conditional split on `guesty_markets` for a
+ski-vs-summer angle. Add it only after tier 1 looks clean.
+
+**Flow settings:** Smart Sending ON. Set the conversion metric to **Booked Reservation
+(`SuqpZn`)** so revenue attribution works.
 
 ---
 
