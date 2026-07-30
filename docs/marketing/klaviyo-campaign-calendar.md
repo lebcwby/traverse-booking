@@ -105,6 +105,50 @@ Labor Day (booked ~Aug).
 
 ---
 
+## ▶ READY TO SEND: Leadville race weekend (template `XLmLGA`)
+
+**Built 2026-07-30. Time-sensitive — the races are Aug 15 and Aug 22.**
+
+**The opportunity:** ~**69 of 85** Leadville homes are booked for MTB weekend (Aug 15) and
+~**67 of 85** for Run weekend (Aug 22) — so roughly **15–20 homes are still open** on
+weekends that should run near 100%. At 16 and 23 days out, this sits squarely in the
+measured summer booking window (median 16–35 days).
+*(Occupancy is approximate — the CRM listing join is noisy. Eyeball it in Guesty first.)*
+
+**Audience (measured):**
+
+| Segment | Size (CRM) | Use |
+|---|---|---|
+| **Prior race-week guests** (stayed Aug 10–26 in 2024 or 2025) | **464** | ⭐ send this one |
+| Leadville summer guests (Jun–Aug) | 4,480 | widen only if inventory remains |
+| All Leadville guests | 11,544 | too broad — don't |
+
+Prior race-week guests are the highest-intent audience in the database: they've *already*
+done race weekend with you, and this cohort books annually. Expect ~200–350 to be mailable
+in Klaviyo — a sensible next step in the deliverability ramp after the 216 win-back send.
+
+**Klaviyo segment:**
+- `guesty_markets` contains `Leadville`, AND
+- `guesty_last_stay` **is in the last** `730` days, AND
+- (optional tightening) `guesty_stay_count` ≥ 1
+- ⚠️ **exclude** anyone with `guesty_next_checkin` **is set** — they're already booked
+
+*(Klaviyo can't express "stayed during a specific August window" directly from current
+properties. If you want the exact 464, the cleanest route is a future sync enhancement
+adding a `guesty_race_week_guest` boolean — worth doing before next August.)*
+
+**Send as a Campaign** (not a flow — it's a one-time, date-anchored send):
+- Template **`XLmLGA`** · Subject: *"Still need a house for the 100?"*
+- Preview: *"A handful of homes left for Aug 15 & Aug 22 — no booking fees"*
+- Conversion metric: **Booked Reservation** (`SuqpZn`)
+- **Send within the next few days** — this decays to worthless by Aug 15.
+
+**Why the copy works for this audience:** it leads with race logistics racers actually care
+about (3am kitchen, bike storage, crew beds, sleeping at 10,150 ft to acclimate) rather
+than generic vacation-rental language. The no-fees savings is the closer, not the hook.
+
+---
+
 ## Segmentation — don't blast all 15,522
 
 Use the `guesty_*` properties the nightly sync maintains:
