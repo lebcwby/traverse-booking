@@ -74,13 +74,16 @@ export async function GET(request: Request) {
       ).catch(() => {});
     }
 
-    if (result.failedBatches > 0) {
+    if (result.failedBatches > 0 || result.failedImportBatches > 0) {
       await sendAlert(
         "KLAVIYO GUEST SYNC — BATCH FAILURES",
         [
-          `<p>${result.failedBatches} Klaviyo batch(es) failed; those guests were not subscribed.</p>`,
+          `<p>${result.failedBatches} subscribe batch(es) and ${result.failedImportBatches} `,
+          `profile-import batch(es) failed. Subscribe failures mean those guests are NOT on `,
+          `the marketing list; import failures only mean missing names/properties.</p>`,
           renderAlertDetails([
             ["Subscribed", result.subscribed],
+            ["Imported (attributes)", result.imported],
             ["Unique mailable", result.uniqueMailable],
             ["First errors", result.errors.join(" | ") || "—"],
           ]),

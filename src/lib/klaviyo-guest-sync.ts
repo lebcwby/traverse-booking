@@ -29,6 +29,8 @@ const KLAVIYO_LIST_ID = "S9Ezba";
 const KLAVIYO_REVISION = "2025-04-15";
 /** Klaviyo's bulk subscribe job accepts up to 100 profiles per request. */
 const KLAVIYO_BATCH = 100;
+/** The bulk IMPORT job allows far more; 1,000 keeps payloads sane. */
+const KLAVIYO_IMPORT_BATCH = 1000;
 
 /**
  * OTA relay/masked addresses. These are per-booking aliases owned by the
@@ -73,7 +75,11 @@ export interface GuestSyncResult {
   withEmail: number;
   otaFiltered: number;
   uniqueMailable: number;
+  /** Profiles whose attributes/properties were imported (step 1). */
+  imported: number;
+  /** Profiles granted marketing consent + added to the list (step 2). */
   subscribed: number;
+  failedImportBatches: number;
   failedBatches: number;
   dryRun: boolean;
   errors: string[];
@@ -102,11 +108,19 @@ async function buildListingMarketMap(): Promise<Map<string, string>> {
 }
 
 /**
- * Subscribe one batch to the marketing list. Klaviyo upserts by email, so this
- * is idempotent and safe to re-run. `consent_source` records WHERE permission
- * came from (the SuiteOp portal) so the opt-in is auditable on the profile.
+ * Klaviyo needs TWO calls — verified against the live API 2026-07-30:
+ *
+ *  - `profile-subscription-bulk-create-jobs` sets marketing consent + list
+ *    membership but its profile schema accepts ONLY `email`/`phone_number`/
+ *    `subscriptions`. Passing `first_name` or `properties` 400s
+ *    ("'first_name' is not a valid field for the resource 'profile'").
+ *  - `profile-bulk-import-jobs` accepts the rich attributes (names, custom
+ *    properties) but does not grant marketing consent.
+ *
+ * So: import attributes first, then subscribe. Both upsert by email, so the
+ * whole sync stays idempotent and safe to re-run.
  */
-async function subscribeBatch(
+async function importProfileBatch(
   apiKey: string,
   batch: GuestAggregate[]
 ): Promise<void> {
@@ -116,8 +130,8 @@ async function subscribeBatch(
       email: g.email,
       ...(g.firstName ? { first_name: g.firstName } : {}),
       ...(g.lastName ? { last_name: g.lastName } : {}),
-      subscriptions: { email: { marketing: { consent: "SUBSCRIBED" } } },
       properties: {
+        // Records WHERE permission came from, so the opt-in is auditable.
         consent_source: "suiteop_portal",
         guesty_stay_count: g.stayCount,
         ...(g.firstStay ? { guesty_first_stay: g.firstStay } : {}),
@@ -133,6 +147,41 @@ async function subscribeBatch(
           : {}),
         guesty_is_repeat_guest: g.stayCount > 1,
       },
+    },
+  }));
+
+  const res = await fetch("https://a.klaviyo.com/api/profile-bulk-import-jobs", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Klaviyo-API-Key ${apiKey}`,
+      revision: KLAVIYO_REVISION,
+    },
+    body: JSON.stringify({
+      data: {
+        type: "profile-bulk-import-job",
+        attributes: { profiles: { data: profiles } },
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(
+      `Klaviyo profile import failed (${res.status}): ${(await res.text()).slice(0, 300)}`
+    );
+  }
+}
+
+/** Grant email-marketing consent + add to the marketing list. */
+async function subscribeBatch(
+  apiKey: string,
+  batch: GuestAggregate[]
+): Promise<void> {
+  const profiles = batch.map((g) => ({
+    type: "profile" as const,
+    attributes: {
+      email: g.email,
+      subscriptions: { email: { marketing: { consent: "SUBSCRIBED" } } },
     },
   }));
 
@@ -195,7 +244,9 @@ export async function syncGuestsToKlaviyo(options: {
     withEmail: 0,
     otaFiltered: 0,
     uniqueMailable: 0,
+    imported: 0,
     subscribed: 0,
+    failedImportBatches: 0,
     failedBatches: 0,
     dryRun,
     errors: [],
@@ -329,6 +380,22 @@ export async function syncGuestsToKlaviyo(options: {
   result.uniqueMailable = guests.length;
   if (dryRun) return result;
 
+  // Step 1: import attributes (names + segmentation properties).
+  for (let i = 0; i < guests.length; i += KLAVIYO_IMPORT_BATCH) {
+    const batch = guests.slice(i, i + KLAVIYO_IMPORT_BATCH);
+    try {
+      await importProfileBatch(apiKey, batch);
+      result.imported += batch.length;
+    } catch (err) {
+      result.failedImportBatches += 1;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (result.errors.length < 5) result.errors.push(msg);
+    }
+  }
+
+  // Step 2: grant marketing consent + add to the list. Runs even if an import
+  // batch failed — consent is the part that matters; attributes can be
+  // re-imported on the next nightly run.
   for (let i = 0; i < guests.length; i += KLAVIYO_BATCH) {
     const batch = guests.slice(i, i + KLAVIYO_BATCH);
     try {
