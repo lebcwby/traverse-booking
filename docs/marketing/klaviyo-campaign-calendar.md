@@ -105,15 +105,54 @@ Labor Day (booked ~Aug).
 
 ---
 
-## ▶ READY TO SEND: Leadville race weekend (template `XLmLGA`)
+## ▶ READY TO SEND: Leadville fall shoulder (template `X7ddTt`) ⭐
 
-**Built 2026-07-30. Time-sensitive — the races are Aug 15 and Aug 22.**
+**Built 2026-07-30. The single biggest unsold-inventory window in the portfolio.**
 
-**The opportunity:** ~**69 of 85** Leadville homes are booked for MTB weekend (Aug 15) and
-~**67 of 85** for Run weekend (Aug 22) — so roughly **15–20 homes are still open** on
-weekends that should run near 100%. At 16 and 23 days out, this sits squarely in the
-measured summer booking window (median 16–35 days).
-*(Occupancy is approximate — the CRM listing join is noisy. Eyeball it in Guesty first.)*
+### The occupancy data that reframed this
+
+Measured against the **85 authoritative active Leadville listings** (guesty_ids pulled from
+the BE-API mirror — an earlier CRM-side join was noisy and overstated the listing count):
+
+| Window | Occupancy | Homes empty **per night** |
+|---|---|---|
+| Race nights (Aug 15 MTB, Aug 22 Run) | **80–84%** | ~15 |
+| Aug 16–19 (between the races) | 28–44% | **~60** |
+| Aug 24–31 | 21–44% | **~48–67** |
+| Sept 1–14 | 24–45% | **~47–65** |
+
+**Race weekends are effectively sold out** — 80–84% is a practical ceiling once owner
+blocks, maintenance and min-stay mismatches are accounted for. Chasing the last ~15 rooms
+is not where the money is.
+
+**The real opportunity is post-race:** roughly **50–65 homes sit empty every night for
+three-plus weeks** from Aug 24 into mid-September. That is an order of magnitude more
+unsold inventory than race weekend, and it recurs every year.
+
+### The campaign
+
+**Angle: not racing at all — the fall shoulder.** Golden aspens from mid-September, 60s–70s
+hiking weather, empty trails, the 14ers after monsoon season and before snow. "The best
+time to be here is the part nobody books."
+
+- **Template `X7ddTt`** · Subject: *"The best time to be in Leadville is the part nobody books"*
+- **Audience:** Leadville guests (11,544 in CRM) and/or summer guests (4,480). This is a
+  broad-appeal send, not a niche one — widen beyond racers.
+- ⚠️ **Exclude** anyone with `guesty_next_checkin` set.
+- **Timing:** send now. September stays historically carry a 93-day median lead, so at
+  30–45 days out this is already late — which is exactly *why* the inventory is unsold.
+- Conversion metric: **Booked Reservation** (`SuqpZn`).
+
+### The race template (`XLmLGA`) — hold for next year
+
+Still well-written, but its premise ("still need a house for the 100?") is wrong for 2026 —
+race weekend is full. **Schedule it for ~April–May 2027**, matching the 3–5 month lead that
+race lodging actually needs. Pair it with a *"you raced with us last year — same week
+again?"* send to the **464 prior race-week guests** (stayed Aug 10–26 in 2024/2025).
+
+**Lesson worth keeping:** check occupancy *before* writing the campaign. The obvious
+event-driven campaign was aimed at nearly-sold-out dates; the money was in the trough on
+either side of it.
 
 **Audience (measured):**
 
