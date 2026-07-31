@@ -226,6 +226,56 @@ than generic vacation-rental language. The no-fees savings is the closer, not th
 
 ---
 
+## 📅 Pacing check — read this before writing any campaign
+
+**An empty forward calendar is the normal state here, not a crisis.** With median leads of
+8–28 days, most inventory is unsold until the final weeks. The only meaningful question is
+**"are we behind last year at the same point?"** — measured with `booked_at`.
+
+Bookings made **by July 30** for that year's stays:
+
+| Market / month | 2024 | 2025 | 2026 | Final total (prior yr) | Pace |
+|---|---|---|---|---|---|
+| Crested Butte — Sep | 6 | 25 | **66** | 214 | **+164%** ✅ |
+| Leadville — Sep | 39 | 95 | **150** | 494 | **+58%** ✅ |
+| Crested Butte — Oct | 6 | 5 | **7** | 97 | flat |
+| **Leadville — Oct** | 6 | 32 | **27** | 352 | **−16%** ⚠️ |
+
+Note how much arrives late: Leadville September went **95 → 494** after July 30. So
+"September looks empty" was never the right read — it was pacing 58% *ahead*.
+
+**Run this pacing query before committing creative to a month.** It's the difference
+between rescuing real softness and shouting at inventory that always fills.
+
+---
+
+## ▶ NEXT TWO CAMPAIGNS (drafted, ready to schedule)
+
+### Campaign A — "The aspens are about to turn" · template `WNt7WJ`
+- **Target month:** October (portfolio trough, 551 bookings/yr; Leadville Oct −16% on pace)
+- **Send:** ~**Sept 10–15**, second wave ~**Sept 28**
+  (Oct median lead = 8 d, p75 34 → mid-Sept lands just ahead of the booking window)
+- **Audience:** full list, minus anyone with `guesty_next_checkin` set
+- **Subject:** *"The aspens are about to turn"* · Preview: *"Two weeks of gold, then it's gone"*
+- **Angle:** scarcity that's genuinely true — peak color lasts 2–3 weeks and can't be moved.
+  No discounting required.
+
+### Campaign B — "Thanksgiving up here hits different" · template `Xn3qiF`
+- **Target month:** **November — the worst month in the portfolio (296 bookings/yr)**
+- **Send:** ~**Oct 15**, second wave ~**Nov 1**
+  (Nov median lead = 9 d, p75 21 → mid-Oct is early enough for big-group planning,
+  which runs longer than the median)
+- **Audience:** full list; consider prioritising **high `guesty_total_value`** and past
+  large-group bookers — holiday weeks skew to big houses
+- **Subject:** *"Thanksgiving up here hits different"*
+- **Angle:** the house *is* the product for holidays — kitchen, space, everyone under one
+  roof — plus late-November opening day at CB.
+
+**Both:** conversion metric **Booked Reservation** (`SuqpZn`), Smart Sending on, one CTA,
+send yourself a test first.
+
+---
+
 ## Segmentation — don't blast all 15,522
 
 Use the `guesty_*` properties the nightly sync maintains:
