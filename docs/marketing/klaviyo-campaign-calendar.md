@@ -10,19 +10,28 @@ that re-engage the 15,522-person database.
 
 ### Rule 1 — Plan backward from BOOKING lead time, not the stay date
 
-Measured medians (reliable for May–Sep; see the annual plan for why winter data is an artifact):
+Measured from **`reservations.booked_at`** (the real booking timestamp), stays since
+2024-01-01, n = 421–2,524 per month:
 
-| Stay month | Median lead | 75th pct | ⇒ Send the campaign |
-|---|---|---|---|
-| May | 9 days | 11 | ~2–3 weeks out |
-| Jun | 16 days | 30 | ~3–5 weeks out |
-| Jul | 20 days | 51 | ~4–7 weeks out |
-| Aug | 35 days | 86 | ~5–12 weeks out |
-| Sep | 93 days | 123 | ~3–4 months out |
+| Stay month | n | Median lead | p75 | | Stay month | n | Median lead | p75 |
+|---|---|---|---|---|---|---|---|---|
+| Jan | 1,307 | 13 d | 42 | | Jul | 2,524 | 20 d | 55 |
+| Feb | 1,647 | 19 d | 44 | | Aug | 1,866 | **28 d** | 90 |
+| Mar | 1,885 | 23 d | 58 | | Sep | 1,307 | 15 d | 61 |
+| Apr | 605 | 12 d | 31 | | Oct | 673 | 8 d | 34 |
+| May | 860 | 16 d | 43 | | Nov | 421 | 9 d | 21 |
+| Jun | 1,661 | 16 d | 49 | | Dec | 940 | 21 d | 54 |
 
-**Most guests book 2–5 weeks ahead.** A "book your summer!" email in January is mistimed —
-it lands months before anyone is ready to act. The exception is **races** (below), where
-people plan around a registration date and book far earlier.
+> ⚠️ **Corrects an earlier version of this table.** The first pass used `created_at`, which
+> is the CRM *sync* date for backfilled rows — it produced nonsense like "September = 93-day
+> median lead". `booked_at` is populated on 98% of reservations back to 2019; use it.
+
+**This is a short-lead business in every month — median 8–28 days, p75 21–90.** There is no
+long-planning season. Promote a window **2–6 weeks before the stay dates**, and treat the
+p75 as the outer edge worth reaching.
+
+**The one exception is races** (see below), where the decision anchors to a registration
+date rather than travel planning, and a 6–9 month lead is genuinely correct.
 
 ### Rule 2 — Fill the troughs, don't shout into the peaks
 
@@ -139,16 +148,45 @@ time to be here is the part nobody books."
 - **Audience:** Leadville guests (11,544 in CRM) and/or summer guests (4,480). This is a
   broad-appeal send, not a niche one — widen beyond racers.
 - ⚠️ **Exclude** anyone with `guesty_next_checkin` set.
-- **Timing:** send now. September stays historically carry a 93-day median lead, so at
-  30–45 days out this is already late — which is exactly *why* the inventory is unsold.
+- **Timing:** send now — and the corrected data says the timing is *good*, not late.
+  September stays have a **15-day median lead (p75 61)**, so at 30–45 days out this lands
+  right at the front of the booking window. Consider a second send ~2 weeks later to catch
+  the median bookers.
 - Conversion metric: **Booked Reservation** (`SuqpZn`).
 
-### The race template (`XLmLGA`) — hold for next year
+### The race template (`XLmLGA`) — send it in NOVEMBER, not spring
 
 Still well-written, but its premise ("still need a house for the 100?") is wrong for 2026 —
-race weekend is full. **Schedule it for ~April–May 2027**, matching the 3–5 month lead that
-race lodging actually needs. Pair it with a *"you raced with us last year — same week
-again?"* send to the **464 prior race-week guests** (stayed Aug 10–26 in 2024/2025).
+race weekend is already full. The measured booking curve says exactly when to use it.
+
+**Race-week bookings (Aug 10–26) by month booked:**
+
+| Booked | 2024 race | 2025 race | 2026 race |
+|---|---|---|---|
+| Oct | 3 | 3 | 6 |
+| **Nov** | 4 | 2 | **15** |
+| **Dec** | **9** | **12** | **14** |
+| **Jan** | **8** | **9** | **16** |
+| Feb–Jun | 30 | 79 | 58 |
+| **Jul** | 25 | 57 | **55** |
+| Aug (race month) | 115 | 113 | — |
+
+**There is a real, repeatable Nov→Jan planning wave** — consistent with the Leadville lottery
+/ registration cycle — and it is **growing**: 45 bookings in Nov–Jan for the 2026 race vs 23
+for 2025. It now begins in **November**, not January.
+
+**Three sends, not one:**
+1. **Early-to-mid November** — get *in front* of the wave rather than chasing it. ⭐ the key send.
+2. **Early January** — catches lottery-result decisions.
+3. **Mid-June** — ahead of the July surge (~55 bookings).
+
+Pair send #1 with a *"you raced with us last year — same week again?"* angle to the **464
+prior race-week guests** (stayed Aug 10–26 in 2024/2025). They already know the drill and
+book the best houses first.
+
+**Also worth selling in Nov–Jan:** the **midweek gap between the two races** (Aug 16–19 runs
+28–44% occupancy, ~60 homes empty) — for athletes doing both events or families making a
+week of it. That inventory never sells itself.
 
 **Lesson worth keeping:** check occupancy *before* writing the campaign. The obvious
 event-driven campaign was aimed at nearly-sold-out dates; the money was in the trough on

@@ -89,25 +89,29 @@ Nov  ██ 296                       ← worst month
 
 ### Booking lead time (this drives campaign timing)
 
-Median days between booking and check-in, summer months (n = 319–1,142, reliable):
+✅ **Corrected 2026-07-30.** An earlier version of this section used `created_at`, which is
+the CRM *sync* date for backfilled rows — it produced impossible figures (winter "227–272
+days", September "93 days"). The real field is **`reservations.booked_at`**, populated on
+98% of reservations back to 2019.
 
-| Stay month | Median lead | 75th pct |
-|---|---|---|
-| May | 9 days | 11 |
-| Jun | 16 days | 30 |
-| Jul | 20 days | 51 |
-| Aug | 35 days | 86 |
-| Sep | 93 days | 123 |
+Median days from booking to check-in, stays since 2024-01-01 (n = 421–2,524 per month):
 
-⚠️ **Winter lead times in the data (227–272 days) are an artifact — ignore them.** Those
-rows were backfilled when the CRM went live (2026-05), so `created_at` is the sync date,
-not the real booking date. Only May–Sep lead times are trustworthy. **Re-measure winter
-lead time in Jan 2027** once a full ski season has accumulated real timestamps.
+| Stay month | Median | p75 | | Stay month | Median | p75 |
+|---|---|---|---|---|---|---|
+| Jan | 13 d | 42 | | Jul | 20 d | 55 |
+| Feb | 19 d | 44 | | Aug | **28 d** | 90 |
+| Mar | 23 d | 58 | | Sep | 15 d | 61 |
+| Apr | 12 d | 31 | | Oct | 8 d | 34 |
+| May | 16 d | 43 | | Nov | 9 d | 21 |
+| Jun | 16 d | 49 | | Dec | 21 d | 54 |
 
-**Implication:** summer guests book *3–8 weeks out*, not 6 months. Summer campaigns should
-land **May–July for July–August stays** — a long-lead "book your summer in January" push
-would largely miss. Treat ski-season timing as unknown until re-measured; sensible default
-is to promote Feb/Mar stays across **Nov–Jan**.
+**Implication — this is a short-lead business in every single month.** Median 8–28 days,
+p75 21–90. There is no long-planning season, winter included. **Promote a window 2–6 weeks
+before the stay dates.** A "book your summer in January" push would badly miss.
+
+**The one exception is the Leadville races**, where the decision anchors to registration
+rather than travel planning and a genuine Nov→Jan booking wave exists — see
+`klaviyo-campaign-calendar.md`.
 
 ---
 
