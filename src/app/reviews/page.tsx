@@ -386,7 +386,7 @@ export default async function ReviewsPage() {
       <StickyCTA
         href="/properties"
         label="Browse All Properties"
-        sublabel="275+ homes"
+        sublabel="190+ homes"
       />
 
       {/* ── Breadcrumb ── */}
@@ -421,7 +421,7 @@ export default async function ReviewsPage() {
             {count.toLocaleString()}+ verified reviews. 87% five stars.
           </p>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-            We manage 189 vacation rentals across six Colorado mountain
+            We manage 190+ vacation rentals across six Colorado mountain
             markets — Crested Butte, Leadville, Vail, Avon, Granby, and Twin
             Lakes — and have hosted over 80,000 guests since 2016. Below are
             real Book Traverse reviews from Airbnb, VRBO, and direct bookings
@@ -719,7 +719,7 @@ export default async function ReviewsPage() {
             See For Yourself
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-white/80">
-            189 vacation homes across Colorado&apos;s best mountain towns. Book
+            190+ vacation homes across Colorado&apos;s best mountain towns. Book
             direct for the lowest price.
           </p>
           <Link

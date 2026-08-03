@@ -25,7 +25,7 @@ export function getOrganizationSchema(aggregateRating?: {
     url: SITE_URL,
     logo: `${SITE_URL}/book-traverse-icon.png`,
     description:
-      "Colorado's local vacation rental company. 189 homes across Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes — pet-friendly, luxury, family, and extended stays. No booking fees.",
+      "Colorado's local vacation rental company. 190+ homes across Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes — pet-friendly, luxury, family, and extended stays. No booking fees.",
     address: {
       "@type": "PostalAddress",
       addressLocality: "Crested Butte",

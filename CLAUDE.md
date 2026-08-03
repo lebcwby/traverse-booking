@@ -13,7 +13,7 @@ This file gives Claude Code everything it needs to continue work on this project
 - **Repo:** https://github.com/lebcwby/traverse-booking (branch: `main`)
 - **Local path:** `~/guesty direct booking website/guesty-direct-booking-template-main`
 - **Production:** https://www.booktraverse.com (aliased; also `https://traverse-booking.vercel.app`)
-- **Portfolio:** 189 active listings across 6 Colorado markets — Crested Butte, Leadville, Vail, Avon, Granby, Twin Lakes
+- **Portfolio:** 186 active listings across 6 Colorado markets (marketing copy says "190+" — 5 mid-onboarding as of 2026-08-03) — Crested Butte, Leadville, Vail, Avon, Granby, Twin Lakes
 - **Leadership:** Alex Haler (CEO), Nadim Tannous (CTO), Sabrina Colella (COO)
 
 ---
@@ -106,7 +106,7 @@ careful testing. Full detail in memory `project_traverse_guesty_pay_reactivation
 - **Transparent white logo** — `public/no-fees/logo-white.png` + `logo-white.webp` regenerated using Sharp pixel-level manipulation: all non-transparent pixels set to white (255,255,255), alpha channel preserved. Output: 2048×492 RGBA PNG.
 - **CSP fix for /plan POI images** — `https://places.googleapis.com` added to IMG_SOURCES in both `src/lib/csp.ts` and `next.config.ts`.
 - **Sitemap fixed** — `public/sitemap.xml` recreated as static index pointing to Next.js-generated `/sitemap/[id].xml` segments. Next.js `generateSitemaps()` doesn't auto-generate a sitemap index.
-- **Schema.org** — Organization schema on homepage: `logo`, `image`, B2B phone `+1-970-533-3583`, hero stats 189+.
+- **Schema.org** — Organization schema on homepage: `logo`, `image`, B2B phone `+1-970-533-3583`, hero stats 190+.
 - **/plan polish** — Hero image changed to Colorado (not Portland skyline). Refinement chips, ANCHOR_OPTIONS, QUICK_REFINES all Colorado-ized. OG image blue (not gold). plan/[id]/page.tsx: "Your Colorado Trip".
 - **Klaviyo abandoned-cart flow** — Templates created: "Abandoned Cart — Single Listing" (ID: Shfpc4) and "Abandoned Cart — 24h Follow-up" (ID: SdNCVn). Metrics: Started Checkout (V4D6NT), Added to Cart (Tgddiq), Booked Reservation. Flow is in Draft — confirm activation with Nadim.
 - **llms.txt + llms-full.txt** — Rewritten from Stay Portland → Traverse Hospitality.
@@ -181,7 +181,7 @@ careful testing. Full detail in memory `project_traverse_guesty_pay_reactivation
 
 - **Owner testimonials** — Real quotes pending from Nadim. Placeholder cards on `/property-management` `reviews` array. Memory: `project_traverse_owner_reviews_pending.md`.
 - **Booking confirmation emails** — `RESEND_API_KEY` **is set in Vercel prod** (confirmed via `vercel env ls`, added ~2026-05; corrects the old "needed" note). `sendAlert` ops emails deliver. If confirmation emails still don't arrive, check key *validity*, not presence. See memory `reference_resend_setup.md`.
-- **Re-seed `sp_plans` cache** — Run `npx tsx --env-file=.env.local scripts/seed-popular-ideas.ts`. Requires `ANTHROPIC_API_KEY` in `.env.local` (not yet added). Without this, "Instant" popular-trip cards fall through to live agent (~15s) instead of cached templates (~200ms).
+- **Re-seed `sp_plans` cache** — Run `npx tsx --env-file=.env.local scripts/seed-popular-ideas.ts`. `ANTHROPIC_API_KEY` **is present in `.env.local`** (corrected 2026-08-03 — the old "not yet added" note was stale), so this is unblocked. ⚠️ `unset ANTHROPIC_API_KEY ANTHROPIC_BASE_URL` in the shell first — an empty shell var shadows `.env.local` and breaks `@ai-sdk`. Without this seed, "Instant" popular-trip cards fall through to live agent (~15s) instead of cached templates (~200ms).
 - ~~**`src/lib/plan/slug-content.ts`**~~ — **DONE (2026-07-14).** All 5 routed `/plan/<slug>` bodies now have Colorado long-form copy + 5 FAQs each (render visibly + as FAQPage JSON-LD). Was an empty map post-rebrand. Venue names should get a periodic open/closed spot-check (see `project_traverse_crested_butte_businesses_status`).
 - **`src/lib/plan/favorites.ts`** — Intentionally **empty** (`FAVORITES = []`) since the Portland POIs were stripped 2026-05-26; plan works fine without favorite-anchoring. Not a cleanup task — optionally add Colorado local-pick entries later if we want favorite-anchored recs.
 
@@ -192,7 +192,7 @@ careful testing. Full detail in memory `project_traverse_guesty_pay_reactivation
 - **Quarterly portfolio refresh** — Next run: 2026-08-01. See memory `project_traverse_quarterly_refresh.md`.
 - **Google Ads ↔ GA4 re-linking** — Google Ads (`AW-16519101211`) is still linked to `G-MLNYK6YLXK` (old highrockyhomes.com property). Re-link to `G-8NK72KVMJJ` so conversions and audiences from booktraverse.com traffic land in the active property. GA4 → Admin → Product links → Google Ads links.
 - **GTM container re-pointing** — GTM `GTM-WMD2QJS6` GA4 Configuration tag likely still set to `G-C5098JP52V`. Update it to `G-8NK72KVMJJ` so GTM-mediated events (page_view, etc.) land in the same property as direct gtag events. Otherwise split reporting.
-- **Sentry source maps** — `SENTRY_AUTH_TOKEN` still not set. Build suppresses the error but source maps aren't uploaded.
+- **Sentry source maps** — `SENTRY_AUTH_TOKEN` **is present in `.env.local`** (corrected 2026-08-03). Still needs adding to **Vercel prod** for CI builds to upload maps — that's the actual remaining step, not the local key.
 
 ### Traverse CRM (separate repo)
 - Session left off at Phase 1.4.2 merged + PR #8 (Phase 1.4.4) + PR #9 (status fix) open.
@@ -366,8 +366,8 @@ https://www.booktraverse.com/api/cron/sync-listings`
 ### Still needed
 
 - ~~`RESEND_API_KEY`~~ — **already set in prod** (confirmed `vercel env ls`); moved out of "still needed". Powers `sendAlert` ops emails + booking confirmation emails.
-- `ANTHROPIC_API_KEY` — `/plan` popular-ideas cache seeding via `scripts/seed-popular-ideas.ts`
-- `SENTRY_AUTH_TOKEN` — source map upload
+- ~~`ANTHROPIC_API_KEY`~~ — **already in `.env.local`** (corrected 2026-08-03). Only needed locally for `scripts/seed-popular-ideas.ts`; not required in Vercel.
+- `SENTRY_AUTH_TOKEN` — source map upload. Present in `.env.local`, **still missing in Vercel prod** (that's what blocks CI map upload).
 - `GUESTY_CLIENT_ID`, `GUESTY_CLIENT_SECRET` — OpenAPI branch of token refresh cron (currently silently skipped)
 
 ---

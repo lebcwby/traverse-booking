@@ -73,7 +73,7 @@ const TRUST_PILLS = [
   { icon: CheckCircle2, bold: "Free forever", detail: "no signup required" },
   { icon: MapPin, bold: "Local picks", detail: "by the team in CB & Leadville" },
   { icon: Bookmark, bold: "Save & share", detail: "keep your trip plan" },
-  { icon: Star, bold: "Real rentals", detail: "189+ Colorado homes" },
+  { icon: Star, bold: "Real rentals", detail: "190+ Colorado homes" },
 ] as const;
 
 export interface PlanLandingProps {
@@ -165,7 +165,7 @@ export function PlanLanding({
               </h1>
 
               <p className="mt-4 max-w-[540px] text-[14.5px] leading-[1.55] text-white/92 sm:mt-5 sm:text-[17px]">
-                Built by the team managing 189+ vacation rentals across Crested
+                Built by the team managing 190+ vacation rentals across Crested
                 Butte, Leadville, and the Colorado mountains. Tell us your vibe
                 — we&apos;ll draft your day-by-day with real spots, a map, and
                 matching places to stay.{" "}
@@ -194,7 +194,7 @@ export function PlanLanding({
                   </span>
                 </div>
                 <div className="inline-flex items-center gap-1.5 border-r border-white/30 px-4">
-                  <strong className="font-bold text-white">189+</strong>
+                  <strong className="font-bold text-white">190+</strong>
                   <span>homes</span>
                 </div>
                 <div className="inline-flex items-center gap-1.5 pl-4">

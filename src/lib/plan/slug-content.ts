@@ -31,7 +31,7 @@ export interface PlanSlugContent {
 // hero CTAs. Google's Search Raters guidelines reward a visible author/org
 // attribution paired with concrete credentials.
 export const AUTHOR_BYLINE =
-  "Written by the Traverse Hospitality team — locals managing 189+ vacation rentals across Colorado's Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes markets. We've hosted thousands of guests and built these itineraries from the places we recommend to friends, family, and our own booked guests.";
+  "Written by the Traverse Hospitality team — locals managing 190+ vacation rentals across Colorado's Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes markets. We've hosted thousands of guests and built these itineraries from the places we recommend to friends, family, and our own booked guests.";
 
 // Colorado long-form bodies + FAQs, one entry per routed slug in slug-map.ts.
 // Venue names mirror each slug's live metaDescription (team-vetted at write
