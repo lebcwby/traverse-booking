@@ -26,6 +26,8 @@ import {
   trackInitiateCheckoutEnriched,
 } from "@/lib/tracking";
 import { getEffectiveClientConsent } from "@/lib/consent";
+import { pollForRecoveredReservation } from "@/lib/booking-recovery";
+import { BookingRecoveryNotice } from "@/components/booking/booking-recovery-notice";
 import { createClient } from "@/lib/supabase-auth";
 import Link from "next/link";
 import { GuestForm, type GuestInfo, isValidEmail } from "./guest-form";
@@ -148,6 +150,21 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
   const [loading, setLoading] = useState(false);
   const [bookingComplete, setBookingComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // "Paid, reservation still being created" — a waiting state, NOT an error.
+  // Rendering this as a red failure is what made guests re-book (see
+  // src/lib/booking-recovery.ts).
+  const [recovering, setRecovering] = useState(false);
+  const [recoveryTimedOut, setRecoveryTimedOut] = useState(false);
+  // Held in a ref so the PaymentIntent effect can start recovery without
+  // taking the function as a dependency — it's re-created every render, and
+  // listing it would re-run that effect (and re-create the PI) constantly.
+  const awaitRecoveryRef =
+    useRef<(piId: string, token: string | null | undefined) => Promise<boolean>>(
+      null as unknown as (
+        piId: string,
+        token: string | null | undefined
+      ) => Promise<boolean>
+    );
   const [selectedUpsells, setSelectedUpsells] = useState<string[]>([]);
   const [pets, setPets] = useState(0);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -418,6 +435,13 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
               ? "pending_recovery"
               : `http_${res.status}`,
           });
+          // Guest came back to a stay that's already paid but not yet
+          // finalized (reload, back button, second tab). Same treatment as a
+          // failed finalize: watch for the reservation instead of stranding
+          // them on a message that reads like failure.
+          if (data.pendingRecovery && data.pendingPaymentIntentId) {
+            void awaitRecoveryRef.current?.(data.pendingPaymentIntentId, null);
+          }
           return;
         }
         setClientSecret(data.clientSecret);
@@ -1100,6 +1124,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
   async function handlePaymentSuccess(piId: string) {
     setLoading(true);
     setError(null);
+    setRecoveryTimedOut(false);
 
     trackAddShippingInfo({
       listingId: quote.listingId,
@@ -1159,10 +1184,12 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
 
       const data = await res.json();
       if (res.status === 202 && data.pendingRecovery) {
-        throw new Error(
-          data.error ||
-            "Your payment was received and our team is finalizing your reservation. Please do not retry."
-        );
+        // Paid but not yet finalized. Wait for the recovery crons instead of
+        // dead-ending the guest on a red error they'll interpret as failure.
+        const forwarded = await awaitReservationRecovery(piId, lookupToken);
+        if (forwarded) return;
+        setLoading(false);
+        return;
       }
       if (!res.ok) {
         throw new Error(data.error || "Booking failed");
@@ -1296,6 +1323,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
   ) {
     setLoading(true);
     setError(null);
+    setRecoveryTimedOut(false);
 
     trackAddShippingInfo({
       listingId: quote.listingId,
@@ -1318,6 +1346,16 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
     const consent = getEffectiveClientConsent();
 
     try {
+      // Wallet payments (Apple/Google Pay) skipped this, so a failed finalize
+      // had no lookup token and therefore no way to poll for recovery. Mint one
+      // here too — the upsert is idempotent and non-blocking by design.
+      let expressLookupToken: string | null = null;
+      try {
+        expressLookupToken = await persistPendingCheckout(piId, eventId);
+      } catch {
+        // Never block a paid booking on the pending-checkout bookkeeping.
+      }
+
       const res = await fetch("/api/reservations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1349,10 +1387,13 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
 
       const data = await res.json();
       if (res.status === 202 && data.pendingRecovery) {
-        throw new Error(
-          data.error ||
-            "Your payment was received and our team is finalizing your reservation. Please do not retry."
+        const forwarded = await awaitReservationRecovery(
+          piId,
+          expressLookupToken
         );
+        if (forwarded) return;
+        setLoading(false);
+        return;
       }
       if (!res.ok) {
         throw new Error(data.error || "Booking failed");
@@ -1501,6 +1542,63 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
 
     paymentSubmitRef.current?.();
   }
+
+  /**
+   * Handles the 202 { pendingRecovery: true } response — Stripe took the money
+   * but Guesty reservation creation hasn't succeeded yet.
+   *
+   * Previously this threw, painting a red error and going silent while the
+   * recovery crons finished the job a few minutes later. Now we wait it out and
+   * forward to the confirmation page the moment the reservation exists.
+   *
+   * Returns true if the guest was sent to their confirmation.
+   */
+  async function awaitReservationRecovery(
+    piId: string,
+    lookupToken: string | null | undefined
+  ): Promise<boolean> {
+    const token =
+      lookupToken ||
+      (() => {
+        try {
+          const raw = sessionStorage.getItem("booking_pending");
+          return raw
+            ? (JSON.parse(raw)?.pendingCheckoutToken as string | undefined)
+            : undefined;
+        } catch {
+          return undefined;
+        }
+      })();
+
+    if (!token) return false;
+
+    setError(null);
+    setRecoveryTimedOut(false);
+    setRecovering(true);
+    try {
+      const recovered = await pollForRecoveredReservation({
+        paymentIntentId: piId,
+        lookupToken: token,
+      });
+      if (recovered?.reservationId) {
+        // The confirmation page resolves everything it needs server-side from
+        // the reservation row, so no sessionStorage handoff is required here.
+        // Server-side purchase tracking already fired inside the finalizer.
+        setBookingComplete(true);
+        router.push(`/book/confirmation/${recovered.reservationId}`);
+        return true;
+      }
+      setRecoveryTimedOut(true);
+      return false;
+    } catch {
+      setRecoveryTimedOut(true);
+      return false;
+    } finally {
+      setRecovering(false);
+    }
+  }
+
+  awaitRecoveryRef.current = awaitReservationRecovery;
 
   async function persistPendingCheckout(piId: string, eventId: string) {
     const consent = getEffectiveClientConsent();
@@ -1821,7 +1919,13 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
               </a>
             </div>
 
-            {error && (
+            <BookingRecoveryNotice
+              recovering={recovering}
+              timedOut={recoveryTimedOut}
+              className="mt-4"
+            />
+
+            {error && !recovering && !recoveryTimedOut && (
               <p className="mt-4 text-center text-sm text-destructive">
                 {error}
               </p>
@@ -2153,7 +2257,12 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
             </Link>
             .
           </p>
-          {error && (
+          <BookingRecoveryNotice
+            recovering={recovering}
+            timedOut={recoveryTimedOut}
+          />
+
+          {error && !recovering && !recoveryTimedOut && (
             <p className="text-center text-sm text-destructive">{error}</p>
           )}
         </div>

@@ -485,20 +485,29 @@ async function finalizeReservationLocked(
       );
   }
 
-  stripe.paymentIntents
-    .update(paymentIntentId, {
+  // AWAITED on purpose. This write is what makes the PI stop looking like an
+  // orphan charge to findSucceededPaymentIntentForStay() in
+  // /api/payment-intent — that guard skips any PI carrying a confirmationCode.
+  // Fire-and-forget here risks the lambda freezing before the request lands
+  // (the same failure mode that dropped server-side GA4 purchases), leaving a
+  // confirmed booking whose PI reads as orphaned forever. The consequence is
+  // fail-safe but wrong: after this stay is later cancelled and the dates free
+  // up, the stale orphan would wrongly block a legitimate re-booking. Still
+  // non-fatal on error — the reservation already exists either way.
+  try {
+    await stripe.paymentIntents.update(paymentIntentId, {
       metadata: {
         ...paymentIntent.metadata,
         confirmationCode: String(confirmationCode || ""),
         guestyReservationId: reservationId,
       },
-    })
-    .catch((err) =>
-      console.warn(
-        "[Stripe] Failed to update PI metadata:",
-        err instanceof Error ? err.message : err
-      )
+    });
+  } catch (err) {
+    console.warn(
+      "[Stripe] Failed to update PI metadata:",
+      err instanceof Error ? err.message : err
     );
+  }
 
   const upsells = Array.isArray(input.upsells) ? input.upsells : [];
   const petCount =
