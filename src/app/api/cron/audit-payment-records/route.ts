@@ -100,7 +100,12 @@ export async function GET(request: Request) {
         -- string rather than a date literal: "text >= timestamp" is a hard
         -- 42883. ISO YYYY-MM-DD sorts correctly lexicographically.
         AND check_out >= to_char(CURRENT_DATE - INTERVAL '45 days', 'YYYY-MM-DD')
-      ORDER BY check_in DESC
+      -- SOONEST first, not furthest-future. A bad ledger does its damage at
+      -- payout time, so imminent and just-departed stays are the urgent ones.
+      -- (Ordering DESC here silently excluded the very reservation that
+      -- motivated this job — GY-hNBNy23v, Sep 2026 — because the top N by
+      -- check_in were all 2027 bookings.)
+      ORDER BY check_in ASC
       LIMIT $1`,
       [limit]
     ));
