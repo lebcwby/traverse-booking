@@ -118,6 +118,50 @@ describe("audit-payment-records", () => {
     expect(mockSendAlert).not.toHaveBeenCalled();
   });
 
+  it("does NOT flag a legitimate second payment of a DIFFERENT amount", async () => {
+    // GY-SHHhdMpj in production: a $1738.41 stay payment plus a separate $50
+    // pet fee. Two succeeded payments, but not a duplicate — flagging this
+    // would train everyone to ignore the alert.
+    mockPoolQuery.mockResolvedValue({
+      rows: [{ guesty_id: "res5", confirmation_code: "GY-SHHhdMpj", status: "confirmed" }],
+    });
+    mockGetReservation.mockResolvedValue(
+      reservation("GY-SHHhdMpj", {
+        hostPayout: 1788.41,
+        totalPaid: 1788.41,
+        balanceDue: 0,
+        payments: [
+          AUTO_RULE(1738.41, "SUCCEEDED"),
+          { amount: 50, status: "SUCCEEDED", note: "pet fee", createdAt: "x" },
+        ],
+      })
+    );
+
+    const body = await run();
+
+    expect(body.findingCount).toBe(0);
+    expect(mockSendAlert).not.toHaveBeenCalled();
+  });
+
+  it("names the un-noted row as the one to void", async () => {
+    mockPoolQuery.mockResolvedValue({
+      rows: [{ guesty_id: "res1", confirmation_code: "GY-hNBNy23v", status: "confirmed" }],
+    });
+    mockGetReservation.mockResolvedValue(
+      reservation("GY-hNBNy23v", {
+        hostPayout: 678.44,
+        totalPaid: 1185.8,
+        balanceDue: -507.36,
+        payments: [AUTO_RULE(592.9, "SUCCEEDED"), OURS(592.9)],
+      })
+    );
+
+    const body = await run();
+
+    expect(body.findings[0].detail).toContain("NO Stripe PI note");
+    expect(body.findings[0].detail).toContain("ours — Stripe PI");
+  });
+
   it("does NOT flag a cancelled reservation's negative balance", async () => {
     // hostPayout drops to 0 on cancellation while payment stays recorded, so a
     // negative balance is the expected shape — alerting on it would be noise.

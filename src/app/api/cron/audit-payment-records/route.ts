@@ -150,7 +150,20 @@ export async function GET(request: Request) {
       String(reservation?.status ?? row.status ?? "").toLowerCase() ===
       "canceled";
 
-    if (succeeded.length > 1) {
+    // A second SUCCEEDED payment is NOT itself suspicious — pet fees, stay
+    // extensions and date changes all legitimately add one (GY-SHHhdMpj has a
+    // $1738.41 stay payment plus a $50 pet fee and is perfectly fine). The
+    // duplicate signature is two succeeded payments for the SAME amount, which
+    // is what the auto-payment rule produces when it mirrors our charge.
+    const byAmount = new Map<number, GuestyPayment[]>();
+    for (const p of succeeded) {
+      const amt = num(p.amount);
+      if (amt === null) continue;
+      byAmount.set(amt, [...(byAmount.get(amt) ?? []), p]);
+    }
+    const duplicated = [...byAmount.values()].filter((g) => g.length > 1).flat();
+
+    if (duplicated.length > 0) {
       findings.push({
         confirmationCode: (reservation?.confirmationCode as string) ?? null,
         guestyId: row.guesty_id,
@@ -160,10 +173,16 @@ export async function GET(request: Request) {
         balanceDue,
         succeededCount: succeeded.length,
         unattributedCount: unattributed.length,
-        detail: succeeded
+        // Label by the same rule attribution uses, so the alert points at the
+        // exact row to void: the one WITHOUT our Stripe PI note.
+        detail: duplicated
           .map(
             (p) =>
-              `$${p.amount} ${p.status} ${p.note ? "(ours)" : "(NO NOTE — auto-rule)"} @ ${p.createdAt}`
+              `$${p.amount} ${p.status} ${
+                p.note?.includes("Stripe PI")
+                  ? "(ours — Stripe PI)"
+                  : "(NO Stripe PI note — likely the auto-rule row to void)"
+              } @ ${p.createdAt}`
           )
           .join(" · "),
       });
