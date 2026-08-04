@@ -82,15 +82,40 @@ export async function GET(request: Request) {
 
   // Only bookings we took money for. Recently-departed stays are included on
   // purpose: a bad ledger matters right up until the owner is paid out.
-  const { rows } = await pool.query(
+  // A watchdog that dies quietly is worse than no watchdog: everyone assumes
+  // the ledger is clean because nothing alerted. Surface our own failure.
+  // (This guard exists because the first version of this query compared the
+  // TEXT check_out column to a date literal and 500'd on every run.)
+  let rows: Array<{
+    guesty_id: string;
+    confirmation_code: string | null;
+    status: string | null;
+  }>;
+  try {
+    ({ rows } = await pool.query(
     `SELECT guesty_id, confirmation_code, status
        FROM reservations
       WHERE stripe_payment_intent_id IS NOT NULL
-        AND check_out >= (CURRENT_DATE - INTERVAL '45 days')
+        -- check_in/check_out are TEXT, not dates. Compare against a formatted
+        -- string rather than a date literal: "text >= timestamp" is a hard
+        -- 42883. ISO YYYY-MM-DD sorts correctly lexicographically.
+        AND check_out >= to_char(CURRENT_DATE - INTERVAL '45 days', 'YYYY-MM-DD')
       ORDER BY check_in DESC
       LIMIT $1`,
-    [limit]
-  );
+      [limit]
+    ));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[PaymentAudit] reservation query failed:", message);
+    if (!dryRun) {
+      await sendAlert(
+        "PAYMENT LEDGER AUDIT FAILED TO RUN",
+        `<p>The daily payment-ledger audit could not query reservations, so <strong>no ledger check ran</strong>. Duplicate-payment problems would go unnoticed until this is fixed.</p><p>Error: <code>${message}</code></p>`,
+        "payment-record-audit-broken"
+      ).catch(() => {});
+    }
+    return NextResponse.json({ error: "audit query failed", message }, { status: 500 });
+  }
 
   const findings: Finding[] = [];
   let scanned = 0;
