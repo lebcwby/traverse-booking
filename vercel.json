@@ -31,6 +31,10 @@
       "schedule": "20 * * * *"
     },
     {
+      "path": "/api/cron/audit-payment-records",
+      "schedule": "40 13 * * *"
+    },
+    {
       "path": "/api/cron/orphan-sweep",
       "schedule": "45 */2 * * *"
     },
