@@ -76,3 +76,95 @@ export function getEmailCaptureAttribution(
     device_type: getDeviceType(),
   };
 }
+
+/**
+ * Attribution for an OWNER lead (the /property-management inquiry form).
+ *
+ * Owner acquisition is the highest-value thing the site produces, and it was
+ * the one funnel capturing nothing: the form POSTs to the CRM's /api/leads
+ * with a hardcoded `source: "booktraverse.com"` and no UTMs, referrer, or
+ * landing page. So when a lead arrives, "how did they find us" is
+ * unanswerable — that string looks like attribution but is a constant.
+ *
+ * Two things this deliberately does beyond getEmailCaptureAttribution():
+ *
+ *  1. **First touch as well as last touch.** Owners research for weeks before
+ *     enquiring. The visit that converts is rarely the visit that found us.
+ *  2. **`document.referrer`.** Middleware only writes `_sp_attribution` when a
+ *     UTM/click param is present, so an ORGANIC search visitor — the most
+ *     likely way an owner finds a property manager — leaves no cookie at all.
+ *     The referrer is the only signal available in that case.
+ */
+export interface LeadAttribution {
+  /** Last-touch campaign params, if the visit carried any. */
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmContent?: string;
+  utmTerm?: string;
+  gclid?: string;
+  /** First-touch equivalents — the visit that originally found us. */
+  firstTouchSource?: string;
+  firstTouchMedium?: string;
+  firstTouchCampaign?: string;
+  firstTouchLandingPage?: string;
+  firstTouchAt?: string;
+  /** Landing page of the attributed visit (cookie), if any. */
+  landingPage?: string;
+  /** Where the form was actually submitted from. */
+  submittedFrom?: string;
+  /** External referrer — the fallback signal when no UTMs exist. */
+  referrer?: string;
+  deviceType?: string;
+}
+
+function parseAttributionCookie(name: string): Record<string, string> {
+  const raw = getCookie(name);
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw) as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
+export function getLeadAttribution(): LeadAttribution {
+  const last = parseAttributionCookie("_sp_attribution");
+  const first = parseAttributionCookie("_sp_first_touch");
+
+  // Same-origin referrers say nothing about acquisition — the interesting
+  // case is arriving from Google, a directory, or another site.
+  let referrer: string | undefined;
+  if (typeof document !== "undefined" && document.referrer) {
+    try {
+      const ref = new URL(document.referrer);
+      if (ref.hostname !== window.location.hostname) referrer = document.referrer;
+    } catch {
+      /* malformed referrer — ignore */
+    }
+  }
+
+  const attribution: LeadAttribution = {
+    utmSource: last.utm_source || undefined,
+    utmMedium: last.utm_medium || undefined,
+    utmCampaign: last.utm_campaign || undefined,
+    utmContent: last.utm_content || undefined,
+    utmTerm: last.utm_term || undefined,
+    gclid: last.gclid || undefined,
+    firstTouchSource: first.utm_source || undefined,
+    firstTouchMedium: first.utm_medium || undefined,
+    firstTouchCampaign: first.utm_campaign || undefined,
+    firstTouchLandingPage: first.landingPage || undefined,
+    firstTouchAt: first.capturedAt || undefined,
+    landingPage: last.landingPage || first.landingPage || undefined,
+    submittedFrom:
+      typeof window !== "undefined" ? window.location.pathname : undefined,
+    referrer,
+    deviceType: getDeviceType(),
+  };
+
+  // Drop empty keys so the CRM payload stays readable in logs and Slack.
+  return Object.fromEntries(
+    Object.entries(attribution).filter(([, v]) => v !== undefined && v !== "")
+  ) as LeadAttribution;
+}

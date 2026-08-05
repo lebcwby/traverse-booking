@@ -22,6 +22,7 @@ import {
 } from "@/components/turnstile-widget";
 import { GoogleReviewsCarousel } from "@/components/google-reviews-carousel";
 import { PORTFOLIO_STATS } from "@/lib/portfolio-stats";
+import { getLeadAttribution } from "@/lib/attribution";
 import "../no-fees/no-fees.css";
 
 const B2B_PHONE = { tel: "+19705333583", display: "(970) 533-3583" };
@@ -193,6 +194,13 @@ export default function PropertyManagementPage() {
           expectations: fd.get("expectations") || "",
           turnstileToken,
           source: "booktraverse.com",
+          // How this owner actually found us. `source` above is a hardcoded
+          // constant (it renders in Slack as "Direct inquiry · booktraverse.com"
+          // for EVERY lead regardless of origin), so without this the
+          // highest-value funnel on the site has no attribution at all.
+          // The CRM ignores unknown fields today; it will store these once
+          // team.traversehospitality.com/api/leads is updated to read them.
+          attribution: getLeadAttribution(),
         }),
       });
       const data: { ok?: boolean; error?: string } = await res.json();
