@@ -59,6 +59,12 @@ const KLAVIYO_COMPANY_ID =
   process.env.NEXT_PUBLIC_KLAVIYO_COMPANY_ID || "UMUgtM";
 const HUBSPOT_PORTAL_ID =
   process.env.NEXT_PUBLIC_HUBSPOT_PORTAL_ID || "7792991";
+// Region-specific host. This portal is na2 (the form embed uses
+// js-na2.hsforms.net), and the unprefixed js.hs-scripts.com only 307-redirects
+// here — verified live: it returned 307/0 bytes and the tracker never ran,
+// while js-na2 returns the real loader. na1 portals use the bare host.
+const HUBSPOT_SCRIPT_HOST =
+  process.env.NEXT_PUBLIC_HUBSPOT_SCRIPT_HOST || "js-na2.hs-scripts.com";
 
 function loadScriptOnce(id: string, src: string) {
   if (document.getElementById(id)) return;
@@ -239,7 +245,7 @@ export function ConsentManager() {
         if (!getEffectiveClientConsent().analytics) return;
         loadScriptOnce(
           "hs-script-loader",
-          `https://js.hs-scripts.com/${HUBSPOT_PORTAL_ID}.js`
+          `https://${HUBSPOT_SCRIPT_HOST}/${HUBSPOT_PORTAL_ID}.js`
         );
       };
       if ("requestIdleCallback" in window) {
