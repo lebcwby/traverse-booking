@@ -124,12 +124,103 @@ for the acquisition funnel. Build after the owner version is running.
 
 ---
 
-## Open decisions for Nadim
+## Decisions — LOCKED 2026-08-09
 
-1. **Cadence** — quarterly (recommended) or monthly?
-2. **Market benchmark** — buy PriceLabs/AirDNA, or ship with honest YoY-vs-ourselves?
-3. **Personalisation** — worth funding the financials backfill for Phase 2?
-4. **Sender & channel** — from Alex/Nadim personally or "Traverse Hospitality"? Klaviyo
-   (separate owner list, suppressed from guest campaigns) or direct/BCC?
-5. **Anything deliberately excluded?** e.g. some managers avoid publishing portfolio-wide
-   occupancy because owners compare themselves to the average and complain.
+1. **Cadence** — quarterly, season-aligned (Apr / Jul / Oct / Jan).
+2. **Market benchmark** — we have three sources: **PriceLabs (MCP, connectable)**,
+   **AirDNA (login only, no API)**, **KeyData**. PriceLabs MCP is the automated path.
+3. **Personalisation** — spec below; Nadim reviewing before funding.
+4. **Sender & channel** — from **Nadim** personally, via **Klaviyo on a separate owner list**
+   (suppressed from all guest campaigns).
+5. **Publish the comparison anyway.** Nadim's call: showing a listing against the market is a
+   *feature*, not a risk — it forces the improvement conversation, and the goal is that every
+   listing beats its comp set. This reframes the newsletter from reporting to **advisory**
+   and makes per-listing benchmarking the core value, not a nice-to-have.
+
+---
+
+## Personalisation — how it actually works
+
+### The mechanism
+Klaviyo renders **one template per recipient** using custom properties stored on that
+recipient's profile. We compute the numbers, push them onto the owner's profile, and the
+template merges them at send time. One send → 133 uniquely-rendered emails.
+
+### Step 1 — compute per-owner metrics (quarterly job)
+For each owner, for each of their live listings:
+
+| Property | Source | Status |
+|---|---|---|
+| `owner_first_name`, `listing_name` | CRM `owners` + `listings` | ✅ ready |
+| `q_occupancy`, `q_nights`, `q_bookings`, `q_los` | `reservations` | ✅ ready |
+| `q_revenue`, `q_adr`, `q_revpar` | `financials_jsonb.hostPayout` | ⚠️ needs backfill |
+| `q_revenue_ly`, `q_yoy_pct` | same, prior year | ⚠️ needs backfill |
+| `mkt_occupancy`, `mkt_adr`, `mkt_revpar` | **PriceLabs comp set** | ⚠️ needs MCP connected |
+| `q_direct_pct`, `q_commission_saved` | `reservations.source` | ✅ ready |
+| `q_rating`, `q_review_count` | `reviews` | ✅ ready |
+| `next_q_pace_pct` | `booked_at` pacing | ✅ ready |
+
+### Step 2 — push to Klaviyo
+Same two-step pattern as the guest sync (`src/lib/klaviyo-guest-sync.ts`):
+`profile-bulk-import-jobs` for the attributes, then list membership. Attributes are
+overwritten each quarter, so the template always reflects the current period.
+
+### Step 3 — merge into the template
+```
+Hi {{ person.owner_first_name }},
+
+{{ person.listing_name }} earned ${{ person.q_revenue|format_number }} in Q3
+— {{ person.q_yoy_pct }}% vs the same quarter last year.
+
+Occupancy: {{ person.q_occupancy }}%   (market: {{ person.mkt_occupancy }}%)
+ADR:       ${{ person.q_adr }}         (market: ${{ person.mkt_adr }})
+```
+
+### Step 4 — conditional blocks (this is the part that delivers decision 5)
+The *same* email becomes a congratulation or an improvement conversation, automatically:
+
+```
+{% if person.q_occupancy > person.mkt_occupancy %}
+  Your listing outperformed its comp set by
+  {{ person.q_occupancy|minus:person.mkt_occupancy }} points this quarter.
+{% else %}
+  Your listing ran below its comp set this quarter. We'd like to walk you through
+  three changes we think would close the gap — reply and we'll book 20 minutes.
+{% endif %}
+```
+
+That single block is the strategic centre of the whole newsletter: it converts a passive
+report into a booked call, at scale, without anyone writing 133 emails.
+
+### Multi-property owners
+~40 owners hold more than one listing. Two options:
+- **Recommended:** one email, repeating a per-listing block via a JSON array property.
+- Simpler fallback: one email per listing (owners with 4 properties get 4 emails — noisy).
+
+### Coverage — verified 2026-08-09
+`listings.primary_owner_id` is **empty for all 191 live listings** (it only holds historical
+mappings — a trap worth knowing). The live link is the **`owner_listings` join table**:
+
+- 198 live listing-owner rows, **192 mapped (97%)**
+- **136 owners covered; 133 active with a valid email**
+- 6 live listings unmapped, and ~42 emailable active owners not linked to a live listing
+  → both need a data-cleanup pass before the first personalised send
+
+### Dependencies, in order
+1. **`owner_listings` cleanup** — 6 unmapped listings (cheap, do first)
+2. **PriceLabs MCP connected** — unlocks every market comparison
+3. **`financials_jsonb` backfill** — unlocks all revenue/ADR/RevPAR and YoY
+
+Occupancy, pace, channel mix, direct share and reviews are all computable **today**, so a
+personalised newsletter is shippable without (3) — it just omits dollar figures.
+
+---
+
+## Open items
+
+- Connect the **PriceLabs MCP** (Nadim — claude.ai connector settings). Not in Claude's
+  connector registry, so it needs adding as a custom server.
+- Confirm whether **KeyData** exposes an API (AirDNA is login-only → manual quarterly pull).
+- Decide multi-property format (one email vs per-listing).
+- Note: an `owner_subscription_preferences` table already exists — check it before building
+  any separate newsletter opt-out.
