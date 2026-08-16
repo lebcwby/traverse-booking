@@ -229,6 +229,7 @@ const MARKETING_COPY_KEYWORDS =
 // copy lands — a missed file is how the site drifted to 25 stale "189+" refs.
 const MARKETING_AUDIT_FILES = [
   "src/app/page.tsx",
+  "src/app/audit/page.tsx",
   "src/app/reviews/page.tsx",
   "src/app/crested-butte/content.ts",
   "src/app/api/plan/save/route.ts",

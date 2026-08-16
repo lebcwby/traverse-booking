@@ -3,7 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Camera, FileText, ShieldCheck, Star, TrendingUp, ClipboardList, MessageSquareQuote } from "lucide-react";
 import { AuditLeadForm } from "@/components/audit/audit-lead-form";
-import { PORTFOLIO_STATS } from "@/lib/portfolio-stats";
 import "./audit.css";
 
 const B2B_PHONE = { tel: "+19705333583", display: "(970) 533-3583" };
@@ -133,7 +132,7 @@ export default function ListingAuditPage() {
             Most Colorado owners are one photo order and three sentences away
             from a materially better booking rate. Paste your listing and
             we&apos;ll tell you exactly where it&apos;s leaking — free, from the
-            team that manages {PORTFOLIO_STATS.totalListings}+ mountain homes.
+            team that manages 190+ mountain homes.
           </p>
 
           <div className="audit-formcard" id="audit">
@@ -146,7 +145,7 @@ export default function ListingAuditPage() {
 
           <ul className="audit-trust">
             <li>
-              <strong>{PORTFOLIO_STATS.totalListings}+</strong> Colorado homes managed
+              <strong>190+</strong> Colorado homes managed
             </li>
             <li>
               <strong>80,000+</strong> guests hosted since 2016
@@ -244,7 +243,7 @@ export default function ListingAuditPage() {
           <div>
             <h2>Why we give this away</h2>
             <p>
-              We manage {PORTFOLIO_STATS.totalListings}+ homes across six
+              We manage 190+ homes across six
               Colorado mountain markets, and we see the same handful of fixable
               problems on listing after listing — good properties underperforming
               for reasons the owner can&apos;t see from the inside.
