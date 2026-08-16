@@ -77,6 +77,19 @@ const nextConfig: NextConfig = {
       { type: "host" as const, value: "(www\\.)?traversehospitality\\.com" },
     ];
     return [
+      // ─── audit.booktraverse.com — listing-audit landing page only ───────
+      // The subdomain exists to serve one page. Because Vercel answers every
+      // attached domain with the whole app, the rest of the site would
+      // otherwise be reachable (and indexable) a second time under this host.
+      // Send everything except the root, the API and Next's own assets back
+      // to the canonical www domain.
+      {
+        source: "/:path((?!api/|_next/|monitoring).+)",
+        has: [{ type: "host", value: "audit\\.booktraverse\\.com" }],
+        destination: "https://www.booktraverse.com/:path",
+        permanent: true,
+      },
+
       // ─── reservations.booktraverse.com — old Guesty Booking Engine ──────
       // Subdomain was added as a custom domain to this Vercel project on
       // 2026-05-20 specifically so we can 301 these legacy URLs from search
@@ -523,6 +536,19 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return {
+      beforeFiles: [
+        // audit.booktraverse.com serves the owner listing-audit landing page.
+        // Vercel serves the whole app on every attached domain, so this only
+        // needs to map the subdomain's root onto /audit — /api/audit-request
+        // already resolves on that host, which is what the form posts to.
+        // (The catch-all redirect in redirects() keeps the rest of the site
+        // from being crawlable twice under this hostname.)
+        {
+          source: "/",
+          has: [{ type: "host", value: "audit\\.booktraverse\\.com" }],
+          destination: "/audit",
+        },
+      ],
       afterFiles: [
         {
           source: "/googled24fbb127c11e5a0.html",
