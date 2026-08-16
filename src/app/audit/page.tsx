@@ -74,6 +74,24 @@ const deliverables = [
   },
 ];
 
+const markets = [
+  { name: "Crested Butte", image: "/markets/crested-butte.jpg" },
+  { name: "Leadville", image: "/markets/leadville.jpg" },
+  { name: "Vail", image: "/property-management/markets/vail.jpg" },
+  { name: "Avon", image: "/markets/avon.jpg" },
+  { name: "Granby", image: "/property-management/markets/granby.jpg" },
+  { name: "Twin Lakes", image: "/property-management/markets/twin-lakes.jpg" },
+];
+
+/** Mock rows for the report preview — illustrative, not a real audit. */
+const previewFixes = [
+  { sev: "high", label: "Move the deck-at-sunset shot to photo 1", tag: "Photos" },
+  { sev: "high", label: "Title doesn't mention ski-in access", tag: "Title" },
+  { sev: "med", label: "First 200 characters read as boilerplate", tag: "Description" },
+  { sev: "med", label: "No mention of a local team in the listing", tag: "Trust" },
+  { sev: "low", label: "Hot tub not tagged as an amenity", tag: "Amenities" },
+];
+
 const faqs = [
   {
     q: "Is it actually free?",
@@ -121,41 +139,69 @@ export default function ListingAuditPage() {
         </nav>
       </header>
 
-      {/* ── Hero ── */}
+      {/* ── Hero — photographic, dark. The page was previously white-on-white
+           top to bottom; the porch view gives it a subject and instant
+           contrast, and the form card reads as the one thing to do. ── */}
       <section className="audit-hero" id="top">
-        <div className="audit-shell">
-          <p className="audit-eyebrow">Free listing audit</p>
-          <h1>
-            Your listing is losing bookings in the first three seconds.
-          </h1>
-          <p className="audit-lede">
-            Most Colorado owners are one photo order and three sentences away
-            from a materially better booking rate. Paste your listing and
-            we&apos;ll tell you exactly where it&apos;s leaking — free, from the
-            team that manages 190+ mountain homes.
-          </p>
+        <Image
+          src="/property-management/hero-porch-view.png"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="audit-hero-img"
+        />
+        <div className="audit-hero-scrim" />
+        <div className="audit-shell audit-hero-inner">
+          <div className="audit-hero-copy">
+            <p className="audit-eyebrow">Free listing audit</p>
+            <h1>Your listing is losing bookings in the first three seconds.</h1>
+            <p className="audit-lede">
+              Most Colorado owners are one photo order and three sentences away
+              from a materially better booking rate. Paste your listing and
+              we&apos;ll tell you exactly where it&apos;s leaking — free, from
+              the team that manages 190+ mountain homes.
+            </p>
+            <ul className="audit-trust">
+              <li>
+                <strong>190+</strong> homes managed
+              </li>
+              <li>
+                <strong>80,000+</strong> guests since 2016
+              </li>
+              <li>
+                <strong>4.8</strong> guest rating
+              </li>
+              <li>
+                <strong>6</strong> mountain markets
+              </li>
+            </ul>
+          </div>
 
           <div className="audit-formcard" id="audit">
+            <p className="audit-formcard-title">Start your free audit</p>
             <AuditLeadForm id="audit-hero" source="hero" />
             <p className="audit-formnote">
               Written by a person, back within one business day. No card, no
               commitment.
             </p>
           </div>
+        </div>
+      </section>
 
-          <ul className="audit-trust">
-            <li>
-              <strong>190+</strong> Colorado homes managed
-            </li>
-            <li>
-              <strong>80,000+</strong> guests hosted since 2016
-            </li>
-            <li>
-              <strong>4.8</strong> average guest rating
-            </li>
-            <li>
-              <strong>6</strong> mountain markets
-            </li>
+      {/* ── Market strip — proves the "local" claim visually ── */}
+      <section className="audit-markets" aria-label="Markets we operate in">
+        <div className="audit-shell">
+          <p className="audit-markets-label">
+            Boots on the ground in six Colorado mountain markets
+          </p>
+          <ul className="audit-markets-row">
+            {markets.map((m) => (
+              <li key={m.name}>
+                <Image src={m.image} alt="" width={200} height={130} />
+                <span>{m.name}</span>
+              </li>
+            ))}
           </ul>
         </div>
       </section>
@@ -222,14 +268,55 @@ export default function ListingAuditPage() {
             Written for someone who owns one property, not a portfolio manager
             with a spreadsheet.
           </p>
-          <div className="audit-deliverables">
-            {deliverables.map(({ icon: Icon, title, body }) => (
-              <div className="audit-deliverable" key={title}>
-                <Icon className="audit-deliv-icon" aria-hidden="true" />
-                <h3>{title}</h3>
-                <p>{body}</p>
+          <div className="audit-getgrid">
+            <div className="audit-deliverables">
+              {deliverables.map(({ icon: Icon, title, body }) => (
+                <div className="audit-deliverable" key={title}>
+                  <Icon className="audit-deliv-icon" aria-hidden="true" />
+                  <h3>{title}</h3>
+                  <p>{body}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Illustrative preview of the write-up. Sample content, clearly
+                labelled — the numbers are not from a real property. */}
+            <figure className="audit-preview" aria-labelledby="preview-cap">
+              <div className="audit-preview-card">
+                <div className="audit-preview-head">
+                  <span className="audit-preview-dot" />
+                  <span className="audit-preview-dot" />
+                  <span className="audit-preview-dot" />
+                  <span className="audit-preview-file">
+                    listing-audit.pdf
+                  </span>
+                </div>
+                <div className="audit-preview-body">
+                  <div className="audit-preview-score">
+                    <div className="audit-preview-ring">
+                      <span>68</span>
+                      <small>/100</small>
+                    </div>
+                    <div>
+                      <strong>Overall listing score</strong>
+                      <p>Strong property, under-sold above the fold.</p>
+                    </div>
+                  </div>
+                  <ul className="audit-preview-list">
+                    {previewFixes.map((f) => (
+                      <li key={f.label}>
+                        <span className={`audit-sev audit-sev-${f.sev}`} />
+                        <span className="audit-preview-fix">{f.label}</span>
+                        <span className="audit-preview-tag">{f.tag}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-            ))}
+              <figcaption id="preview-cap">
+                Sample layout. Your report is written for your property.
+              </figcaption>
+            </figure>
           </div>
         </div>
       </section>

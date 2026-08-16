@@ -62,6 +62,11 @@ export function AuditLeadForm({
           consent: fd.get("consent") === "on",
           company: fd.get("company") || "",
           page: source,
+          // HubSpot's visitor token. Set by the tracking script we load
+          // site-wide under analytics consent; passing it is what lets
+          // HubSpot attach this submission to the pages they viewed first.
+          hutk:
+            document.cookie.match(/(?:^|; )hubspotutk=([^;]*)/)?.[1] ?? "",
         }),
       });
       const data = (await res.json()) as { ok?: boolean; error?: string };

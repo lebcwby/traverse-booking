@@ -34,6 +34,73 @@ interface Payload {
   /** Honeypot — real users never see or fill this. */
   company?: string;
   page?: string;
+  /** HubSpot visitor token, read from the `hubspotutk` cookie by the client. */
+  hutk?: string;
+}
+
+const HUBSPOT_PORTAL_ID = process.env.HUBSPOT_PORTAL_ID || "7792991";
+const HUBSPOT_AUDIT_FORM_GUID = process.env.HUBSPOT_AUDIT_FORM_GUID || "";
+
+/**
+ * Push the lead into HubSpot via the public Forms API.
+ *
+ * Deliberately the Forms API and not the CRM API: it needs no private token
+ * (we have none in this project), it creates/updates the contact for us, and
+ * — critically — a form submission is a workflow trigger, which is how the
+ * deal gets created in STR Sales and tagged as an audit request. Posting
+ * straight at the CRM would create a contact that fires nothing.
+ *
+ * Passing `hutk` is what ties this submission to the visitor's page-view
+ * history, so HubSpot can finally answer "how did this owner find us".
+ */
+async function pushToHubSpot(fields: {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  zipcode: string;
+  listingUrl: string;
+  hutk: string;
+  pageUri: string;
+}): Promise<{ ok: boolean; detail?: string }> {
+  if (!HUBSPOT_AUDIT_FORM_GUID) {
+    return { ok: false, detail: "HUBSPOT_AUDIT_FORM_GUID not configured" };
+  }
+
+  const body = {
+    fields: [
+      { objectTypeId: "0-1", name: "email", value: fields.email },
+      { objectTypeId: "0-1", name: "firstname", value: fields.firstName },
+      ...(fields.lastName
+        ? [{ objectTypeId: "0-1", name: "lastname", value: fields.lastName }]
+        : []),
+      ...(fields.phone
+        ? [{ objectTypeId: "0-1", name: "phone", value: fields.phone }]
+        : []),
+      ...(fields.zipcode
+        ? [{ objectTypeId: "0-1", name: "zip", value: fields.zipcode }]
+        : []),
+      { objectTypeId: "0-1", name: "listing_url", value: fields.listingUrl },
+    ],
+    context: {
+      pageUri: fields.pageUri,
+      pageName: "Free Colorado Listing Audit",
+      ...(fields.hutk ? { hutk: fields.hutk } : {}),
+    },
+  };
+
+  const res = await fetch(
+    `https://api.hsforms.com/submissions/v3/integration/submit/${HUBSPOT_PORTAL_ID}/${HUBSPOT_AUDIT_FORM_GUID}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(8000),
+    }
+  );
+
+  if (res.ok) return { ok: true };
+  return { ok: false, detail: `${res.status} ${(await res.text()).slice(0, 300)}` };
 }
 
 const str = (v: unknown, max = 300) =>
@@ -115,8 +182,31 @@ export async function POST(request: Request) {
 
   const fullName = [firstName, lastName].filter(Boolean).join(" ");
 
-  // Ops alert. ALERT_TO_EMAIL is set, so this actually delivers — before
-  // 2026-08-03 an alert without an explicit `to:` was silently dropped.
+  // HubSpot first — it's the system of record for owner leads. Never let a
+  // failure here lose the lead: we still alert ops and acknowledge the owner,
+  // and the alert says plainly that HubSpot didn't take it.
+  let hubspot: { ok: boolean; detail?: string };
+  try {
+    hubspot = await pushToHubSpot({
+      email,
+      firstName,
+      lastName,
+      phone,
+      zipcode,
+      listingUrl: airbnbUrl,
+      hutk: str(body.hutk, 120),
+      pageUri: `https://audit.booktraverse.com/#${page}`,
+    });
+  } catch (err) {
+    hubspot = {
+      ok: false,
+      detail: err instanceof Error ? err.message : "unknown error",
+    };
+  }
+
+  // Ops alert, explicitly to the shared inbox. ALERT_TO_EMAIL is set now, but
+  // naming the recipient here means this keeps working even if that variable
+  // is ever changed for other alerting.
   await sendAlert(
     `LISTING AUDIT REQUEST — ${fullName}`,
     [
@@ -128,12 +218,19 @@ export async function POST(request: Request) {
         ["Zip / postal", zipcode || "(not given)"],
         ["Listing", airbnbUrl],
         ["Submitted from", page],
+        [
+          "HubSpot",
+          hubspot.ok
+            ? "Created — deal should appear in STR Sales"
+            : `NOT CREATED — ${hubspot.detail ?? "unknown"}. Add this lead by hand.`,
+        ],
       ]),
       "<p><strong>Next step:</strong> review the listing and send the written audit back.</p>",
     ].join(""),
     // Unique per submission so a second request from the same owner is never
     // swallowed by the alert cooldown.
-    `listing-audit-${email}-${Date.now()}`
+    `listing-audit-${email}-${Date.now()}`,
+    { to: "admin@traversehospitality.com" }
   ).catch(() => {});
 
   // Acknowledgement to the owner. They ticked consent and asked us to contact
