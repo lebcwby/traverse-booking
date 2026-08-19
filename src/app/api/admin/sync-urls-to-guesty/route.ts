@@ -361,6 +361,17 @@ export async function GET(request: Request) {
   const fieldName = url.searchParams.get("fieldName") || DEFAULT_FIELD_NAME;
   const limitParam = url.searchParams.get("limit");
   const limit = limitParam ? Number(limitParam) : undefined;
+
+  // Fixed value to write, instead of deriving a per-listing URL. Must be a
+  // real https URL — a typo'd constant would otherwise be stamped across every
+  // targeted listing in one go.
+  const constantValue = url.searchParams.get("value")?.trim() || undefined;
+  if (constantValue && !/^https:\/\/\S+$/.test(constantValue)) {
+    return NextResponse.json(
+      { error: "?value must be an https:// URL", received: constantValue },
+      { status: 400 }
+    );
+  }
   if (limitParam && (!Number.isFinite(limit) || limit! <= 0)) {
     return NextResponse.json(
       { error: "Invalid ?limit; must be a positive integer" },
@@ -456,6 +467,22 @@ export async function GET(request: Request) {
     fieldMeta = found.raw;
   }
 
+  // Optional tag filter, applied BEFORE `limit` so that limit still means
+  // "first N of the set I'm actually targeting". Substring, case-insensitive:
+  // ?tag=grand+lodge matches Guesty's "The Grand Lodge Crested Butte".
+  const tagFilter = url.searchParams.get("tag")?.trim().toLowerCase();
+  if (tagFilter) {
+    listings = listings.filter((l) => {
+      const tags = (l as { tags?: unknown }).tags;
+      return (
+        Array.isArray(tags) &&
+        tags.some(
+          (t) => typeof t === "string" && t.toLowerCase().includes(tagFilter)
+        )
+      );
+    });
+  }
+
   if (limit !== undefined) listings = listings.slice(0, limit);
 
   // 3) For each, decide what to do
@@ -494,7 +521,11 @@ export async function GET(request: Request) {
       });
       continue;
     }
-    const desiredUrl = buildListingUrl(listing);
+    // ?value=<constant> sets one fixed value on every targeted listing instead
+    // of the per-listing booktraverse.com URL. Used for shared fields like
+    // googlereviewlink, where every listing in a building points at the same
+    // Google Business Profile.
+    const desiredUrl = constantValue ?? buildListingUrl(listing);
     if (!desiredUrl) {
       results.push({
         listingId: id,
