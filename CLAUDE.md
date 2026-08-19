@@ -56,6 +56,15 @@ separately — see memory `feedback_guesty_notes_push_wipes_other_things_to_note
 The route's `fieldName` lookup (`book_direct_link`) does NOT match Guesty's
 actual label and 404s — pass `?fieldId=68dd93d0a549970030833297` explicitly.
 
+**Guesty "Additional links" is NOT API-writable — settled 2026-08-19, don't
+re-investigate.** The links in that panel come from `integrations[].externalUrl`,
+which Guesty fills from real channel connections (airbnb2, homeaway2,
+bookingCom…). booktraverse.com isn't a Guesty channel, so there's no slot for
+it, and the Open API listing object has no `additionalLinks` field — checked all
+66 top-level keys; only `integrations` and `publicDescription` carry links.
+Decision: the Book Direct Link custom field is the supported mechanism and is
+correct on all 375 listings. Leave it there.
+
 The site itself was never affected — this was always Guesty-internal data.
 
 ---
