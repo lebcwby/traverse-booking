@@ -18,30 +18,45 @@ This file gives Claude Code everything it needs to continue work on this project
 
 ---
 
-## 🚨 OPEN INCIDENT (2026-05-20) — Read this first
+## ✅ CLOSED INCIDENT (2026-05-20 → resolved 2026-08-19) — customFields wipe
 
-**~185 Guesty listings had their `customFields` array wiped** at ~15:30 MT
-on 2026-05-20 when `/api/admin/sync-urls-to-guesty` ran with the wrong
-update semantics. The Book Direct Link field itself was correctly updated;
-all OTHER customFields on those listings (welcome messages, Google review
-links, phone numbers, unit numbers, door codes, owner bios, etc.) were
-replaced with an empty array.
+**What happened:** ~185 Guesty listings had their `customFields` array wiped on
+2026-05-20 when `/api/admin/sync-urls-to-guesty` PUT only its own field —
+Guesty's PUT **replaces** the whole array rather than merging by fieldId.
+Details in `docs/incidents/2026-05-20-customfields-wipe.md`; affected list in
+`docs/incidents/affected-listings.csv`.
 
-**Status:** Guesty support contacted; awaiting restoration from backup.
-⚠️ **This status is from 2026-05-20 and has not been re-verified since — confirm with Nadim
-whether Guesty restored the data before treating it as still open.** The 🛑 code guard below
-stands regardless.
-Full details + recovery plan in `docs/incidents/2026-05-20-customfields-wipe.md`.
-Affected listings list in `docs/incidents/affected-listings.csv`.
+**Both unblock conditions verified 2026-08-19:**
+1. **Data is back.** Sampled 14 of the 185 affected listings evenly across the
+   list — every one has 3–10 populated customFields. None empty.
+2. **The code is fixed.** `patchListingCustomField` now does read-modify-write
+   (GET current array → swap our entry → PUT the merged whole) and *aborts*
+   rather than writing if any existing entry lacks a `fieldId`/`_id`, so an
+   unexpected shape can't silently drop fields again.
 
-**🛑 DO NOT** run `/api/admin/sync-urls-to-guesty` again until both:
-1. Guesty restores the customFields from backup, AND
-2. The `patchListingCustomField` function in
-   `src/app/api/admin/sync-urls-to-guesty/route.ts` is patched to use
-   read-modify-write semantics (GET listing, merge customFields, PUT).
-   Pseudocode is in the incident doc.
+**Re-run safely on 2026-08-19** to move Book Direct Link onto booktraverse.com
+URLs: 233 updated, 142 already correct, **0 errors**, and a before/after diff of
+12 listings' full customFields showed **zero collateral change**. Final state:
+375/375 correct.
 
-The site itself is fine — this is purely a Guesty-internal data issue.
+### Still true, and the reason this happened
+⚠️ **Guesty's `PUT /v1/listings/{id}` REPLACES `customFields` wholesale.** Any
+future writer must read-modify-write. Same trap bit `publicDescription.notes`
+separately — see memory `feedback_guesty_notes_push_wipes_other_things_to_note`.
+
+**Procedure for any customFields write** (all three steps, in order):
+1. Dry run (default) — confirm the target field and counts.
+2. Real write limited to ONE listing, then diff that listing's other fields.
+   ⚠️ `limit=N` truncates the listing list *before* filtering, so `limit=1` will
+   usually hit an already-correct listing and write nothing. Find the index of
+   the first listing needing an update and set `limit` to index+1.
+3. Full run, then re-run the dry run to confirm 0 remaining.
+
+**Field reference:** "Book Direct Link" is fieldId `68dd93d0a549970030833297`.
+The route's `fieldName` lookup (`book_direct_link`) does NOT match Guesty's
+actual label and 404s — pass `?fieldId=68dd93d0a549970030833297` explicitly.
+
+The site itself was never affected — this was always Guesty-internal data.
 
 ---
 
