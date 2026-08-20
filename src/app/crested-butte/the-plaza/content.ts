@@ -3,7 +3,7 @@ export const pageContent = `
 <!-- ══════ QUICK FACTS ══════ -->
 <section class="facts">
   <div class="facts-inner">
-    <div class="fact"><span class="fact-num">14</span><span class="fact-label">Traverse-managed condos — 2BR and 3BR suites</span></div>
+    <div class="fact"><span class="fact-num">17</span><span class="fact-label">Traverse-managed condos — 2BR and 3BR suites</span></div>
     <div class="fact"><span class="fact-num">100</span><span class="fact-label">Yards to the Silver Queen lift</span></div>
     <div class="fact"><span class="fact-num">6–8</span><span class="fact-label">Guests per unit — built for families & groups</span></div>
     <div class="fact"><span class="fact-num">$0</span><span class="fact-label">Booking fees, ever. Book direct and save.</span></div>
@@ -104,7 +104,7 @@ export const pageContent = `
     <div style="margin-bottom:64px;">
       <span class="section-tag">Traverse-Managed Units</span>
       <h2 style="font-size:clamp(34px,4.5vw,52px);margin-top:14px;">Our collection at the Plaza.</h2>
-      <p style="max-width:60ch;margin-top:16px;font-size:16px;color:var(--ink-soft);">We manage 14 individually owned condos in the building — spacious 2 and 3-bedroom suites built for families and groups. Book direct, no fees.</p>
+      <p style="max-width:60ch;margin-top:16px;font-size:16px;color:var(--ink-soft);">We manage 17 individually owned condos in the building — spacious 2 and 3-bedroom suites built for families and groups. Book direct, no fees.</p>
     </div>
 
     <div class="unit-grid">
@@ -225,7 +225,7 @@ export const pageContent = `
     </div>
 
     <div class="all-units-cta">
-      <a href="/properties?city=Crested+Butte&country=United+States&minOccupancy=1&tag=The+Plaza+Crested+Butte" class="btn" style="background:var(--ink-deep);color:#fff;">View All 14 Plaza Units →</a>
+      <a href="/properties?city=Crested+Butte&country=United+States&minOccupancy=1&tag=The+Plaza+Crested+Butte" class="btn" style="background:var(--ink-deep);color:#fff;">View All 17 Plaza Units →</a>
     </div>
   </div>
 </section>
@@ -376,7 +376,7 @@ export const pageContent = `
 <!-- ══════ CTA ══════ -->
 <section class="cta-band">
   <h2>Stay at the Plaza with Traverse</h2>
-  <p>14 spacious condos for families and groups, locally managed. Book direct — no platform markups.</p>
+  <p>17 spacious condos for families and groups, locally managed. Book direct — no platform markups.</p>
   <a href="/properties?city=Crested+Butte&country=United+States&minOccupancy=1&tag=The+Plaza+Crested+Butte" class="btn btn-primary">Search Available Dates</a>
 </section>
 

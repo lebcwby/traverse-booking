@@ -51,6 +51,17 @@ interface StripePaymentProps {
   middleContent?: ReactNode;
   /** Increment to trigger elements.fetchUpdates() after PI amount changes (coupon, upsells) */
   piVersion?: number;
+  /** Hybrid checkout: render ONLY the Apple/Google Pay express button — no Link,
+   *  no Stripe card PaymentElement, no divider/middleContent/submit button. The
+   *  card path is handled by GuestyPay in the parent. */
+  walletsOnly?: boolean;
+  /** Gate opening the wallet sheet on prerequisites (e.g. a complete guest
+   *  form). Return an error message to block the tap (shown via onError) and
+   *  keep the sheet closed, or null to proceed. Wallets can return incomplete
+   *  billing (e.g. no name), so we must have the guest details BEFORE charging —
+   *  otherwise the reservation is created with a bad guest and Guesty rejects it
+   *  AFTER the card is charged. */
+  expressClickGuard?: () => string | null;
 }
 
 function PaymentForm({
@@ -66,6 +77,8 @@ function PaymentForm({
   onSubmitRef,
   middleContent,
   piVersion,
+  walletsOnly,
+  expressClickGuard,
 }: Omit<StripePaymentProps, "clientSecret">) {
   const stripe = useStripe();
   const elements = useElements();
@@ -276,6 +289,19 @@ function PaymentForm({
           options={{
             emailRequired: true,
             phoneNumberRequired: true,
+            // Hybrid: cards go to GuestyPay, so the Stripe express zone is
+            // restricted to true device wallets — no Link/PayPal/Amazon Pay.
+            ...(walletsOnly
+              ? {
+                  paymentMethods: {
+                    applePay: "auto" as const,
+                    googlePay: "auto" as const,
+                    link: "never" as const,
+                    amazonPay: "never" as const,
+                    paypal: "never" as const,
+                  },
+                }
+              : {}),
             buttonType: {
               applePay: "book",
               googlePay: "book",
@@ -288,7 +314,16 @@ function PaymentForm({
             },
           }}
           onConfirm={handleExpressConfirm}
-          onClick={(event) => event.resolve()}
+          onClick={(event) => {
+            // Block the wallet sheet until prerequisites are met (complete guest
+            // form). Not resolving keeps the sheet closed — no charge happens.
+            const guardError = expressClickGuard?.();
+            if (guardError) {
+              onError(guardError);
+              return;
+            }
+            event.resolve();
+          }}
           onReady={(event) => {
             const methods = event.availablePaymentMethods;
             setExpressAvailable(
@@ -298,19 +333,23 @@ function PaymentForm({
         />
       </div>
 
-      {/* Divider */}
-      {expressAvailable && (
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              Or pay with card
-            </span>
-          </div>
-        </div>
-      )}
+      {/* In wallets-only (hybrid) mode nothing renders below the express button —
+          the parent supplies the "or pay with card" divider + the GuestyPay form. */}
+      {!walletsOnly && (
+        <>
+          {/* Divider */}
+          {expressAvailable && (
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or pay with card
+                </span>
+              </div>
+            </div>
+          )}
 
       {/* Middle content — guest form, upsells, etc. inserted by parent */}
       {middleContent}
@@ -349,26 +388,28 @@ function PaymentForm({
         />
       </div>
 
-      {!hideButton && (
-        <Button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            handleSubmit();
-          }}
-          disabled={!stripe || !ready || loading || disabled}
-          className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-          size="lg"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Processing...
-            </>
-          ) : (
-            "Complete Booking"
+          {!hideButton && (
+            <Button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                handleSubmit();
+              }}
+              disabled={!stripe || !ready || loading || disabled}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              size="lg"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                "Complete Booking"
+              )}
+            </Button>
           )}
-        </Button>
+        </>
       )}
     </div>
   );

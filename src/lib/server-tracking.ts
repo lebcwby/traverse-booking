@@ -515,6 +515,12 @@ export async function subscribeToKlaviyoList(profile: {
   const apiKey = (process.env.KLAVIYO_PRIVATE_KEY || "").trim();
   if (!apiKey || !profile.email) return;
 
+  // ⚠️ `profile-subscription-bulk-create-jobs` accepts ONLY email / phone_number
+  // / subscriptions. Sending `first_name` or `last_name` makes the WHOLE request
+  // 400 with "'first_name' is not a valid field for the resource 'profile'"
+  // (verified against the live API 2026-07-30) — and because the failure was
+  // only console.error'd, every newsletter/contact-form signup that passed a
+  // name was silently dropped. Names now go via a separate profile-import call.
   const profileAttributes: Record<string, unknown> = {
     email: profile.email,
     subscriptions: {
@@ -528,8 +534,47 @@ export async function subscribeToKlaviyoList(profile: {
       sms: { marketing: { consent: "SUBSCRIBED" } },
     };
   }
-  if (profile.firstName) profileAttributes.first_name = profile.firstName;
-  if (profile.lastName) profileAttributes.last_name = profile.lastName;
+
+  // Names + any future custom properties: separate endpoint, best-effort. Run
+  // first so the profile carries a name before it lands on the list. Never let
+  // this block the subscribe — consent is the part that matters.
+  if (profile.firstName || profile.lastName) {
+    try {
+      await fetch("https://a.klaviyo.com/api/profile-bulk-import-jobs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Klaviyo-API-Key ${apiKey}`,
+          revision: "2025-04-15",
+        },
+        body: JSON.stringify({
+          data: {
+            type: "profile-bulk-import-job",
+            attributes: {
+              profiles: {
+                data: [
+                  {
+                    type: "profile",
+                    attributes: {
+                      email: profile.email,
+                      ...(profile.firstName
+                        ? { first_name: profile.firstName }
+                        : {}),
+                      ...(profile.lastName
+                        ? { last_name: profile.lastName }
+                        : {}),
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        }),
+      });
+    } catch (error) {
+      console.error("[Klaviyo] Profile name import failed:", error);
+    }
+  }
 
   try {
     const res = await fetch(

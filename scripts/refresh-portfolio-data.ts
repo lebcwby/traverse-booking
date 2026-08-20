@@ -6,15 +6,19 @@
  *  1. Pull live listing counts per market from the Guesty BEAPI
  *  2. Pick the best exterior/feature photo for Vail, Granby, Twin Lakes
  *     and download to /public/property-management/markets/
- *  3. Rewrite src/lib/portfolio-stats.ts and sweep marketing copy in
- *     src/app/page.tsx + src/components/layout/footer.tsx
- *  4. Sweep Traverse-managed unit counts on the building pages
+ *  3. Rewrite src/lib/portfolio-stats.ts
+ *  4. AUDIT (report, don't rewrite) the user-facing portfolio-count claims
+ *     across the marketing surfaces — see auditMarketingCount() for why this
+ *     is deliberately read-only.
+ *  5. Sweep Traverse-managed unit counts on the building pages
  *     (The Plaza, Grand Lodge, Lodge at Mountaineer Square) by pulling
  *     listing counts per BEAPI tag.
  *
  * Usage:
- *   npx tsx scripts/refresh-portfolio-data.ts            # apply changes
- *   npx tsx scripts/refresh-portfolio-data.ts --dry-run  # preview only
+ *   npx tsx scripts/refresh-portfolio-data.ts               # apply changes
+ *   npx tsx scripts/refresh-portfolio-data.ts --dry-run     # preview only
+ *   npx tsx scripts/refresh-portfolio-data.ts --sweep-copy  # also force
+ *                                    marketing copy to match the BEAPI total
  *
  * Required env (loaded from .env.local):
  *   NEXT_PUBLIC_SUPABASE_URL
@@ -96,6 +100,44 @@ async function getBeapiToken(): Promise<string> {
   return data.access_token;
 }
 
+/**
+ * BEAPI rate-limits a burst of back-to-back requests with a 429. This script
+ * fires ~12 of them in a row (6 cities + 3 photo details + 3 building tags),
+ * which reliably trips it partway through and aborts the refresh. Retry on
+ * 429/5xx with exponential backoff, honouring Retry-After when present.
+ */
+async function beapiFetch(
+  url: string | URL,
+  token: string,
+  label: string
+): Promise<Response> {
+  const MAX_ATTEMPTS = 5;
+  let lastStatus = 0;
+  let lastBody = "";
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (r.ok) return r;
+
+    lastStatus = r.status;
+    lastBody = await r.text();
+
+    const retryable = r.status === 429 || r.status >= 500;
+    if (!retryable || attempt === MAX_ATTEMPTS) break;
+
+    const retryAfter = Number(r.headers.get("retry-after"));
+    const waitMs = Number.isFinite(retryAfter) && retryAfter > 0
+      ? retryAfter * 1000
+      : 1000 * 2 ** (attempt - 1); // 1s, 2s, 4s, 8s
+    console.log(
+      `    ⏳ ${label} ${r.status} — retrying in ${Math.round(waitMs / 1000)}s (attempt ${attempt}/${MAX_ATTEMPTS - 1})`
+    );
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
+  }
+
+  throw new Error(`BEAPI ${label} ${lastStatus}: ${lastBody}`);
+}
+
 async function fetchListingsForCity(
   token: string,
   city: string
@@ -104,8 +146,7 @@ async function fetchListingsForCity(
   url.searchParams.set("city", city);
   url.searchParams.set("country", "United States");
   url.searchParams.set("limit", "100");
-  const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  if (!r.ok) throw new Error(`BEAPI ${city} ${r.status}: ${await r.text()}`);
+  const r = await beapiFetch(url, token, city);
   const j = (await r.json()) as { results?: BeapiListing[] };
   return j.results || [];
 }
@@ -114,10 +155,11 @@ async function fetchListingDetail(
   token: string,
   id: string
 ): Promise<BeapiListing> {
-  const r = await fetch(`https://booking.guesty.com/api/listings/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!r.ok) throw new Error(`BEAPI listing ${id} ${r.status}`);
+  const r = await beapiFetch(
+    `https://booking.guesty.com/api/listings/${id}`,
+    token,
+    `listing ${id}`
+  );
   return r.json();
 }
 
@@ -181,6 +223,28 @@ const MARKETING_COPY_FILES = [
 const MARKETING_COPY_KEYWORDS =
   /(homes|properties|rentals|stays|managed rentals|locally managed properties)/;
 
+// Every surface that states a portfolio count to a user or to an AI. The
+// read-only audit checks all of these; MARKETING_COPY_FILES above is only the
+// (opt-in, legacy) rewrite set. Keep this list current when new count-bearing
+// copy lands — a missed file is how the site drifted to 25 stale "189+" refs.
+const MARKETING_AUDIT_FILES = [
+  "src/app/page.tsx",
+  "src/app/audit/page.tsx",
+  "src/app/reviews/page.tsx",
+  "src/app/crested-butte/content.ts",
+  "src/app/api/plan/save/route.ts",
+  "src/components/layout/footer.tsx",
+  "src/components/marketing/stat-bar.tsx",
+  "src/components/plan/plan-landing.tsx",
+  "src/lib/faq-data.ts",
+  "src/lib/schema.tsx",
+  "src/lib/plan/system-prompt.ts",
+  "src/lib/plan/slug-content.ts",
+  "src/lib/blog-automation/brand.ts",
+  "public/llms.txt",
+  "public/llms-full.txt",
+].map((p) => path.resolve(process.cwd(), p));
+
 // Building pages that bake an exact Traverse-managed unit count into the
 // content copy. Each entry lists the BEAPI tag to count by and the regex
 // anchors to rewrite in the building's content.ts. Anchors must include a
@@ -233,8 +297,7 @@ async function fetchListingsForTag(
   const url = new URL("https://booking.guesty.com/api/listings");
   url.searchParams.set("tags", tag);
   url.searchParams.set("limit", "100");
-  const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  if (!r.ok) throw new Error(`BEAPI tag "${tag}" ${r.status}: ${await r.text()}`);
+  const r = await beapiFetch(url, token, `tag "${tag}"`);
   const j = (await r.json()) as { results?: BeapiListing[] };
   return j.results || [];
 }
@@ -251,6 +314,79 @@ async function rewriteBuildingContentFile(
     );
   }
   return { path: sweep.contentFile, before, after };
+}
+
+/**
+ * Report every user-facing portfolio-count claim on the site and how it
+ * compares to the live BEAPI total. Read-only by design — see the note at the
+ * call site for why this is an audit and not a rewrite.
+ *
+ * Scans for "<n>+" and bare "<n>" claims sitting next to portfolio vocabulary
+ * across the marketing surfaces (including the static llms*.txt files and the
+ * AI-facing prompt/brand strings, none of which the old sweep touched).
+ */
+async function auditMarketingCount(actualTotal: number): Promise<void> {
+  const CLAIM_PATTERN =
+    /(\d{2,4})\+?\s*(?:<\/\w+>\s*(?:<[^>]+>\s*)?)?(homes|properties|rentals|stays|vacation\s+\w+|active\s+listings|managed\s+rentals)/gi;
+
+  console.log("\n🔎 Marketing count audit (read-only):");
+  console.log(`  Live BEAPI total: ${actualTotal}`);
+
+  const found = new Map<string, number>(); // claimed value → occurrences
+  const fileHits: Array<{ rel: string; claims: string[] }> = [];
+
+  for (const file of MARKETING_AUDIT_FILES) {
+    let text: string;
+    try {
+      text = await fs.readFile(file, "utf8");
+    } catch {
+      continue; // file moved/renamed — not worth failing the refresh over
+    }
+    const claims: string[] = [];
+    for (const m of text.matchAll(CLAIM_PATTERN)) {
+      const value = m[1];
+      // Skip obvious non-portfolio numbers (guest counts, years, percentages).
+      if (Number(value) > 1000) continue;
+      claims.push(`${value}${m[0].includes("+") ? "+" : ""} ${m[2].trim()}`);
+      found.set(value, (found.get(value) || 0) + 1);
+    }
+    if (claims.length) {
+      fileHits.push({ rel: path.relative(process.cwd(), file), claims });
+    }
+  }
+
+  if (!fileHits.length) {
+    console.log("  (no portfolio-count claims found)");
+    return;
+  }
+
+  const distinct = [...found.keys()].sort((a, b) => Number(a) - Number(b));
+  for (const { rel, claims } of fileHits) {
+    console.log(`  ${rel}: ${claims.length} claim(s) — ${[...new Set(claims)].join(", ")}`);
+  }
+
+  if (distinct.length > 1) {
+    console.log(
+      `\n  ⚠️  INCONSISTENT: the site advertises ${distinct.length} different counts (${distinct.join(", ")}). Pick one and make it uniform.`
+    );
+  } else {
+    const claimed = Number(distinct[0]);
+    const delta = claimed - actualTotal;
+    if (delta > 0) {
+      console.log(
+        `\n  ℹ️  Site claims ${claimed}, live total is ${actualTotal} (overstates by ${delta}). Fine if listings are mid-onboarding — otherwise update the copy.`
+      );
+    } else if (delta < 0) {
+      console.log(
+        `\n  ℹ️  Site claims ${claimed}, live total is ${actualTotal} (understates by ${-delta}). Consider raising the marketing number.`
+      );
+    } else {
+      console.log(`\n  ✓ Site claim matches the live total (${claimed}).`);
+    }
+  }
+  console.log(
+    "  Copy is NOT auto-rewritten. To force alignment with BEAPI, re-run with --sweep-copy."
+  );
 }
 
 async function rewriteMarketingCopyFile(
@@ -305,6 +441,7 @@ function diff(a: string, b: string): string {
 
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
+  const sweepCopy = process.argv.includes("--sweep-copy");
   console.log(`🔄 Portfolio refresh${dryRun ? " (DRY RUN)" : ""}\n`);
 
   const token = await getBeapiToken();
@@ -383,21 +520,39 @@ async function main() {
     console.log(`✓ Wrote ${path.relative(process.cwd(), STATS_FILE)}`);
   }
 
-  // 4. Sweep marketing-copy files (page.tsx, footer.tsx) so user-facing
-  //    "189+ homes" strings stay aligned with totalListings.
-  console.log("\n📝 Marketing copy sweep:");
-  for (const file of MARKETING_COPY_FILES) {
-    const result = await rewriteMarketingCopyFile(file, totalListings);
-    const rel = path.relative(process.cwd(), result.path);
-    if (result.before === result.after) {
-      console.log(`  ✓ ${rel}: already up to date`);
-    } else if (dryRun) {
-      console.log(`  📝 ${rel}: would update ${countDifferences(result.before, result.after)} ref(s)`);
-    } else {
-      await fs.writeFile(result.path, result.after);
-      console.log(
-        `  ✓ ${rel}: updated ${countDifferences(result.before, result.after)} ref(s)`
-      );
+  // 4. AUDIT (do not rewrite) the user-facing marketing count.
+  //
+  //    This used to auto-rewrite page.tsx/footer.tsx to match totalListings.
+  //    That was wrong twice over:
+  //      a) The regex only matched "<n>+ <keyword>", so it caught 3 of ~25
+  //         site-wide references and reported the rest as "already up to date"
+  //         — silently leaving the site self-inconsistent.
+  //      b) The marketing number is a deliberate business decision, not a
+  //         mirror of BEAPI. On 2026-08-03 it was set to "190+" while the live
+  //         count was 186, because 5 listings were mid-onboarding. An
+  //         auto-sweep would quietly walk that back down every quarter.
+  //    So: report the drift, let a human decide.
+  await auditMarketingCount(totalListings);
+
+  // 4b. Legacy opt-in rewrite. Off by default; only use it when the marketing
+  //     number really is meant to track BEAPI exactly.
+  if (sweepCopy) {
+    console.log("\n📝 Marketing copy sweep (--sweep-copy):");
+    for (const file of MARKETING_COPY_FILES) {
+      const result = await rewriteMarketingCopyFile(file, totalListings);
+      const rel = path.relative(process.cwd(), result.path);
+      if (result.before === result.after) {
+        console.log(`  ✓ ${rel}: already up to date`);
+      } else if (dryRun) {
+        console.log(
+          `  📝 ${rel}: would update ${countDifferences(result.before, result.after)} ref(s)`
+        );
+      } else {
+        await fs.writeFile(result.path, result.after);
+        console.log(
+          `  ✓ ${rel}: updated ${countDifferences(result.before, result.after)} ref(s)`
+        );
+      }
     }
   }
 

@@ -17,15 +17,30 @@
 // the plan doc. Card-only (no Apple/Google Pay — that's the known trade-off).
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { trackClickBookNow } from "@/lib/tracking";
 import { GuestyPayPayment } from "./guesty-pay-payment";
+import {
+  StripePayment,
+  type ExpressCheckoutBillingDetails,
+} from "./stripe-payment";
 import type { QuoteData } from "./checkout-form";
 
-export function GuestyPayCheckout({ quote }: { quote: QuoteData }) {
+// `withWallets` (hybrid mode) layers a Stripe Apple/Google Pay express zone on
+// top of the GuestyPay card form: wallets → Stripe (GuestyPay tokenization is
+// card-only), cards → GuestyPay. Base booking only on both rails, so the
+// charged amount is identical regardless of payment method.
+export function GuestyPayCheckout({
+  quote,
+  withWallets,
+}: {
+  quote: QuoteData;
+  withWallets?: boolean;
+}) {
   const router = useRouter();
   const [guest, setGuest] = useState({
     firstName: "",
@@ -63,6 +78,126 @@ export function GuestyPayCheckout({ quote }: { quote: QuoteData }) {
       cancelled = true;
     };
   }, [quote.listingId]);
+
+  // Hybrid: a base-amount Stripe PaymentIntent that backs the Apple/Google Pay
+  // express zone. upsellIds:[] / pets:0 → the PI equals the quote total, so a
+  // wallet tap charges exactly what the GuestyPay card path would.
+  const [walletClientSecret, setWalletClientSecret] = useState<string | null>(
+    null
+  );
+  // Errors for the wallet zone render next to the Apple/Google Pay button (not
+  // in the global error slot at the bottom of the form) so guard messages
+  // appear where the guest tapped.
+  const [walletMsg, setWalletMsg] = useState<string | null>(null);
+  useEffect(() => {
+    if (!withWallets) return;
+    let cancelled = false;
+    fetch("/api/payment-intent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ quoteId: quote.quoteId, upsellIds: [], pets: 0 }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && d?.clientSecret) setWalletClientSecret(d.clientSecret);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [withWallets, quote.quoteId]);
+
+  // Apple/Google Pay tap → the existing Stripe reservation path (charge in
+  // Traverse's Stripe, card vaulted in Stripe). The wallet supplies billing
+  // details; fall back to any typed guest fields. Base booking only.
+  async function handleWalletSuccess(
+    piId: string,
+    billing: ExpressCheckoutBillingDetails
+  ) {
+    setSubmitting(true);
+    setError(null);
+    setWalletMsg(null);
+    const walletGuest = {
+      firstName: billing.firstName || guest.firstName,
+      lastName: billing.lastName || guest.lastName,
+      email: billing.email || guest.email,
+      phone: billing.phone || guest.phone,
+    };
+    const walletTracking = {
+      listingId: quote.listingId,
+      listingTitle: quote.listingTitle,
+      listingNickname: quote.listingNickname,
+      checkIn: quote.checkIn,
+      checkOut: quote.checkOut,
+      guests: quote.guests,
+      total: quote.pricing.total,
+    };
+    // CRITICAL: persist the recovery row BEFORE attempting the reservation.
+    // The card is already charged by this point (the express element confirms
+    // the PI before this callback), so if reservation finalization fails and no
+    // pending_checkouts row exists, the charge orphans with no way to recover —
+    // which is exactly what happened on the first hybrid test. With the row in
+    // place, finalizer failures are marked `paid_pending_reservation` and the
+    // recover-checkouts cron retries them (and last_error is captured for
+    // diagnosis). Awaited so the row exists before the finalizer runs.
+    await fetch("/api/pending-checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paymentIntentId: piId,
+        quoteId: quote.quoteId,
+        ratePlanId: quote.ratePlanId,
+        guest: walletGuest,
+        tracking: walletTracking,
+        upsells: [],
+        pets: 0,
+      }),
+    }).catch(() => {});
+    try {
+      const res = await fetch("/api/reservations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentIntentId: piId,
+          quoteId: quote.quoteId,
+          ratePlanId: quote.ratePlanId,
+          guest: walletGuest,
+          upsells: [],
+          pets: 0,
+          tracking: {
+            listingId: quote.listingId,
+            listingTitle: quote.listingTitle,
+            listingNickname: quote.listingNickname,
+            checkIn: quote.checkIn,
+            checkOut: quote.checkOut,
+            guests: quote.guests,
+            total: quote.pricing.total,
+          },
+          marketingOptIn,
+        }),
+      });
+      const data = await res.json();
+      if (res.status === 202 && data.pendingRecovery) {
+        setError(
+          data.error ||
+            "Your payment was received and your reservation is being finalized. Please don't retry."
+        );
+        setSubmitting(false);
+        return;
+      }
+      if (!res.ok || !data.reservationId) {
+        setError(
+          data.error || "We couldn't complete your booking. Please try again."
+        );
+        setSubmitting(false);
+        return;
+      }
+      router.push(`/book/confirmation/${data.reservationId}`);
+    } catch {
+      setError("Something went wrong completing your booking. Please try again.");
+      setSubmitting(false);
+    }
+  }
 
   const guestValid =
     guest.firstName.trim() &&
@@ -176,6 +311,94 @@ export function GuestyPayCheckout({ quote }: { quote: QuoteData }) {
           </div>
         </section>
 
+        {/* Terms + marketing live ABOVE the payment methods so they gate BOTH
+            rails — the wallet is tapped up here, so a bottom checkbox couldn't
+            require it. */}
+        <label className="flex items-start gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            I agree to the{" "}
+            <Link
+              href="/terms"
+              target="_blank"
+              className="underline text-foreground/70 hover:text-foreground"
+            >
+              booking terms
+            </Link>{" "}
+            and{" "}
+            <Link
+              href="/cancellation"
+              target="_blank"
+              className="underline text-foreground/70 hover:text-foreground"
+            >
+              cancellation policy
+            </Link>
+            .
+          </span>
+        </label>
+        <label className="flex items-start gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={marketingOptIn}
+            onChange={(e) => setMarketingOptIn(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>Send me travel tips and special offers.</span>
+        </label>
+
+        {/* Hybrid wallet zone — Apple/Google Pay via Stripe, placed AFTER the
+            guest form + terms. Wallets can return incomplete billing (often no
+            name), so we gate the tap on a complete guest form AND accepted terms;
+            the reservation is created with the typed guest details. Guard errors
+            render right here (not the bottom slot). Auto-hides without a wallet. */}
+        {withWallets && walletClientSecret && (
+          <section>
+            <StripePayment
+              clientSecret={walletClientSecret}
+              walletsOnly
+              expressClickGuard={() =>
+                !guestValid
+                  ? "Please enter your name, email, and phone above first."
+                  : !acceptedTerms
+                    ? "Please accept the booking terms and cancellation policy above first."
+                    : null
+              }
+              billingDetails={{
+                firstName: guest.firstName,
+                lastName: guest.lastName,
+                email: guest.email,
+                phone: guest.phone,
+              }}
+              onExpressPaymentSuccess={handleWalletSuccess}
+              onPaymentSuccess={() => {}}
+              onError={(msg) => {
+                setWalletMsg(msg);
+                setSubmitting(false);
+              }}
+              loading={submitting}
+              disabled={submitting}
+            />
+            {walletMsg && (
+              <p className="mt-2 text-sm text-red-600">{walletMsg}</p>
+            )}
+            <div className="relative mt-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or pay with card
+                </span>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* TODO(upsells): pet fee + add-ons aren't handled on the Guesty Pay
             rail yet — they'd be added as Guesty invoice items or folded into the
             quote. Base booking only for now. */}
@@ -214,27 +437,6 @@ export function GuestyPayCheckout({ quote }: { quote: QuoteData }) {
               threeDS object yet, so SCA-required cards won't authenticate. Wire
               the threeDS payload + authURL redirect after the sandbox test. */}
         </section>
-
-        <label className="flex items-start gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={acceptedTerms}
-            onChange={(e) => setAcceptedTerms(e.target.checked)}
-            className="mt-0.5"
-          />
-          <span>
-            I agree to the booking terms and cancellation policy.
-          </span>
-        </label>
-        <label className="flex items-start gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={marketingOptIn}
-            onChange={(e) => setMarketingOptIn(e.target.checked)}
-            className="mt-0.5"
-          />
-          <span>Send me travel tips and special offers.</span>
-        </label>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 

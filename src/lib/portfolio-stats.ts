@@ -8,13 +8,13 @@
  *   1. Rewrites `totalListings` + `perMarket` here.
  *   2. Refreshes market hero photos under /public/property-management/markets/.
  *   3. Sweeps marketing-copy files (src/app/page.tsx, src/components/layout/footer.tsx)
- *      so user-visible "189+ homes" strings stay aligned with totalListings.
+ *      so user-visible "190+ homes" marketing strings (hand-set, see MARKETING_COUNT in the refresh script).
  *
- * Last refreshed: 2026-05-07
+ * Last refreshed: 2026-08-03
  */
 export const PORTFOLIO_STATS = {
   /** Total active listings across all markets */
-  totalListings: 182,
+  totalListings: 186,
   /** Number of distinct Colorado markets we operate in */
   markets: 6,
   /** Average Google rating (manually maintained — Google Places API not yet wired) */

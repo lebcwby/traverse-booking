@@ -1,7 +1,13 @@
 import { Resend } from "resend";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const ALERT_TO = process.env.ALERT_TO_EMAIL ?? "";
+// ALERT_TO_EMAIL may hold several addresses ("a@x.com,b@x.com"). Resend's `to`
+// takes a string[] and does NOT split a comma-joined string — it would treat
+// the whole thing as one malformed address and reject the send — so split here.
+const ALERT_TO = (process.env.ALERT_TO_EMAIL ?? "")
+  .split(/[,;]/)
+  .map((e) => e.trim())
+  .filter(Boolean);
 const ALERT_FROM =
   process.env.ALERT_FROM_EMAIL ?? "Alerts <noreply@example.com>";
 
@@ -770,7 +776,7 @@ export async function sendAlert(
     : [];
   const recipients = Array.from(
     new Set(
-      [ALERT_TO, ...overrideTo].map((e) => (e || "").trim()).filter(Boolean)
+      [...ALERT_TO, ...overrideTo].map((e) => (e || "").trim()).filter(Boolean)
     )
   );
   if (recipients.length === 0) {

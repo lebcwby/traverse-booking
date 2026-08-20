@@ -13,40 +13,112 @@ This file gives Claude Code everything it needs to continue work on this project
 - **Repo:** https://github.com/lebcwby/traverse-booking (branch: `main`)
 - **Local path:** `~/guesty direct booking website/guesty-direct-booking-template-main`
 - **Production:** https://www.booktraverse.com (aliased; also `https://traverse-booking.vercel.app`)
-- **Portfolio:** 189 active listings across 6 Colorado markets — Crested Butte, Leadville, Vail, Avon, Granby, Twin Lakes
+- **Portfolio:** 186 active listings across 6 Colorado markets (marketing copy says "190+" — 5 mid-onboarding as of 2026-08-03) — Crested Butte, Leadville, Vail, Avon, Granby, Twin Lakes
 - **Leadership:** Alex Haler (CEO), Nadim Tannous (CTO), Sabrina Colella (COO)
 
 ---
 
-## 🚨 OPEN INCIDENT (2026-05-20) — Read this first
+## ✅ CLOSED INCIDENT (2026-05-20 → resolved 2026-08-19) — customFields wipe
 
-**~185 Guesty listings had their `customFields` array wiped** at ~15:30 MT
-on 2026-05-20 when `/api/admin/sync-urls-to-guesty` ran with the wrong
-update semantics. The Book Direct Link field itself was correctly updated;
-all OTHER customFields on those listings (welcome messages, Google review
-links, phone numbers, unit numbers, door codes, owner bios, etc.) were
-replaced with an empty array.
+**What happened:** ~185 Guesty listings had their `customFields` array wiped on
+2026-05-20 when `/api/admin/sync-urls-to-guesty` PUT only its own field —
+Guesty's PUT **replaces** the whole array rather than merging by fieldId.
+Details in `docs/incidents/2026-05-20-customfields-wipe.md`; affected list in
+`docs/incidents/affected-listings.csv`.
 
-**Status:** Guesty support contacted; awaiting restoration from backup.
-Full details + recovery plan in `docs/incidents/2026-05-20-customfields-wipe.md`.
-Affected listings list in `docs/incidents/affected-listings.csv`.
+**Both unblock conditions verified 2026-08-19:**
+1. **Data is back.** Sampled 14 of the 185 affected listings evenly across the
+   list — every one has 3–10 populated customFields. None empty.
+2. **The code is fixed.** `patchListingCustomField` now does read-modify-write
+   (GET current array → swap our entry → PUT the merged whole) and *aborts*
+   rather than writing if any existing entry lacks a `fieldId`/`_id`, so an
+   unexpected shape can't silently drop fields again.
 
-**🛑 DO NOT** run `/api/admin/sync-urls-to-guesty` again until both:
-1. Guesty restores the customFields from backup, AND
-2. The `patchListingCustomField` function in
-   `src/app/api/admin/sync-urls-to-guesty/route.ts` is patched to use
-   read-modify-write semantics (GET listing, merge customFields, PUT).
-   Pseudocode is in the incident doc.
+**Re-run safely on 2026-08-19** to move Book Direct Link onto booktraverse.com
+URLs: 233 updated, 142 already correct, **0 errors**, and a before/after diff of
+12 listings' full customFields showed **zero collateral change**. Final state:
+375/375 correct.
 
-The site itself is fine — this is purely a Guesty-internal data issue.
+### Still true, and the reason this happened
+⚠️ **Guesty's `PUT /v1/listings/{id}` REPLACES `customFields` wholesale.** Any
+future writer must read-modify-write. Same trap bit `publicDescription.notes`
+separately — see memory `feedback_guesty_notes_push_wipes_other_things_to_note`.
+
+**Procedure for any customFields write** (all three steps, in order):
+1. Dry run (default) — confirm the target field and counts.
+2. Real write limited to ONE listing, then diff that listing's other fields.
+   ⚠️ `limit=N` truncates the listing list *before* filtering, so `limit=1` will
+   usually hit an already-correct listing and write nothing. Find the index of
+   the first listing needing an update and set `limit` to index+1.
+3. Full run, then re-run the dry run to confirm 0 remaining.
+
+**Field reference:** "Book Direct Link" is fieldId `68dd93d0a549970030833297`.
+The route's `fieldName` lookup (`book_direct_link`) does NOT match Guesty's
+actual label and 404s — pass `?fieldId=68dd93d0a549970030833297` explicitly.
+
+**Guesty "Additional links" is NOT API-writable — settled 2026-08-19, don't
+re-investigate.** The links in that panel come from `integrations[].externalUrl`,
+which Guesty fills from real channel connections (airbnb2, homeaway2,
+bookingCom…). booktraverse.com isn't a Guesty channel, so there's no slot for
+it, and the Open API listing object has no `additionalLinks` field — checked all
+66 top-level keys; only `integrations` and `publicDescription` carry links.
+Decision: the Book Direct Link custom field is the supported mechanism and is
+correct on all 375 listings. Leave it there.
+
+The site itself was never affected — this was always Guesty-internal data.
 
 ---
 
-## Current State (as of 2026-05-10, end of session 4)
+## 🧵 THREAD SPLIT (2026-08-01) — read this before picking up work
 
-**The site is live.** DNS cutover to booktraverse.com completed 2026-05-10. Apple Pay auto-verified for `www.booktraverse.com`. Stripe webhook verified. Klaviyo is in live mode.
+Work on this project is split across **two conversation threads**:
 
-### What shipped in session 4
+| Thread | Scope |
+|---|---|
+| **Marketing / newsletter** | Klaviyo, email campaigns, flows, guest-email sync, seasonality + booking-pace analysis |
+| **Website** (this one) | Everything else: the Next.js app, checkout/payments, SEO, performance, infra |
+
+**Marketing work lives in `docs/marketing/`** — don't re-derive it here:
+- `klaviyo-annual-plan.md` — strategy, list state, corrected booking lead times
+- `klaviyo-flow-setup.md` — flows + template IDs + segment recipes
+- `klaviyo-campaign-calendar.md` — campaign calendar, event anchors, pacing methodology
+
+---
+
+## Current State (as of 2026-08-01)
+
+### Recently shipped (2026-07-14 → 08-01)
+- **Blog SEO** — legacy `/blog/<old-wp-slug>` 301s (host-gated map only covered the old
+  domain); `/blog/[slug]` made SSG so unknown slugs return a real 404 instead of a
+  200 soft-404. Filled all 5 `/plan/<slug>` SEO bodies + FAQs. (`364f5ae`, `3b6cc67`)
+- **Soft-404 fix** — `/s/[slug]` now SSG → real 404; added branded `src/app/not-found.tsx`.
+  ⚠️ `/properties/[id]` + `/plan/[id]` still return **200 + noindex** for unknown params
+  (documented, accepted — see Known issues). (`5f08f04`)
+- **Building pages** — Grand Lodge / Plaza / Lodge now show real per-night "starting from"
+  prices with **no pre-selected dates** (previously seeded next-weekend dates that were
+  often unavailable). Same fix applied to property cards + `/s`. (`db83cd1`, `e0240a9`)
+- **Checkout** — terms/cancellation links added to the GuestyPay checkout; full site header
+  hidden on checkout (was overlapping the Apple Pay button). (`0db7c95`, `377df7b`)
+- **Klaviyo signup bug** — `subscribeToKlaviyoList` sent `first_name` to an endpoint that
+  rejects it → **400, silently swallowed**. Every newsletter/contact-form signup carrying a
+  name was being dropped. Fixed + verified against the live API. (`079fcd7`)
+
+### 💳 Payments — GuestyPay hybrid is BUILT but PARKED
+Hybrid checkout (cards → GuestyPay, Apple/Google Pay → Stripe) works end-to-end and is in
+the repo behind `NEXT_PUBLIC_CHECKOUT_MODE`. **It is switched OFF in production** and must
+stay off until the issue below is fixed.
+
+**Why parked:** a real guest was **double-charged**. We create reservations directly as
+*confirmed* via BE-API after collecting payment, so Guesty's **per-listing auto-payment rule**
+("charge 100% at confirmation using guest card") fires a second charge. Stripe bookings are
+safe (no card vaulted in Guesty → the rule can't execute); GuestyPay vaults the card, so it
+can. The rules **can't simply be disabled** — VRBO/Expedia are hotel-collect and rely on them.
+
+**The fix when resumed** (Guesty support's documented flow): create as **Inquiry** →
+**record the external payment** (Open API) → **update status to Confirmed**. ~half a day plus
+careful testing. Full detail in memory `project_traverse_guesty_pay_reactivation`.
+
+### Historical — shipped in the May 2026 launch sessions
 
 - **DNS cutover** — GoDaddy A records updated: `booktraverse.com` + `www.booktraverse.com` → `76.76.21.21`. Vercel SSL auto-provisioned. Apex 308-redirects to www.
 - **GA4 tracking fully wired** — All funnel events (view_item, begin_checkout, add_to_cart, purchase, view_item_list) route to G-8NK72KVMJJ (the "Book Traverse" property). G-C5098JP52V (formerly assumed canonical) turned out to be broken on Google's gtag CDN — `googletagmanager.com/gtag/js?id=G-C5098JP52V` returns **404**, so client-side `gtag('event', …)` calls were silently dropped the whole time even though the GA4 admin shows the stream as "active". Switched canonical to G-8NK72KVMJJ on 2026-05-13.
@@ -58,17 +130,17 @@ The site itself is fine — this is purely a Guesty-internal data issue.
 - **Transparent white logo** — `public/no-fees/logo-white.png` + `logo-white.webp` regenerated using Sharp pixel-level manipulation: all non-transparent pixels set to white (255,255,255), alpha channel preserved. Output: 2048×492 RGBA PNG.
 - **CSP fix for /plan POI images** — `https://places.googleapis.com` added to IMG_SOURCES in both `src/lib/csp.ts` and `next.config.ts`.
 - **Sitemap fixed** — `public/sitemap.xml` recreated as static index pointing to Next.js-generated `/sitemap/[id].xml` segments. Next.js `generateSitemaps()` doesn't auto-generate a sitemap index.
-- **Schema.org** — Organization schema on homepage: `logo`, `image`, B2B phone `+1-970-533-3583`, hero stats 189+.
+- **Schema.org** — Organization schema on homepage: `logo`, `image`, B2B phone `+1-970-533-3583`, hero stats 190+.
 - **/plan polish** — Hero image changed to Colorado (not Portland skyline). Refinement chips, ANCHOR_OPTIONS, QUICK_REFINES all Colorado-ized. OG image blue (not gold). plan/[id]/page.tsx: "Your Colorado Trip".
 - **Klaviyo abandoned-cart flow** — Templates created: "Abandoned Cart — Single Listing" (ID: Shfpc4) and "Abandoned Cart — 24h Follow-up" (ID: SdNCVn). Metrics: Started Checkout (V4D6NT), Added to Cart (Tgddiq), Booked Reservation. Flow is in Draft — confirm activation with Nadim.
 - **llms.txt + llms-full.txt** — Rewritten from Stay Portland → Traverse Hospitality.
 
-### Fixed in session 5
+### Historical — fixed shortly after launch
 
 - **Klaviyo company ID** — `consent-manager.tsx` had `T4kwLc` (Stay Portland's account) hardcoded as the fallback. All browser-side Klaviyo events (Started Checkout, Added to Cart, Viewed Listing) were going to Stay Portland's Klaviyo, not Traverse. Fixed: fallback updated to `UMUgtM` (Traverse), `NEXT_PUBLIC_KLAVIYO_COMPANY_ID=UMUgtM` added to Vercel. Deployed with `--force`.
 - **GA4 canonical property (as of 2026-05-13)** — `G-8NK72KVMJJ` is now the canonical property receiving all ecommerce events. `G-C5098JP52V` (formerly assumed canonical, has WordPress historical purchase data) is preserved untouched for historical reporting only — its gtag.js CDN is permanently 404, so client-side custom events never actually reached it (page_view appeared only because GTM routes its own events directly to /g/collect, bypassing gtag.js). `G-MLNYK6YLXK` is the old highrockyhomes.com property (currently still linked to Google Ads — needs re-linking to G-8NK72KVMJJ).
 
-### Known issues (as of end of session 4)
+### Known issues / standing notes
 
 1. **Sign-in 400 error (HIGH PRIORITY)** — After DNS cutover, Supabase auth still only whitelists `traverse-booking.vercel.app`. Magic link and OAuth redirects to `booktraverse.com/auth/callback` return 400.  
    **Fix**: Go to [Supabase Dashboard](https://supabase.com) → Authentication → URL Configuration:
@@ -80,7 +152,24 @@ The site itself is fine — this is purely a Guesty-internal data issue.
 
 3. **GA4 Ecommerce purchases report — 48h lag** — item_variant data was just deployed. Check 2026-05-12 at 11:00 AM Mountain (scheduled routine will fire then).
 
-4. **Klaviyo abandoned-cart flow — LIVE and sending (verified 2026-05-31).** Flow "Abandoned Cart — Single Listing" (`Xpdwza`) is live; last 30d: 16 recipients, 14 delivered, 57% open, but 0 clicks/conversions. It reaches only ~26% of "Started Checkout" events (62→16) because the rest are anonymous (guest left before entering a usable email) or non-marketing-consented — inherent to abandoned-cart. Open improvements: (a) **add the 2nd-touch email** (template `SdNCVn`, already built + on-brand) as a delayed message in the flow — UI-only, Klaviyo API can't edit flow structure; (b) checkout page now offers expired-quote recovery via `lid/ci/co/g` params on the Started-Checkout URL (shipped 2026-05-31) so late email clicks re-quote instead of dead-ending; (c) capture email earlier to lift reach.
+4. **Klaviyo — moved to the marketing thread.** See `docs/marketing/`. Only the *code-side*
+   touchpoints matter here: `subscribeToKlaviyoList` + the event helpers in
+   `src/lib/tracking.ts` / `server-tracking.ts`, and the nightly
+   `/api/cron/sync-klaviyo-guests` (Guesty → Klaviyo guest-email sync,
+   `src/lib/klaviyo-guest-sync.ts`).
+   ⚠️ **Klaviyo API gotcha:** `profile-subscription-bulk-create-jobs` accepts ONLY
+   `email`/`phone_number`/`subscriptions`. Sending `first_name` or `properties` 400s the
+   entire request. Rich attributes need a separate `profile-bulk-import-jobs` call. This bug
+   silently killed signups until 2026-07-30 — don't reintroduce it.
+
+8. **Soft-404 on unbounded dynamic routes — ACCEPTED, not a bug to re-fix.**
+   `/properties/[id]` and `/plan/[id]` return **HTTP 200 with a noindex meta** for unknown
+   params. This is documented Next 16 behaviour: a *streamed* response commits its status
+   before `notFound()` runs. Routes with a finite param set (`/blog/[slug]`, `/s/[slug]`)
+   were fixed with `dynamic = "force-static"` + `dynamicParams = false`; these two can't be
+   (they read `searchParams` / handle runtime UUIDs). A true 404 would need a `proxy.ts`
+   edge validator — deferred as low value (params are live IDs never linked externally, and
+   the sitemap lists only real URLs). Memory: `feedback_traverse_dynamic_route_soft_404`.
 
 5. **Stripe is LIVE (corrected 2026-06-24).** Prod is processing real charges — confirmed `livemode: true` on real PaymentIntents (e.g. GY-CvXxRDxw, two $361.63 charges 2026-05-31). Prod `STRIPE_SECRET_KEY` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` are **live keys** (`.env.local` still holds `sk_test`/`pk_test` — local is test, prod is live; don't assume local == prod). The earlier "still in test mode" note was stale. `project_traverse_stripe_live_mode.md` is now history, not a TODO.
 
@@ -92,19 +181,33 @@ The site itself is fine — this is purely a Guesty-internal data issue.
 
 ## Open work (priority order)
 
-### Immediate (next session)
+> Marketing/Klaviyo items are **out of scope for this thread** — see `docs/marketing/`.
 
-1. **Fix Supabase auth URLs** (5 min) — See "Known issues #1" above. This unblocks sign-in everywhere on booktraverse.com.
-2. **Activate Klaviyo abandoned-cart flow** — After Supabase fix, flip Draft → Live in Klaviyo flow builder.
-3. ~~Switch Stripe to live mode~~ — **DONE.** Prod is live and processing real charges (see Known issues #5).
+### Immediate / highest value
+
+1. **Vercel Edge Requests spike (unresolved).** A Medium-severity alert fired 2026-07-17
+   18:15 UTC. Not caused by our deploys (last push was ~23h earlier) and no redirect loop —
+   so it's external traffic (this site has a history of Singapore bot traffic + a
+   residential-proxy scraper). **We never identified the source**: the Vercel MCP token 403s
+   on this team scope, and the Firewall UI has no custom date range to reach back to Jul 17.
+   Firewall is active with 1 custom rule; **Bot Protection is OFF** — that's the fastest
+   mitigation if it recurs. Next time: Observability → **Edge Requests → Paths tab**, or
+   Firewall → Traffic → group by Path/IP/User-Agent, *while it's happening*.
+2. **Quarterly portfolio refresh — was due 2026-08-01.** Run
+   `npx tsx --env-file=.env.local scripts/refresh-portfolio-data.ts`.
+   Memory: `project_traverse_quarterly_refresh`.
+3. **Google Ads ↔ GA4 relink + GTM re-point.** Ads (`AW-16519101211`) still points at the
+   old `G-MLNYK6YLXK`; GTM `GTM-WMD2QJS6` likely still on `G-C5098JP52V`. Both should target
+   **G-8NK72KVMJJ**, or conversions/audiences from booktraverse traffic land nowhere useful.
+   Needs Nadim's Google logins — prep the exact steps, don't attempt blind.
 
 ### P2 polish
 
 - **Owner testimonials** — Real quotes pending from Nadim. Placeholder cards on `/property-management` `reviews` array. Memory: `project_traverse_owner_reviews_pending.md`.
 - **Booking confirmation emails** — `RESEND_API_KEY` **is set in Vercel prod** (confirmed via `vercel env ls`, added ~2026-05; corrects the old "needed" note). `sendAlert` ops emails deliver. If confirmation emails still don't arrive, check key *validity*, not presence. See memory `reference_resend_setup.md`.
-- **Re-seed `sp_plans` cache** — Run `npx tsx --env-file=.env.local scripts/seed-popular-ideas.ts`. Requires `ANTHROPIC_API_KEY` in `.env.local` (not yet added). Without this, "Instant" popular-trip cards fall through to live agent (~15s) instead of cached templates (~200ms).
-- **`src/lib/plan/slug-content.ts`** — Long-form prose body per slug is still Portland-era placeholder text. These are the static `/plan/[slug]` page bodies.
-- **`src/lib/plan/favorites.ts`** — 793 lines of Portland-curated POI favorites. POI IDs don't match Colorado seed data. Plan still works without favorite-anchoring.
+- **Re-seed `sp_plans` cache** — Run `npx tsx --env-file=.env.local scripts/seed-popular-ideas.ts`. `ANTHROPIC_API_KEY` **is present in `.env.local`** (corrected 2026-08-03 — the old "not yet added" note was stale), so this is unblocked. ⚠️ `unset ANTHROPIC_API_KEY ANTHROPIC_BASE_URL` in the shell first — an empty shell var shadows `.env.local` and breaks `@ai-sdk`. Without this seed, "Instant" popular-trip cards fall through to live agent (~15s) instead of cached templates (~200ms).
+- ~~**`src/lib/plan/slug-content.ts`**~~ — **DONE (2026-07-14).** All 5 routed `/plan/<slug>` bodies now have Colorado long-form copy + 5 FAQs each (render visibly + as FAQPage JSON-LD). Was an empty map post-rebrand. Venue names should get a periodic open/closed spot-check (see `project_traverse_crested_butte_businesses_status`).
+- **`src/lib/plan/favorites.ts`** — Intentionally **empty** (`FAVORITES = []`) since the Portland POIs were stripped 2026-05-26; plan works fine without favorite-anchoring. Not a cleanup task — optionally add Colorado local-pick entries later if we want favorite-anchored recs.
 
 ### P3 deferred
 
@@ -113,7 +216,7 @@ The site itself is fine — this is purely a Guesty-internal data issue.
 - **Quarterly portfolio refresh** — Next run: 2026-08-01. See memory `project_traverse_quarterly_refresh.md`.
 - **Google Ads ↔ GA4 re-linking** — Google Ads (`AW-16519101211`) is still linked to `G-MLNYK6YLXK` (old highrockyhomes.com property). Re-link to `G-8NK72KVMJJ` so conversions and audiences from booktraverse.com traffic land in the active property. GA4 → Admin → Product links → Google Ads links.
 - **GTM container re-pointing** — GTM `GTM-WMD2QJS6` GA4 Configuration tag likely still set to `G-C5098JP52V`. Update it to `G-8NK72KVMJJ` so GTM-mediated events (page_view, etc.) land in the same property as direct gtag events. Otherwise split reporting.
-- **Sentry source maps** — `SENTRY_AUTH_TOKEN` still not set. Build suppresses the error but source maps aren't uploaded.
+- **Sentry source maps** — `SENTRY_AUTH_TOKEN` **is present in `.env.local`** (corrected 2026-08-03). Still needs adding to **Vercel prod** for CI builds to upload maps — that's the actual remaining step, not the local key.
 
 ### Traverse CRM (separate repo)
 - Session left off at Phase 1.4.2 merged + PR #8 (Phase 1.4.4) + PR #9 (status fix) open.
@@ -187,12 +290,19 @@ GA4 property: **G-8NK72KVMJJ** (canonical as of 2026-05-13; receives all client-
 G-C5098JP52V: read-only archive — has historical WordPress purchase data, but its gtag.js CDN returns 404 so events never reached it client-side. Preserve, do not route new events here.
 G-MLNYK6YLXK: old highrockyhomes.com property — still linked to Google Ads; needs re-linking to G-8NK72KVMJJ.
 
-### Klaviyo
+### Klaviyo (code-side only — strategy lives in `docs/marketing/`)
 
-- **Newsletter list**: S9Ezba (canonical). `KLAVIYO_PRIVATE_KEY` set in Vercel.
-- **Abandoned-cart metrics**: Started Checkout (V4D6NT), Added to Cart (Tgddiq), Booked Reservation.
-- **Abandoned-cart flow**: Created; Draft status. Activate after Supabase URL fix.
-- **Email templates**: Shfpc4 (first email), SdNCVn (24h follow-up).
+- **Marketing list**: `S9Ezba`. `KLAVIYO_PRIVATE_KEY` in Vercel. **~15,500 subscribers**
+  (was 16 until the Guesty→Klaviyo sync landed 2026-07-30).
+- **Metric IDs** the app emits: Started Checkout `V4D6NT` · Added to Cart `Tgddiq` ·
+  Booked Reservation `SuqpZn` · Viewed Listing `QQxkdN` · Newsletter Signup `U6Yiwy` ·
+  Requested Availability Notification `Y5vn5X` · Submitted Contact Form `Xmf9Bx`.
+- **Nightly sync**: `/api/cron/sync-klaviyo-guests` (`0 10 * * *`) →
+  `src/lib/klaviyo-guest-sync.ts`. Enumerates **reservations** (the `/v1/guests` list
+  endpoint doesn't populate emails), hard-filters OTA relay addresses, and upserts profiles
+  with `guesty_*` properties used for segmentation.
+  ⚠️ Two Guesty traps handled in there: unfiltered list endpoints are **capped**, and deep
+  pagination **dies past ~12k records** (hence date-slicing).
 
 ### Guesty BEAPI Tags (CORRECT VALUES)
 
@@ -280,8 +390,8 @@ https://www.booktraverse.com/api/cron/sync-listings`
 ### Still needed
 
 - ~~`RESEND_API_KEY`~~ — **already set in prod** (confirmed `vercel env ls`); moved out of "still needed". Powers `sendAlert` ops emails + booking confirmation emails.
-- `ANTHROPIC_API_KEY` — `/plan` popular-ideas cache seeding via `scripts/seed-popular-ideas.ts`
-- `SENTRY_AUTH_TOKEN` — source map upload
+- ~~`ANTHROPIC_API_KEY`~~ — **already in `.env.local`** (corrected 2026-08-03). Only needed locally for `scripts/seed-popular-ideas.ts`; not required in Vercel.
+- `SENTRY_AUTH_TOKEN` — source map upload. Present in `.env.local`, **still missing in Vercel prod** (that's what blocks CI map upload).
 - `GUESTY_CLIENT_ID`, `GUESTY_CLIENT_SECRET` — OpenAPI branch of token refresh cron (currently silently skipped)
 
 ---
@@ -418,19 +528,31 @@ fixed 2026-06-09):
 
 ---
 
-## How to pick up (start of session 5)
+## How to pick up (website thread, 2026-08-01+)
 
-1. Read this file end-to-end.
-2. Check `~/.claude/projects/-Users-Nadim/memory/MEMORY.md` for any deferred items.
-3. **First task: fix Supabase auth URLs** (see "Immediate" open work above). This is the highest-impact blocker — sign-in is broken on the live site.
-4. **Second task: activate Klaviyo abandoned-cart flow** after Supabase fix.
-5. ~~Third task: Stripe live mode~~ — **DONE** (prod is live; see Known issues #5).
+1. Read this file end-to-end — especially **Thread split**, **Current State**, and the
+   **GuestyPay parked** note.
+2. Check `~/.claude/projects/-Users-Nadim/memory/MEMORY.md` for deferred items.
+3. Pick from **Open work → Immediate**. Nothing is currently on fire: the site is healthy,
+   Stripe checkout is live and working, and the blog/SEO/building-page fixes all shipped.
+4. **Don't** start Klaviyo/campaign work here — that's the marketing thread (`docs/marketing/`).
+
+### Ground rules learned the hard way (2026-07)
+- **Verify before asserting.** Several bugs this cycle were the opposite of the obvious
+  theory. Check occupancy/pace/live status with a query or a real request first.
+- **`reservations.booked_at` is the real booking date** — `created_at` is the CRM *sync*
+  date for backfilled rows and will produce nonsense lead times.
+- **Guesty caps OAuth token mints (~5/24h).** Never mint per-script; use the repo's cached
+  helpers (`getBEAPIToken`, `openapiFetch`) or run through a deployed endpoint.
+- **Money paths need real end-to-end tests**, not code review. Two orphaned test charges and
+  one real double-charge came from shipping payment code that only *looked* right.
 
 ### Key memories to review
-
-- `project_traverse_stripe_live_mode.md` — full live-mode Stripe swap procedure
-- `project_traverse_ga4_duplicate_property.md` — GA4 property history; canonical flipped to G-8NK72KVMJJ on 2026-05-13 after discovering G-C5098JP52V's gtag.js is 404
-- `reference_resend_setup.md` — Resend email setup (domain verified, just need API key in Vercel)
-- `project_traverse_quarterly_refresh.md` — next run 2026-08-01
-- `project_traverse_plan_seed.md` — /plan seed state (sp_plans cache needs ANTHROPIC_API_KEY)
+- `project_traverse_guesty_pay_reactivation` — ⭐ why GuestyPay is parked + the fix
+- `feedback_traverse_dynamic_route_soft_404` — Next 16 soft-404 behaviour + what's accepted
+- `project_traverse_klaviyo_guest_sync` — the sync (code lives in this repo)
+- `project_traverse_ga4_duplicate_property` — canonical is **G-8NK72KVMJJ**
+- `project_traverse_quarterly_refresh` — was due 2026-08-01
+- `project_traverse_scraper_defense` — prior bot/scraper mitigation, relevant to the
+  unresolved Edge Requests spike
 - `feedback_vercel_deploy_force.md` — --force rule for NEXT_PUBLIC_* env changes

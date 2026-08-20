@@ -161,7 +161,7 @@ function buildItineraryHtml(
       </div>
 
       <p style="font-size: 15px; color: #525252;">${greeting}</p>
-      <p style="font-size: 15px; color: #525252;">Here's your Colorado trip itinerary — built by the team behind 189+ vacation rentals across Crested Butte, Leadville, and the Colorado mountains.</p>
+      <p style="font-size: 15px; color: #525252;">Here's your Colorado trip itinerary — built by the team behind 190+ vacation rentals across Crested Butte, Leadville, and the Colorado mountains.</p>
 
       <div style="margin: 20px 0; padding: 16px 20px; background: #f5f5f5; border-radius: 12px;">
         <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #a3a3a3; margin-bottom: 4px;">Your trip</div>

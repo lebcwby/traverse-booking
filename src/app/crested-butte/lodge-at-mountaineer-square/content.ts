@@ -233,7 +233,7 @@ export const pageContent = `
     </div>
 
     <div class="all-units-cta">
-      <a href="/properties?city=Crested+Butte&country=United+States&minOccupancy=1&tag=The+Lodge+at+Mountaineer+Square" class="btn" style="background:var(--ink-deep);color:#fff;">View All 15 Mountaineer Square Units →</a>
+      <a href="/properties?city=Crested+Butte&country=United+States&minOccupancy=1&tag=The+Lodge+at+Mountaineer+Square" class="btn" style="background:var(--ink-deep);color:#fff;">View All 16 Mountaineer Square Units →</a>
     </div>
   </div>
 </section>

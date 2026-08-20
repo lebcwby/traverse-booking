@@ -9,7 +9,7 @@ You are writing a draft blog post for Traverse Hospitality (legal entity Haltan 
 ## Company
 - Brand: Traverse Hospitality. Tagline: "Your dream vacation starts here."
 - Founded 2016 (formerly High Rocky Homes, rebranded 2024).
-- ~189 active listings across 6 Colorado markets.
+- ~190+ active listings across 6 Colorado markets.
 - 4.84-star average guest rating across the portfolio. Up to 15% direct-book savings vs OTAs. Locally managed (boots-on-the-ground in each market).
 - Primary site: booktraverse.com. Booking engine: reservations.booktraverse.com. Guest phone: 970-438-2241.
 
@@ -43,7 +43,7 @@ crucial, robust, leverage, delve, nuanced, multifaceted, furthermore, moreover, 
 ## Numeric claims — hard rules
 - 4.84 stars = portfolio-wide. 4.9 stars = ONLY the Leadville Google Business page. Never use 4.9 as a portfolio claim.
 - "Up to 15%" for direct-book savings — never round to 20% or omit "up to".
-- ~189 listings, ~50 Grand Lodge units, ~100 Vail-managed units in the same building.
+- ~190+ listings, ~50 Grand Lodge units, ~100 Vail-managed units in the same building.
 - Don't invent statistics. If a number isn't in this brief or the post brief, omit it or phrase qualitatively.
 
 ## Crested Butte restaurant warning (project memory, 2026-05-14)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import {
   TrendingUp,
@@ -15,18 +15,22 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { NoFeesHeader } from "@/components/no-fees/no-fees-header";
-import {
-  TurnstileWidget,
-  turnstileConfigured,
-  type TurnstileHandle,
-} from "@/components/turnstile-widget";
 import { GoogleReviewsCarousel } from "@/components/google-reviews-carousel";
+import { HubSpotForm } from "@/components/marketing/hubspot-form";
 import { PORTFOLIO_STATS } from "@/lib/portfolio-stats";
 import "../no-fees/no-fees.css";
 
 const B2B_PHONE = { tel: "+19705333583", display: "(970) 533-3583" };
 
-const LEADS_ENDPOINT = "https://team.traversehospitality.com/api/leads";
+// Owner "free earnings estimate" form, hosted by HubSpot.
+//
+// This replaced a hand-rolled form that POSTed to the CRM at
+// team.traversehospitality.com/api/leads. ⚠️ That means submissions no longer
+// hit the CRM directly — the "Traverse Agent" Slack alert and the auto-created
+// deal came from that endpoint. Leads now land in HubSpot, so routing back to
+// the CRM/Slack has to come from a HubSpot workflow or a HubSpot→CRM sync.
+const HUBSPOT_PORTAL_ID = "7792991";
+const HUBSPOT_ESTIMATE_FORM_ID = "49d127fb-581a-4606-9669-145f15e64a0f";
 
 // Outcome-grouped benefits — three reasons owners choose Traverse
 const outcomes = [
@@ -157,76 +161,6 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function PropertyManagementPage() {
-  const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  // Cloudflare Turnstile token — required by the team app's /api/leads
-  // guard. Empty until the widget verifies; reset (single-use) after
-  // each submit attempt so a retry gets a fresh token.
-  const [turnstileToken, setTurnstileToken] = useState("");
-  const turnstileRef = useRef<TurnstileHandle | null>(null);
-
-  async function handleEstimateSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
-
-    if (turnstileConfigured && !turnstileToken) {
-      setError("Please complete the verification below and try again.");
-      return;
-    }
-
-    setSubmitting(true);
-
-    const fd = new FormData(e.currentTarget);
-    try {
-      const res = await fetch(LEADS_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: fd.get("firstname") || "",
-          lastName: fd.get("lastname") || "",
-          email: fd.get("email") || "",
-          phone: fd.get("phone") || "",
-          propertyStreetAddress: fd.get("rental_property_address") || "",
-          currentlyRent: fd.get("currently_rent") || "",
-          propertyPersonalUse: fd.get("property_personal_use") || "",
-          expectations: fd.get("expectations") || "",
-          turnstileToken,
-          source: "booktraverse.com",
-        }),
-      });
-      const data: { ok?: boolean; error?: string } = await res.json();
-
-      if (data.ok) {
-        setSuccess(true);
-        // GA4: track lead-form completion for owner-acquisition funnel.
-        if (typeof window !== "undefined" && window.gtag) {
-          window.gtag("event", "lead_inquiry_submitted");
-        }
-      } else {
-        const msg =
-          data.error === "missing_required"
-            ? "Please fill in the required fields."
-            : data.error === "invalid_email"
-              ? "That email address doesn't look right."
-              : data.error === "spam_check_failed"
-                ? "Verification failed. Please complete the check and try again."
-                : data.error === "rate_limited"
-                  ? "Too many attempts. Please wait a few minutes and try again."
-                  : "Something went wrong. Please try again.";
-        setError(msg);
-      }
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setSubmitting(false);
-      // Turnstile tokens are single-use — reset so the next attempt
-      // (after a server-side rejection) gets a fresh one.
-      turnstileRef.current?.reset();
-      setTurnstileToken("");
-    }
-  }
-
   return (
     <>
       {/* data-no-fees-layout on the page root hides the global Header (via no-fees.css)
@@ -511,202 +445,19 @@ export default function PropertyManagementPage() {
             </div>
 
             <div className="mt-10 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-10">
-              {success ? (
-                <div
-                  id="estimate-success"
-                  className="rounded-xl border border-green-200 bg-green-50 p-6 text-center"
-                >
-                  <CheckCircle2 className="mx-auto mb-3 h-10 w-10 text-green-600" />
-                  <h3 className="text-xl font-semibold text-foreground">
-                    Thanks — we&apos;ll be in touch
-                  </h3>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Your request is in. We&apos;ll reach out within 1–2
-                    business days with a free management estimate.
-                  </p>
-                </div>
-              ) : (
-                <form onSubmit={handleEstimateSubmit} className="space-y-5">
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    <div>
-                      <label
-                        htmlFor="firstname"
-                        className="mb-1.5 block text-sm font-medium text-foreground"
-                      >
-                        First name <span className="text-red-600">*</span>
-                      </label>
-                      <input
-                        id="firstname"
-                        name="firstname"
-                        type="text"
-                        required
-                        autoComplete="given-name"
-                        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="lastname"
-                        className="mb-1.5 block text-sm font-medium text-foreground"
-                      >
-                        Last name <span className="text-red-600">*</span>
-                      </label>
-                      <input
-                        id="lastname"
-                        name="lastname"
-                        type="text"
-                        required
-                        autoComplete="family-name"
-                        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    <div>
-                      <label
-                        htmlFor="email"
-                        className="mb-1.5 block text-sm font-medium text-foreground"
-                      >
-                        Email <span className="text-red-600">*</span>
-                      </label>
-                      <input
-                        id="email"
-                        name="email"
-                        type="email"
-                        required
-                        autoComplete="email"
-                        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="phone"
-                        className="mb-1.5 block text-sm font-medium text-foreground"
-                      >
-                        Phone
-                      </label>
-                      <input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        autoComplete="tel"
-                        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="rental_property_address"
-                      className="mb-1.5 block text-sm font-medium text-foreground"
-                    >
-                      Property street address
-                    </label>
-                    <input
-                      id="rental_property_address"
-                      name="rental_property_address"
-                      type="text"
-                      autoComplete="street-address"
-                      placeholder="123 Main St, Crested Butte, CO"
-                      className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    <div>
-                      <label
-                        htmlFor="currently_rent"
-                        className="mb-1.5 block text-sm font-medium text-foreground"
-                      >
-                        Do you currently rent this property?
-                      </label>
-                      <select
-                        id="currently_rent"
-                        name="currently_rent"
-                        defaultValue=""
-                        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      >
-                        <option value="">Please Select</option>
-                        <option value="yes_short_term">Yes — short-term</option>
-                        <option value="yes_long_term">Yes — long-term</option>
-                        <option value="no">No</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="property_personal_use"
-                        className="mb-1.5 block text-sm font-medium text-foreground"
-                      >
-                        Personal use of the property?
-                      </label>
-                      <select
-                        id="property_personal_use"
-                        name="property_personal_use"
-                        defaultValue=""
-                        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      >
-                        <option value="">Please Select</option>
-                        <option value="never_rental_only">
-                          Never (rental only)
-                        </option>
-                        <option value="holidays_only">Holidays only</option>
-                        <option value="few_weeks_year">
-                          A few weeks/year
-                        </option>
-                        <option value="most_of_year">Most of the year</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="expectations"
-                      className="mb-1.5 block text-sm font-medium text-foreground"
-                    >
-                      Anything else we should know?
-                    </label>
-                    <textarea
-                      id="expectations"
-                      name="expectations"
-                      rows={4}
-                      placeholder="Revenue goals, timeline, questions about Traverse — anything helps."
-                      className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    />
-                  </div>
-
-                  <TurnstileWidget
-                    ref={turnstileRef}
-                    onToken={setTurnstileToken}
-                  />
-
-                  {error && (
-                    <p
-                      id="estimate-error"
-                      role="alert"
-                      className="text-sm text-red-600"
-                    >
-                      {error}
-                    </p>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="flex w-full items-center justify-center gap-2 rounded-full bg-accent px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {submitting ? "Sending…" : "Send over a free estimate"}
-                    {!submitting && <ArrowRight className="h-4 w-4" />}
-                  </button>
-
-                  <p className="text-center text-xs text-muted-foreground">
-                    No commitment. We&apos;ll reach out within 1–2 business
-                    days.
-                  </p>
-                </form>
-              )}
+              <HubSpotForm
+                portalId={HUBSPOT_PORTAL_ID}
+                formId={HUBSPOT_ESTIMATE_FORM_ID}
+                region="na2"
+                onSubmitted={() => {
+                  // Preserves the owner-acquisition conversion event that the
+                  // previous hand-rolled form fired. HubSpot owns the submit
+                  // now, so without this hook the event vanishes from GA4.
+                  if (typeof window !== "undefined" && window.gtag) {
+                    window.gtag("event", "lead_inquiry_submitted");
+                  }
+                }}
+              />
             </div>
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-muted-foreground">

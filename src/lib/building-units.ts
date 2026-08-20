@@ -1,7 +1,7 @@
 import { searchCardListingsCached } from "@/lib/guesty-beapi";
 import { mapBeapiToListing, type BeapiListingResult } from "@/lib/listing-utils";
 import { enrichListingsWithReviewAverages } from "@/lib/reviews";
-import { type Listing } from "@/lib/supabase";
+import { getListingPricingCache, type Listing } from "@/lib/supabase";
 
 /**
  * Fetch the bookable units for a Guesty building tag from BEAPI (the live
@@ -20,6 +20,18 @@ export async function fetchUnitsForTag(
     const units = results
       .filter((r) => !!(r.prices?.basePrice && r.prices.basePrice > 0))
       .map(mapBeapiToListing);
+    // Overlay the real "starting from" nightly price from the pricing cache so
+    // the units grid can show a meaningful lowest price WITHOUT pre-selecting
+    // dates. Guesty's `prices.basePrice` is a $95 placeholder on many listings.
+    const pricingCache = await getListingPricingCache().catch(() => null);
+    if (pricingCache) {
+      for (const u of units) {
+        const cached = pricingCache.get(u.guesty_id);
+        if (cached?.nightlyFrom && u.prices) {
+          u.prices.basePrice = cached.nightlyFrom;
+        }
+      }
+    }
     await enrichListingsWithReviewAverages(units);
     units.sort((a, b) => (b.reviewAvg ?? 0) - (a.reviewAvg ?? 0));
     return units;

@@ -57,6 +57,14 @@ const META_PIXEL_ID =
   process.env.NEXT_PUBLIC_META_PIXEL_ID || "1449075326140271";
 const KLAVIYO_COMPANY_ID =
   process.env.NEXT_PUBLIC_KLAVIYO_COMPANY_ID || "UMUgtM";
+const HUBSPOT_PORTAL_ID =
+  process.env.NEXT_PUBLIC_HUBSPOT_PORTAL_ID || "7792991";
+// Region-specific host. This portal is na2 (the form embed uses
+// js-na2.hsforms.net), and the unprefixed js.hs-scripts.com only 307-redirects
+// here — verified live: it returned 307/0 bytes and the tracker never ran,
+// while js-na2 returns the real loader. na1 portals use the bare host.
+const HUBSPOT_SCRIPT_HOST =
+  process.env.NEXT_PUBLIC_HUBSPOT_SCRIPT_HOST || "js-na2.hs-scripts.com";
 
 function loadScriptOnce(id: string, src: string) {
   if (document.getElementById(id)) return;
@@ -215,6 +223,37 @@ export function ConsentManager() {
 
     let klaviyoIdleHandle: number | undefined;
     let klaviyoTimeoutHandle: ReturnType<typeof setTimeout> | undefined;
+    let hubspotIdleHandle: number | undefined;
+    let hubspotTimeoutHandle: ReturnType<typeof setTimeout> | undefined;
+
+    // HubSpot tracking. Gated on ANALYTICS consent: its job here is page-view
+    // attribution, not marketing messaging.
+    //
+    // Why it exists: the owner-lead form at /property-management is
+    // HubSpot-hosted, and HubSpot can only attribute a submission to a
+    // visitor's page-view history through the `hubspotutk` cookie that THIS
+    // script sets — the form embed does not set it. Without this, owner leads
+    // land with no original source and no page path, which is exactly why the
+    // Ronald McCartney lead (2026-08-04) could not be traced.
+    //
+    // Loads site-wide (this component lives in the root layout) because the
+    // useful history is the pages viewed BEFORE reaching the form. Deferred to
+    // idle — attribution only has to be in place by the time someone submits,
+    // so it never needs to contend with LCP.
+    if (consent.analytics) {
+      const loadHubSpot = () => {
+        if (!getEffectiveClientConsent().analytics) return;
+        loadScriptOnce(
+          "hs-script-loader",
+          `https://${HUBSPOT_SCRIPT_HOST}/${HUBSPOT_PORTAL_ID}.js`
+        );
+      };
+      if ("requestIdleCallback" in window) {
+        hubspotIdleHandle = requestIdleCallback(loadHubSpot, { timeout: 5000 });
+      } else {
+        hubspotTimeoutHandle = setTimeout(loadHubSpot, 2500);
+      }
+    }
 
     if (consent.marketing) {
       // Load the Meta Pixel EAGERLY (no rIC deferral). Every ms of pixel-load
@@ -251,6 +290,10 @@ export function ConsentManager() {
         cancelIdleCallback(klaviyoIdleHandle);
       if (klaviyoTimeoutHandle !== undefined)
         clearTimeout(klaviyoTimeoutHandle);
+      if (hubspotIdleHandle !== undefined)
+        cancelIdleCallback(hubspotIdleHandle);
+      if (hubspotTimeoutHandle !== undefined)
+        clearTimeout(hubspotTimeoutHandle);
     };
   }, [consent, isCheckout]);
 

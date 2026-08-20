@@ -3,7 +3,7 @@ export const FAQ_SCHEMA_DATA = [
     question:
       "What are the best Colorado mountain towns for a vacation rental?",
     answer:
-      "Book Traverse manages 189 homes across six Colorado markets: Crested Butte (ski town energy + summer wildflowers), Leadville (highest incorporated town in North America, gateway to the Sawatch Range), Vail and Avon (world-class skiing + Beaver Creek), Granby (Rocky Mountain National Park), and Twin Lakes (alpine fishing and quiet base camps). Each has its own personality but all are within 2–4 hours of Denver International Airport.",
+      "Book Traverse manages 190+ homes across six Colorado markets: Crested Butte (ski town energy + summer wildflowers), Leadville (highest incorporated town in North America, gateway to the Sawatch Range), Vail and Avon (world-class skiing + Beaver Creek), Granby (Rocky Mountain National Park), and Twin Lakes (alpine fishing and quiet base camps). Each has its own personality but all are within 2–4 hours of Denver International Airport.",
   },
   {
     question: "Is it cheaper to book a vacation rental or hotel in Colorado?",

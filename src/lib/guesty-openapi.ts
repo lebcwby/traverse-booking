@@ -171,6 +171,40 @@ export async function getOpenAPIReservation(reservationId: string) {
   return openapiFetch(`/v1/reservations/${reservationId}`);
 }
 
+/**
+ * One page of reservations, with the fields the caller asks for.
+ *
+ * ⚠️ Guesty's UNFILTERED list endpoint returns a capped default subset (~1k),
+ * not the full history — so callers that need everything MUST pass explicit
+ * `filters`. See `feedback_guesty_openapi_unfiltered_list_capped`. The returned
+ * `count` is the server's reported total for the given filter; compare it to
+ * what you actually paged through to detect silent truncation.
+ *
+ * Reuses the cached Open API token via openapiFetch (never mints — Guesty caps
+ * OAuth mints per day and the refresh cron owns that).
+ */
+export async function getOpenAPIReservationsPage(params: {
+  fields: string;
+  limit?: number;
+  skip?: number;
+  sort?: string;
+  filters?: Array<Record<string, unknown>>;
+}): Promise<{ results: Record<string, unknown>[]; count: number }> {
+  const sp = new URLSearchParams({
+    fields: params.fields,
+    limit: String(params.limit ?? 100),
+    skip: String(params.skip ?? 0),
+  });
+  if (params.sort) sp.set("sort", params.sort);
+  if (params.filters?.length) sp.set("filters", JSON.stringify(params.filters));
+
+  const res = (await openapiFetch(`/v1/reservations?${sp.toString()}`)) as {
+    results?: Record<string, unknown>[];
+    count?: number;
+  };
+  return { results: res?.results ?? [], count: Number(res?.count ?? 0) };
+}
+
 export async function getOpenAPIListing(listingId: string) {
   return openapiFetch(`/v1/listings/${listingId}`);
 }

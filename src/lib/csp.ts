@@ -48,6 +48,22 @@ export const SCRIPT_SOURCES = [
   "https://*.hsforms.com",
   "https://*.hubspot.com",
   "https://*.hsappstatic.net",
+  // HubSpot TRACKING (js.hs-scripts.com/<portalId>.js), loaded by the consent
+  // manager under analytics consent. It sets the `hubspotutk` cookie, which is
+  // what ties a form submission to that visitor's page-view history — without
+  // it HubSpot contacts arrive with no original source or page path.
+  // NOTE: these are separate domains from *.hubspot.com, so the existing
+  // wildcard does NOT cover them and the loader is blocked outright without
+  // these entries. The loader then pulls in analytics/banner/collected-forms.
+  // Wildcards, not the bare js.* hosts: this is an **na2** portal, so the
+  // loader lives at js-na2.hs-scripts.com. The unprefixed js.hs-scripts.com
+  // only 307-redirects there and never executes.
+  "https://*.hs-scripts.com",
+  "https://*.hs-analytics.net",
+  "https://*.hs-banner.com",
+  "https://*.hscollectedforms.net",
+  "https://*.hsadspixel.net",
+  "https://*.usemessages.com",
   // Cloudflare Turnstile api.js — spam protection on the
   // /property-management owner-lead form (posts to the team app's
   // /api/leads, which requires a Turnstile token).
@@ -146,6 +162,13 @@ export const CONNECT_SOURCES = [
   "https://*.hubapi.com",
   "https://*.hsforms.com",
   "https://*.hsforms.net",
+  // HubSpot tracking beacons. track.hubspot.com is already covered by the
+  // *.hubspot.com wildcard above; these are the separate script domains that
+  // phone home and would otherwise be blocked at connect-src.
+  "https://*.hs-analytics.net",
+  "https://*.hs-banner.com",
+  "https://*.hscollectedforms.net",
+  "https://*.hsadspixel.net",
   // Lead form POSTs from /property-management to the Traverse team app.
   "https://team.traversehospitality.com",
   // Cloudflare Turnstile widget telemetry/challenge XHRs.
