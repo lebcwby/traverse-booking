@@ -29,14 +29,14 @@ export const metadata: Metadata = {
   title:
     "Traverse Hospitality | Colorado Vacation Rentals — Crested Butte, Leadville, Vail & More",
   description:
-    "190+ locally managed vacation rentals across 6 Colorado mountain markets. Ski-in condos at Crested Butte, cabins in Leadville, homes near Vail & Copper Mountain. Book direct and save up to 15%.",
+    "200+ locally managed vacation rentals across 6 Colorado mountain markets. Ski-in condos at Crested Butte, cabins in Leadville, homes near Vail & Copper Mountain. Book direct and save up to 15%.",
   alternates: { canonical: "/" },
   openGraph: {
     url: "https://www.booktraverse.com/",
     title:
       "Traverse Hospitality — Colorado's Locally Managed Vacation Rentals",
     description:
-      "190+ vacation rentals across 6 Colorado mountain markets. Ski-in condos, cabins, historic homes. Book direct and save 15%.",
+      "200+ vacation rentals across 6 Colorado mountain markets. Ski-in condos, cabins, historic homes. Book direct and save 15%.",
     images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
   },
 };
@@ -58,7 +58,7 @@ const orgSchema = {
   logo: "https://www.booktraverse.com/book-traverse-logo.png",
   image: "https://www.booktraverse.com/book-traverse-logo.png",
   description:
-    "Colorado's locally managed vacation rental company. 190+ properties across Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes.",
+    "Colorado's locally managed vacation rental company. 200+ properties across Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes.",
   foundingDate: "2016",
   address: [
     {
@@ -320,7 +320,7 @@ export default async function HomePage() {
               Book <em className="script">Traverse.</em>
             </h1>
             <p className="hero-sub">
-              190+ managed rentals across 6 Colorado mountain markets — with
+              200+ managed rentals across 6 Colorado mountain markets — with
               locally managed comfort and <strong>save up to 15% by booking direct.</strong>
             </p>
             <div className="hero-stats">
@@ -333,7 +333,7 @@ export default async function HomePage() {
                 </span>
               </div>
               <div className="hero-stats-item">
-                <strong>190+</strong>
+                <strong>200+</strong>
                 <span>properties</span>
               </div>
               <div className="hero-stats-item">
@@ -411,7 +411,7 @@ export default async function HomePage() {
             </p>
           </div>
           <Link href="/properties" className="section-link">
-            View all 190+ stays →
+            View all 200+ stays →
           </Link>
         </div>
         <div className="stay-grid">
@@ -469,7 +469,7 @@ export default async function HomePage() {
             </span>
             <h3>Tell us what you love. We&apos;ll plan your Colorado trip in 2 minutes.</h3>
             <p>
-              Real picks from the team managing 190+ Colorado rentals — skiing, hiking, restaurants, and a matching vacation rental, built around your dates.
+              Real picks from the team managing 200+ Colorado rentals — skiing, hiking, restaurants, and a matching vacation rental, built around your dates.
             </p>
           </div>
           <div className="tp-visual">
@@ -561,7 +561,7 @@ export default async function HomePage() {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
               <div style={{ padding: "28px", background: "var(--card)", border: "1px solid var(--line)", borderRadius: "var(--radius-md)" }}>
-                <strong style={{ fontSize: "36px", fontWeight: 800, display: "block", marginBottom: "4px" }}>190+</strong>
+                <strong style={{ fontSize: "36px", fontWeight: 800, display: "block", marginBottom: "4px" }}>200+</strong>
                 <span style={{ fontSize: "13px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                   Managed properties
                 </span>
@@ -690,7 +690,7 @@ export default async function HomePage() {
             Find your Colorado rental.
           </h2>
           <p style={{ fontSize: "18px", maxWidth: "55ch", margin: "0 auto 36px", opacity: 0.6 }}>
-            190+ locally managed properties across 6 mountain markets. Book direct and save up to 15%.
+            200+ locally managed properties across 6 mountain markets. Book direct and save up to 15%.
           </p>
           <Link href="/properties" className="btn btn-primary" style={{ display: "inline-block" }}>
             Search Available Dates

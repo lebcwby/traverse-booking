@@ -221,7 +221,7 @@ export default function PropertyManagementPage() {
           <div className="mx-auto grid max-w-6xl gap-y-4 px-6 py-6 text-center sm:grid-cols-4 sm:gap-y-0 sm:px-8 sm:py-5">
             <div>
               <div className="text-2xl font-bold text-foreground">
-                {PORTFOLIO_STATS.totalListings}
+                {PORTFOLIO_STATS.marketingCount}
               </div>
               <div className="mt-0.5 text-xs uppercase tracking-wider text-muted-foreground">
                 Active listings

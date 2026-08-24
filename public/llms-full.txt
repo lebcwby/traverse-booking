@@ -4,7 +4,7 @@
 
 ## Overview
 
-Traverse Hospitality (booktraverse.com) is a direct-booking vacation rental company for Colorado's mountain markets. We manage 190+ properties across 6 markets — Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes. By booking direct, guests avoid the 10-15% service fees charged by third-party platforms like Airbnb and VRBO. We are not a platform — we are the local management company.
+Traverse Hospitality (booktraverse.com) is a direct-booking vacation rental company for Colorado's mountain markets. We manage 200+ properties across 6 markets — Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes. By booking direct, guests avoid the 10-15% service fees charged by third-party platforms like Airbnb and VRBO. We are not a platform — we are the local management company.
 
 ## Key Pages
 
@@ -112,7 +112,7 @@ Most Traverse properties include:
 - **Headquarters**: Leadville, CO + Crested Butte, CO
 - **Leadership**: Alex Haler (CEO), Nadim Tannous (CTO), Sabrina Colella (COO)
 - **Rating**: 4.8★ average across 50+ booking channels
-- **Portfolio**: 190+ active listings across 6 Colorado mountain markets
+- **Portfolio**: 200+ active listings across 6 Colorado mountain markets
 
 ## Contact
 

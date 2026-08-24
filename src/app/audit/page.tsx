@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Free Colorado Listing Audit | Traverse Hospitality",
     description:
-      "See what's quietly costing your mountain rental bookings. A free listing audit from the team managing 190+ Colorado homes.",
+      "See what's quietly costing your mountain rental bookings. A free listing audit from the team managing 200+ Colorado homes.",
     url: "https://audit.booktraverse.com",
   },
 };
@@ -160,11 +160,11 @@ export default function ListingAuditPage() {
               Most Colorado owners are one photo order and three sentences away
               from a materially better booking rate. Paste your listing and
               we&apos;ll tell you exactly where it&apos;s leaking — free, from
-              the team that manages 190+ mountain homes.
+              the team that manages 200+ mountain homes.
             </p>
             <ul className="audit-trust">
               <li>
-                <strong>190+</strong> homes managed
+                <strong>200+</strong> homes managed
               </li>
               <li>
                 <strong>80,000+</strong> guests since 2016
@@ -330,7 +330,7 @@ export default function ListingAuditPage() {
           <div>
             <h2>Why we give this away</h2>
             <p>
-              We manage 190+ homes across six
+              We manage 200+ homes across six
               Colorado mountain markets, and we see the same handful of fixable
               problems on listing after listing — good properties underperforming
               for reasons the owner can&apos;t see from the inside.

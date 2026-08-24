@@ -214,7 +214,7 @@ export default async function BlogPostPage({
             <div>
               <div style={{ fontSize: "14px", fontWeight: 600 }}>{post.author}</div>
               <div style={{ fontSize: "12px", opacity: 0.5 }}>
-                190+ vacation rentals across Colorado
+                200+ vacation rentals across Colorado
               </div>
             </div>
           </div>
@@ -267,7 +267,7 @@ export default async function BlogPostPage({
               lineHeight: 1.6,
             }}
           >
-            Browse 190+ vacation rentals across Crested Butte, Leadville, Vail, and more!
+            Browse 200+ vacation rentals across Crested Butte, Leadville, Vail, and more!
           </p>
           <Link
             href="/properties"

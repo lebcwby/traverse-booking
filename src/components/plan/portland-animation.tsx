@@ -45,8 +45,8 @@ const SLIDES = [
   },
   {
     src: "/home/colorado-mountain-scene.jpg",
-    label: "190+ rentals",
-    fact: "Traverse manages 190+ vacation rentals across six Colorado mountain markets — book direct and save up to 15%.",
+    label: "200+ rentals",
+    fact: "Traverse manages 200+ vacation rentals across six Colorado mountain markets — book direct and save up to 15%.",
   },
   {
     src: "/home/managed-rental-interior.jpg",

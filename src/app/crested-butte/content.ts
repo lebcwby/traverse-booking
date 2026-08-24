@@ -1356,7 +1356,7 @@ https://booktraverse.com/crested-butte-property-management/
       
 
         
-<div class="pm-stat"><span class="stat-num">190+</span><span class="stat-label">Active listings managed across Colorado</span></div>
+<div class="pm-stat"><span class="stat-num">200+</span><span class="stat-label">Active listings managed across Colorado</span></div>
 
       
 

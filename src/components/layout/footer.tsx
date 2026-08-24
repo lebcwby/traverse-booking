@@ -98,7 +98,7 @@ function MobileFooter() {
       {/* 3. Social Proof Strip */}
       <div className="border-y border-primary-foreground/10 py-4 px-6 mb-6 text-center">
         <p className="text-xs">
-          <span className="font-semibold text-primary-foreground/95">190+</span>
+          <span className="font-semibold text-primary-foreground/95">200+</span>
           <span className="text-primary-foreground/50"> homes · </span>
           <span className="font-semibold text-primary-foreground/95">
             80,000+
@@ -331,7 +331,7 @@ function DesktopFooter() {
           />
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-primary-foreground/60">
             <span className="font-semibold text-primary-foreground/95">
-              190+
+              200+
             </span>{" "}
             homes ·{" "}
             <span className="font-semibold text-primary-foreground/95">
