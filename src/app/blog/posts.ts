@@ -13,6 +13,17 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "property-management-contract-red-flags",
+    oldSlug: "property-management-contract-red-flags",
+    title: "Read Before You Sign: Property Management Contract Clauses That Can Trap You",
+    excerpt: "The wrong property management contract can lock you out of your own calendar, strip you of your reviews, and cost you months of income. Here's what to read before you sign.",
+    date: "2026-08-25",
+    author: "Traverse Hospitality",
+    category: "For Owners",
+    market: "owners",
+    image: "/blog/property-management-contract-red-flags.jpg",
+  },
+  {
     slug: "airbnb-plus-checklist",
     oldSlug: "airbnb-plus-checklist",
     title: "The Airbnb Plus Checklist (And Why It Still Matters in 2026)",
