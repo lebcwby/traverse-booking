@@ -17,7 +17,7 @@ export const BLOG_POSTS: BlogPost[] = [
     oldSlug: "airbnb-plus-checklist",
     title: "The Airbnb Plus Checklist (And Why It Still Matters in 2026)",
     excerpt:
-      "Airbnb retired the Plus program in November 2023 and replaced it with Guest Favorites — but the 100-point standard behind it is still the fastest way to find what's costing your listing bookings. The full checklist, plus the Colorado-specific items no national list mentions.",
+      "Airbnb retired the Plus program in November 2023, but the standard behind it still decides which listings get booked. The full setup checklist we use when we onboard a Colorado property — furniture, appliances, kitchen, bathrooms, bedrooms, safety and comfort — plus the two things no inventory list captures.",
     date: "2026-08-25",
     author: "Traverse Hospitality",
     category: "For Owners",
