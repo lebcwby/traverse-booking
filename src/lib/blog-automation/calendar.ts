@@ -168,7 +168,9 @@ export const CONTENT_CALENDAR: CalendarEntry[] = [
     category: "Crested Butte",
     brief:
       "SEO anchor for pet-friendly seekers. Traverse manages CONDOS at Grand Lodge Crested Butte (some units are pet-friendly) — we do NOT manage any cabins, so this post must NOT use the word 'cabin' anywhere. Focus on: pet policies at Grand Lodge units Traverse manages, dog-friendly trails around Mt Crested Butte and Gothic Road, vet/groomer notes for the area, tips for arriving with a dog at a slopeside condo (no yard, walkable path to town). Reference the existing detail post `pet-friendly-crested-butte-grand-lodge-153`.",
-    status: "pending",
+    status: "done", // Covered by "pet-friendly-crested-butte-grand-lodge-153";
+    // the old slug 308s there. Leaving this "pending" would make the
+    // automation republish a post whose URL is permanently redirected away.
   },
 
   // ────────────────────────────────────────────────────────────────

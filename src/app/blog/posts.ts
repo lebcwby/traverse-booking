@@ -34,17 +34,13 @@ export const BLOG_POSTS: BlogPost[] = [
     market: "company",
     image: "/blog/vail-vacation-rentals-guide-cover.jpg",
   },
-  {
-    slug: "pet-friendly-condos-crested-butte",
-    oldSlug: "pet-friendly-condos-crested-butte",
-    title: "Pet-Friendly Condo Rentals in Crested Butte",
-    excerpt: "Bringing your dog to Crested Butte? Traverse Hospitality manages pet-friendly condos at Grand Lodge Crested Butte — slopeside, walkable, and ready for four-legged guests.",
-    date: "2026-06-08",
-    author: "Traverse Hospitality",
-    category: "Crested Butte",
-    market: "crested-butte",
-    image: "/blog/pet-friendly-condos-crested-butte.jpg",
-  },
+  // "pet-friendly-condos-crested-butte" was removed 2026-08-24. It was
+  // superseded by "pet-friendly-crested-butte-grand-lodge-153" and
+  // next.config.ts already 308s the old slug to it — but the entry was left
+  // here, and the blog sitemap is generated from this array. So the sitemap
+  // advertised a URL that immediately redirected, which is exactly what
+  // Search Console flagged ("pages in a sitemap ... Page with redirect").
+  // The redirect stays for inbound links; the entry must not.
   {
     slug: "things-to-do-granby-colorado",
     oldSlug: "things-to-do-granby-colorado",
