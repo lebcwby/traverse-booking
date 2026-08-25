@@ -349,6 +349,31 @@ export const CONTENT_CALENDAR: CalendarEntry[] = [
       "Positioning post: Ski Cooper is the small, family-friendly resort ~10 mi north of Leadville — an approachable alternative when Vail is overwhelming or too expensive. Cover: what makes Cooper different (short lift lines, all-ages terrain, way lower ticket prices, less crowded), who it's a great fit for (young kids, learners, budget-conscious families, seasoned skiers wanting a quiet powder day), day-tripping to Cooper from a Leadville rental vs staying near Vail, and how it stacks up against Vail on a $/day-per-person basis. Verify Cooper facts qualitatively — avoid quoting specific 2026-27 prices without checking.",
     status: "pending",
   },
+
+  // ────────────────────────────────────────────────────────────────
+  // Ad-hoc addition (2026-08-25) — real-world case: a Traverse client
+  // is locked into a full year with a large corporate PM because their
+  // management agreement has no termination clause. Fire ASAP.
+  // ────────────────────────────────────────────────────────────────
+
+  {
+    slug: "property-management-contract-red-flags",
+    publishDate: "2026-08-25",
+    title: "Read Before You Sign: Property Management Contract Clauses That Can Trap You",
+    primaryKeyword: "property management contract",
+    secondaryKeywords: [
+      "vacation rental management agreement",
+      "property management termination clause",
+      "STR management contract red flags",
+      "how to leave a property manager",
+    ],
+    pillar: "owner-education",
+    market: "owners",
+    category: "For Owners",
+    brief:
+      "Owner-education post prompted by a real Traverse client currently trying to leave a large corporate property manager but locked in for the full year because their contract has NO termination clause. Cover the clauses every owner should scrutinize before signing a vacation-rental management agreement, one section per clause with a short 'What to ask' checklist under each: (1) TERMINATION CLAUSE — is there one? What notice is required (30/60/90 days)? Any termination fees? Can the PM terminate you and on what notice? Without one, you can be stuck for the full term. (2) TERM LENGTH + AUTO-RENEWAL — many contracts auto-renew for another full year unless you give written notice within a tight window (often 60–90 days before renewal); miss the window and you're locked in again. (3) FEE STRUCTURE — flat % vs tiered; what's included in the base fee (marketing, guest comms, cleaning coordination, tax remittance) vs. billed separately (linens, restocking, maintenance markups, credit-card processing). (4) OWNER USE / BLACKOUT DATES — can you block dates for personal use? Any penalty? Any minimum days you must make available? (5) BOOKING CHANNEL RIGHTS — does the PM have exclusive marketing rights, or can you also list on Airbnb/Vrbo yourself? Can you take direct bookings from friends/family? (6) OWNERSHIP OF LISTING + REVIEWS — when you leave, do the listing pages, photos, reviews, and guest history go with you, or stay with the PM? Losing years of accumulated reviews can meaningfully hurt your next launch. (7) MAINTENANCE AUTHORITY — what's the dollar threshold above which they need your approval for repairs? What's the markup on subcontractors? (8) PAYOUT TIMING — when do you get paid (monthly, quarterly)? How long are funds held in reserve? (9) EXCLUSIVE-USE / NON-COMPETE — some large PMs restrict who else can operate on the property or share owner data. End with a positioning section on how Traverse's approach differs: shorter/rolling terms with clear termination notice, no auto-renewal traps, transparent flat-rate fees with no hidden markups, owner keeps full control of their own blocked dates and can supplement with direct listings, and the listing's photos + reviews are the owner's — they stay with the property when the relationship ends. Include a soft CTA to /property-management. IMPORTANT: this post cannot name any specific competitor (CBMR / Vail Resorts / Vacasa / any named PM) by name — use qualitative language like 'some large corporate property managers' or 'big-box PMs' where needed. This is legal-risk territory, keep it factual and educational.",
+    status: "pending",
+  },
 ];
 
 /**
