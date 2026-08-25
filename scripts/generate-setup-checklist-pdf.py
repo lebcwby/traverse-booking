@@ -50,7 +50,7 @@ h_section = ParagraphStyle(
     textColor=NAVY, spaceBefore=0, spaceAfter=0, alignment=TA_LEFT,
 )
 p_item = ParagraphStyle(
-    "item", fontName="Helvetica", fontSize=9.3, leading=12.4, textColor=INK,
+    "item", fontName="Helvetica", fontSize=9.3, leading=11.9, textColor=INK,
 )
 p_note = ParagraphStyle(
     "note", fontName="Helvetica-Oblique", fontSize=8.4, leading=11, textColor=MUTED,
@@ -65,6 +65,18 @@ p_fill = ParagraphStyle(
 # ── Content ──────────────────────────────────────────────────────────────
 # (section title, [items], optional footnote)
 SECTIONS = [
+    # Deliberately first: every other section is something to ADD, this is the
+    # only one about taking things away, and it is the step that actually comes
+    # first when you walk a property.
+    ("Clear the Decks First", [
+        "<b>Every shelf, countertop, mantel and table clear</b> — guests need somewhere to put their own things",
+        "<b>Anything valuable or irreplaceable, gone</b> — assume it can be broken or walk",
+        "<b>Personal belongings out</b> — clothes, toiletries, medication, mail, documents",
+        "<b>Family photographs down</b> — guests report it makes them feel like they are intruding",
+        "<b>Owner storage locked, and disclosed in the listing</b> — an undisclosed locked door is an accuracy complaint",
+        "Half-used consumables binned — opened toiletries, ancient spices, freezer archaeology",
+        "Excess furniture removed — if it has no function for a guest, it works against you",
+    ], "Walk in as though you had just paid to be there. Stop at the first thing that says this is someone else's house."),
     ("Furniture", [
         "Beds, with mattresses and linens for every sleeping position advertised",
         "Sofa or proper seating area — comfortable seating for everyone the home sleeps",
@@ -185,8 +197,8 @@ def checkbox_table(items):
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("LEFTPADDING", (0, 0), (-1, -1), 0),
         ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ("TOPPADDING", (0, 0), (-1, -1), 3.2),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3.2),
+        ("TOPPADDING", (0, 0), (-1, -1), 2.8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2.8),
         # Nudge the square down onto the first line's cap height.
         ("TOPPADDING", (0, 0), (0, -1), 4.8),
         ("LEFTPADDING", (1, 0), (1, -1), 9),
@@ -211,7 +223,7 @@ def section_flowables(title, items, note):
         out.append(checkbox_table(items[head_n:]))
     if note:
         out += [Spacer(1, 2), Paragraph(note, p_note)]
-    out.append(Spacer(1, 10))
+    out.append(Spacer(1, 8))
     return out
 
 
@@ -281,7 +293,7 @@ def build():
             ("BACKGROUND", (0, 0), (-1, -1), BAND),
             ("LINEBELOW", (0, 0), (-1, -1), 0.7, LINE),
             ("TOPPADDING", (0, 0), (-1, -1), 7),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 20),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 17),
             ("LEFTPADDING", (0, 0), (-1, -1), 8),
         ])))
     story.append(Spacer(1, 12))
