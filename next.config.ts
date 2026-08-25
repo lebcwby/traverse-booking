@@ -135,6 +135,34 @@ const nextConfig: NextConfig = {
       { source: "/evergreen", has: oldDomainHost, destination: "https://www.booktraverse.com/properties", permanent: true },
       { source: "/w9-and-payment-authorization-form", has: oldDomainHost, destination: "https://www.booktraverse.com/w9-and-payment-authorization-form", permanent: true },
 
+      // ─── airbnb-plus-checklist — republished 2026-08-25 ────────────────
+      // Originally published Dec 2020 on highrockyhomes.com and later mirrored
+      // at /traversehospitality/blog/. It was never carried into the Next
+      // rebuild — absent from migrate-blog-v3.sh, from the 22 legacy redirects
+      // below, and from BLOG_POSTS — so the WordPress path fell through to the
+      // catch-all and dumped visitors on /blog while Google still ranked it.
+      //
+      // Two source shapes to catch:
+      //   /traversehospitality/blog/airbnb-plus-checklist   (WP mirror)
+      //   /2020/12/airbnb-plus-checklist                    (original HRH date
+      //                                                      permalink)
+      // Both are matched host-free so they work on booktraverse.com AND on
+      // highrockyhomes.com the moment that domain is pointed at this project.
+      // ⚠️ highrockyhomes.com is NOT on Vercel today — it sits behind a
+      // registrar forward that 301s only the root and 404s every deep path, so
+      // the /2020/12/ rule below cannot fire until that changes. See the note
+      // in the response / CLAUDE.md.
+      {
+        source: "/2020/12/airbnb-plus-checklist",
+        destination: "https://www.booktraverse.com/blog/airbnb-plus-checklist",
+        permanent: true,
+      },
+      {
+        source: "/traversehospitality/blog/airbnb-plus-checklist",
+        destination: "https://www.booktraverse.com/blog/airbnb-plus-checklist",
+        permanent: true,
+      },
+
       // All 22 blog posts: old /traversehospitality/blog/<old-slug> → new /blog/<slug>.
       { source: "/traversehospitality/blog/crested-butte-vacation-rental-income", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/crested-butte-vacation-rental-income", permanent: true },
       { source: "/traversehospitality/blog/best-hiking-near-leadville-colorado", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/best-hiking-near-leadville-colorado", permanent: true },

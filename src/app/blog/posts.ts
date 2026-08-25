@@ -13,6 +13,18 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "airbnb-plus-checklist",
+    oldSlug: "airbnb-plus-checklist",
+    title: "The Airbnb Plus Checklist (And Why It Still Matters in 2026)",
+    excerpt:
+      "Airbnb retired the Plus program in November 2023 and replaced it with Guest Favorites — but the 100-point standard behind it is still the fastest way to find what's costing your listing bookings. The full checklist, plus the Colorado-specific items no national list mentions.",
+    date: "2026-08-25",
+    author: "Traverse Hospitality",
+    category: "For Owners",
+    market: "owners",
+    image: "/blog/153-living-room.jpg",
+  },
+  {
     slug: "twin-lakes-colorado-hidden-gem",
     oldSlug: "twin-lakes-colorado-hidden-gem",
     title: "Twin Lakes Colorado: The Hidden Gem Near Leadville",
