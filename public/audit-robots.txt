@@ -1,0 +1,12 @@
+# audit.booktraverse.com
+#
+# Vercel answers every attached domain with the whole app, so this host also
+# serves all of booktraverse.com. Canonicals stop those duplicates being
+# INDEXED, but not CRAWLED — Google had crawled 56 of them by 2026-08-24.
+# Allow only the landing page this subdomain exists for.
+#
+# Served here by a host-scoped rewrite in next.config.ts. Doing it from a
+# dynamic robots.ts instead 404'd robots.txt outright in production.
+User-Agent: *
+Allow: /$
+Disallow: /

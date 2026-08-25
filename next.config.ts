@@ -540,6 +540,16 @@ const nextConfig: NextConfig = {
           has: [{ type: "host", value: "audit\\.booktraverse\\.com" }],
           destination: "/audit",
         },
+        // Restrictive robots for the audit host — see public/audit-robots.txt.
+        // Must come from a rewrite: robots.ts is a single static metadata route
+        // and cannot vary by host. Making it dynamic (async + headers()) built
+        // fine and worked in dev, but 404'd robots.txt on BOTH hosts in
+        // production — don't retry that.
+        {
+          source: "/robots.txt",
+          has: [{ type: "host", value: "audit\\.booktraverse\\.com" }],
+          destination: "/audit-robots.txt",
+        },
       ],
       afterFiles: [
         {
