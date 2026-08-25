@@ -3,6 +3,7 @@ export const pageContent = `<h2>Airbnb Plus Is Gone. The Standard Didn't Go With
 <p>Airbnb formally retired Plus in November 2023. In its place came <strong>Guest Favorites</strong> — no inspector, no application. Airbnb's systems evaluate listings automatically and highlight the homes guests rate highest: a strong review count, an average near 4.9, and consistently high marks for cleanliness, accuracy, check-in and communication.</p>
 <p>That change matters less than it sounds. The badge went away; the standard didn't. Guest Favorites measures the same things the inspector was checking — it just measures them through guests instead of a clipboard. If anything the bar is now permanent, because an inspection was a moment in time and a rating is re-earned every stay.</p>
 <p>What follows is the full list we use when we onboard a property in Colorado. It is deliberately exhaustive. Work down it once and you will find things.</p>
+<p><a href="/traverse-rental-setup-checklist.pdf" download><strong>Download the printable checklist (PDF)</strong></a> — three pages, every item below with a tick box, plus space for the property name and who walked it. Made to be printed and carried round the property rather than read on a phone.</p>
 <hr>
 <h2>Furniture</h2>
 <ul>
@@ -121,5 +122,6 @@ export const pageContent = `<h2>Airbnb Plus Is Gone. The Standard Didn't Go With
 <hr>
 <h2>Where to Start</h2>
 <p>If you only do three things this week: count the pillows, count the towels against maximum occupancy, and re-read your own listing description as though you had never seen the property. That trio catches more rating damage than anything else on this page.</p>
+<p>If you would rather walk the whole thing properly, <a href="/traverse-rental-setup-checklist.pdf" download><strong>download the printable version</strong></a> and take it round the property with a pen.</p>
 <p>If you would rather someone else look at it, we do that for free — no commitment, and you don't need to be considering a management change. Paste your listing link into our <a href="https://audit.booktraverse.com">free listing audit</a> and a member of our Colorado team will send back a written read on your title, photos, description, review themes and trust signals, with the highest-impact fixes first.</p>
 <p>Or if you would rather just talk it through, call us on <a href="tel:+19705333583">(970) 533-3583</a>.</p>`;
