@@ -49,7 +49,7 @@ interface GuestyPayment {
 interface Finding {
   confirmationCode: string | null;
   guestyId: string;
-  kind: "duplicate_succeeded" | "negative_balance";
+  kind: "duplicate_succeeded" | "negative_balance" | "unpaid_balance";
   hostPayout: number | null;
   totalPaid: number | null;
   balanceDue: number | null;
@@ -215,6 +215,39 @@ export async function GET(request: Request) {
       });
     }
 
+    // Money owed that we never collected. Every row reaching this sweep has a
+    // Stripe PI, i.e. we took payment ourselves at booking and the stay should
+    // be paid in full — so a POSITIVE balance is not a payment plan or an
+    // OTA hotel-collect booking, it is money that quietly went uncollected.
+    //
+    // The known producer is an abandoned portal date change: the quote step in
+    // /api/account/reservations/[id]/extend writes the new dates to Guesty
+    // BEFORE the guest pays, and only a client-side rollback undoes them. Close
+    // the tab and Guesty is left extended and unpaid while our row still shows
+    // the old dates. That is GY-fYaHGbj5 (2026-08-25) — caught only because the
+    // guest phoned in. This check is what should catch the next one.
+    if (
+      !isCanceled &&
+      balanceDue !== null &&
+      balanceDue > BALANCE_EPSILON
+    ) {
+      findings.push({
+        confirmationCode: (reservation?.confirmationCode as string) ?? null,
+        guestyId: row.guesty_id,
+        kind: "unpaid_balance",
+        hostPayout,
+        totalPaid,
+        balanceDue,
+        succeededCount: succeeded.length,
+        unattributedCount: unattributed.length,
+        detail:
+          `$${balanceDue.toFixed(2)} owed and not collected. Check whether ` +
+          `Guesty's dates match ours — if Guesty is longer, this is an ` +
+          `abandoned portal date change: either collect the difference or ` +
+          `put the dates back.`,
+      });
+    }
+
     // Be polite to the Open API — this is a background sweep, not a user path.
     await new Promise((r) => setTimeout(r, 250));
   }
@@ -234,10 +267,23 @@ export async function GET(request: Request) {
       [
         "<p>Guesty's payment ledger disagrees with what we charged. This is an " +
           "<strong>accounting</strong> problem, not necessarily a guest-card one — " +
-          "verify in Stripe before refunding anyone.</p>",
-        "<p>Most likely cause: the listing's auto-payment rule recorded a " +
-          "duplicate payment alongside ours. The row with <em>no</em> Stripe PI " +
-          "note is the one to void.</p>",
+          "verify in Stripe before refunding or charging anyone.</p>",
+        // The two failure modes need opposite responses, so only show the
+        // guidance for the kinds that actually fired.
+        findings.some((f) => f.kind !== "unpaid_balance")
+          ? "<p><strong>Over-paid / duplicate:</strong> most likely the listing's " +
+            "auto-payment rule recorded a duplicate payment alongside ours. The " +
+            "row with <em>no</em> Stripe PI note is the one to void. The guest " +
+            "was probably charged only once — confirm in Stripe first.</p>"
+          : "",
+        findings.some((f) => f.kind === "unpaid_balance")
+          ? "<p><strong>Unpaid balance:</strong> money owed that we never " +
+            "collected. Usual cause is an abandoned date change from the guest " +
+            "portal — the dates moved on Guesty but the guest never paid, and " +
+            "our own record still shows the old stay. Compare the Guesty dates " +
+            "with ours, then either collect the difference or put the dates " +
+            "back and free the calendar.</p>"
+          : "",
         ...findings.map((f) =>
           renderAlertDetails([
             ["Reservation", f.confirmationCode || f.guestyId],
