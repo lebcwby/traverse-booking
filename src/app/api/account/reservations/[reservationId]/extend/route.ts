@@ -10,6 +10,11 @@ import {
 } from "@/lib/guesty-openapi";
 import { buildStripeIdempotencyKey, getStripeServer } from "@/lib/stripe";
 import { sendAlert } from "@/lib/alerts";
+import {
+  openPendingDateChange,
+  attachPaymentIntent,
+  closePendingDateChange,
+} from "@/lib/pending-date-changes";
 import { differenceInHours, parseISO } from "date-fns";
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -281,6 +286,19 @@ async function handleQuote(
     const originalCheckOut =
       currentRes.checkOutDateLocalized || row.check_out.slice(0, 10);
 
+    // Record the change BEFORE touching Guesty. If the write lands but its
+    // response is lost, the row still exists and the sweeper can put the dates
+    // back; a row written afterwards would simply never exist. Recording a
+    // change that did not happen is harmless — rolling back to dates that are
+    // already correct is a no-op.
+    await openPendingDateChange({
+      reservationId,
+      originalCheckIn: checkInLocalized,
+      originalCheckOut: originalCheckOut,
+      newCheckIn,
+      newCheckOut,
+    });
+
     // Update dates on Guesty — blocks calendar, triggers recalculation.
     // v1 PUT doesn't return recalculated money inline, so we fetch after.
     await updateReservationDates(reservationId, newCheckIn, newCheckOut);
@@ -386,6 +404,10 @@ async function handlePaymentIntent(
         }),
       }
     );
+
+    // Let the sweeper check the real payment rather than inferring from a
+    // Guesty balance, which lags and can be cleared by staff out of band.
+    await attachPaymentIntent(reservationId, paymentIntent.id);
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
@@ -501,6 +523,8 @@ async function handleFinalize(
     console.error("[ChangeDates] Local DB update failed:", dbErr);
   }
 
+  await closePendingDateChange(reservationId, "finalized");
+
   return NextResponse.json({
     success: true,
     newCheckIn,
@@ -562,6 +586,8 @@ async function handleFinalizeNoCharge(
     `[ChangeDates] No-charge finalize for ${reservationId}: ${row.check_out.slice(0, 10)} → ${newCheckOut}`
   );
 
+  await closePendingDateChange(reservationId, "finalized");
+
   return NextResponse.json({ success: true, newCheckIn, newCheckOut });
 }
 
@@ -621,6 +647,8 @@ async function handleFinalizeRefund(
         }),
       ]
     );
+    await closePendingDateChange(reservationId, "finalized");
+
     return NextResponse.json({
       success: true,
       newCheckIn,
@@ -701,6 +729,8 @@ async function handleFinalizeRefund(
       `[ChangeDates] Refund finalized for ${reservationId}: $${refundAmount}, ${stripeRefund.id}`
     );
 
+    await closePendingDateChange(reservationId, "finalized");
+
     return NextResponse.json({
       success: true,
       newCheckIn,
@@ -724,6 +754,8 @@ async function handleFinalizeRefund(
           WHERE guesty_id = $1`,
         [reservationId, newCheckIn, newCheckOut]
       );
+      await closePendingDateChange(reservationId, "finalized");
+
       return NextResponse.json({
         success: true,
         newCheckIn,
@@ -765,6 +797,7 @@ async function handleRollback(
       originalCheckIn || originalCheckOut,
       originalCheckOut
     );
+    await closePendingDateChange(reservationId, "rolled_back");
     console.log(
       `[ChangeDates] Rolled back dates for ${reservationId} to ${originalCheckIn}–${originalCheckOut}`
     );
