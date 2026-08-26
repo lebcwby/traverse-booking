@@ -29,6 +29,7 @@
 import { NextResponse } from "next/server";
 import { getPool } from "@/lib/db";
 import { getOpenAPIReservation } from "@/lib/guesty-openapi";
+import { getStripeServer } from "@/lib/stripe";
 import { sendAlert, renderAlertDetails } from "@/lib/alerts";
 
 export const dynamic = "force-dynamic";
@@ -49,10 +50,16 @@ interface GuestyPayment {
 interface Finding {
   confirmationCode: string | null;
   guestyId: string;
-  kind: "duplicate_succeeded" | "negative_balance" | "unpaid_balance";
+  kind:
+    | "duplicate_succeeded"
+    | "negative_balance"
+    | "unpaid_balance"
+    | "unrecorded_payment";
   hostPayout: number | null;
   totalPaid: number | null;
   balanceDue: number | null;
+  /** What Stripe actually received. null = could not be read. */
+  stripeReceived?: number | null;
   succeededCount: number;
   /** Succeeded rows with no Stripe note — the auto-payment-rule shadow rows. */
   unattributedCount: number;
@@ -90,10 +97,11 @@ export async function GET(request: Request) {
     guesty_id: string;
     confirmation_code: string | null;
     status: string | null;
+    stripe_payment_intent_id: string | null;
   }>;
   try {
     ({ rows } = await pool.query(
-    `SELECT guesty_id, confirmation_code, status
+    `SELECT guesty_id, confirmation_code, status, stripe_payment_intent_id
        FROM reservations
       WHERE stripe_payment_intent_id IS NOT NULL
         -- check_in/check_out are TEXT, not dates. Compare against a formatted
@@ -241,21 +249,56 @@ export async function GET(request: Request) {
       balanceDue !== null &&
       balanceDue > BALANCE_EPSILON
     ) {
+      // A Guesty balance is NOT evidence the guest owes money. Of the first
+      // three found, two had already paid in full and only Guesty's ledger was
+      // short: recordPayment hit Guesty's "amount > balance" error, re-recorded
+      // at the balance Guesty had at that instant, and the pet fee landed on
+      // the invoice afterwards — leaving a balance the guest does not owe.
+      // Telling ops to "collect it" would have charged those two a second time.
+      //
+      // Stripe is the arbiter. Only the shortfall against what Stripe actually
+      // received is real money owed.
+      let stripeReceived: number | null = null;
+      if (row.stripe_payment_intent_id) {
+        try {
+          const pi = await getStripeServer().paymentIntents.retrieve(
+            row.stripe_payment_intent_id
+          );
+          stripeReceived = (pi.amount_received ?? 0) / 100;
+        } catch {
+          // Leave null — an unreadable PI must not turn into a "go collect".
+        }
+      }
+
+      const paidInFull =
+        stripeReceived !== null &&
+        hostPayout !== null &&
+        stripeReceived >= hostPayout - BALANCE_EPSILON;
+
       findings.push({
         confirmationCode: (reservation?.confirmationCode as string) ?? null,
         guestyId: row.guesty_id,
-        kind: "unpaid_balance",
+        kind: paidInFull ? "unrecorded_payment" : "unpaid_balance",
         hostPayout,
         totalPaid,
         balanceDue,
+        stripeReceived,
         succeededCount: succeeded.length,
         unattributedCount: unattributed.length,
-        detail:
-          `$${balanceDue.toFixed(2)} owed and not collected. Compare Guesty's ` +
-          `invoice lines with what we charged: a fee Guesty added on its own ` +
-          `(pet fee is the usual one) means collect it, whereas dates longer ` +
-          `than ours mean an abandoned portal date change — collect the ` +
-          `difference or put the dates back.`,
+        detail: paidInFull
+          ? `DO NOT COLLECT — Stripe already received $${stripeReceived!.toFixed(2)}, ` +
+            `covering the full $${hostPayout!.toFixed(2)}. Guesty's ledger is ` +
+            `$${balanceDue.toFixed(2)} short, so the fix is to record the missing ` +
+            `amount in Guesty, not to charge the guest.`
+          : stripeReceived === null
+            ? `$${balanceDue.toFixed(2)} shows as owed, but the Stripe payment ` +
+              `could not be read to confirm it. Check Stripe by hand before ` +
+              `charging anyone.`
+            : `$${balanceDue.toFixed(2)} genuinely uncollected — Stripe received ` +
+              `$${stripeReceived.toFixed(2)} against a $${hostPayout?.toFixed(2)} ` +
+              `invoice. Compare Guesty's invoice lines with what we charged: a fee ` +
+              `Guesty added on its own (pet fee is the usual one) needs collecting, ` +
+              `whereas dates longer than ours mean an abandoned portal date change.`,
       });
     }
 
@@ -288,13 +331,22 @@ export async function GET(request: Request) {
             "was probably charged only once — confirm in Stripe first.</p>"
           : "",
         findings.some((f) => f.kind === "unpaid_balance")
-          ? "<p><strong>Unpaid balance:</strong> money owed that we never " +
-            "collected. Open the Guesty invoice and compare it with what we " +
-            "charged. A fee Guesty added on its own — a <em>pet fee</em> is the " +
-            "one we keep seeing — just needs collecting. Dates on Guesty that " +
-            "run longer than ours instead mean a guest abandoned a date change " +
-            "in the portal: collect the difference, or put the dates back and " +
-            "free the calendar.</p>"
+          ? "<p><strong>Unpaid balance:</strong> Stripe received less than the " +
+            "Guesty invoice, so this is genuinely uncollected. Compare Guesty's " +
+            "invoice lines with what we charged. A fee Guesty added on its own " +
+            "— a <em>pet fee</em> is the one we keep seeing — just needs " +
+            "collecting. Dates on Guesty that run longer than ours instead mean " +
+            "a guest abandoned a date change in the portal: collect the " +
+            "difference, or put the dates back and free the calendar.</p>"
+          : "",
+        findings.some((f) => f.kind === "unrecorded_payment")
+          ? "<p><strong>Unrecorded payment — do NOT charge these guests.</strong> " +
+            "Stripe already holds the full invoice amount; only Guesty's ledger " +
+            "is short, so the balance on screen is money the guest does not owe. " +
+            "It happens when Guesty rejects our record as larger than the " +
+            "then-current balance and a fee lands on the invoice afterwards. Fix " +
+            "it by recording the missing amount in Guesty against the existing " +
+            "Stripe payment.</p>"
           : "",
         ...findings.map((f) =>
           renderAlertDetails([
@@ -303,6 +355,7 @@ export async function GET(request: Request) {
             ["Host payout", f.hostPayout],
             ["Total paid", f.totalPaid],
             ["Balance due", f.balanceDue],
+            ["Stripe received", f.stripeReceived ?? "(unread)"],
             ["Succeeded payments", f.succeededCount],
             ["…of which un-attributed", f.unattributedCount],
             ["Detail", f.detail],
