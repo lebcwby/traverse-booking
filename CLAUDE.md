@@ -140,6 +140,56 @@ careful testing. Full detail in memory `project_traverse_guesty_pay_reactivation
 - **Klaviyo company ID** — `consent-manager.tsx` had `T4kwLc` (Stay Portland's account) hardcoded as the fallback. All browser-side Klaviyo events (Started Checkout, Added to Cart, Viewed Listing) were going to Stay Portland's Klaviyo, not Traverse. Fixed: fallback updated to `UMUgtM` (Traverse), `NEXT_PUBLIC_KLAVIYO_COMPANY_ID=UMUgtM` added to Vercel. Deployed with `--force`.
 - **GA4 canonical property (as of 2026-05-13)** — `G-8NK72KVMJJ` is now the canonical property receiving all ecommerce events. `G-C5098JP52V` (formerly assumed canonical, has WordPress historical purchase data) is preserved untouched for historical reporting only — its gtag.js CDN is permanently 404, so client-side custom events never actually reached it (page_view appeared only because GTM routes its own events directly to /g/collect, bypassing gtag.js). `G-MLNYK6YLXK` is the old highrockyhomes.com property (currently still linked to Google Ads — needs re-linking to G-8NK72KVMJJ).
 
+### 💰 Reading Guesty's payment ledger — three traps (2026-08-26)
+
+**A Guesty balance is NOT evidence of what the guest's card did.** Verify in
+Stripe before charging or refunding anyone. Three separate incidents now:
+
+1. **`balanceDue` negative ≠ double charge.** The auto-payment-rule shadow row
+   flipping to SUCCEEDED doubles `totalPaid` (GY-hNBNy23v — see memory
+   `feedback_guesty_auto_payment_rule_duplicate_records`).
+2. **`balanceDue` positive ≠ money owed.** `recordPayment` hits Guesty's
+   "amount > balance" error, `resolveAmountVsBalance` re-records at the balance
+   Guesty held *at that instant*, and a fee (usually the **$50 pet fee**) lands
+   on the invoice afterwards. The guest paid in full; only the ledger is short.
+   GY-z9ai4HsW and GY-XfNL7u3G were both in this state — collecting would have
+   charged them twice. GY-cZNjjLNX looked identical but was **genuinely** $50
+   short. The only way to tell them apart is `amount_received` on the PI.
+3. **GuestyPay collections never appear in our Stripe.** Different processor.
+   A Guesty payment with a `ProcessorResult`/`AuthNumber` in `attempts[]` is a
+   real GuestyPay capture, even though Stripe shows nothing. That is how
+   GY-fYaHGbj5's $111.99 was collected (by `bookings+chelo@`, 2026-08-25).
+
+`/api/cron/audit-payment-records` now classifies all of this — a positive
+balance splits into `unpaid_balance` (Stripe really did receive less) vs
+`unrecorded_payment` (**do not collect**, fix Guesty's ledger).
+
+### 🔁 Portal date changes move Guesty BEFORE payment — by necessity
+
+`/api/account/reservations/[id]/extend` calls `updateReservationDates()` in its
+**quote** step, because Guesty has no dry-run pricing for a date change: moving
+the dates *is* how you get the new price. **This is not a bug to "fix" by
+reordering** — there is no pricing call to reorder it against.
+
+The bug was that undoing it lived only in a client-side rollback. Closing the
+tab left Guesty extended and unpaid, our row on the old stay, and the extra
+night blocked (GY-fYaHGbj5, three days, found only when the guest phoned).
+
+Now: `pending_date_changes` is written **before** the Guesty write and closed on
+every terminal path; `/api/cron/sweep-abandoned-date-changes` (*/10) handles
+what's left past a 30-min TTL. It **refuses to roll back** when Guesty no longer
+matches the dates we set (a human edited it), when the PI shows the guest paid,
+or when the balance was settled elsewhere (staff collecting via GuestyPay —
+exactly how Paul's ended). Uncertainty → leave pending and alert.
+
+⚠️ On a re-quote, `original_*` is deliberately **not** overwritten, or a rollback
+would restore a stay the guest never booked.
+
+⚠️ **There is no reservations sync cron.** Anything changed in Guesty never
+flows back to our `reservations` table, and the guest portal reads those
+columns. That is why Paul kept seeing his old dates. The sweeper writes dates
+back for the cases it handles; nothing else does.
+
 ### Known issues / standing notes
 
 1. **Sign-in 400 error (HIGH PRIORITY)** — After DNS cutover, Supabase auth still only whitelists `traverse-booking.vercel.app`. Magic link and OAuth redirects to `booktraverse.com/auth/callback` return 400.  
