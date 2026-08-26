@@ -29,7 +29,7 @@
  * reverting a paid stay is not.
  *
  * GET /api/cron/sweep-abandoned-date-changes     (cron; Bearer CRON_SECRET)
- *     ?dryRun=1     decide and report, but never write to Guesty
+ *     ?dryRun=1     decide and report; writes nothing, anywhere
  *     ?limit=<n>    max rows to process (default 20)
  */
 import { NextResponse } from "next/server";
@@ -145,7 +145,7 @@ export async function GET(request: Request) {
     // Our rollback would overwrite whatever they set. Their edit is newer and
     // was made deliberately by a person; ours is a timer.
     if (currentIn !== row.new_check_in || currentOut !== row.new_check_out) {
-      await resolve(pool, row.id, "superseded");
+      if (!dryRun) await resolve(pool, row.id, "superseded");
       results.push({
         reservationId: rid,
         confirmationCode: row.confirmation_code,
@@ -167,7 +167,7 @@ export async function GET(request: Request) {
           row.stripe_payment_intent_id
         );
         if (pi.status === "succeeded" || (pi.amount_received ?? 0) > 0) {
-          await resolve(pool, row.id, "paid_not_finalized");
+          if (!dryRun) await resolve(pool, row.id, "paid_not_finalized");
           results.push({
             reservationId: rid,
             confirmationCode: row.confirmation_code,
@@ -214,8 +214,10 @@ export async function GET(request: Request) {
     // it leaves no trace in our Stripe. A zero balance on an extended stay
     // means the extension was paid for — keep it, and fix our own record.
     if (balanceDue !== null && balanceDue <= BALANCE_EPSILON && status !== "canceled") {
-      await resolve(pool, row.id, "settled_externally");
-      await syncLocalDates(pool, rid, currentIn, currentOut);
+      if (!dryRun) {
+        await resolve(pool, row.id, "settled_externally");
+        await syncLocalDates(pool, rid, currentIn, currentOut);
+      }
       results.push({
         reservationId: rid,
         confirmationCode: row.confirmation_code,
