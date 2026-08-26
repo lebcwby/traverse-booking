@@ -112,11 +112,19 @@ export function MobileBottomNav() {
   const isPropertyDetail =
     pathname.startsWith("/properties/") && pathname !== "/properties";
   const isCheckout = pathname.startsWith("/book/");
+  // Standalone owner-acquisition landing pages served on their own subdomains.
+  // They deliberately carry no site chrome — a guest-facing bar offering
+  // Explore / Wishlists / Profile on a page selling property management just
+  // leaks the visitor back to the consumer site.
+  //
+  // The previous list here (/portland-, /downtown-portland,
+  // /best-places-to-stay, /where-to-stay-in-portland) was Stay Portland
+  // leftovers for routes this site no longer has, so the guard matched nothing
+  // and audit.booktraverse.com has been showing the bar on mobile in
+  // production. audit.css tried to hide it too, but targets `.mobile-bottom-nav`
+  // while this renders `id="mobile-bottom-nav"` — a class that never existed.
   const isLandingPage =
-    pathname.startsWith("/portland-") ||
-    pathname.startsWith("/downtown-portland") ||
-    pathname.startsWith("/best-places-to-stay") ||
-    pathname === "/where-to-stay-in-portland";
+    pathname.startsWith("/audit") || pathname.startsWith("/projection");
   if (isPropertyDetail || isCheckout || isLandingPage) return null;
 
   const visibleTabs = tabs.filter((t) => !t.requiresAuth || loggedIn);
