@@ -220,12 +220,22 @@ export async function GET(request: Request) {
     // be paid in full — so a POSITIVE balance is not a payment plan or an
     // OTA hotel-collect booking, it is money that quietly went uncollected.
     //
-    // The known producer is an abandoned portal date change: the quote step in
-    // /api/account/reservations/[id]/extend writes the new dates to Guesty
-    // BEFORE the guest pays, and only a client-side rollback undoes them. Close
-    // the tab and Guesty is left extended and unpaid while our row still shows
-    // the old dates. That is GY-fYaHGbj5 (2026-08-25) — caught only because the
-    // guest phoned in. This check is what should catch the next one.
+    // Two producers seen so far, and they are NOT the same problem:
+    //
+    //  1. An uncollected fee that Guesty auto-applies to the invoice but our
+    //     checkout never charged. The first sweep found three reservations
+    //     short by exactly $50, each carrying a Pet Fee line Guesty had added
+    //     on its own (GY-z9ai4HsW, GY-XfNL7u3G, GY-cZNjjLNX). This is the
+    //     common case and it is a quiet revenue leak.
+    //  2. An abandoned portal date change: the quote step in
+    //     /api/account/reservations/[id]/extend writes new dates to Guesty
+    //     BEFORE the guest pays, and only a client-side rollback undoes them.
+    //     Close the tab and Guesty is left extended and unpaid while our row
+    //     still shows the old stay. That is GY-fYaHGbj5 (2026-08-25), caught
+    //     only because the guest phoned in.
+    //
+    // The invoice lines tell them apart, so the alert points there rather than
+    // asserting a cause.
     if (
       !isCanceled &&
       balanceDue !== null &&
@@ -241,10 +251,11 @@ export async function GET(request: Request) {
         succeededCount: succeeded.length,
         unattributedCount: unattributed.length,
         detail:
-          `$${balanceDue.toFixed(2)} owed and not collected. Check whether ` +
-          `Guesty's dates match ours — if Guesty is longer, this is an ` +
-          `abandoned portal date change: either collect the difference or ` +
-          `put the dates back.`,
+          `$${balanceDue.toFixed(2)} owed and not collected. Compare Guesty's ` +
+          `invoice lines with what we charged: a fee Guesty added on its own ` +
+          `(pet fee is the usual one) means collect it, whereas dates longer ` +
+          `than ours mean an abandoned portal date change — collect the ` +
+          `difference or put the dates back.`,
       });
     }
 
@@ -278,11 +289,12 @@ export async function GET(request: Request) {
           : "",
         findings.some((f) => f.kind === "unpaid_balance")
           ? "<p><strong>Unpaid balance:</strong> money owed that we never " +
-            "collected. Usual cause is an abandoned date change from the guest " +
-            "portal — the dates moved on Guesty but the guest never paid, and " +
-            "our own record still shows the old stay. Compare the Guesty dates " +
-            "with ours, then either collect the difference or put the dates " +
-            "back and free the calendar.</p>"
+            "collected. Open the Guesty invoice and compare it with what we " +
+            "charged. A fee Guesty added on its own — a <em>pet fee</em> is the " +
+            "one we keep seeing — just needs collecting. Dates on Guesty that " +
+            "run longer than ours instead mean a guest abandoned a date change " +
+            "in the portal: collect the difference, or put the dates back and " +
+            "free the calendar.</p>"
           : "",
         ...findings.map((f) =>
           renderAlertDetails([
