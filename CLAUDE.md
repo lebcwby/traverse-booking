@@ -190,6 +190,36 @@ flows back to our `reservations` table, and the guest portal reads those
 columns. That is why Paul kept seeing his old dates. The sweeper writes dates
 back for the cases it handles; nothing else does.
 
+### 🌐 Landing subdomains — audit + projection (2026-08-26)
+
+Two owner-acquisition landing pages, each on its own host, both served by
+host-scoped rewrites in `next.config.ts`:
+
+| Host | Route | Intake | Robots |
+|---|---|---|---|
+| `audit.booktraverse.com` | `/audit` | `/api/audit-request` | `public/audit-robots.txt` |
+| `projection.booktraverse.com` | `/projection` | `/api/projection-request` | `public/projection-robots.txt` |
+
+`/projection` targets Mt. Crested Butte condo owners in a **resort rental
+program** — units with no public listing anywhere, so the form asks for the
+building rather than a listing URL. Real unit counts (52 / 16 / 20 = **88** at
+the base) are the page's core credibility claim; re-check the `listings` mirror
+before editing them.
+
+⚠️ **`projection.booktraverse.com` is not attached yet** — the rewrite is inert
+until the domain is added to the Vercel project and DNS points at it. The page
+is reachable meanwhile at `www.booktraverse.com/projection`. Expect to need
+`vercel certs issue` by hand (2 for 2 on the Wix rebuilds).
+
+⚠️ **`usePathname()` returns `/` on these subdomains** — the rewrite is
+server-side and the client router never sees `/audit`. Anything that needs to
+know it's on a landing page must key off the DOM (`body:has(.audit-page)` in
+CSS), not the pathname. This is why the mobile bottom bar leaked there.
+
+⚠️ **The Conduit widget still loads on both** and 403s in console. CLAUDE.md
+records it as removed; it isn't. A guest chat widget on an owner-acquisition
+page is worth removing properly.
+
 ### Known issues / standing notes
 
 1. **Sign-in 400 error (HIGH PRIORITY)** — After DNS cutover, Supabase auth still only whitelists `traverse-booking.vercel.app`. Magic link and OAuth redirects to `booktraverse.com/auth/callback` return 400.  
@@ -369,9 +399,9 @@ Cities require BOTH params: `city=Crested Butte&country=United States`
 
 ### Building Facts (verified)
 
-- **Grand Lodge** — 6 Emmons Loop, Mt. CB 81225. ~226 units, 50+ Traverse. Pool (indoor/outdoor), hot tub, steam room. Pets: select units. Free parking. Starts $95/night.
-- **Lodge at Mountaineer Square** — 620 Gothic Road, Mt. CB 81225. ~133 units, 11 Traverse. HAS front desk. HAS A/C. Pool, hot tub, sauna, steam room, fitness center. Heated underground parking (paid). NO pets.
-- **The Plaza** — 11 Snowmass Road, Mt. CB 81225. ~20 units, 13 Traverse. NO front desk. Hot tubs, sauna, steam room. Tennis/pickleball. NO pool. NO A/C. NO pets. Free covered parking.
+- **Grand Lodge** — 6 Emmons Loop, Mt. CB 81225. ~226 units, **52** Traverse. Pool (indoor/outdoor), hot tub, steam room. Pets: select units. Free parking. Starts $95/night.
+- **Lodge at Mountaineer Square** — 620 Gothic Road, Mt. CB 81225. ~133 units, **16** Traverse. HAS front desk. HAS A/C. Pool, hot tub, sauna, steam room, fitness center. Heated underground parking (paid). NO pets.
+- **The Plaza** — 11 Snowmass Road, Mt. CB 81225. ~20 units, **20** Traverse. NO front desk. Hot tubs, sauna, steam room. Tennis/pickleball. NO pool. NO A/C. NO pets. Free covered parking.
 
 ---
 
