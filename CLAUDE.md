@@ -206,6 +206,27 @@ building rather than a listing URL. Real unit counts (52 / 16 / 20 = **88** at
 the base) are the page's core credibility claim; re-check the `listings` mirror
 before editing them.
 
+🚦 **BLOCKER before promoting `/projection`: the comparison figures are
+illustrative.** The page's centrepiece is a peak-week owner statement run two
+ways, and it is comparative advertising against an identifiable competitor.
+Before this is advertised anywhere: (a) the Traverse column must come from the
+real fee schedule signed off by Alex or Nadim — it is a commitment to a
+prospective client, and nobody should invent our commission rate; (b) the other
+column must only say what we can evidence, which is why it is framed as "typical
+of statements owners have brought us"; (c) never publish a real owner's
+statement without their written permission, since they may owe their manager
+confidentiality. Numbers and the reasoning live in `PEAK_WEEK` at the top of
+`src/app/projection/page.tsx`. Both columns must keep summing to their stated
+totals.
+
+⚠️ **Two competitive premises were wrong before this one** — the page first
+claimed CBMR units aren't on the OTAs (they are, via Booking.com directly and
+Airbnb/Vrbo through distribution partners), then that "the listing isn't yours"
+(true, but we distribute the same way, so it attacks us too). Don't build
+competitor claims on inference. The current page argues only what we do:
+distribution and pricing, near-24/7 guest comms, an inspection after every
+clean, lower commission with no invented fees.
+
 ⚠️ **`projection.booktraverse.com` is not attached yet** — the rewrite is inert
 until the domain is added to the Vercel project and DNS points at it. The page
 is reachable meanwhile at `www.booktraverse.com/projection`. Expect to need
