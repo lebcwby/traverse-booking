@@ -578,6 +578,21 @@ const nextConfig: NextConfig = {
           has: [{ type: "host", value: "audit\\.booktraverse\\.com" }],
           destination: "/audit-robots.txt",
         },
+        // projection.booktraverse.com — the CBMR-owner revenue projection
+        // landing page. Same shape as the audit host above, and the same two
+        // rules apply: no catch-all redirect (it breaks /public and
+        // /_next/image), and robots must come from a rewrite rather than a
+        // dynamic robots.ts.
+        {
+          source: "/",
+          has: [{ type: "host", value: "projection\\.booktraverse\\.com" }],
+          destination: "/projection",
+        },
+        {
+          source: "/robots.txt",
+          has: [{ type: "host", value: "projection\\.booktraverse\\.com" }],
+          destination: "/projection-robots.txt",
+        },
       ],
       afterFiles: [
         {

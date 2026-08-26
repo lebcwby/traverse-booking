@@ -230,6 +230,7 @@ const MARKETING_COPY_KEYWORDS =
 const MARKETING_AUDIT_FILES = [
   "src/app/page.tsx",
   "src/app/audit/page.tsx",
+  "src/app/projection/page.tsx",
   "src/app/reviews/page.tsx",
   "src/app/crested-butte/content.ts",
   "src/app/api/plan/save/route.ts",
