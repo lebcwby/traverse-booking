@@ -13,9 +13,18 @@
    header, footer and mobile nav don't belong on it. Same :has() approach the
    no-fees pages use, but keyed off .audit-page so this file stays independent
    of no-fees.css and its design tokens. */
+/* The bottom bar is `id="mobile-bottom-nav"`, not a class — the `.mobile-bottom-nav`
+   and `nav[aria-label="Mobile"]` selectors here never matched anything, and the
+   guest bar (Explore / Wishlists / Profile) sat across the bottom of these
+   owner pages on mobile in production.
+   Keep hiding it from CSS as well as from the component: the component keys off
+   usePathname(), which returns "/" on audit.booktraverse.com and
+   projection.booktraverse.com because the host rewrite is server-side and
+   invisible to the client router. Only this rule fires on the subdomains. */
 body:has(.audit-page) > header,
 body:has(.audit-page) > footer,
 body:has(.audit-page) > nav[aria-label="Mobile"],
+body:has(.audit-page) #mobile-bottom-nav,
 body:has(.audit-page) .mobile-bottom-nav {
   display: none !important;
 }
