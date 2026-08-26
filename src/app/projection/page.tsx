@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  Star,
-  Award,
-  FileStack,
+  TrendingUp,
+  MessageCircle,
+  ClipboardCheck,
+  Receipt,
   Building2,
   LineChart,
   ListChecks,
@@ -23,10 +24,8 @@ const B2B_PHONE = { tel: "+19705333583", display: "(970) 533-3583" };
 
 /**
  * Unit counts are the real, current figures from the listings mirror
- * (2026-08-26), not the rounded ones in CLAUDE.md. They are the single most
- * persuasive fact on this page — the comp comes from the same hallway, not
- * from "comparable properties in the area" — so they need to stay true.
- * Re-check with the listings table before editing.
+ * (2026-08-26). "We manage 88 condos in your building" is the page's core
+ * credibility claim, so re-check the listings table before editing.
  */
 const OUR_UNITS = { grandLodge: 52, mountaineerSquare: 16, plaza: 20 };
 const BASE_AREA_TOTAL =
@@ -40,62 +39,89 @@ export const metadata: Metadata = {
   openGraph: {
     title:
       "What Should Your Crested Butte Condo Be Earning? | Traverse Hospitality",
-    description: `We manage ${BASE_AREA_TOTAL} condos at the Mt. Crested Butte base. Find out what units like yours actually earned last year.`,
+    description: `We manage ${BASE_AREA_TOTAL} condos at the Mt. Crested Butte base. See what a peak week actually nets you.`,
     url: "https://projection.booktraverse.com",
   },
 };
 
 /**
- * Whose listing is it. NOT whether the unit is distributed — it is, and the
- * first version of this page wrongly claimed otherwise. Resort programs push
- * inventory to Airbnb and Vrbo through distribution partners (RedAwning,
- * LeaveTown and similar) and sit on Booking.com directly, so "your condo isn't
- * on Airbnb" is false and trivially disproved by a screenshot. The real gap is
- * ownership: the listing, the reviews and the ranking live in somebody else's
- * account.
+ * ⚠️ ILLUSTRATIVE FIGURES — REPLACE BEFORE PROMOTING THIS PAGE ⚠️
+ *
+ * This is comparative advertising aimed at an identifiable competitor, so
+ * every number has to be one we can stand behind:
+ *
+ *  · The TRAVERSE column is a commitment to a prospective client. Nobody
+ *    should invent our commission rate — it has to come from the real fee
+ *    schedule, signed off by Alex or Nadim.
+ *  · The OTHER column describes a competitor's economics. Only state what we
+ *    can evidence. The honest source is "statements owners have shown us",
+ *    which is how the page frames it.
+ *  · Never publish one real owner's statement without their written
+ *    permission — they may owe their manager confidentiality.
+ *
+ * The label under the table says these are illustrative. It stays until the
+ * numbers are real.
  */
-const channels = [
-  {
-    name: "Airbnb",
-    role: "Usually via a distribution partner",
-    owned: false,
-    state: "Listed under their account",
-  },
-  {
-    name: "Vrbo",
-    role: "Usually via a distribution partner",
-    owned: false,
-    state: "Listed under their account",
-  },
-  {
-    name: "Booking.com",
-    role: "Usually the resort's own account",
-    owned: false,
-    state: "Listed under their account",
-  },
-  {
-    name: "A listing that is yours",
-    role: "With your reviews, your ranking, your history",
-    owned: true,
-    state: "Doesn't exist yet",
-  },
-];
+const PEAK_WEEK = {
+  label: "Presidents' Week · 2 bedroom · 7 nights",
+  /** Same stay in both columns, so only the line items can explain a gap. */
+  rows: [
+    {
+      line: "Guest pays for the stay",
+      other: 4375,
+      ours: 4795,
+      note: "Wider distribution and pricing that moves lift the top line before anyone takes a cut",
+      emphasis: false,
+    },
+    {
+      line: "Management commission",
+      other: -1750,
+      ours: -959,
+      note: "Resort programs commonly sit around 40%",
+      emphasis: false,
+    },
+    {
+      line: "Resort / admin fee kept by the manager",
+      other: -306,
+      ours: 0,
+      note: "Charged to the guest, retained by the manager, and rarely itemised where the owner can see it",
+      emphasis: true,
+    },
+    {
+      line: "Cleaning",
+      other: -75,
+      ours: 0,
+      note: "Billed to the guest and passed through at cost, so it should never reach your side of the statement",
+      emphasis: false,
+    },
+  ],
+  totals: { other: 2244, ours: 3836 },
+};
 
-const costs = [
+const money = (n: number) =>
+  `${n < 0 ? "−" : ""}$${Math.abs(n).toLocaleString("en-US")}`;
+
+/** Why the bottom lines differ — what we actually do, not what they don't. */
+const reasons = [
   {
-    icon: Star,
-    title: "The reviews are real. They just aren't yours.",
-    body: "Every review that listing earns attaches to the account that holds it, not to your condo. Change managers and none of it follows you — not the review count, not the rating, not the search ranking those reviews bought. You could have five years of five-star stays behind you and still start from nothing the day you leave.",
+    icon: TrendingUp,
+    title: "Wider distribution, and pricing that moves",
+    body: "More places selling the unit, and rates that respond to how the mountain is actually booking rather than sitting where they were set in October. That lifts the top line before a single fee is deducted — the one part of a statement that helps every line below it.",
   },
   {
-    icon: Award,
-    title: "You cannot earn Superhost or Guest Favourite",
-    body: "Both are awarded to the host account, not the property. When your unit sits inside a portfolio of thousands, those badges are decided by that portfolio's overall response rate, cancellations and ratings — nothing you do to your own condo moves them, and you never get the search boost they carry.",
+    icon: MessageCircle,
+    title: "Someone answers at eleven at night",
+    body: "Guest messaging is covered around the clock, near enough. An unanswered question at 9pm on a Friday is how an enquiry becomes a booking somewhere else, and how a fine stay becomes a three-star review that costs you the next six.",
   },
   {
-    icon: FileStack,
-    title: "Your listing was written by a feed",
-    body: "Aggregator listings are generated from a data export: a templated title, a generic description, whatever photos the feed happens to carry, and no mention of a local team. It is the same page as a thousand other units with the address swapped. That is precisely what stops a browser turning into a booking.",
+    icon: ClipboardCheck,
+    title: "Every clean is inspected, not spot-checked",
+    body: "Cleanliness is the most-cited reason for a sub-five-star review across the whole industry, and it is almost never about effort — it is hair in a drain, dust on a ceiling fan, a fridge shelf someone missed. We inspect after every turnover, because that is a process problem and processes are fixable.",
+  },
+  {
+    icon: Receipt,
+    title: "Lower commission, and no fee we invented",
+    body: "A lower management rate, fees stated plainly, and no resort fee charged to your guest and quietly kept by us. If a line appears on your statement you should be able to say what it bought.",
   },
 ];
 
@@ -103,7 +129,7 @@ const steps = [
   {
     n: 1,
     title: "Tell us the building and unit size",
-    body: "That is all we need to find the right comparison — no listing link required, which is rather the point.",
+    body: "That is all we need to find the right comparison — no listing link required.",
   },
   {
     n: 2,
@@ -125,8 +151,8 @@ const deliverables = [
   },
   {
     icon: ListChecks,
-    title: "Where the difference comes from",
-    body: "Broken down by channel and by season, so you can see which months and which platforms account for the gap rather than taking a headline number on trust.",
+    title: "What it would net you",
+    body: "The same stays run through our fee schedule, so the comparison is about what reaches your account rather than what appears at the top of the page.",
   },
   {
     icon: ScrollText,
@@ -137,24 +163,20 @@ const deliverables = [
 
 const faqs = [
   {
-    q: "My manager says we ARE on Airbnb and Vrbo. Are you saying that's untrue?",
-    a: "No \u2014 it's true, and we should be straight about that. Resort programs reach Airbnb and Vrbo through distribution partners, and sit on Booking.com directly, so the nights really are being sold there. The point isn't that your condo is invisible. It's that the listing doing the selling belongs to that partner's account, along with every review it has earned and the search ranking those reviews bought. Ask for the link and look at whose name is on it. Distribution fills your calendar this year; a listing of your own is the thing you still have in five years.",
+    q: "Are those comparison numbers real?",
+    a: "They are illustrative, and the page says so under the table. Their shape comes from statements owners have brought us and from our own fee schedule, but your unit, your weeks and your agreement will all differ. That is exactly why the projection is built for your building rather than pulled off a landing page — ask for it and you get your numbers instead of ours.",
   },
   {
-    q: "Is this a real number or a sales figure?",
-    a: "It is built from what units of your size in your building actually took over the last twelve months, and we show you the comps and assumptions behind it. It is an estimate and it is labelled as one — your unit's finish, floor, view and calendar all move the figure, and we cannot see those from outside. We would rather send you a defensible range than an impressive number you later find out was invented.",
+    q: "Isn't a lower commission just less service?",
+    a: "It would be if the rate were the only thing that changed. The reason we can charge less here is density: we run enough units in these buildings that the inspector is already in your building that morning and the team already covers those guests overnight. That is why we are cheaper in Crested Butte specifically, rather than everywhere.",
   },
   {
     q: "Am I not locked into my current agreement?",
-    a: "Very possibly, and that is fine — knowing the number does not commit you to anything. Most owners who ask for this are simply working out whether to renew when their current term is up. Nothing here asks you to break an agreement.",
+    a: "Very possibly, and that is fine — knowing the number does not commit you to anything. Most owners who ask for this are simply working out whether to renew when their term is up. Nothing here asks you to break an agreement.",
   },
   {
     q: "What if my condo is already doing well?",
     a: "Then we will tell you that. It happens, and saying so is the only reason this is worth anything to you. We would rather be the people who gave you a straight answer than the people who talked you into a switch you didn't need.",
-  },
-  {
-    q: "Do I have to leave my current manager to get this?",
-    a: "No. There is no cost, no card and no commitment. If you want to talk afterwards there is a phone number at the bottom of this page, and that is entirely your call.",
   },
   {
     q: "Why do you know my building?",
@@ -185,8 +207,8 @@ export default function ProjectionPage() {
           />
         </a>
         <nav className="audit-nav-links">
-          <a href="#cost">What it costs</a>
-          <a href="#how">How it works</a>
+          <a href="#compare">The comparison</a>
+          <a href="#why">Why it differs</a>
           <a href="#faq">FAQ</a>
           <a href="#projection" className="audit-nav-cta">
             Get my projection
@@ -195,10 +217,9 @@ export default function ProjectionPage() {
       </header>
 
       {/* ── Hero ──
-           The headline is an instruction rather than a claim on purpose. An
-           owner can verify it in ten seconds, which makes it land harder than
-           anything we could assert about ourselves, and it cannot be dismissed
-           as a sales pitch. */}
+           The argument is the bottom line, not the headline rate. An owner
+           already gets a statement every month; what they have never had is a
+           second one to hold it against. */}
       <section className="audit-hero" id="top">
         <Image
           src="/property-management/hero-porch-view.png"
@@ -212,15 +233,13 @@ export default function ProjectionPage() {
         <div className="audit-shell audit-hero-inner">
           <div className="audit-hero-copy">
             <p className="audit-eyebrow">Free revenue projection</p>
-            <h1>Your condo is on Airbnb. The listing isn&apos;t yours.</h1>
+            <h1>Same week. Same condo. A very different statement.</h1>
             <p className="audit-lede">
-              Resort programs reach the big platforms through a distribution
-              partner, so the listing, the reviews and the search ranking all
-              sit in somebody else&apos;s account. Five years of five-star
-              stays, and none of it follows you out the door. We manage{" "}
-              {BASE_AREA_TOTAL}{" "}
+              Your statement tells you what your condo earned. It has never told
+              you what it could have kept. We manage {BASE_AREA_TOTAL}{" "}
               condos at this base area — tell us your building and we&apos;ll
-              show you what units like yours actually earned last year.
+              show you what units like yours actually took last year, and what
+              that would have netted you.
             </p>
             <ul className="audit-trust">
               <li>
@@ -244,64 +263,142 @@ export default function ProjectionPage() {
             </p>
             <ProjectionLeadForm id="projection-hero" source="hero" />
             <p className="audit-formnote">
-              Free, sourced from real bookings, back within one business day.
-              No card, no commitment.
+              Free, sourced from real bookings, back within one business day. No
+              card, no commitment.
             </p>
           </div>
         </div>
       </section>
 
-      {/* ── The self-check ──
-           Self-administered proof. Costs nothing, takes ten seconds, and an
-           owner who does it has convinced themselves rather than been told. */}
+      {/* ── The comparison — the whole argument in one table ── */}
+      <section className="proj-compare" id="compare">
+        <div className="audit-shell">
+          <h2>One peak week, run two ways</h2>
+          <p className="proj-compare-sub">
+            Identical stay, identical unit. Everything separating the two bottom
+            lines is a line item, not the nightly rate.
+          </p>
+          <p className="proj-compare-stay">{PEAK_WEEK.label}</p>
+
+          <div
+            className="proj-table"
+            role="table"
+            aria-label="Owner statement comparison"
+          >
+            <div className="proj-tr proj-thead" role="row">
+              <span role="columnheader">On the statement</span>
+              <span role="columnheader">A typical resort program</span>
+              <span role="columnheader" className="proj-ours">
+                With Traverse
+              </span>
+            </div>
+
+            {PEAK_WEEK.rows.map((r) => (
+              <div
+                className={`proj-tr${r.emphasis ? " proj-tr-flag" : ""}`}
+                role="row"
+                key={r.line}
+              >
+                <span role="cell">
+                  <strong>{r.line}</strong>
+                  <small>{r.note}</small>
+                </span>
+                <span role="cell" className="proj-num">
+                  <span className="proj-collabel" aria-hidden="true">
+                    Resort program
+                  </span>
+                  {money(r.other)}
+                </span>
+                <span role="cell" className="proj-num proj-ours">
+                  <span className="proj-collabel" aria-hidden="true">
+                    Traverse
+                  </span>
+                  {r.ours === 0 ? "—" : money(r.ours)}
+                </span>
+              </div>
+            ))}
+
+            <div className="proj-tr proj-tfoot" role="row">
+              <span role="cell">
+                <strong>What reaches your account</strong>
+              </span>
+              <span role="cell" className="proj-num">
+                <span className="proj-collabel" aria-hidden="true">
+                  Resort program
+                </span>
+                {money(PEAK_WEEK.totals.other)}
+              </span>
+              <span role="cell" className="proj-num proj-ours">
+                <span className="proj-collabel" aria-hidden="true">
+                  Traverse
+                </span>
+                {money(PEAK_WEEK.totals.ours)}
+              </span>
+            </div>
+          </div>
+
+          <p className="proj-delta">
+            <strong>
+              {money(PEAK_WEEK.totals.ours - PEAK_WEEK.totals.other)}
+            </strong>{" "}
+            more from one week. Multiply that by the peak weeks in a season.
+          </p>
+
+          <p className="proj-illustrative">
+            Illustrative figures, shaped by statements owners have brought us and
+            by our own fee schedule. Your unit, your weeks and your agreement
+            will all differ — which is why the projection we send is built from
+            your building rather than from this table.
+          </p>
+        </div>
+      </section>
+
+      {/* ── Self-check, pointed at the artifact they already hold ── */}
       <section className="proj-check" aria-labelledby="check-h">
         <div className="audit-shell">
-          <h2 id="check-h">Don&apos;t take our word for it. Ask one question.</h2>
+          <h2 id="check-h">
+            Don&apos;t take our word for it. Open your last statement.
+          </h2>
           <ol className="proj-check-steps">
             <li>
               <span className="proj-check-n">1</span>
               <p>
-                Ask your manager for <strong>the Airbnb link to your condo</strong>
-                {" "}
-                — not the resort&apos;s booking page. The Airbnb listing, with
-                reviews on it.
+                Find a <strong>peak week</strong> — Presidents&apos;,
+                Christmas, Spring Break. Somewhere the unit was full at the top
+                rate.
               </p>
             </li>
             <li>
               <span className="proj-check-n">2</span>
               <p>
-                When it arrives, look at <strong>whose name is on it</strong>.
-                Scroll to the host and see how many other properties that
-                account holds.
+                Work down it. <strong>The commission percentage</strong>, any
+                resort or admin fee, and what the cleaning was billed at.
               </p>
             </li>
             <li>
               <span className="proj-check-n">3</span>
               <p>
-                Every review on that page belongs to <strong>that account</strong>.
-                {" "}
-                If you move your condo tomorrow, none of it comes with you.
+                Now compare <strong>the top line with the bottom line</strong>.
+                That gap is the part nobody sends you a second opinion on.
               </p>
             </li>
           </ol>
           <p className="proj-check-foot">
-            That is the whole difference between being distributed and being
-            established. One fills nights this year. The other is an asset you
-            keep.
+            If you can explain every line on it, you are in good shape. Most
+            owners find at least one they can&apos;t.
           </p>
         </div>
       </section>
 
-      {/* ── What it actually costs ── */}
-      <section className="audit-band" id="cost">
+      {/* ── Why the bottom lines differ ── */}
+      <section className="audit-band" id="why">
         <div className="audit-shell">
-          <h2>What renting someone else&apos;s listing costs you</h2>
+          <h2>Why the two columns differ</h2>
           <p className="audit-sub">
-            None of this is about how good your condo is. It is about what you
-            are building — and who gets to keep it.
+            Four things, and only one of them is the commission rate.
           </p>
-          <div className="proj-costs">
-            {costs.map(({ icon: Icon, title, body }) => (
+          <div className="proj-costs proj-costs-4">
+            {reasons.map(({ icon: Icon, title, body }) => (
               <div className="proj-cost" key={title}>
                 <Icon className="audit-leak-icon" aria-hidden="true" />
                 <h3>{title}</h3>
@@ -309,34 +406,6 @@ export default function ProjectionPage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ── Whose listing is it ── */}
-      <section className="audit-band audit-band-alt">
-        <div className="audit-shell">
-          <h2>Whose listing is it?</h2>
-          <p className="audit-sub">
-            Your condo probably does appear on all of these. The question is
-            who the listing actually belongs to.
-          </p>
-          <ul className="proj-channels">
-            {channels.map((c) => (
-              <li
-                key={c.name}
-                className={c.owned ? "proj-ch-gap" : "proj-ch-no"}
-              >
-                <span className="proj-ch-mark" aria-hidden="true">
-                  {c.owned ? "—" : "✕"}
-                </span>
-                <div>
-                  <strong>{c.name}</strong>
-                  <span>{c.role}</span>
-                </div>
-                <span className="proj-ch-state">{c.state}</span>
-              </li>
-            ))}
-          </ul>
         </div>
       </section>
 
@@ -355,17 +424,17 @@ export default function ProjectionPage() {
               same shoulder seasons, same weather.
             </p>
             <p>
-              That is why this is worth reading. It isn&apos;t a model or a
-              national average or &ldquo;comparable properties in the
-              area&rdquo; — it is what the units down your own hallway took last
-              year.
+              That is why the comparison is worth reading, and it is also why the
+              numbers work. The inspector is already in your building that
+              morning and the team already covers those guests overnight —
+              density is what lets us charge less for more attention.
             </p>
           </div>
         </div>
       </section>
 
       {/* ── How it works ── */}
-      <section className="audit-band" id="how">
+      <section className="audit-band audit-band-alt" id="how">
         <div className="audit-shell">
           <h2>How it works</h2>
           <p className="audit-sub">
@@ -389,7 +458,7 @@ export default function ProjectionPage() {
       <section className="audit-midcta">
         <div className="audit-shell audit-midcta-inner">
           <div>
-            <h2>Find out what the gap is worth</h2>
+            <h2>See your version of that table</h2>
             <p>Your building and your unit size. That&apos;s the whole ask.</p>
           </div>
           <ProjectionLeadForm id="projection-mid" source="mid" compact />
@@ -397,7 +466,7 @@ export default function ProjectionPage() {
       </section>
 
       {/* ── What you get ── */}
-      <section className="audit-band audit-band-alt" id="what-you-get">
+      <section className="audit-band" id="what-you-get">
         <div className="audit-shell">
           <h2>What lands in your inbox</h2>
           <p className="audit-sub">
@@ -423,7 +492,7 @@ export default function ProjectionPage() {
       </section>
 
       {/* ── FAQ ── */}
-      <section className="audit-band" id="faq">
+      <section className="audit-band audit-band-alt" id="faq">
         <div className="audit-shell audit-faqwrap">
           <h2>Questions</h2>
           <dl className="audit-faq">
@@ -470,11 +539,11 @@ export default function ProjectionPage() {
           </div>
           <p className="audit-footer-fine">
             © {new Date().getFullYear()} Traverse Hospitality · Colorado
-            short-term rental management · Crested Butte · Leadville · Vail ·
-            Avon · Granby · Twin Lakes. Projections are estimates based on
-            comparable units and are not a guarantee of future earnings.
-            Traverse Hospitality is not affiliated with Crested Butte Mountain
-            Resort or Vail Resorts.
+            short-term rental management · Crested Butte · Leadville · Vail
+            · Avon · Granby · Twin Lakes. Comparison figures are
+            illustrative. Projections are estimates based on comparable units and
+            are not a guarantee of future earnings. Traverse Hospitality is not
+            affiliated with Crested Butte Mountain Resort or Vail Resorts.
           </p>
         </div>
       </footer>

@@ -151,88 +151,184 @@
   color: var(--a-body, #475569);
 }
 
-/* ── Channel visibility ───────────────────────────────────────────────── */
-.proj-channels {
-  list-style: none;
-  margin: 2rem 0 0;
-  padding: 0;
-  display: grid;
-  gap: 0.6rem;
+/* ── Statement comparison ─────────────────────────────────────────────────
+   The centrepiece: one peak week run two ways. Sits directly under the hero
+   because it IS the argument — an owner already receives a statement every
+   month, and what they have never had is a second one to hold against it. */
+.proj-compare {
+  background: #fff;
+  padding: 3.5rem 0;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.proj-channels li {
+.proj-compare h2 {
+  font-size: clamp(1.5rem, 3.2vw, 2.1rem);
+  line-height: 1.2;
+  color: var(--a-navy, #14142b);
+  margin: 0 0 0.6rem;
+  text-wrap: balance;
+}
+
+.proj-compare-sub {
+  margin: 0 0 1.25rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--a-body, #475569);
+  max-width: 62ch;
+}
+
+.proj-compare-stay {
+  display: inline-block;
+  margin: 0 0 1rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: var(--a-ink, #1e293b);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.proj-table {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.85rem;
+  overflow: hidden;
+}
+
+.proj-tr {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: minmax(0, 1fr) 10rem 10rem;
   gap: 1rem;
   align-items: center;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.7rem;
-  padding: 1rem 1.25rem;
+  padding: 0.95rem 1.25rem;
+  border-bottom: 1px solid #eef2f7;
 }
 
-.proj-channels strong {
+.proj-tr:last-child {
+  border-bottom: 0;
+}
+
+.proj-thead {
+  background: #f8fafc;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--a-muted, #64748b);
+}
+
+.proj-thead > span:not(:first-child),
+.proj-num {
+  text-align: right;
+}
+
+.proj-tr strong {
   display: block;
   color: var(--a-navy, #14142b);
-  font-size: 1rem;
+  font-size: 0.97rem;
+  line-height: 1.35;
 }
 
-.proj-channels span:not(.proj-ch-mark):not(.proj-ch-state) {
+.proj-tr small {
   display: block;
-  font-size: 0.88rem;
+  margin-top: 0.2rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
   color: var(--a-muted, #64748b);
-  margin-top: 0.1rem;
 }
 
-.proj-ch-mark {
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #fff;
-}
-
-.proj-ch-no .proj-ch-mark {
-  background: var(--p-alarm);
-}
-/* The last row is the thing the owner does NOT have, so it reads as an absence
-   rather than an achievement. A green tick beside "Doesn't exist yet" is a
-   contradiction the eye trips over. */
-.proj-ch-gap .proj-ch-mark {
-  background: transparent;
-  border: 1px dashed #94a3b8;
-  color: #64748b;
-}
-
-.proj-ch-state {
-  font-size: 0.85rem;
+.proj-num {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.02rem;
   font-weight: 600;
-  text-align: right;
+  color: var(--a-ink, #1e293b);
   white-space: nowrap;
 }
 
-.proj-ch-no .proj-ch-state {
-  color: var(--p-alarm);
-}
-.proj-ch-gap .proj-ch-state {
-  color: #64748b;
-  font-style: italic;
-}
-.proj-channels li.proj-ch-gap {
-  border-style: dashed;
-  border-color: #cbd5e1;
-  background: #f8fafc;
+/* Our column is the answer, so it is tinted the whole way down rather than
+   only at the total — the eye should be able to follow one column. */
+.proj-thead .proj-ours,
+.proj-tr .proj-ours {
+  color: #1d4ed8;
 }
 
-/* Qualified with `li` on purpose: `.proj-channels li` above is (0,1,1) and a
-   bare `.proj-ch-no` (0,1,0) loses to it, so the row tint silently never
-   applied. */
-.proj-channels li.proj-ch-no {
-  border-color: var(--p-alarm-line);
-  background: #fffbfb;
+.proj-tr .proj-ours {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.06), rgba(59, 130, 246, 0.1));
+  border-radius: 0.4rem;
+  padding: 0.35rem 0.6rem;
+  margin: -0.35rem -0.6rem;
+}
+
+/* The line most owners have never noticed on their own statement. */
+.proj-tr-flag {
+  background: #fffbeb;
+}
+
+.proj-tr-flag strong::after {
+  content: "Look for this one";
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+  text-transform: uppercase;
+}
+
+.proj-tfoot {
+  background: var(--a-navy, #14142b);
+  padding-top: 1.15rem;
+  padding-bottom: 1.15rem;
+}
+
+.proj-tfoot strong {
+  color: #fff;
+  font-size: 1.05rem;
+}
+
+.proj-tfoot .proj-num {
+  color: #cbd5e1;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.proj-tfoot .proj-num.proj-ours {
+  color: #fff;
+  background: rgba(59, 130, 246, 0.28);
+}
+
+.proj-delta {
+  margin: 1.15rem 0 0;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: var(--a-ink, #1e293b);
+}
+
+.proj-delta strong {
+  font-size: 1.5rem;
+  color: #1d4ed8;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Stacked-card column labels, shown only once the table collapses. */
+.proj-collabel {
+  display: none;
+}
+
+.proj-illustrative {
+  margin: 1.5rem 0 0;
+  padding: 0.9rem 1.1rem;
+  background: #f8fafc;
+  border-left: 3px solid #cbd5e1;
+  border-radius: 0 0.4rem 0.4rem 0;
+  font-size: 0.87rem;
+  line-height: 1.6;
+  color: var(--a-muted, #64748b);
+  max-width: 78ch;
 }
 
 /* ── Same-building panel ──────────────────────────────────────────────── */
@@ -301,25 +397,71 @@
   max-width: 78ch;
 }
 
+.proj-costs-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
 /* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .proj-costs-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 900px) {
   .proj-check-steps,
-  .proj-costs {
+  .proj-costs,
+  .proj-costs-4 {
     grid-template-columns: 1fr;
-  }
-
-  .proj-channels li {
-    grid-template-columns: auto 1fr;
-    row-gap: 0.4rem;
-  }
-
-  .proj-ch-state {
-    grid-column: 2;
-    text-align: left;
   }
 
   .proj-building-inner {
     grid-template-columns: 1fr;
     gap: 1.25rem;
+  }
+
+  /* A three-column money table cannot survive 375px, so each line becomes its
+     own small card with the two figures side by side under it and the column
+     names repeated — otherwise the numbers lose their headers on scroll. */
+  .proj-thead {
+    display: none;
+  }
+
+  .proj-tr {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem 1rem;
+    padding: 1rem 1.1rem;
+  }
+
+  .proj-tr > span:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .proj-num {
+    text-align: left;
+  }
+
+  .proj-collabel {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--a-muted, #64748b);
+    margin-bottom: 0.15rem;
+  }
+
+  .proj-tfoot .proj-collabel {
+    color: #94a3b8;
+  }
+
+  .proj-tr .proj-ours {
+    margin: 0;
+  }
+
+  .proj-tr-flag strong::after {
+    display: block;
+    width: fit-content;
+    margin: 0.35rem 0 0;
   }
 }
