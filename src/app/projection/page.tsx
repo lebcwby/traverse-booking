@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  Search,
   Star,
-  Sun,
+  Award,
+  FileStack,
   Building2,
   LineChart,
   ListChecks,
@@ -45,29 +45,57 @@ export const metadata: Metadata = {
   },
 };
 
-/** Where guests actually begin a search, and whether a resort-program unit can appear there. */
+/**
+ * Whose listing is it. NOT whether the unit is distributed — it is, and the
+ * first version of this page wrongly claimed otherwise. Resort programs push
+ * inventory to Airbnb and Vrbo through distribution partners (RedAwning,
+ * LeaveTown and similar) and sit on Booking.com directly, so "your condo isn't
+ * on Airbnb" is false and trivially disproved by a screenshot. The real gap is
+ * ownership: the listing, the reviews and the ranking live in somebody else's
+ * account.
+ */
 const channels = [
-  { name: "Airbnb", role: "Where undecided travellers browse", visible: false },
-  { name: "Vrbo", role: "Where families compare whole homes", visible: false },
-  { name: "Booking.com", role: "Where international guests start", visible: false },
-  { name: "The resort's own site", role: "Where decided guests check out", visible: true },
+  {
+    name: "Airbnb",
+    role: "Usually via a distribution partner",
+    owned: false,
+    state: "Listed under their account",
+  },
+  {
+    name: "Vrbo",
+    role: "Usually via a distribution partner",
+    owned: false,
+    state: "Listed under their account",
+  },
+  {
+    name: "Booking.com",
+    role: "Usually the resort's own account",
+    owned: false,
+    state: "Listed under their account",
+  },
+  {
+    name: "A listing that is yours",
+    role: "With your reviews, your ranking, your history",
+    owned: true,
+    state: "Doesn't exist yet",
+  },
 ];
 
 const costs = [
   {
     icon: Star,
-    title: "Review history you can never get back",
-    body: "A unit that has never been on Airbnb has no Airbnb reviews. Airbnb ranks heavily on review volume and how recent they are, so a unit listing for the first time next year starts at the bottom of the results with nothing behind it. You cannot buy reviews and you cannot backfill them — every season off-platform is a season of ranking that is simply gone.",
+    title: "The reviews are real. They just aren't yours.",
+    body: "Every review that listing earns attaches to the account that holds it, not to your condo. Change managers and none of it follows you — not the review count, not the rating, not the search ranking those reviews bought. You could have five years of five-star stays behind you and still start from nothing the day you leave.",
   },
   {
-    icon: Search,
-    title: "Missing from where people look, not just where they book",
-    body: "Airbnb and Vrbo are not checkout pages. They are where somebody still choosing between Crested Butte, Steamboat and Telluride does their browsing. A resort site only reaches guests who have already picked the mountain and already know the program exists — everyone earlier in the decision never sees your condo at all.",
+    icon: Award,
+    title: "You cannot earn Superhost or Guest Favourite",
+    body: "Both are awarded to the host account, not the property. When your unit sits inside a portfolio of thousands, those badges are decided by that portfolio's overall response rate, cancellations and ratings — nothing you do to your own condo moves them, and you never get the search boost they carry.",
   },
   {
-    icon: Sun,
-    title: "The summer calendar nobody can explain",
-    body: "Ski weeks largely sell themselves; the mountain does that work. June through October is where discovery has to carry a unit, and it is exactly where a single resort channel underperforms. If your winters look fine and your summers look thin, that gap is the reason — not your condo.",
+    icon: FileStack,
+    title: "Your listing was written by a feed",
+    body: "Aggregator listings are generated from a data export: a templated title, a generic description, whatever photos the feed happens to carry, and no mention of a local team. It is the same page as a thousand other units with the address swapped. That is precisely what stops a browser turning into a booking.",
   },
 ];
 
@@ -75,7 +103,7 @@ const steps = [
   {
     n: 1,
     title: "Tell us the building and unit size",
-    body: "That is all we need to find the right comparison. No listing link — you don't have one, which is rather the point.",
+    body: "That is all we need to find the right comparison — no listing link required, which is rather the point.",
   },
   {
     n: 2,
@@ -108,6 +136,10 @@ const deliverables = [
 ];
 
 const faqs = [
+  {
+    q: "My manager says we ARE on Airbnb and Vrbo. Are you saying that's untrue?",
+    a: "No \u2014 it's true, and we should be straight about that. Resort programs reach Airbnb and Vrbo through distribution partners, and sit on Booking.com directly, so the nights really are being sold there. The point isn't that your condo is invisible. It's that the listing doing the selling belongs to that partner's account, along with every review it has earned and the search ranking those reviews bought. Ask for the link and look at whose name is on it. Distribution fills your calendar this year; a listing of your own is the thing you still have in five years.",
+  },
   {
     q: "Is this a real number or a sales figure?",
     a: "It is built from what units of your size in your building actually took over the last twelve months, and we show you the comps and assumptions behind it. It is an estimate and it is labelled as one — your unit's finish, floor, view and calendar all move the figure, and we cannot see those from outside. We would rather send you a defensible range than an impressive number you later find out was invented.",
@@ -180,13 +212,14 @@ export default function ProjectionPage() {
         <div className="audit-shell audit-hero-inner">
           <div className="audit-hero-copy">
             <p className="audit-eyebrow">Free revenue projection</p>
-            <h1>Search Airbnb for your condo. You won&apos;t find it.</h1>
+            <h1>Your condo is on Airbnb. The listing isn&apos;t yours.</h1>
             <p className="audit-lede">
-              If your unit is in a resort rental program, it almost certainly
-              isn&apos;t on Airbnb, Vrbo or Booking.com — which means most
-              people planning a Crested Butte trip have never seen it. We
-              manage {BASE_AREA_TOTAL}{" "}
-              condos at this base area. Tell us your building and we&apos;ll
+              Resort programs reach the big platforms through a distribution
+              partner, so the listing, the reviews and the search ranking all
+              sit in somebody else&apos;s account. Five years of five-star
+              stays, and none of it follows you out the door. We manage{" "}
+              {BASE_AREA_TOTAL}{" "}
+              condos at this base area — tell us your building and we&apos;ll
               show you what units like yours actually earned last year.
             </p>
             <ul className="audit-trust">
@@ -223,33 +256,38 @@ export default function ProjectionPage() {
            owner who does it has convinced themselves rather than been told. */}
       <section className="proj-check" aria-labelledby="check-h">
         <div className="audit-shell">
-          <h2 id="check-h">Don&apos;t take our word for it. Take thirty seconds.</h2>
+          <h2 id="check-h">Don&apos;t take our word for it. Ask one question.</h2>
           <ol className="proj-check-steps">
             <li>
               <span className="proj-check-n">1</span>
               <p>
-                Open Airbnb and search <strong>Mt. Crested Butte</strong> for a
-                week this coming February.
+                Ask your manager for <strong>the Airbnb link to your condo</strong>
+                {" "}
+                — not the resort&apos;s booking page. The Airbnb listing, with
+                reviews on it.
               </p>
             </li>
             <li>
               <span className="proj-check-n">2</span>
               <p>
-                Scroll for as long as you like. Filter by your building if you
-                want to be thorough.
+                When it arrives, look at <strong>whose name is on it</strong>.
+                Scroll to the host and see how many other properties that
+                account holds.
               </p>
             </li>
             <li>
               <span className="proj-check-n">3</span>
               <p>
-                <strong>Your condo isn&apos;t there.</strong> It never has been
-                — and neither is a single review of it.
+                Every review on that page belongs to <strong>that account</strong>.
+                {" "}
+                If you move your condo tomorrow, none of it comes with you.
               </p>
             </li>
           </ol>
           <p className="proj-check-foot">
-            Now do the same on Vrbo. Then ask where a guest who has never heard
-            of the program is supposed to find you.
+            That is the whole difference between being distributed and being
+            established. One fills nights this year. The other is an asset you
+            keep.
           </p>
         </div>
       </section>
@@ -257,10 +295,10 @@ export default function ProjectionPage() {
       {/* ── What it actually costs ── */}
       <section className="audit-band" id="cost">
         <div className="audit-shell">
-          <h2>What being invisible actually costs</h2>
+          <h2>What renting someone else&apos;s listing costs you</h2>
           <p className="audit-sub">
-            None of this is about how good your condo is. It is about how many
-            people ever get the chance to see it.
+            None of this is about how good your condo is. It is about what you
+            are building — and who gets to keep it.
           </p>
           <div className="proj-costs">
             {costs.map(({ icon: Icon, title, body }) => (
@@ -274,30 +312,28 @@ export default function ProjectionPage() {
         </div>
       </section>
 
-      {/* ── Where guests start ── */}
+      {/* ── Whose listing is it ── */}
       <section className="audit-band audit-band-alt">
         <div className="audit-shell">
-          <h2>Where guests start looking</h2>
+          <h2>Whose listing is it?</h2>
           <p className="audit-sub">
-            Three of the four places a Crested Butte trip begins cannot show a
-            unit that isn&apos;t listed on them.
+            Your condo probably does appear on all of these. The question is
+            who the listing actually belongs to.
           </p>
           <ul className="proj-channels">
             {channels.map((c) => (
               <li
                 key={c.name}
-                className={c.visible ? "proj-ch-yes" : "proj-ch-no"}
+                className={c.owned ? "proj-ch-gap" : "proj-ch-no"}
               >
                 <span className="proj-ch-mark" aria-hidden="true">
-                  {c.visible ? "✓" : "✕"}
+                  {c.owned ? "—" : "✕"}
                 </span>
                 <div>
                   <strong>{c.name}</strong>
                   <span>{c.role}</span>
                 </div>
-                <span className="proj-ch-state">
-                  {c.visible ? "Your condo can appear" : "Your condo cannot appear"}
-                </span>
+                <span className="proj-ch-state">{c.state}</span>
               </li>
             ))}
           </ul>

@@ -198,8 +198,13 @@
 .proj-ch-no .proj-ch-mark {
   background: var(--p-alarm);
 }
-.proj-ch-yes .proj-ch-mark {
-  background: #16a34a;
+/* The last row is the thing the owner does NOT have, so it reads as an absence
+   rather than an achievement. A green tick beside "Doesn't exist yet" is a
+   contradiction the eye trips over. */
+.proj-ch-gap .proj-ch-mark {
+  background: transparent;
+  border: 1px dashed #94a3b8;
+  color: #64748b;
 }
 
 .proj-ch-state {
@@ -212,11 +217,20 @@
 .proj-ch-no .proj-ch-state {
   color: var(--p-alarm);
 }
-.proj-ch-yes .proj-ch-state {
-  color: #16a34a;
+.proj-ch-gap .proj-ch-state {
+  color: #64748b;
+  font-style: italic;
+}
+.proj-channels li.proj-ch-gap {
+  border-style: dashed;
+  border-color: #cbd5e1;
+  background: #f8fafc;
 }
 
-.proj-ch-no {
+/* Qualified with `li` on purpose: `.proj-channels li` above is (0,1,1) and a
+   bare `.proj-ch-no` (0,1,0) loses to it, so the row tint silently never
+   applied. */
+.proj-channels li.proj-ch-no {
   border-color: var(--p-alarm-line);
   background: #fffbfb;
 }
