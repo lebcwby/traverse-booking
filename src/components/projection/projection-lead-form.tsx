@@ -7,22 +7,24 @@ import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
  * Revenue-projection capture (projection.booktraverse.com).
  *
  * Two steps, and step one is a single dropdown on purpose. The audit page opens
- * by asking for a listing URL; this audience has none — a unit inside a resort
- * rental program isn't listed anywhere they can link to, which is the entire
- * premise of the page. So the opening ask is the building, which is one click,
- * costs nothing, and is also the qualifying question: the comp we send back is
- * only credible because it comes from the same building.
+ * by asking for a listing URL, which is wrong here: a unit in a resort program
+ * is usually listed under the manager's or a distribution partner's account, so
+ * the owner has no link of their own to paste. Asking the building instead is
+ * one click, costs nothing, and is the qualifying question — the comp we send
+ * back is only credible because it comes from the same building.
  */
 
-/** Base-area buildings we can comp directly, then everything else. */
+/**
+ * Only the three buildings we actually manage in. The whole page rests on
+ * comping a unit against the ones down its own hallway, so a building we have
+ * no units in has nothing credible to offer — and the dropdown doubles as the
+ * qualifier. Adding an "elsewhere" option would buy unqualified leads at the
+ * cost of the one claim that makes this page work.
+ */
 export const BUILDINGS = [
   "The Grand Lodge",
   "The Lodge at Mountaineer Square",
   "The Plaza",
-  "Elevation Hotel & Spa",
-  "WestWall Lodge",
-  "Another building at the base",
-  "Elsewhere in Crested Butte",
 ] as const;
 
 const UNIT_TYPES = [
