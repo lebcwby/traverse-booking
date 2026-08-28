@@ -1,6 +1,6 @@
 /**
  * Payment-record audit — catches Guesty payment ledgers that disagree with what
- * we actually charged.
+ * was actually collected.
  *
  * WHY THIS EXISTS (2026-08-03, GY-hNBNy23v / Richard Welch):
  * Every direct booking ends up with TWO payment rows in Guesty:
@@ -16,19 +16,32 @@
  * charge. The damage is accounting, not the guest's card: `totalPaid` is what
  * owner statements and payouts read.
  *
- * Nothing surfaced it. It was found only because someone eyeballed a balance.
- * This job is that eyeball, daily.
+ * WHY IT NOW ENUMERATES FROM GUESTY (2026-08-26, GY-H5JutVsw / Melissa Bell):
+ * It used to read our own `reservations` table, which holds ONLY direct BE-API
+ * bookings — 185 rows. Every manually-created and OTA reservation was therefore
+ * invisible to it. GY-H5JutVsw was created by hand in Guesty (source "website",
+ * platform "manual") for a same-day one-night stay; Guesty's auto-payment rules
+ * do not fire on hand-created reservations, so nothing was ever charged. Not a
+ * failed attempt — no attempt at all. The guest stayed, left, and was only
+ * charged ten days after checkout when someone happened to notice.
+ *
+ * A sweep of 100 departed stays showed the shape of it: every channel source
+ * auto-charges reliably (airbnb2 50/51, Booking.com 8/8, HomeAway 6/6, VRBO
+ * 5/5, BE-API 6/6) while `website` and `manual` were 0 for 4. Both of those
+ * were eventually paid, but only because a person noticed. This job is now that
+ * person.
  *
  * Read-only. It never mutates Guesty or Stripe — a mismatch needs a human to
  * decide which record is the real one.
  *
  * GET /api/cron/audit-payment-records            (cron; Bearer CRON_SECRET)
- *     ?limit=<n>      how many reservations to scan (default 60, max 200)
+ *     ?limit=<n>      reservations to scan (default 200, max 500)
+ *     ?days=<n>       look-back window on check-out (default 45, max 180)
  *     ?dryRun=1       report only, never alert
  */
 import { NextResponse } from "next/server";
 import { getPool } from "@/lib/db";
-import { getOpenAPIReservation } from "@/lib/guesty-openapi";
+import { getOpenAPIReservationsPage } from "@/lib/guesty-openapi";
 import { getStripeServer } from "@/lib/stripe";
 import { sendAlert, renderAlertDetails } from "@/lib/alerts";
 
@@ -40,11 +53,23 @@ const COUNTED_STATUS = "SUCCEEDED";
 /** Ignore sub-cent float noise when comparing balances. */
 const BALANCE_EPSILON = 0.5;
 
+/** Guesty caps page size; anything larger is silently truncated. */
+const PAGE_SIZE = 100;
+
+/**
+ * Owner and owner-guest stays are not billed to the occupant, so a balance on
+ * one is the expected shape rather than a defect. Everything else that reaches
+ * check-out should be settled.
+ */
+const UNBILLED_SOURCES = new Set(["owner", "owner-guest"]);
+
 interface GuestyPayment {
   amount?: number;
   status?: string;
   note?: string | null;
   createdAt?: string;
+  /** Present when a human pressed charge; absent when automation did it. */
+  createdBy?: string | null;
 }
 
 interface Finding {
@@ -55,10 +80,12 @@ interface Finding {
     | "negative_balance"
     | "unpaid_balance"
     | "unrecorded_payment";
+  source: string | null;
+  checkOut: string | null;
   hostPayout: number | null;
   totalPaid: number | null;
   balanceDue: number | null;
-  /** What Stripe actually received. null = could not be read. */
+  /** What Stripe actually received. null = no PI on file, or unreadable. */
   stripeReceived?: number | null;
   succeededCount: number;
   /** Succeeded rows with no Stripe note — the auto-payment-rule shadow rows. */
@@ -71,6 +98,10 @@ function num(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+const today = () => new Date().toISOString().slice(0, 10);
+const daysAgo = (n: number) =>
+  new Date(Date.now() - n * 86400_000).toISOString().slice(0, 10);
+
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
@@ -80,74 +111,91 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const limit = Math.min(
-    200,
-    Math.max(1, parseInt(url.searchParams.get("limit") || "60", 10) || 60)
+    500,
+    Math.max(1, parseInt(url.searchParams.get("limit") || "200", 10) || 200)
+  );
+  const days = Math.min(
+    180,
+    Math.max(1, parseInt(url.searchParams.get("days") || "45", 10) || 45)
   );
   const dryRun = url.searchParams.get("dryRun") === "1";
 
-  const pool = getPool();
-
-  // Only bookings we took money for. Recently-departed stays are included on
-  // purpose: a bad ledger matters right up until the owner is paid out.
-  // A watchdog that dies quietly is worse than no watchdog: everyone assumes
-  // the ledger is clean because nothing alerted. Surface our own failure.
-  // (This guard exists because the first version of this query compared the
-  // TEXT check_out column to a date literal and 500'd on every run.)
-  let rows: Array<{
-    guesty_id: string;
-    confirmation_code: string | null;
-    status: string | null;
-    stripe_payment_intent_id: string | null;
-  }>;
+  // ── Enumerate from Guesty, not from our own table ──────────────────────
+  // Our `reservations` table holds only direct BE-API bookings, so reading it
+  // is what made hand-created and OTA reservations invisible for months.
+  const since = daysAgo(days);
+  const reservations: Record<string, unknown>[] = [];
+  let reportedTotal = 0;
   try {
-    ({ rows } = await pool.query(
-    `SELECT guesty_id, confirmation_code, status, stripe_payment_intent_id
-       FROM reservations
-      WHERE stripe_payment_intent_id IS NOT NULL
-        -- check_in/check_out are TEXT, not dates. Compare against a formatted
-        -- string rather than a date literal: "text >= timestamp" is a hard
-        -- 42883. ISO YYYY-MM-DD sorts correctly lexicographically.
-        AND check_out >= to_char(CURRENT_DATE - INTERVAL '45 days', 'YYYY-MM-DD')
-      -- SOONEST first, not furthest-future. A bad ledger does its damage at
-      -- payout time, so imminent and just-departed stays are the urgent ones.
-      -- (Ordering DESC here silently excluded the very reservation that
-      -- motivated this job — GY-hNBNy23v, Sep 2026 — because the top N by
-      -- check_in were all 2027 bookings.)
-      ORDER BY check_in ASC
-      LIMIT $1`,
-      [limit]
-    ));
+    for (let skip = 0; skip < limit; skip += PAGE_SIZE) {
+      const { results, count } = await getOpenAPIReservationsPage({
+        fields:
+          "_id confirmationCode status source checkInDateLocalized checkOutDateLocalized money.hostPayout money.totalPaid money.balanceDue money.payments guest.fullName",
+        limit: Math.min(PAGE_SIZE, limit - skip),
+        skip,
+        sort: "-checkOutDateLocalized",
+        filters: [
+          { field: "status", operator: "$eq", value: "confirmed" },
+          { field: "checkOutDateLocalized", operator: "$gte", value: since },
+        ],
+      });
+      reportedTotal = count;
+      reservations.push(...results);
+      if (results.length < PAGE_SIZE) break;
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error("[PaymentAudit] reservation query failed:", message);
+    // A watchdog that dies quietly is worse than no watchdog: everyone assumes
+    // the ledger is clean because nothing alerted. Surface our own failure.
+    console.error("[PaymentAudit] Guesty enumeration failed:", message);
     if (!dryRun) {
       await sendAlert(
         "PAYMENT LEDGER AUDIT FAILED TO RUN",
-        `<p>The daily payment-ledger audit could not query reservations, so <strong>no ledger check ran</strong>. Duplicate-payment problems would go unnoticed until this is fixed.</p><p>Error: <code>${message}</code></p>`,
+        `<p>The daily payment-ledger audit could not enumerate reservations from Guesty, so <strong>no ledger check ran</strong>. Uncollected and duplicated payments would go unnoticed until this is fixed.</p><p>Error: <code>${message}</code></p>`,
         "payment-record-audit-broken"
       ).catch(() => {});
     }
-    return NextResponse.json({ error: "audit query failed", message }, { status: 500 });
+    return NextResponse.json(
+      { error: "audit enumeration failed", message },
+      { status: 500 }
+    );
+  }
+
+  // ── One lookup for every Stripe PI we hold ─────────────────────────────
+  // Only direct bookings have one. It is what lets us tell "the guest still
+  // owes this" apart from "the guest paid and Guesty under-recorded it".
+  const piByGuestyId = new Map<string, string>();
+  try {
+    const ids = reservations.map((r) => String(r._id)).filter(Boolean);
+    if (ids.length) {
+      const { rows } = await getPool().query(
+        `SELECT guesty_id, stripe_payment_intent_id
+           FROM reservations
+          WHERE guesty_id = ANY($1) AND stripe_payment_intent_id IS NOT NULL`,
+        [ids]
+      );
+      for (const r of rows) piByGuestyId.set(r.guesty_id, r.stripe_payment_intent_id);
+    }
+  } catch (err) {
+    // Losing the PI map costs us the Stripe cross-check, not the whole sweep.
+    console.error(
+      "[PaymentAudit] local PI lookup failed:",
+      err instanceof Error ? err.message : err
+    );
   }
 
   const findings: Finding[] = [];
+  const stamp = today();
   let scanned = 0;
-  let skipped = 0;
 
-  for (const row of rows) {
-    let reservation: Record<string, unknown> | null = null;
-    try {
-      reservation = (await getOpenAPIReservation(
-        row.guesty_id
-      )) as Record<string, unknown>;
-    } catch {
-      // A single unreadable reservation must not abort the sweep.
-      skipped++;
-      continue;
-    }
+  for (const reservation of reservations) {
     scanned++;
+    const guestyId = String(reservation._id ?? "");
+    const code = (reservation.confirmationCode as string) ?? null;
+    const source = (reservation.source as string) ?? null;
+    const checkOut = (reservation.checkOutDateLocalized as string) ?? null;
 
-    const money = (reservation?.money ?? {}) as Record<string, unknown>;
+    const money = (reservation.money ?? {}) as Record<string, unknown>;
     const payments = Array.isArray(money.payments)
       ? (money.payments as GuestyPayment[])
       : [];
@@ -159,15 +207,25 @@ export async function GET(request: Request) {
     const hostPayout = num(money.hostPayout);
     const totalPaid = num(money.totalPaid);
     const balanceDue = num(money.balanceDue);
-    const isCanceled =
-      String(reservation?.status ?? row.status ?? "").toLowerCase() ===
-      "canceled";
 
-    // A second SUCCEEDED payment is NOT itself suspicious — pet fees, stay
+    const base = {
+      confirmationCode: code,
+      guestyId,
+      source,
+      checkOut,
+      hostPayout,
+      totalPaid,
+      balanceDue,
+      succeededCount: succeeded.length,
+      unattributedCount: unattributed.length,
+    };
+
+    // ── Duplicate: two succeeded payments for the SAME amount ─────────────
+    // A second succeeded payment is NOT itself suspicious — pet fees, stay
     // extensions and date changes all legitimately add one (GY-SHHhdMpj has a
     // $1738.41 stay payment plus a $50 pet fee and is perfectly fine). The
-    // duplicate signature is two succeeded payments for the SAME amount, which
-    // is what the auto-payment rule produces when it mirrors our charge.
+    // duplicate signature is two for the same amount, which is what the
+    // auto-payment rule produces when it mirrors our charge.
     const byAmount = new Map<number, GuestyPayment[]>();
     for (const p of succeeded) {
       const amt = num(p.amount);
@@ -178,95 +236,53 @@ export async function GET(request: Request) {
 
     if (duplicated.length > 0) {
       findings.push({
-        confirmationCode: (reservation?.confirmationCode as string) ?? null,
-        guestyId: row.guesty_id,
+        ...base,
         kind: "duplicate_succeeded",
-        hostPayout,
-        totalPaid,
-        balanceDue,
-        succeededCount: succeeded.length,
-        unattributedCount: unattributed.length,
-        // Label by the same rule attribution uses, so the alert points at the
-        // exact row to void: the one WITHOUT our Stripe PI note.
-        detail: duplicated
-          .map(
-            (p) =>
-              `$${p.amount} ${p.status} ${
-                p.note?.includes("Stripe PI")
-                  ? "(ours — Stripe PI)"
-                  : "(NO Stripe PI note — likely the auto-rule row to void)"
-              } @ ${p.createdAt}`
-          )
-          .join(" · "),
+        detail:
+          `${duplicated.length} succeeded payments share an amount: ` +
+          duplicated
+            .map((p) => `$${p.amount} @ ${p.createdAt}`)
+            .join(" · "),
       });
       continue; // already reported; don't double-report on balance too
     }
 
-    // A cancelled reservation legitimately shows hostPayout 0 with money still
-    // recorded against it, so a negative balance there is expected shape, not a
-    // defect. Only flag live bookings.
-    if (
-      !isCanceled &&
-      balanceDue !== null &&
-      balanceDue < -BALANCE_EPSILON
-    ) {
+    // ── Over-paid ─────────────────────────────────────────────────────────
+    if (balanceDue !== null && balanceDue < -BALANCE_EPSILON) {
       findings.push({
-        confirmationCode: (reservation?.confirmationCode as string) ?? null,
-        guestyId: row.guesty_id,
+        ...base,
         kind: "negative_balance",
-        hostPayout,
-        totalPaid,
-        balanceDue,
-        succeededCount: succeeded.length,
-        unattributedCount: unattributed.length,
         detail: `Guest appears over-paid by $${Math.abs(balanceDue).toFixed(2)}`,
       });
+      continue;
     }
 
-    // Money owed that we never collected. Every row reaching this sweep has a
-    // Stripe PI, i.e. we took payment ourselves at booking and the stay should
-    // be paid in full — so a POSITIVE balance is not a payment plan or an
-    // OTA hotel-collect booking, it is money that quietly went uncollected.
-    //
-    // Two producers seen so far, and they are NOT the same problem:
-    //
-    //  1. An uncollected fee that Guesty auto-applies to the invoice but our
-    //     checkout never charged. The first sweep found three reservations
-    //     short by exactly $50, each carrying a Pet Fee line Guesty had added
-    //     on its own (GY-z9ai4HsW, GY-XfNL7u3G, GY-cZNjjLNX). This is the
-    //     common case and it is a quiet revenue leak.
-    //  2. An abandoned portal date change: the quote step in
-    //     /api/account/reservations/[id]/extend writes new dates to Guesty
-    //     BEFORE the guest pays, and only a client-side rollback undoes them.
-    //     Close the tab and Guesty is left extended and unpaid while our row
-    //     still shows the old stay. That is GY-fYaHGbj5 (2026-08-25), caught
-    //     only because the guest phoned in.
-    //
-    // The invoice lines tell them apart, so the alert points there rather than
-    // asserting a cause.
+    // ── Money owed ────────────────────────────────────────────────────────
+    // Only meaningful once the stay is OVER. A confirmed future booking with a
+    // balance is a payment schedule doing its job, and flagging those would
+    // bury the real ones — that risk arrived with Guesty enumeration, since our
+    // own table only ever held bookings paid in full at checkout.
+    const departed = checkOut !== null && checkOut <= stamp;
     if (
-      !isCanceled &&
+      departed &&
       balanceDue !== null &&
-      balanceDue > BALANCE_EPSILON
+      balanceDue > BALANCE_EPSILON &&
+      !UNBILLED_SOURCES.has(String(source))
     ) {
-      // A Guesty balance is NOT evidence the guest owes money. Of the first
-      // three found, two had already paid in full and only Guesty's ledger was
-      // short: recordPayment hit Guesty's "amount > balance" error, re-recorded
-      // at the balance Guesty had at that instant, and the pet fee landed on
-      // the invoice afterwards — leaving a balance the guest does not owe.
-      // Telling ops to "collect it" would have charged those two a second time.
-      //
-      // Stripe is the arbiter. Only the shortfall against what Stripe actually
-      // received is real money owed.
+      // A Guesty balance is NOT evidence the guest owes money. Two of the first
+      // three found had already paid in full and only Guesty's ledger was
+      // short: recordPayment hit Guesty's "amount > balance" error,
+      // re-recorded at the balance Guesty held at that instant, and the pet fee
+      // landed on the invoice afterwards. Telling ops to "collect it" would
+      // have charged those two a second time. Stripe is the arbiter.
       let stripeReceived: number | null = null;
-      if (row.stripe_payment_intent_id) {
+      const pi = piByGuestyId.get(guestyId);
+      if (pi) {
         try {
-          const pi = await getStripeServer().paymentIntents.retrieve(
-            row.stripe_payment_intent_id
-          );
-          stripeReceived = (pi.amount_received ?? 0) / 100;
+          const intent = await getStripeServer().paymentIntents.retrieve(pi);
+          stripeReceived = (intent.amount_received ?? 0) / 100;
         } catch {
-          // Leave null — an unreadable PI must not turn into a "go collect".
+          // Leave null — an unreadable PI must not become a "go collect".
         }
       }
 
@@ -275,35 +291,32 @@ export async function GET(request: Request) {
         hostPayout !== null &&
         stripeReceived >= hostPayout - BALANCE_EPSILON;
 
+      // Nothing was ever attempted, as opposed to something having failed.
+      // That is the hand-created-reservation signature and it needs different
+      // words, because "the payment didn't go through" sends someone hunting
+      // for a decline that does not exist.
+      const neverAttempted = payments.length === 0;
+
       findings.push({
-        confirmationCode: (reservation?.confirmationCode as string) ?? null,
-        guestyId: row.guesty_id,
+        ...base,
         kind: paidInFull ? "unrecorded_payment" : "unpaid_balance",
-        hostPayout,
-        totalPaid,
-        balanceDue,
         stripeReceived,
-        succeededCount: succeeded.length,
-        unattributedCount: unattributed.length,
         detail: paidInFull
           ? `DO NOT COLLECT — Stripe already received $${stripeReceived!.toFixed(2)}, ` +
             `covering the full $${hostPayout!.toFixed(2)}. Guesty's ledger is ` +
             `$${balanceDue.toFixed(2)} short, so the fix is to record the missing ` +
             `amount in Guesty, not to charge the guest.`
-          : stripeReceived === null
-            ? `$${balanceDue.toFixed(2)} shows as owed, but the Stripe payment ` +
-              `could not be read to confirm it. Check Stripe by hand before ` +
-              `charging anyone.`
-            : `$${balanceDue.toFixed(2)} genuinely uncollected — Stripe received ` +
-              `$${stripeReceived.toFixed(2)} against a $${hostPayout?.toFixed(2)} ` +
-              `invoice. Compare Guesty's invoice lines with what we charged: a fee ` +
-              `Guesty added on its own (pet fee is the usual one) needs collecting, ` +
-              `whereas dates longer than ours mean an abandoned portal date change.`,
+          : `$${balanceDue.toFixed(2)} uncollected after check-out (${checkOut}, source "${source}"). ` +
+            (neverAttempted
+              ? "There is NO payment record at all — nothing was attempted, rather than " +
+                "something having failed. That is the signature of a reservation created " +
+                "by hand in Guesty, where the auto-payment rules do not fire. Charge the " +
+                "card on file."
+              : pi
+                ? `Stripe received $${(stripeReceived ?? 0).toFixed(2)} against a $${hostPayout?.toFixed(2)} invoice.`
+                : "No Stripe payment on file, so check Guesty's own payment records before charging."),
       });
     }
-
-    // Be polite to the Open API — this is a background sweep, not a user path.
-    await new Promise((r) => setTimeout(r, 250));
   }
 
   if (findings.length > 0 && !dryRun) {
@@ -317,45 +330,44 @@ export async function GET(request: Request) {
       .slice(0, 120)}`;
 
     await sendAlert(
-      `PAYMENT LEDGER MISMATCH — ${findings.length} reservation(s)`,
+      `PAYMENT LEDGER — ${findings.length} reservation(s) need a look`,
       [
-        "<p>Guesty's payment ledger disagrees with what we charged. This is an " +
-          "<strong>accounting</strong> problem, not necessarily a guest-card one — " +
-          "verify in Stripe before refunding or charging anyone.</p>",
-        // The two failure modes need opposite responses, so only show the
-        // guidance for the kinds that actually fired.
-        findings.some((f) => f.kind !== "unpaid_balance")
+        "<p>Guesty's payment ledger disagrees with what was collected. Verify in " +
+          "Stripe before charging or refunding anyone.</p>",
+        // The failure modes need opposite responses, so each block of guidance
+        // shows only when that kind actually fired.
+        findings.some(
+          (f) => f.kind === "duplicate_succeeded" || f.kind === "negative_balance"
+        )
           ? "<p><strong>Over-paid / duplicate:</strong> most likely the listing's " +
-            "auto-payment rule recorded a duplicate payment alongside ours. The " +
-            "row with <em>no</em> Stripe PI note is the one to void. The guest " +
-            "was probably charged only once — confirm in Stripe first.</p>"
+            "auto-payment rule recorded a duplicate alongside ours. The row with " +
+            "<em>no</em> Stripe PI note is the one to void. The guest was probably " +
+            "charged only once — confirm in Stripe first.</p>"
           : "",
         findings.some((f) => f.kind === "unpaid_balance")
-          ? "<p><strong>Unpaid balance:</strong> Stripe received less than the " +
-            "Guesty invoice, so this is genuinely uncollected. Compare Guesty's " +
-            "invoice lines with what we charged. A fee Guesty added on its own " +
-            "— a <em>pet fee</em> is the one we keep seeing — just needs " +
-            "collecting. Dates on Guesty that run longer than ours instead mean " +
-            "a guest abandoned a date change in the portal: collect the " +
-            "difference, or put the dates back and free the calendar.</p>"
+          ? "<p><strong>Uncollected after check-out:</strong> the stay is over and " +
+            "money is still owed. Where there is no payment record at all, nothing " +
+            "was ever attempted — that is a reservation created by hand in Guesty, " +
+            "which the auto-payment rules do not cover. Charge the card on file, " +
+            "and charge it at creation next time.</p>"
           : "",
         findings.some((f) => f.kind === "unrecorded_payment")
           ? "<p><strong>Unrecorded payment — do NOT charge these guests.</strong> " +
-            "Stripe already holds the full invoice amount; only Guesty's ledger " +
-            "is short, so the balance on screen is money the guest does not owe. " +
-            "It happens when Guesty rejects our record as larger than the " +
-            "then-current balance and a fee lands on the invoice afterwards. Fix " +
-            "it by recording the missing amount in Guesty against the existing " +
-            "Stripe payment.</p>"
+            "Stripe already holds the full invoice amount; only Guesty's ledger is " +
+            "short, so the balance on screen is money the guest does not owe. Fix it " +
+            "by recording the missing amount in Guesty against the existing Stripe " +
+            "payment.</p>"
           : "",
         ...findings.map((f) =>
           renderAlertDetails([
             ["Reservation", f.confirmationCode || f.guestyId],
             ["Issue", f.kind],
+            ["Source", f.source ?? "(unknown)"],
+            ["Check-out", f.checkOut ?? "(unknown)"],
             ["Host payout", f.hostPayout],
             ["Total paid", f.totalPaid],
             ["Balance due", f.balanceDue],
-            ["Stripe received", f.stripeReceived ?? "(unread)"],
+            ["Stripe received", f.stripeReceived ?? "(no Stripe payment)"],
             ["Succeeded payments", f.succeededCount],
             ["…of which un-attributed", f.unattributedCount],
             ["Detail", f.detail],
@@ -368,7 +380,9 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     scanned,
-    skipped,
+    windowDays: days,
+    matchingFilterInGuesty: reportedTotal,
+    stripePisMatched: piByGuestyId.size,
     findingCount: findings.length,
     findings,
     dryRun,
