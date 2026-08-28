@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   CalendarCheck,
   ShieldCheck,
+  BedDouble,
   Receipt,
   Building2,
   LineChart,
@@ -422,22 +423,39 @@ export default function ProjectionPage() {
             ))}
           </div>
 
-          {/* Deliberately NOT headlined on owner net. At the same subtotal that
-              gap is $16, and an owner who does the arithmetic and finds we
-              oversold it stops reading. The two honest numbers are strong
-              enough on their own. */}
-          <p className="proj-delta">
-            <strong>
-              {money(GUEST_SAVING)}
-            </strong>{" "}
-            less out of your guest&apos;s pocket, and{" "}
-            <strong>
-              {money(
-                PEAK_WEEK.totals.manager.other - PEAK_WEEK.totals.manager.ours
-              )}
-            </strong>{" "}
-            less taken out of the booking. We are not built to earn more per
-            stay — we are built to fill more of them.
+          {/* The whole point of the table, stated plainly. It was previously
+              one sentence under a wall of figures and read as an afterthought.
+              The owner-net tile is included even though it is the weakest of
+              the three: leaving it out invites the reader to work it out and
+              wonder why we hid it. */}
+          <ul className="proj-deltas">
+            <li className="proj-delta-lead">
+              <strong>{money(GUEST_SAVING)}</strong>
+              <span>less out of your guest&apos;s pocket</span>
+            </li>
+            <li>
+              <strong>
+                {money(
+                  PEAK_WEEK.totals.owner.ours - PEAK_WEEK.totals.owner.other
+                )}
+              </strong>
+              <span>more reaching your account</span>
+            </li>
+            <li className="proj-delta-lead">
+              <strong>
+                {money(
+                  PEAK_WEEK.totals.manager.other -
+                    PEAK_WEEK.totals.manager.ours
+                )}
+              </strong>
+              <span>less taken by the manager</span>
+            </li>
+          </ul>
+          <p className="proj-delta-note">
+            The week is worth about the same to you either way. What changes is
+            that your guest is charged {money(GUEST_SAVING)} less to book it —
+            we are not built to earn more per stay, we are built to fill more of
+            them.
           </p>
 
           <p className="proj-illustrative">
@@ -512,7 +530,16 @@ export default function ProjectionPage() {
       {/* ── Incidentals scenario ── */}
       <section className="proj-scenario" aria-labelledby="scenario-h">
         <div className="audit-shell">
-          <h2 id="scenario-h">A guest breaks a bed. Now what?</h2>
+          <div className="proj-scenario-head">
+            {/* An icon rather than a photograph on purpose. A stock shot of a
+                broken bed would be visibly not one of our units, which quietly
+                undercuts the very claim this section makes — that we photograph
+                the damage ourselves at the inspection. */}
+            <div className="proj-scenario-mark">
+              <BedDouble aria-hidden="true" />
+            </div>
+            <h2 id="scenario-h">A guest breaks a bed. Now what?</h2>
+          </div>
           <p className="proj-compare-sub">
             Damage is the part of this business nobody quotes you on, and it is
             where the difference between two managers is easiest to feel.

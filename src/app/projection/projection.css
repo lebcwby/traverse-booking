@@ -290,17 +290,58 @@
   background: rgba(59, 130, 246, 0.28);
 }
 
-.proj-delta {
-  margin: 1.15rem 0 0;
-  font-size: 1.05rem;
-  line-height: 1.55;
-  color: var(--a-ink, #1e293b);
+/* ── The difference, stated three ways ────────────────────────────────────
+   Was one sentence under a wall of figures and read as an afterthought. An
+   owner scanning the table should be able to stop here and have the answer. */
+.proj-deltas {
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
 }
 
-.proj-delta strong {
-  font-size: 1.5rem;
-  color: #1d4ed8;
+.proj-deltas li {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 1.1rem 1.25rem;
+}
+
+.proj-deltas strong {
+  display: block;
+  font-size: clamp(1.5rem, 3.4vw, 2rem);
+  line-height: 1.1;
   font-variant-numeric: tabular-nums;
+  color: var(--a-navy, #14142b);
+}
+
+.proj-deltas span {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: var(--a-body, #475569);
+}
+
+/* The guest-price and manager-take tiles carry the argument; the owner-net one
+   is included for honesty rather than emphasis, so only these two are tinted. */
+.proj-delta-lead {
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
+}
+
+.proj-delta-lead strong {
+  color: #1d4ed8;
+}
+
+.proj-delta-note {
+  margin: 1rem 0 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--a-ink, #1e293b);
+  max-width: 70ch;
 }
 
 /* Stacked-card column labels, shown only once the table collapses. */
@@ -325,6 +366,29 @@
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
   padding: 3.5rem 0;
+}
+
+.proj-scenario-head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.proj-scenario-mark {
+  flex: none;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.8rem;
+  display: grid;
+  place-items: center;
+  background: rgba(185, 28, 28, 0.08);
+  border: 1px solid var(--p-alarm-line);
+}
+
+.proj-scenario-mark svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--p-alarm);
 }
 
 .proj-scenario h2 {
@@ -497,6 +561,10 @@
   .proj-check-steps,
   .proj-costs,
   .proj-costs-wide {
+    grid-template-columns: 1fr;
+  }
+
+  .proj-deltas {
     grid-template-columns: 1fr;
   }
 
