@@ -41,8 +41,8 @@ LOGO_WHITE = f"{REPO}/public/book-traverse-wordmark-white.png"
 
 PAGE_W, PAGE_H = letter
 MARGIN = 0.6 * inch
-HEADER_H = 1.05 * inch
-FOOTER_H = 0.62 * inch
+HEADER_H = 0.92 * inch
+FOOTER_H = 0.55 * inch
 
 # ── Styles ───────────────────────────────────────────────────────────────
 h_section = ParagraphStyle(
@@ -68,15 +68,16 @@ SECTIONS = [
     # Deliberately first: every other section is something to ADD, this is the
     # only one about taking things away, and it is the step that actually comes
     # first when you walk a property.
-    ("Clear the Decks First", [
-        "<b>Every shelf, countertop, mantel and table clear</b> — guests need somewhere to put their own things",
-        "<b>Anything valuable or irreplaceable, gone</b> — assume it can be broken or walk",
-        "<b>Personal belongings out</b> — clothes, toiletries, medication, mail, documents",
-        "<b>Family photographs down</b> — guests report it makes them feel like they are intruding",
-        "<b>Owner storage locked, and disclosed in the listing</b> — an undisclosed locked door is an accuracy complaint",
-        "Half-used consumables binned — opened toiletries, ancient spices, freezer archaeology",
-        "Excess furniture removed — if it has no function for a guest, it works against you",
-    ], "Walk in as though you had just paid to be there. Stop at the first thing that says this is someone else's house."),
+    ("Personal Belongings & Clutter", [
+        "<b>Personal belongings out</b>, or locked in an owner closet \u2014 and disclosed in the listing",
+        "<b>Valuables, heirlooms and irreplaceable items removed</b>",
+        "<b>Shelves, counters, dressers and table tops clear</b>, with open space left",
+        "<b>Family photos, collections, paperwork, mail and medications gone</b>",
+        "<b>Closets and drawers cleared</b>, with room for guests to unpack",
+        "Half-used consumables binned \u2014 toiletries, old spices, freezer archaeology",
+        "Excess furniture removed \u2014 no function for a guest, no reason to keep it",
+        "<b>D\u00e9cor intentional and simple</b>, not overly personal",
+    ], "Guests want to feel at home \u2014 not like they are in someone else's home."),
     ("Furniture", [
         "Beds, with mattresses and linens for every sleeping position advertised",
         "Sofa or proper seating area — comfortable seating for everyone the home sleeps",

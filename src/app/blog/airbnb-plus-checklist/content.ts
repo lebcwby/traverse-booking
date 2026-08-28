@@ -5,18 +5,19 @@ export const pageContent = `<h2>Airbnb Plus Is Gone. The Standard Didn't Go With
 <p>What follows is the full list we use when we onboard a property in Colorado. It is deliberately exhaustive. Work down it once and you will find things.</p>
 <p><a href="/traverse-rental-setup-checklist.pdf" download><strong>Download the printable checklist (PDF)</strong></a> — three pages, every item below with a tick box, plus space for the property name and who walked it. Made to be printed and carried round the property rather than read on a phone.</p>
 <hr>
-<h2>Clear the Decks First</h2>
-<p>Everything else on this list is something to add. This section is the only one that is about taking things away — and it is usually where an owner-managed property gives itself away. The home has everything it needs and still reads as somebody's second home rather than a place a guest can settle into.</p>
+<h2>Personal Belongings &amp; Clutter</h2>
+<p>Everything else on this list is something to add. This section is the only one about taking things away — and it is usually where an owner-managed property gives itself away. The home has everything it needs and still reads as somebody's second home rather than a place a guest can settle into.</p>
 <ul>
-<li><strong>Every shelf, countertop, mantel and table clear.</strong> Guests need somewhere to put their own things. Clutter also photographs badly and reads as unclean even when the place is spotless</li>
-<li><strong>Anything valuable or irreplaceable, gone.</strong> Heirlooms, art, jewellery, the nice bottle of something. Assume anything left out can be broken or walk, and that neither is worth the conversation afterwards</li>
-<li><strong>Personal belongings out</strong> — clothes, toiletries, medication, mail, documents. A guest who opens a drawer and finds your things feels like a visitor rather than a customer</li>
-<li><strong>Family photographs down.</strong> This one surprises owners, but guests consistently report it makes a place feel like they are intruding</li>
-<li><strong>Owner storage locked, and disclosed.</strong> Keeping a closet is completely reasonable — but it should lock, it should be stated in the listing, and its square footage should not be part of what you advertise. An undisclosed locked door is an accuracy complaint waiting to happen</li>
+<li><strong>Personal belongings removed, or stored securely in a locked owner closet</strong> that guests cannot access. Keeping a closet is completely reasonable — but it should lock, it should be stated in the listing, and its square footage should not be part of what you advertise. An undisclosed locked door is an accuracy complaint waiting to happen</li>
+<li><strong>Valuable, sentimental or irreplaceable items removed.</strong> Heirlooms, art, jewellery, the nice bottle of something. Assume anything left out can be broken or walk, and that neither is worth the conversation afterwards</li>
+<li><strong>Shelves, countertops, dressers, tables and the tops of furniture clutter-free,</strong> with plenty of open space. Guests need somewhere to put their own things, and clutter photographs badly — it reads as unclean even when the place is spotless</li>
+<li><strong>Excessive family photos, personal collections, paperwork, mail and medications removed.</strong> The photographs one surprises owners, but guests consistently report it makes a place feel like they are intruding</li>
+<li><strong>Closets and drawers cleared,</strong> with adequate space for guests to store their things. A guest who opens a drawer and finds your clothes in it feels like a visitor rather than a customer, and one who has nowhere to unpack lives out of a suitcase all week</li>
 <li><strong>Half-used consumables binned</strong> — opened toiletries, ancient spices, the freezer archaeology. Anything you would not want to find yourself</li>
 <li><strong>Excess furniture removed.</strong> Rooms live and photograph better with space in them. If a piece has no function for a guest, it is working against you</li>
+<li><strong>Décor kept intentional, simple and welcoming</strong> rather than overly personal. You are not stripping the place of character — you are leaving room for someone else's</li>
 </ul>
-<p>A useful test: walk in through the front door as though you had just paid to be there, and stop at the first thing that tells you this is someone else's house.</p>
+<p>The point of all of it: <strong>guests want to feel at home, not like they are staying in someone else's home.</strong> A clean, uncluttered space with thoughtful décor is a more comfortable and inviting place to be. A useful test is to walk in through the front door as though you had just paid to be there, and stop at the first thing that tells you this is somebody's house.</p>
 <hr>
 <h2>Furniture</h2>
 <ul>
