@@ -76,47 +76,47 @@ export const metadata: Metadata = {
  */
 const PEAK_WEEK = {
   label: "Dec 20–27 · Grand Lodge, 1 bedroom · 7 nights",
+  /**
+   * Reads top-down as deductions, so it opens on what the guest actually hands
+   * over. It cannot open on the $1,210 stay figure: CBMR's resort fee and our
+   * cleaning fee are both charged to the guest ABOVE the stay, so subtracting
+   * them from $1,210 lands at $544.50 and $632 instead of $726 and $742. Every
+   * column still reconciles — guest = owner + manager + HOA + cleaner.
+   */
   rows: [
     {
-      line: "Seven nights at the going rate",
-      other: 1210,
-      ours: 1210,
-      note: "Identical stay on both sides, so only the fees below can move the outcome",
+      line: "What your guest pays for the week",
+      other: 1391.5,
+      ours: 1320,
+      note: "The same stay in the same unit, quoted on each company's own terms",
       kind: "line",
     },
     {
       line: "Resort fee charged to your guest",
-      other: 181.5,
+      other: -181.5,
       ours: null,
       note: "15% of the stay. $105 of it reaches the HOA — the manager keeps the other $76.50",
       kind: "flag",
     },
     {
-      line: "Cleaning charged to your guest",
+      line: "HOA resort fee, from your side",
       other: null,
-      ours: 110,
-      note: "Passed straight to the cleaner at cost. CBMR's cleaners are hourly and paid from their commission instead",
+      ours: -105,
+      note: "The same $15 a night obligation. We take it out of the stay and pass it to you to remit; CBMR funds theirs from the guest's resort fee and keeps the surplus",
       kind: "line",
     },
     {
-      line: "What your guest pays",
-      other: 1391.5,
-      ours: 1320,
-      note: "Before taxes and the TCC fee, which pass through identically on both sides",
-      kind: "sum",
+      line: "Cleaning charged to your guest",
+      other: null,
+      ours: -110,
+      note: "Straight to the cleaner at cost. CBMR's cleaners are hourly and paid from their commission instead, so nothing appears here",
+      kind: "line",
     },
     {
       line: "Management commission",
       other: -484,
       ours: -363,
-      note: "40% and 30% of the subtotal, net of OTA fees",
-      kind: "line",
-    },
-    {
-      line: "HOA resort fee, from your side",
-      other: null,
-      ours: -105,
-      note: "$15 a night. We deduct it and pass it to you to remit; CBMR funds theirs from the guest's resort fee",
+      note: "40% and 30% of the subtotal",
       kind: "line",
     },
   ],
@@ -136,8 +136,7 @@ const cell = (n: number | null) => (n === null ? "—" : money(n));
 
 /** What the guest keeps in their pocket on the same week — the honest headline. */
 const GUEST_SAVING =
-  (PEAK_WEEK.rows.find((r) => r.kind === "sum")!.other ?? 0) -
-  (PEAK_WEEK.rows.find((r) => r.kind === "sum")!.ours ?? 0);
+  (PEAK_WEEK.rows[0].other ?? 0) - (PEAK_WEEK.rows[0].ours ?? 0);
 
 /**
  * An incidentals scenario, because "we have a damage waiver" means nothing to
@@ -358,8 +357,9 @@ export default function ProjectionPage() {
           <h2>One Christmas week, run two ways</h2>
           <p className="proj-compare-sub">
             Identical stay, identical unit, both fee schedules as they actually
-            work. Taxes and the TCC fee pass through on both sides, so they are
-            left out — they cannot move the outcome.
+            work. Every figure here is net of OTA fees, taxes and damage
+            waivers: those pass through on each side alike, so they cannot move
+            the outcome and only get in the way of seeing what does.
           </p>
           <p className="proj-compare-stay">{PEAK_WEEK.label}</p>
 

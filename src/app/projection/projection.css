@@ -264,35 +264,6 @@
   background: #fffbeb;
 }
 
-/* Running subtotal — "what your guest pays". Reads as a rule under the guest
-   side before the owner side begins, so the table tells its story in two
-   halves rather than one long column of numbers. */
-.proj-tr-sum {
-  background: #f8fafc;
-  border-top: 1px solid #cbd5e1;
-  border-bottom: 1px solid #cbd5e1;
-}
-
-.proj-tr-sum strong,
-.proj-tr-sum .proj-num {
-  font-weight: 700;
-}
-
-.proj-tr-flag strong::after {
-  content: "Look for this one";
-  display: inline-block;
-  margin-left: 0.5rem;
-  padding: 0.1rem 0.45rem;
-  border-radius: 999px;
-  background: #f59e0b;
-  color: #fff;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  vertical-align: middle;
-  text-transform: uppercase;
-}
-
 .proj-tfoot + .proj-tfoot {
   border-top: 1px solid rgba(255, 255, 255, 0.16);
 }
