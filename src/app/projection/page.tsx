@@ -5,6 +5,8 @@ import {
   TrendingUp,
   MessageCircle,
   ClipboardCheck,
+  CalendarCheck,
+  ShieldCheck,
   Receipt,
   Building2,
   LineChart,
@@ -45,61 +47,131 @@ export const metadata: Metadata = {
 };
 
 /**
- * ⚠️ ILLUSTRATIVE FIGURES — REPLACE BEFORE PROMOTING THIS PAGE ⚠️
+ * ⚠️ REPLACE THE SUBTOTAL AND CLEANING FIGURE BEFORE PROMOTING THIS PAGE ⚠️
  *
- * This is comparative advertising aimed at an identifiable competitor, so
- * every number has to be one we can stand behind:
+ * The fee STRUCTURE below is real, supplied by Alex/Nadim 2026-08-28, and both
+ * columns reconcile to the penny: guest = owner + manager + HOA + cleaner.
  *
- *  · The TRAVERSE column is a commitment to a prospective client. Nobody
- *    should invent our commission rate — it has to come from the real fee
- *    schedule, signed off by Alex or Nadim.
- *  · The OTHER column describes a competitor's economics. Only state what we
- *    can evidence. The honest source is "statements owners have shown us",
- *    which is how the page frames it.
- *  · Never publish one real owner's statement without their written
- *    permission — they may owe their manager confidentiality.
+ *   CBMR      40% management commission on the subtotal (net of OTA fees).
+ *             Their cleaners are hourly and paid out of that commission, so no
+ *             cleaning fee reaches the guest. A 15% "resort fee" is charged to
+ *             the guest on top; $15 a night goes to the HOA and the manager
+ *             retains the difference. Taxes and the TCC fee pass through.
+ *             They do NOT levy an OTA/processing fee on direct bookings.
+ *   TRAVERSE  30% management commission on the subtotal (net of OTA fees).
+ *             $15 a night is deducted from the subtotal and passed to the owner
+ *             to remit to the HOA. Cleaning is charged to the guest above the
+ *             subtotal and passed through at cost. Taxes and TCC pass through.
  *
- * The label under the table says these are illustrative. It stays until the
- * numbers are real.
+ * What is illustrative is the WEEK: $1,210 comes from a real CBMR checkout for
+ * a Grand Lodge stay, and $110 is the average cleaning fee across our 1-bedroom
+ * Grand Lodge units (range $65-150; 2-bedrooms average $157). Swap both for a
+ * real quoted week before this is advertised.
+ *
+ * ⚠️ Do not re-headline this on owner net. At the same subtotal the owner
+ * difference is only +$16, because our 10-point commission advantage is very
+ * nearly cancelled by the HOA fee our structure has the owner absorb and theirs
+ * has the guest pay. The honest arguments are what the GUEST pays and what the
+ * MANAGER keeps. Inflating it invites a rebuttal we would lose.
  */
 const PEAK_WEEK = {
-  label: "Presidents' Week · 2 bedroom · 7 nights",
-  /** Same stay in both columns, so only the line items can explain a gap. */
+  label: "Dec 20–27 · Grand Lodge, 1 bedroom · 7 nights",
   rows: [
     {
-      line: "Guest pays for the stay",
-      other: 4375,
-      ours: 4795,
-      note: "Wider distribution and pricing that moves lift the top line before anyone takes a cut",
-      emphasis: false,
+      line: "Seven nights at the going rate",
+      other: 1210,
+      ours: 1210,
+      note: "Identical stay on both sides, so only the fees below can move the outcome",
+      kind: "line",
+    },
+    {
+      line: "Resort fee charged to your guest",
+      other: 181.5,
+      ours: null,
+      note: "15% of the stay. $105 of it reaches the HOA — the manager keeps the other $76.50",
+      kind: "flag",
+    },
+    {
+      line: "Cleaning charged to your guest",
+      other: null,
+      ours: 110,
+      note: "Passed straight to the cleaner at cost. CBMR's cleaners are hourly and paid from their commission instead",
+      kind: "line",
+    },
+    {
+      line: "What your guest pays",
+      other: 1391.5,
+      ours: 1320,
+      note: "Before taxes and the TCC fee, which pass through identically on both sides",
+      kind: "sum",
     },
     {
       line: "Management commission",
-      other: -1750,
-      ours: -959,
-      note: "Resort programs commonly sit around 40%",
-      emphasis: false,
+      other: -484,
+      ours: -363,
+      note: "40% and 30% of the subtotal, net of OTA fees",
+      kind: "line",
     },
     {
-      line: "Resort / admin fee kept by the manager",
-      other: -306,
-      ours: 0,
-      note: "Charged to the guest, retained by the manager, and rarely itemised where the owner can see it",
-      emphasis: true,
-    },
-    {
-      line: "Cleaning",
-      other: -75,
-      ours: 0,
-      note: "Billed to the guest and passed through at cost, so it should never reach your side of the statement",
-      emphasis: false,
+      line: "HOA resort fee, from your side",
+      other: null,
+      ours: -105,
+      note: "$15 a night. We deduct it and pass it to you to remit; CBMR funds theirs from the guest's resort fee",
+      kind: "line",
     },
   ],
-  totals: { other: 2244, ours: 3836 },
+  totals: {
+    owner: { label: "What reaches your account", other: 726, ours: 742 },
+    manager: { label: "What the manager keeps", other: 560.5, ours: 363 },
+  },
 };
 
 const money = (n: number) =>
-  `${n < 0 ? "−" : ""}$${Math.abs(n).toLocaleString("en-US")}`;
+  `${n < 0 ? "−" : ""}$${Math.abs(n).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+
+const cell = (n: number | null) => (n === null ? "—" : money(n));
+
+/** What the guest keeps in their pocket on the same week — the honest headline. */
+const GUEST_SAVING =
+  (PEAK_WEEK.rows.find((r) => r.kind === "sum")!.other ?? 0) -
+  (PEAK_WEEK.rows.find((r) => r.kind === "sum")!.ours ?? 0);
+
+/**
+ * An incidentals scenario, because "we have a damage waiver" means nothing to
+ * an owner until they can see how a specific bad night actually plays out.
+ *
+ * Deliberately carries no invented dollar figure for the bed. The difference
+ * that matters is WHO pays and WHEN the owner hears about it, and a made-up
+ * replacement cost would be the one soft number in an otherwise sourced page.
+ */
+const BROKEN_BED = [
+  {
+    beat: "Saturday, the guest checks out",
+    other:
+      "The unit is turned over for the next arrival. A cracked bed frame under a made bed is not something a turnover is looking for.",
+    ours: "Every turnover is inspected, so the frame is found and photographed before anyone else is let into the unit.",
+  },
+  {
+    beat: "Saturday afternoon",
+    other:
+      "Nothing reaches you. Whatever happens next happens without you in the conversation.",
+    ours: "You are told the same day, with the photographs and what we intend to do about it.",
+  },
+  {
+    beat: "Who pays for the replacement",
+    other:
+      "There is no damage waiver covering incidentals, so the cost lands on you or is argued out with a guest who has already gone home.",
+    ours: "The guest is charged, or it comes out of the damage waiver. Either way it is settled while the stay is still fresh.",
+  },
+  {
+    beat: "The next guest",
+    other: "Checks in to whatever state the bed was left in.",
+    ours: "Arrives to a bed that has been replaced, because we knew on Saturday.",
+  },
+];
 
 /** Why the bottom lines differ — what we actually do, not what they don't. */
 const reasons = [
@@ -107,6 +179,16 @@ const reasons = [
     icon: TrendingUp,
     title: "Wider distribution, and pricing that moves",
     body: "More places selling the unit, and rates that respond to how the mountain is actually booking rather than sitting where they were set in October. That lifts the top line before a single fee is deducted — the one part of a statement that helps every line below it.",
+  },
+  {
+    icon: CalendarCheck,
+    title: "You can see your bookings as they happen",
+    body: "Log in and look — every reservation on your calendar the moment it is made, with what it is worth. CBMR allocates nights through block bookings, so what actually happened to your unit arrives with the owner statement at the end of the month. A calendar you can only read in arrears is not one you can plan a season around, or use your own home from.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "You hear about damage the day it happens",
+    body: "A broken dresser gets photographed at the inspection and you are told that afternoon — along with whether we are charging the guest for it or covering it from the damage waiver. CBMR runs no damage waiver for incidentals, so that kind of thing surfaces as a line on a statement weeks later, by which point nobody can do anything about it.",
   },
   {
     icon: MessageCircle,
@@ -120,8 +202,8 @@ const reasons = [
   },
   {
     icon: Receipt,
-    title: "Lower commission, and no fee we invented",
-    body: "A lower management rate, fees stated plainly, and no resort fee charged to your guest and quietly kept by us. If a line appears on your statement you should be able to say what it bought.",
+    title: "Fees you can actually account for",
+    body: "Our own staff fix what our own staff can fix, so maintenance reaches your statement only when something genuinely needed a trade. Cleaning is billed at what the clean costs, the HOA fee is passed to you at face value, and no resort fee is charged to your guest with a margin folded into it. Our commission is lower too, though part of that difference is cleaning we bill separately rather than bury — the point is that every line is one you can explain.",
   },
 ];
 
@@ -273,10 +355,11 @@ export default function ProjectionPage() {
       {/* ── The comparison — the whole argument in one table ── */}
       <section className="proj-compare" id="compare">
         <div className="audit-shell">
-          <h2>One peak week, run two ways</h2>
+          <h2>One Christmas week, run two ways</h2>
           <p className="proj-compare-sub">
-            Identical stay, identical unit. Everything separating the two bottom
-            lines is a line item, not the nightly rate.
+            Identical stay, identical unit, both fee schedules as they actually
+            work. Taxes and the TCC fee pass through on both sides, so they are
+            left out — they cannot move the outcome.
           </p>
           <p className="proj-compare-stay">{PEAK_WEEK.label}</p>
 
@@ -287,7 +370,7 @@ export default function ProjectionPage() {
           >
             <div className="proj-tr proj-thead" role="row">
               <span role="columnheader">On the statement</span>
-              <span role="columnheader">A typical resort program</span>
+              <span role="columnheader">CBMR</span>
               <span role="columnheader" className="proj-ours">
                 With Traverse
               </span>
@@ -295,7 +378,7 @@ export default function ProjectionPage() {
 
             {PEAK_WEEK.rows.map((r) => (
               <div
-                className={`proj-tr${r.emphasis ? " proj-tr-flag" : ""}`}
+                className={`proj-tr proj-tr-${r.kind}`}
                 role="row"
                 key={r.line}
               >
@@ -305,50 +388,67 @@ export default function ProjectionPage() {
                 </span>
                 <span role="cell" className="proj-num">
                   <span className="proj-collabel" aria-hidden="true">
-                    Resort program
+                    CBMR
                   </span>
-                  {money(r.other)}
+                  {cell(r.other)}
                 </span>
                 <span role="cell" className="proj-num proj-ours">
                   <span className="proj-collabel" aria-hidden="true">
                     Traverse
                   </span>
-                  {r.ours === 0 ? "—" : money(r.ours)}
+                  {cell(r.ours)}
                 </span>
               </div>
             ))}
 
-            <div className="proj-tr proj-tfoot" role="row">
-              <span role="cell">
-                <strong>What reaches your account</strong>
-              </span>
-              <span role="cell" className="proj-num">
-                <span className="proj-collabel" aria-hidden="true">
-                  Resort program
+            {[PEAK_WEEK.totals.owner, PEAK_WEEK.totals.manager].map((t) => (
+              <div className="proj-tr proj-tfoot" role="row" key={t.label}>
+                <span role="cell">
+                  <strong>{t.label}</strong>
                 </span>
-                {money(PEAK_WEEK.totals.other)}
-              </span>
-              <span role="cell" className="proj-num proj-ours">
-                <span className="proj-collabel" aria-hidden="true">
-                  Traverse
+                <span role="cell" className="proj-num">
+                  <span className="proj-collabel" aria-hidden="true">
+                    CBMR
+                  </span>
+                  {money(t.other)}
                 </span>
-                {money(PEAK_WEEK.totals.ours)}
-              </span>
-            </div>
+                <span role="cell" className="proj-num proj-ours">
+                  <span className="proj-collabel" aria-hidden="true">
+                    Traverse
+                  </span>
+                  {money(t.ours)}
+                </span>
+              </div>
+            ))}
           </div>
 
+          {/* Deliberately NOT headlined on owner net. At the same subtotal that
+              gap is $16, and an owner who does the arithmetic and finds we
+              oversold it stops reading. The two honest numbers are strong
+              enough on their own. */}
           <p className="proj-delta">
             <strong>
-              {money(PEAK_WEEK.totals.ours - PEAK_WEEK.totals.other)}
+              {money(GUEST_SAVING)}
             </strong>{" "}
-            more from one week. Multiply that by the peak weeks in a season.
+            less out of your guest&apos;s pocket, and{" "}
+            <strong>
+              {money(
+                PEAK_WEEK.totals.manager.other - PEAK_WEEK.totals.manager.ours
+              )}
+            </strong>{" "}
+            less taken out of the booking. We are not built to earn more per
+            stay — we are built to fill more of them.
           </p>
 
           <p className="proj-illustrative">
-            Illustrative figures, shaped by statements owners have brought us and
-            by our own fee schedule. Your unit, your weeks and your agreement
-            will all differ — which is why the projection we send is built from
-            your building rather than from this table.
+            The fee structures are real; the week is an example. $1,210 is a
+            quoted Grand Lodge stay and $110 is what a one-bedroom clean costs
+            here. In fairness to the comparison, CBMR&apos;s cleaners are hourly
+            and paid out of their commission — so roughly $110 of their $560.50
+            is cleaning we bill your guest for separately, which makes the
+            like-for-like gap nearer $88. Your unit, your weeks and your
+            agreement will all differ, which is why the projection we send is
+            built from your building rather than from this table.
           </p>
         </div>
       </section>
@@ -395,9 +495,9 @@ export default function ProjectionPage() {
         <div className="audit-shell">
           <h2>Why the two columns differ</h2>
           <p className="audit-sub">
-            Four things, and only one of them is the commission rate.
+            Six things, and only one of them is the commission rate.
           </p>
-          <div className="proj-costs proj-costs-4">
+          <div className="proj-costs proj-costs-wide">
             {reasons.map(({ icon: Icon, title, body }) => (
               <div className="proj-cost" key={title}>
                 <Icon className="audit-leak-icon" aria-hidden="true" />
@@ -406,6 +506,38 @@ export default function ProjectionPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── Incidentals scenario ── */}
+      <section className="proj-scenario" aria-labelledby="scenario-h">
+        <div className="audit-shell">
+          <h2 id="scenario-h">A guest breaks a bed. Now what?</h2>
+          <p className="proj-compare-sub">
+            Damage is the part of this business nobody quotes you on, and it is
+            where the difference between two managers is easiest to feel.
+          </p>
+          <ol className="proj-beats">
+            {BROKEN_BED.map((b) => (
+              <li key={b.beat}>
+                <h3>{b.beat}</h3>
+                <div className="proj-beat-pair">
+                  <div className="proj-beat proj-beat-other">
+                    <span>CBMR</span>
+                    <p>{b.other}</p>
+                  </div>
+                  <div className="proj-beat proj-beat-ours">
+                    <span>Traverse</span>
+                    <p>{b.ours}</p>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <p className="proj-check-foot">
+            The replacement costs what it costs either way. What differs is
+            whether you find out in time for anyone to do anything about it.
+          </p>
         </div>
       </section>
 

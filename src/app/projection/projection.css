@@ -264,6 +264,20 @@
   background: #fffbeb;
 }
 
+/* Running subtotal — "what your guest pays". Reads as a rule under the guest
+   side before the owner side begins, so the table tells its story in two
+   halves rather than one long column of numbers. */
+.proj-tr-sum {
+  background: #f8fafc;
+  border-top: 1px solid #cbd5e1;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.proj-tr-sum strong,
+.proj-tr-sum .proj-num {
+  font-weight: 700;
+}
+
 .proj-tr-flag strong::after {
   content: "Look for this one";
   display: inline-block;
@@ -277,6 +291,10 @@
   letter-spacing: 0.02em;
   vertical-align: middle;
   text-transform: uppercase;
+}
+
+.proj-tfoot + .proj-tfoot {
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
 }
 
 .proj-tfoot {
@@ -329,6 +347,102 @@
   line-height: 1.6;
   color: var(--a-muted, #64748b);
   max-width: 78ch;
+}
+
+/* ── Incidentals scenario ───────────────────────────────────────────────── */
+.proj-scenario {
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  padding: 3.5rem 0;
+}
+
+.proj-scenario h2 {
+  font-size: clamp(1.5rem, 3.2vw, 2.1rem);
+  line-height: 1.2;
+  color: var(--a-navy, #14142b);
+  margin: 0 0 0.6rem;
+  text-wrap: balance;
+}
+
+.proj-beats {
+  list-style: none;
+  margin: 2rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 1.1rem;
+  counter-reset: beat;
+}
+
+.proj-beats > li {
+  counter-increment: beat;
+}
+
+.proj-beats h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1rem;
+  color: var(--a-navy, #14142b);
+  margin: 0 0 0.6rem;
+}
+
+.proj-beats h3::before {
+  content: counter(beat);
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--a-navy, #14142b);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.proj-beat-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.proj-beat {
+  border-radius: 0.7rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.proj-beat span {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.35rem;
+}
+
+.proj-beat p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--a-body, #475569);
+}
+
+.proj-beat-other {
+  border-color: var(--p-alarm-line);
+  background: #fffbfb;
+}
+.proj-beat-other span {
+  color: var(--p-alarm);
+}
+
+.proj-beat-ours {
+  border-color: #bfdbfe;
+  background: #f5f9ff;
+}
+.proj-beat-ours span {
+  color: #1d4ed8;
 }
 
 /* ── Same-building panel ──────────────────────────────────────────────── */
@@ -397,13 +511,13 @@
   max-width: 78ch;
 }
 
-.proj-costs-4 {
-  grid-template-columns: repeat(4, 1fr);
+.proj-costs-wide {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 /* ── Responsive ───────────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
-  .proj-costs-4 {
+  .proj-costs-wide {
     grid-template-columns: repeat(2, 1fr);
   }
 }
@@ -411,13 +525,18 @@
 @media (max-width: 900px) {
   .proj-check-steps,
   .proj-costs,
-  .proj-costs-4 {
+  .proj-costs-wide {
     grid-template-columns: 1fr;
   }
 
-  .proj-building-inner {
+  .proj-building-inner,
+  .proj-beat-pair {
     grid-template-columns: 1fr;
     gap: 1.25rem;
+  }
+
+  .proj-beat-pair {
+    gap: 0.6rem;
   }
 
   /* A three-column money table cannot survive 375px, so each line becomes its
