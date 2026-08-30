@@ -188,6 +188,62 @@ problem.
 
 ---
 
+## Send timing — derived from booking behaviour (2026-08-30)
+
+**Not from open rates.** One campaign, 143 opens, heavily Apple-MPP-inflated — no usable
+day/time signal. Booking events are both a larger sample and the actual conversion.
+
+⚠️ **`booked_at` is `timestamptz`.** Use `booked_at AT TIME ZONE 'America/Denver'`. Doing
+`AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver'` double-shifts by 6h and produces a fake
+curve that peaks at 3am — it looks plausible in a table and is completely wrong.
+
+### Best day — Sunday or Monday
+Direct bookings only (`website` + `BE-API`, n=919, 24 months):
+
+| Sun | Mon | Tue | Wed | Thu | Fri | Sat |
+|---|---|---|---|---|---|---|
+| **16.1%** | **16.0%** | 13.8% | 13.3% | 14.7% | **12.0%** | 14.1% |
+
+Sunday and Monday lead; **Friday is the worst day**. Spread is modest and the sample is small,
+so treat this as "favour Sun/Mon, avoid Fri" rather than a precise ranking.
+
+### Best time — land by mid-morning
+Direct bookings run a broad plateau **9am–9pm MT**, peaking at **5pm (7.8%)** with a midday
+shoulder (12pm 7.1%, 3pm 7.2%). All 15,251 bookings show the same shape, peaking 7–8pm.
+
+Send **~10:00am recipient-local time**. That buys the full 9am–9pm booking runway rather than
+betting on the single 5pm spike, and email is typically opened within an hour or two of
+arrival. Use Klaviyo's **local-time delivery** (`send_strategy.options.is_local`) so 10am
+means 10am for each recipient — the list spans several time zones.
+
+### The dates are forced by the calendar
+Median booking lead time is **8–28 days**. As of 2026-08-30:
+- Leadville target **Sep 18–21** → 19 days out — **squarely in the window now**
+- Crested Butte target **Sep 25–28** → 26 days out — in the window, marginally early
+
+**Leadville is the more urgent of the two** and also the larger audience (12.9k vs 5.1k), so
+run it a rung ahead.
+
+### Proposed schedule (Labor Day 2026 = Mon Sep 7)
+
+| Date | Day | Rung | Size |
+|---|---|---|---|
+| Mon Aug 31 | Mon ✅ | 1 | 500 |
+| Wed Sep 2 | Wed | 2 | 1,500 |
+| Thu Sep 3 | Thu | 3 | 3,000 |
+| *Sep 4–7* | *Fri + Labor Day wknd* | — | *hold* |
+| Tue Sep 8 | Tue | 4 | 5,000 |
+| Thu Sep 10 | Thu | 5 | ~5,500 |
+
+Holding Fri Sep 4 through Labor Day: Friday is the weakest booking day and holiday-weekend
+sends usually under-engage. Finishing Sep 10 still puts the last rung **8 days** before the
+Leadville weekend and 15 before Crested Butte — inside the lead-time window for both.
+
+If the domain warming forces smaller steps, stretch the tail rather than the head: rungs 1–3
+are the time-critical ones.
+
+---
+
 ## Batch plan
 
 The list is ~15.5k, and **only ~215 profiles have ever been sent a campaign** (win-back
