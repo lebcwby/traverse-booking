@@ -232,6 +232,50 @@ so once the segments exist the rest is scriptable.
 
 ---
 
+## Templates — BUILT 2026-08-30
+
+| Market | Klaviyo template | Source of truth |
+|---|---|---|
+| Crested Butte | **`Yk6VXg`** | `docs/marketing/templates/fall-foliage-crested-butte.html` |
+| Leadville | **`RELc44`** | `docs/marketing/templates/fall-foliage-leadville.html` |
+
+Both carry the three fixes the win-back data called for: **real listing cards** (photo, size,
+exact price), **CTA above the fold** and repeated, and **date-filtered deep links** so a click
+lands on live availability rather than the homepage.
+
+Featured homes are verified available for the target weekend, and every link was checked
+(200 + correct listing rendered + dates prefilled in the search bar).
+
+- **Crested Butte, Sep 25–28:** Black Bear 204 ($2,350) · Hot Tub Condo ($1,673) · 1BR Pool &
+  Hot Tub ($1,199)
+- **Leadville, Sep 18–21:** Governor's Mansion ($2,065) · The Rosemont ($878) · Loft Home
+  ($1,000)
+
+### ⚠️ Pricing trap — do not use `nightlyFrom` for date-specific marketing
+The `listing_pricing_cache` in `kv_store` samples **one window chosen by the cron**, not the
+dates you are promoting. For these foliage weekends the cached "from" prices were **2–4× too
+low**:
+
+| Listing | Cached `nightlyFrom` | Real all-in, 3 nights |
+|---|---|---|
+| Black Bear 204 | $195/nt | **$2,350** |
+| Governor's Mansion | $346/nt | **$2,065** |
+| The Rosemont | $154/nt | **$878** |
+
+Shipping those would have been a bait-and-switch against the very page the email links to.
+
+**Use `POST /api/quotes/batch`** (public, used by the cart) for exact figures on specific
+dates. Verified: it returns precisely what the property page renders — `cb1` $2,350 and `lv1`
+$2,065 both matched the live page exactly.
+
+Cards now show **all-in totals** rather than a nightly rate. That is more honest, matches the
+click destination, and leans on the no-fees positioning.
+
+⚠️ **Re-quote before sending.** These prices are live and will drift. Re-run the batch quote
+on send day and update both templates if anything moved.
+
+---
+
 ## DNS reference (checked 2026-08-10)
 
 ```
