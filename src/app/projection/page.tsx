@@ -26,14 +26,29 @@ import "./projection.css";
 const B2B_PHONE = { tel: "+19705333583", display: "(970) 533-3583" };
 
 /**
- * Grand Lodge is 65 per Alex/Nadim (2026-08-29). The listings mirror only tags
- * 61 of them, so four units are missing the "The Grand Lodge Crested Butte"
- * BEAPI tag — worth fixing at source, because the building pages on the main
- * site filter on that tag and those four are invisible there.
+ * ⚠️ These counts are the page's core credibility claim. Verify before editing.
  *
- * These counts are the page's core credibility claim, so re-check before
- * editing. The mirror puts the whole Crested Butte portfolio at 101, which is
- * what MT_CB_TOTAL rounds down to.
+ * Checked against Guesty directly on 2026-08-29 (not the mirror, which lags a
+ * unit or two). Active AND listed:
+ *
+ *   Grand Lodge          62
+ *   Mountaineer Square   16
+ *   The Plaza            20
+ *   three buildings      98
+ *   all Crested Butte   102   <- what MT_CB_TOTAL rounds down from
+ *
+ * Grand Lodge is carried at 65 here on Alex/Nadim's figure. Guesty shows 62
+ * live, so the other three are presumably managed but currently unlisted —
+ * worth confirming, because the same +3 flows into the three-building total
+ * below and that panel then reads 101 where Guesty supports 98.
+ *
+ * There is NO tagging problem: all 62 live Grand Lodge units carry "The Grand
+ * Lodge Crested Butte" and nothing at 6 Emmons Road is missing it. An earlier
+ * note here claimed four units were untagged and invisible on the building
+ * pages — that was wrong, from a mirror query whose nickname pattern matched
+ * Vail's "Eagle" listings. Guesty does hold ~21 archived Grand Lodge records
+ * ("Copy GL504", "GL515 duplicate do not use", several "OLD"), which is the
+ * likelier source of any inflated hand count.
  */
 const OUR_UNITS = { grandLodge: 65, mountaineerSquare: 16, plaza: 20 };
 const BASE_AREA_TOTAL =
