@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   openGraph: {
     title:
       "What Should Your Crested Butte Condo Be Earning? | Traverse Hospitality",
-    description: `We manage ${BASE_AREA_TOTAL} condos at the Mt. Crested Butte base. See what a peak week actually nets you.`,
+    description: `Still paying 40-50% to your property manager? We manage ${BASE_AREA_TOTAL} condos at the Mt. Crested Butte base. See what units like yours actually earned.`,
     url: "https://projection.booktraverse.com",
   },
 };
@@ -244,9 +244,11 @@ export default function ProjectionPage() {
       </header>
 
       {/* ── Hero ──
-           The argument is the bottom line, not the headline rate. An owner
-           already gets a statement every month; what they have never had is a
-           second one to hold it against. */}
+           Opens on the rate because it is the one fact that qualifies this
+           audience instantly: legacy clients at this base area are on 50%,
+           newer ones on 40%. It blames the rate rather than the owner, which
+           matters — these people chose that manager deliberately and will not
+           buy from anyone who has just implied they were foolish. */}
       <section className="audit-hero" id="top">
         <Image
           src="/property-management/hero-porch-view.png"
@@ -260,13 +262,15 @@ export default function ProjectionPage() {
         <div className="audit-shell audit-hero-inner">
           <div className="audit-hero-copy">
             <p className="audit-eyebrow">Free revenue projection</p>
-            <h1>Same week. Same condo. A very different statement.</h1>
+            <h1>
+              Still paying 40&ndash;50% to your property manager?
+            </h1>
             <p className="audit-lede">
-              Your statement tells you what your condo earned. It has never told
-              you what it could have kept. We manage {BASE_AREA_TOTAL}{" "}
+              Then it is worth re-evaluating what your listing is actually
+              doing. We manage {BASE_AREA_TOTAL}{" "}
               condos at this base area — tell us your building and we&apos;ll
-              show you what units like yours actually took last year, and what
-              that would have netted you.
+              show you what units like yours earned last year, and what they
+              would earn with us.
             </p>
             <ul className="audit-trust">
               <li>
@@ -302,9 +306,9 @@ export default function ProjectionPage() {
         <div className="audit-shell">
           <h2>Higher occupancy. Lower commission. You earn more.</h2>
           <p className="proj-compare-sub">
-            That is the whole of it. The interesting numbers are the ones
-            attached to your unit, and those are worth a conversation rather
-            than a landing page.
+            That is the whole of it, and the three numbers below are where we
+            stand today. What follows them is the rest of what changes — the
+            parts of managing a condo you only notice when they are missing.
           </p>
 
           <ul className="proj-stats">
