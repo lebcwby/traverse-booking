@@ -146,13 +146,45 @@ mid-September.
 
 ---
 
-## ⚠️ Blocker before any send
+## Deliverability is fine — the problem is engagement
 
-**The sending domain is not yet authenticated (DKIM/SPF) in Klaviyo.** Sending 15.5k emails
-from an unauthenticated domain will land in spam, and it puts the reputation of
-`booktraverse.com` at risk — the same domain that carries booking confirmations.
+⚠️ **A theory recorded here earlier was wrong and is corrected below.** `booktraverse.com`
+publishes `DMARC p=reject`, and I inferred from that plus a failed DNS lookup that Klaviyo
+mail was being rejected outright. **It is not.** The domain is authenticated (Klaviyo status:
+*warming*); the lookup failed only because the sending subdomain has a different name than
+the ones probed.
 
-**This must be done first.** It is a DNS change in GoDaddy plus verification in Klaviyo.
+**Win-back campaign actuals — sent 2026-07-30, 214 recipients:**
+
+| Metric | Result | Read |
+|---|---|---|
+| Delivery rate | **99.1%** (212/214) | Excellent — not a deliverability problem |
+| Bounces | 2 (0.93%) | Healthy for a first send to aged contacts |
+| Spam complaints | **0** | Clean |
+| Open rate | **67.5%** | Excellent (some Apple MPP inflation) |
+| **Click rate** | **0.94%** (2 clicks) | ⚠️ Click-to-open ≈1.4% vs 10–15% normal |
+| Unsubscribes | 5 (2.3%) | ⚠️ ~5× a healthy rate |
+| **Bookings** | **0** | — |
+
+**The subject line works; the body does not.** People open and then don't act. That is the
+single most important input to the foliage campaign:
+
+- Put **real listings — photo, nightly price, town** — in the email. Not one generic
+  "see what's available" link.
+- **Repeat the CTA near the top**, not only at the foot.
+- Deep-link into a **date-filtered search** so the click lands on availability, not the
+  homepage.
+- The 2.3% unsubscribe rate says list fatigue is real on aged contacts — which is an argument
+  for the batch ladder below, and against a second follow-up send to non-openers.
+
+### Still verify before a 15.5k send
+Confirm the exact branded sending subdomain in Klaviyo → Settings → Domains & Hosting, and
+check its CNAMEs resolve. Nothing resolves at `email.` / `send.` / `mail.` / `em.` /
+`marketing.` / `news.` / `klaviyo.` `.booktraverse.com` (checked against GoDaddy's own
+nameserver `ns52.domaincontrol.com`), so the live name is something else.
+
+Keep `DMARC p=reject` as-is — it protects the domain from spoofing and is not causing a
+problem.
 
 ---
 
@@ -200,48 +232,31 @@ so once the segments exist the rest is scriptable.
 
 ---
 
-## Domain authentication (blocking) — and an urgent finding
-
-Current DNS on `booktraverse.com`, checked 2026-08-10:
+## DNS reference (checked 2026-08-10)
 
 ```
 SPF    v=spf1 include:dc-aa8e722993._spfm.booktraverse.com ~all
 DMARC  v=DMARC1; p=reject; adkim=r; aspf=r; rua=...onsecureserver.net
-Klaviyo DKIM   ABSENT
 ```
 
-⚠️ **DMARC is `p=reject`.** Unauthenticated mail claiming to be from `booktraverse.com` is
-**rejected outright** by Gmail/Outlook/Yahoo — not spam-foldered. Klaviyo currently signs with
-`klaviyomail.com`, which fails DKIM alignment against the From address, so DMARC fails and the
-message is refused at the door.
-
-**This very likely explains the win-back campaign's results — check those bounce numbers
-before drawing any conclusion from that test.**
-
-**Setup:**
-1. Klaviyo → Settings → Domains & Hosting → **Branded Sending Domain**
-2. Use a **subdomain**: `email.booktraverse.com`. This isolates marketing reputation from the
-   root domain that carries Resend booking confirmations — if a campaign ever goes badly,
-   transactional mail is unaffected.
-3. Add the ~3 generated CNAMEs in GoDaddy DNS, then Verify in Klaviyo, then send a test.
-
-Because DMARC uses **relaxed alignment** (`adkim=r`), DKIM signed by `email.booktraverse.com`
-still aligns with a `hello@booktraverse.com` From address — so the From address stays as-is
-*and* we get subdomain reputation isolation.
-
-**Do not weaken DMARC to `p=none` to make sending work.** `p=reject` is protecting the domain
-from spoofing; authenticate properly instead.
+`p=reject` with **relaxed alignment** (`adkim=r`) means DKIM signed by any
+`*.booktraverse.com` subdomain still aligns with a `hello@booktraverse.com` From address — so
+the branded subdomain gives reputation isolation from the Resend transactional path while the
+From address stays unchanged. That is the correct setup and it is already working.
 
 ---
 
 ## Sequence
 
-1. Nadim authenticates `email.booktraverse.com` in Klaviyo ← **blocking**
+1. Confirm the branded sending subdomain name + that its CNAMEs resolve
 2. Decide the discount question
 3. Build market × recency segments in the Klaviyo UI
-4. Create the two market templates (variant A / variant B)
+4. Create the two market templates — **with real listings, prices and a date-filtered CTA**
+   (see the engagement finding above; this is the highest-leverage change)
 5. Send rung 1 (both markets), check gates at 24h, proceed down the ladder
 
 ## Housekeeping
-Test profiles still live in the account and should be deleted before any send:
-`ngtannous+kvtest1@gmail.com`, `ngtannous+kvtest3@gmail.com`, plus `+kvfix-old` / `+kvfix-new`.
+✅ **Done 2026-08-30** — the four test profiles (`ngtannous+kvtest1`, `+kvtest3`, `+kvfix-old`,
+`+kvfix-new`) were suppressed via bulk job `01M188Z8D95GXPN88R3PRSP937` (4/4, 0 skipped).
+Note the Klaviyo API has no true profile delete — suppression stops sends and is reversible;
+permanent deletion is UI-only or via a data-privacy request.
