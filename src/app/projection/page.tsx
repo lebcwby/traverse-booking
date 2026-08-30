@@ -37,10 +37,14 @@ const B2B_PHONE = { tel: "+19705333583", display: "(970) 533-3583" };
  *   three buildings      98
  *   all Crested Butte   102   <- what MT_CB_TOTAL rounds down from
  *
- * Grand Lodge is carried at 65 here on Alex/Nadim's figure. Guesty shows 62
- * live, so the other three are presumably managed but currently unlisted —
- * worth confirming, because the same +3 flows into the three-building total
- * below and that panel then reads 101 where Guesty supports 98.
+ * Grand Lodge is carried at 65, and that is DELIBERATE — do not "correct" it
+ * down to Guesty's 62. Three units are signed and mid-onboarding rather than
+ * live, and Alex/Nadim count them (2026-08-29), the same call made when the
+ * marketing copy went to "190+" with five in onboarding. The +3 flows into the
+ * three-building panel, which is why it reads 101 against Guesty's 98.
+ *
+ * Re-check once those three go live: if they do, the numbers converge and this
+ * note can go. If they don't, 65 and 101 both need to come down.
  *
  * There is NO tagging problem: all 62 live Grand Lodge units carry "The Grand
  * Lodge Crested Butte" and nothing at 6 Emmons Road is missing it. An earlier
