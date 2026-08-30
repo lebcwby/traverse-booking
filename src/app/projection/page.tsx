@@ -48,106 +48,41 @@ export const metadata: Metadata = {
 };
 
 /**
- * ⚠️ REPLACE THE SUBTOTAL AND CLEANING FIGURE BEFORE PROMOTING THIS PAGE ⚠️
+ * Three claims, kept deliberately top-level.
  *
- * The fee STRUCTURE below is real, supplied by Alex/Nadim 2026-08-28, and both
- * columns reconcile to the penny: guest = owner + manager + HOA + cleaner.
+ * This replaced a line-by-line owner-statement comparison. Two reasons it had
+ * to go. First, a fee table invites a fee argument, and it hands an owner
+ * something to take back to their current manager to be picked apart line by
+ * line — an argument we do not need to win to win the account. Second, it was
+ * fragile: the owner-net difference swung from $16 to $198 purely by changing
+ * the example week, because the HOA fee is charged per night while the
+ * commission difference is a percentage. Any owner trying their own week would
+ * have got a different answer to ours.
  *
- *   RESORT    40% management commission on the subtotal (net of OTA fees).
- *             Their cleaners are hourly and paid out of that commission, so no
- *             cleaning fee reaches the guest. A 15% "resort fee" is charged to
- *             the guest on top; $15 a night goes to the HOA and the manager
- *             retains the difference. Taxes and the association fee pass
- *             through. No OTA/processing fee on direct bookings.
- *   TRAVERSE  30% management commission on the subtotal (net of OTA fees).
- *             $15 a night is deducted from the subtotal and passed to the owner
- *             to remit to the HOA. Cleaning is charged to the guest above the
- *             subtotal and passed through at cost. Taxes and TCC pass through.
+ * RevPAR does the same job in one number and is much harder to argue with,
+ * because it is an outcome rather than a formula — it already contains both
+ * occupancy and rate.
  *
- * The week is a real quoted stay (Dec 23-27, LMS 2-bedroom) and our model of
- * their fee stack reproduces its published totals to the cent, so both columns
- * are defensible as they stand.
- *
- * ⚠️ The owner gap is sensitive to length of stay. The HOA fee is per NIGHT
- * while the commission difference is a percentage, so on this four-night stay
- * the owner is $198.32 better off, where a seven-night stay at a lower nightly
- * rate came out at only $16. Re-check the arithmetic before swapping the
- * example — a longer, cheaper week makes our column look much weaker.
- *
- * ⚠️ The competitor is never named on the page: it says "resort manager". Keep
- * it that way.
+ * ⚠️ The RevPAR figures are a point in time (August 2026). Date them, and
+ * refresh or remove them rather than letting them quietly go stale.
  */
-const PEAK_WEEK = {
-  label: "Dec 23–27 · The Lodge at Mountaineer Square, 2 bedroom · 4 nights",
-  /**
-   * Every figure is derived from a real resort checkout for this stay:
-   * $2,583.20 subtotal, $1,038.03 taxes and fees, $3,621.23 online total. Our
-   * model of their fee stack reproduces both totals to the cent — 15% resort
-   * fee, 3% association fee, 18.8% tax (county 6 + TOT 9.9 + state 2.9) — which
-   * is what makes the left-hand column something we can stand behind. $200 is
-   * the cleaning fee on all five of our 2-bedroom units in this building; it is
-   * not an average with a spread hiding inside it.
-   *
-   * Reads top-down as deductions, so it opens on what the guest actually hands
-   * over. It cannot open on the $2,583.20 stay figure: the resort fee and our
-   * cleaning fee are both charged to the guest ABOVE the stay, so subtracting
-   * them from it lands nowhere near the real owner nets. Every column still
-   * reconciles — guest = owner + manager + HOA + cleaner.
-   */
-  rows: [
-    {
-      line: "What your guest pays for the stay",
-      other: 2970.68,
-      ours: 2783.2,
-      note: "The same four nights in the same unit, quoted on each company's own terms, before taxes",
-      kind: "line",
-    },
-    {
-      line: "Resort fee charged to your guest",
-      other: -387.48,
-      ours: null,
-      note: "15% of the stay. $60 of it reaches the HOA — the manager keeps the other $327.48",
-      kind: "flag",
-    },
-    {
-      line: "HOA resort fee, from your side",
-      other: null,
-      ours: -60,
-      note: "The same $15 a night obligation. We take it out of the stay and pass it to you to remit; the resort programme funds theirs from the guest's resort fee and keeps the surplus",
-      kind: "line",
-    },
-    {
-      line: "Cleaning charged to your guest",
-      other: null,
-      ours: -200,
-      note: "Straight to the cleaner at cost. Resort-programme cleaners are hourly and paid from the commission instead, so nothing appears here",
-      kind: "line",
-    },
-    {
-      line: "Management commission",
-      other: -1033.28,
-      ours: -774.96,
-      note: "40% and 30% of the subtotal",
-      kind: "line",
-    },
-  ],
-  totals: {
-    owner: { label: "What reaches your account", other: 1549.92, ours: 1748.24 },
-    manager: { label: "What the manager keeps", other: 1360.76, ours: 774.96 },
+const HEADLINE_STATS = [
+  {
+    value: "+3.6%",
+    label: "Our RevPAR, August",
+    foot: "In a Crested Butte market that fell 10.8% over the same month. Same mountain, same weather, same guests deciding.",
   },
-};
-
-const money = (n: number) =>
-  `${n < 0 ? "−" : ""}$${Math.abs(n).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-
-const cell = (n: number | null) => (n === null ? "—" : money(n));
-
-/** What the guest keeps in their pocket on the same week — the honest headline. */
-const GUEST_SAVING =
-  (PEAK_WEEK.rows[0].other ?? 0) - (PEAK_WEEK.rows[0].ours ?? 0);
+  {
+    value: "30%",
+    label: "Our management commission",
+    foot: "Where 40% is the going rate for a resort programme at this base area.",
+  },
+  {
+    value: "4.8",
+    label: "Guest rating across 200+ homes",
+    foot: "The one part of service nobody can claim for themselves — guests decide it, stay by stay.",
+  },
+];
 
 /**
  * An incidentals scenario, because "we have a damage waiver" means nothing to
@@ -213,7 +148,7 @@ const reasons = [
   {
     icon: Receipt,
     title: "Fees you can actually account for",
-    body: "Our own staff fix what our own staff can fix, so maintenance reaches your statement only when something genuinely needed a trade. Cleaning is billed at what the clean costs, the HOA fee is passed to you at face value, and no resort fee is charged to your guest with a margin folded into it. Our commission is lower too, though part of that difference is cleaning we bill separately rather than bury — the point is that every line is one you can explain.",
+    body: "A lower commission, and every other line on your statement one you can explain. Our own staff fix what our own staff can fix, so maintenance appears only when something genuinely needed a trade. Cleaning is billed at what the clean costs. The HOA fee is passed through at face value, with no resort fee charged to your guest carrying a margin inside it.",
   },
 ];
 
@@ -244,7 +179,7 @@ const deliverables = [
   {
     icon: ListChecks,
     title: "What it would net you",
-    body: "The same stays run through our fee schedule, so the comparison is about what reaches your account rather than what appears at the top of the page.",
+    body: "Those same stays run through our fee schedule line by line, so the comparison is about what reaches your account rather than what appears at the top of a page. This is where the detail lives, on your unit rather than a worked example.",
   },
   {
     icon: ScrollText,
@@ -255,12 +190,12 @@ const deliverables = [
 
 const faqs = [
   {
-    q: "Are those comparison numbers real?",
-    a: "They are illustrative, and the page says so under the table. Their shape comes from statements owners have brought us and from our own fee schedule, but your unit, your weeks and your agreement will all differ. That is exactly why the projection is built for your building rather than pulled off a landing page — ask for it and you get your numbers instead of ours.",
+    q: "Where do the RevPAR figures come from?",
+    a: "Ours is our own portfolio across these markets, measured August against the same month last year. The market figure is the Crested Butte comparison set over the same period. It is one month rather than a trend, and we would rather show you the run of months for your own building than lean on a single good one.",
   },
   {
     q: "Isn't a lower commission just less service?",
-    a: "It would be if the rate were the only thing that changed. The reason we can charge less here is density: we run enough units in these buildings that the inspector is already in your building that morning and the team already covers those guests overnight. That is why we are cheaper in Crested Butte specifically, rather than everywhere.",
+    a: "It is the reasonable question, and it would be true if the rate were the only thing that changed. The reason we can charge less here is density: we run 88 condos across these three buildings, so the inspector is already in your building that morning and the team already covers those guests overnight. That is why we are cheaper in Crested Butte specifically rather than everywhere, and why the service goes up rather than down.",
   },
   {
     q: "Am I not locked into my current agreement?",
@@ -362,166 +297,79 @@ export default function ProjectionPage() {
         </div>
       </section>
 
-      {/* ── The comparison — the whole argument in one table ── */}
+      {/* ── The three claims ── */}
       <section className="proj-compare" id="compare">
         <div className="audit-shell">
-          <h2>One Christmas week, run two ways</h2>
+          <h2>Higher occupancy. Lower commission. You earn more.</h2>
           <p className="proj-compare-sub">
-            Identical stay, identical unit, both fee schedules as they actually
-            work. Every figure here is net of OTA fees, taxes and damage
-            waivers: those pass through on each side alike, so they cannot move
-            the outcome and only get in the way of seeing what does.
+            That is the whole of it. The interesting numbers are the ones
+            attached to your unit, and those are worth a conversation rather
+            than a landing page.
           </p>
-          <p className="proj-compare-stay">{PEAK_WEEK.label}</p>
 
-          <div
-            className="proj-table"
-            role="table"
-            aria-label="Owner statement comparison"
-          >
-            <div className="proj-tr proj-thead" role="row">
-              <span role="columnheader">On the statement</span>
-              <span role="columnheader">Resort manager</span>
-              <span role="columnheader" className="proj-ours">
-                With Traverse
-              </span>
-            </div>
-
-            {PEAK_WEEK.rows.map((r) => (
-              <div
-                className={`proj-tr proj-tr-${r.kind}`}
-                role="row"
-                key={r.line}
-              >
-                <span role="cell">
-                  <strong>{r.line}</strong>
-                  <small>{r.note}</small>
-                </span>
-                <span role="cell" className="proj-num">
-                  <span className="proj-collabel" aria-hidden="true">
-                    Resort manager
-                  </span>
-                  {cell(r.other)}
-                </span>
-                <span role="cell" className="proj-num proj-ours">
-                  <span className="proj-collabel" aria-hidden="true">
-                    Traverse
-                  </span>
-                  {cell(r.ours)}
-                </span>
-              </div>
+          <ul className="proj-stats">
+            {HEADLINE_STATS.map((s) => (
+              <li key={s.label}>
+                <strong>{s.value}</strong>
+                <span className="proj-stat-label">{s.label}</span>
+                <span className="proj-stat-foot">{s.foot}</span>
+              </li>
             ))}
-
-            {[PEAK_WEEK.totals.owner, PEAK_WEEK.totals.manager].map((t) => (
-              <div className="proj-tr proj-tfoot" role="row" key={t.label}>
-                <span role="cell">
-                  <strong>{t.label}</strong>
-                </span>
-                <span role="cell" className="proj-num">
-                  <span className="proj-collabel" aria-hidden="true">
-                    Resort manager
-                  </span>
-                  {money(t.other)}
-                </span>
-                <span role="cell" className="proj-num proj-ours">
-                  <span className="proj-collabel" aria-hidden="true">
-                    Traverse
-                  </span>
-                  {money(t.ours)}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* The whole point of the table, stated plainly. It was previously
-              one sentence under a wall of figures and read as an afterthought.
-              The owner-net tile is included even though it is the weakest of
-              the three: leaving it out invites the reader to work it out and
-              wonder why we hid it. */}
-          <ul className="proj-deltas">
-            <li className="proj-delta-lead">
-              <strong>{money(GUEST_SAVING)}</strong>
-              <span>less out of your guest&apos;s pocket</span>
-            </li>
-            <li>
-              <strong>
-                {money(
-                  PEAK_WEEK.totals.owner.ours - PEAK_WEEK.totals.owner.other
-                )}
-              </strong>
-              <span>more reaching your account</span>
-            </li>
-            <li className="proj-delta-lead">
-              <strong>
-                {money(
-                  PEAK_WEEK.totals.manager.other -
-                    PEAK_WEEK.totals.manager.ours
-                )}
-              </strong>
-              <span>less taken by the manager</span>
-            </li>
           </ul>
-          <p className="proj-delta-note">
-            The week is worth about the same to you either way. What changes is
-            that your guest is charged {money(GUEST_SAVING)} less to book it —
-            we are not built to earn more per stay, we are built to fill more of
-            them.
-          </p>
 
-          <p className="proj-illustrative">
-            Both columns come from a real quote for these dates: a $2,583.20
-            stay, $1,038.03 in taxes and fees, $3,621.23 online. $200 is what a
-            two-bedroom clean costs in this building. In fairness to the
-            comparison, resort-programme cleaners are hourly and paid out of the
-            commission — so part of that $1,360.76 is cleaning we bill your
-            guest for separately rather than bury. Your unit, your weeks and
-            your agreement will all differ, which is why the projection we send
-            is built from your building rather than from this table.
+          <p className="proj-delta-note">
+            A unit that books more nights at a better rate, with less taken out
+            of each one, is worth more to you at the end of the season. We would
+            rather show you what that looks like for your condo than argue about
+            percentages in the abstract.
           </p>
         </div>
       </section>
 
-      {/* ── Self-check, pointed at the artifact they already hold ── */}
+      {/* ── Self-check ──
+           Repointed away from statement line items when the fee comparison
+           came out. Line-by-line questions are a conversation to have with an
+           owner, not to start on a landing page — and this version lands the
+           visibility point instead, which is the one nobody has an answer to. */}
       <section className="proj-check" aria-labelledby="check-h">
         <div className="audit-shell">
           <h2 id="check-h">
-            Don&apos;t take our word for it. Open your last statement.
+            Don&apos;t take our word for it. Try answering three questions.
           </h2>
           <ol className="proj-check-steps">
             <li>
               <span className="proj-check-n">1</span>
               <p>
-                Find a <strong>peak week</strong> — Presidents&apos;,
-                Christmas, Spring Break. Somewhere the unit was full at the top
-                rate.
+                Without opening a statement, what is{" "}
+                <strong>on your calendar for February</strong>?
               </p>
             </li>
             <li>
               <span className="proj-check-n">2</span>
               <p>
-                Work down it. <strong>The commission percentage</strong>, any
-                resort or admin fee, and what the cleaning was billed at.
+                What did your unit <strong>earn last month</strong>, and how
+                does that compare with the one down the hall?
               </p>
             </li>
             <li>
               <span className="proj-check-n">3</span>
               <p>
-                Now compare <strong>the top line with the bottom line</strong>.
-                That gap is the part nobody sends you a second opinion on.
+                When something last broke,{" "}
+                <strong>how did you find out</strong> — and how long after?
               </p>
             </li>
           </ol>
           <p className="proj-check-foot">
-            If you can explain every line on it, you are in good shape. Most
-            owners find at least one they can&apos;t.
+            If you can answer all three, you are being looked after. Most owners
+            we speak to cannot answer any of them.
           </p>
         </div>
       </section>
 
-      {/* ── Why the bottom lines differ ── */}
+      {/* ── Why owners move ── */}
       <section className="audit-band" id="why">
         <div className="audit-shell">
-          <h2>Why the two columns differ</h2>
+          <h2>What the difference actually is</h2>
           <p className="audit-sub">
             Six things, and only one of them is the commission rate.
           </p>
@@ -627,7 +475,7 @@ export default function ProjectionPage() {
       <section className="audit-midcta">
         <div className="audit-shell audit-midcta-inner">
           <div>
-            <h2>See your version of that table</h2>
+            <h2>See the numbers for your condo</h2>
             <p>Your building and your unit size. That&apos;s the whole ask.</p>
           </div>
           <ProjectionLeadForm id="projection-mid" source="mid" compact />
