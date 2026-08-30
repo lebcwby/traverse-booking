@@ -53,77 +53,87 @@ export const metadata: Metadata = {
  * The fee STRUCTURE below is real, supplied by Alex/Nadim 2026-08-28, and both
  * columns reconcile to the penny: guest = owner + manager + HOA + cleaner.
  *
- *   CBMR      40% management commission on the subtotal (net of OTA fees).
+ *   RESORT    40% management commission on the subtotal (net of OTA fees).
  *             Their cleaners are hourly and paid out of that commission, so no
  *             cleaning fee reaches the guest. A 15% "resort fee" is charged to
  *             the guest on top; $15 a night goes to the HOA and the manager
- *             retains the difference. Taxes and the TCC fee pass through.
- *             They do NOT levy an OTA/processing fee on direct bookings.
+ *             retains the difference. Taxes and the association fee pass
+ *             through. No OTA/processing fee on direct bookings.
  *   TRAVERSE  30% management commission on the subtotal (net of OTA fees).
  *             $15 a night is deducted from the subtotal and passed to the owner
  *             to remit to the HOA. Cleaning is charged to the guest above the
  *             subtotal and passed through at cost. Taxes and TCC pass through.
  *
- * What is illustrative is the WEEK: $1,210 comes from a real CBMR checkout for
- * a Grand Lodge stay, and $110 is the average cleaning fee across our 1-bedroom
- * Grand Lodge units (range $65-150; 2-bedrooms average $157). Swap both for a
- * real quoted week before this is advertised.
+ * The week is a real quoted stay (Dec 23-27, LMS 2-bedroom) and our model of
+ * their fee stack reproduces its published totals to the cent, so both columns
+ * are defensible as they stand.
  *
- * ⚠️ Do not re-headline this on owner net. At the same subtotal the owner
- * difference is only +$16, because our 10-point commission advantage is very
- * nearly cancelled by the HOA fee our structure has the owner absorb and theirs
- * has the guest pay. The honest arguments are what the GUEST pays and what the
- * MANAGER keeps. Inflating it invites a rebuttal we would lose.
+ * ⚠️ The owner gap is sensitive to length of stay. The HOA fee is per NIGHT
+ * while the commission difference is a percentage, so on this four-night stay
+ * the owner is $198.32 better off, where a seven-night stay at a lower nightly
+ * rate came out at only $16. Re-check the arithmetic before swapping the
+ * example — a longer, cheaper week makes our column look much weaker.
+ *
+ * ⚠️ The competitor is never named on the page: it says "resort manager". Keep
+ * it that way.
  */
 const PEAK_WEEK = {
-  label: "Dec 20–27 · Grand Lodge, 1 bedroom · 7 nights",
+  label: "Dec 23–27 · The Lodge at Mountaineer Square, 2 bedroom · 4 nights",
   /**
+   * Every figure is derived from a real resort checkout for this stay:
+   * $2,583.20 subtotal, $1,038.03 taxes and fees, $3,621.23 online total. Our
+   * model of their fee stack reproduces both totals to the cent — 15% resort
+   * fee, 3% association fee, 18.8% tax (county 6 + TOT 9.9 + state 2.9) — which
+   * is what makes the left-hand column something we can stand behind. $200 is
+   * the cleaning fee on all five of our 2-bedroom units in this building; it is
+   * not an average with a spread hiding inside it.
+   *
    * Reads top-down as deductions, so it opens on what the guest actually hands
-   * over. It cannot open on the $1,210 stay figure: CBMR's resort fee and our
+   * over. It cannot open on the $2,583.20 stay figure: the resort fee and our
    * cleaning fee are both charged to the guest ABOVE the stay, so subtracting
-   * them from $1,210 lands at $544.50 and $632 instead of $726 and $742. Every
-   * column still reconciles — guest = owner + manager + HOA + cleaner.
+   * them from it lands nowhere near the real owner nets. Every column still
+   * reconciles — guest = owner + manager + HOA + cleaner.
    */
   rows: [
     {
-      line: "What your guest pays for the week",
-      other: 1391.5,
-      ours: 1320,
-      note: "The same stay in the same unit, quoted on each company's own terms",
+      line: "What your guest pays for the stay",
+      other: 2970.68,
+      ours: 2783.2,
+      note: "The same four nights in the same unit, quoted on each company's own terms, before taxes",
       kind: "line",
     },
     {
       line: "Resort fee charged to your guest",
-      other: -181.5,
+      other: -387.48,
       ours: null,
-      note: "15% of the stay. $105 of it reaches the HOA — the manager keeps the other $76.50",
+      note: "15% of the stay. $60 of it reaches the HOA — the manager keeps the other $327.48",
       kind: "flag",
     },
     {
       line: "HOA resort fee, from your side",
       other: null,
-      ours: -105,
-      note: "The same $15 a night obligation. We take it out of the stay and pass it to you to remit; CBMR funds theirs from the guest's resort fee and keeps the surplus",
+      ours: -60,
+      note: "The same $15 a night obligation. We take it out of the stay and pass it to you to remit; the resort programme funds theirs from the guest's resort fee and keeps the surplus",
       kind: "line",
     },
     {
       line: "Cleaning charged to your guest",
       other: null,
-      ours: -110,
-      note: "Straight to the cleaner at cost. CBMR's cleaners are hourly and paid from their commission instead, so nothing appears here",
+      ours: -200,
+      note: "Straight to the cleaner at cost. Resort-programme cleaners are hourly and paid from the commission instead, so nothing appears here",
       kind: "line",
     },
     {
       line: "Management commission",
-      other: -484,
-      ours: -363,
+      other: -1033.28,
+      ours: -774.96,
       note: "40% and 30% of the subtotal",
       kind: "line",
     },
   ],
   totals: {
-    owner: { label: "What reaches your account", other: 726, ours: 742 },
-    manager: { label: "What the manager keeps", other: 560.5, ours: 363 },
+    owner: { label: "What reaches your account", other: 1549.92, ours: 1748.24 },
+    manager: { label: "What the manager keeps", other: 1360.76, ours: 774.96 },
   },
 };
 
@@ -178,17 +188,17 @@ const reasons = [
   {
     icon: TrendingUp,
     title: "Wider distribution, and pricing that moves",
-    body: "More places selling the unit, and rates that respond to how the mountain is actually booking rather than sitting where they were set in October. That lifts the top line before a single fee is deducted — the one part of a statement that helps every line below it.",
+    body: "More places selling the unit, and rates that respond to how the mountain is actually booking rather than sitting where they were set in October. In August our RevPAR was up 3.6% year over year while the Crested Butte market fell 10.8% — a fourteen-point swing, and it lands on the top line before a single fee is deducted, which is the one part of a statement that helps every line below it.",
   },
   {
     icon: CalendarCheck,
     title: "You can see your bookings as they happen",
-    body: "Log in and look — every reservation on your calendar the moment it is made, with what it is worth. CBMR allocates nights through block bookings, so what actually happened to your unit arrives with the owner statement at the end of the month. A calendar you can only read in arrears is not one you can plan a season around, or use your own home from.",
+    body: "Log in and look — every reservation on your calendar the moment it is made, with what it is worth. Resort programmes allocate nights through block bookings, so what actually happened to your unit arrives with the owner statement at the end of the month. A calendar you can only read in arrears is not one you can plan a season around, or use your own home from.",
   },
   {
     icon: ShieldCheck,
     title: "You hear about damage the day it happens",
-    body: "A broken dresser gets photographed at the inspection and you are told that afternoon — along with whether we are charging the guest for it or covering it from the damage waiver. CBMR runs no damage waiver for incidentals, so that kind of thing surfaces as a line on a statement weeks later, by which point nobody can do anything about it.",
+    body: "A broken dresser gets photographed at the inspection and you are told that afternoon — along with whether we are charging the guest for it or covering it from the damage waiver. Resort programmes here run no damage waiver for incidentals, so that kind of thing surfaces as a line on a statement weeks later, by which point nobody can do anything about it.",
   },
   {
     icon: MessageCircle,
@@ -371,7 +381,7 @@ export default function ProjectionPage() {
           >
             <div className="proj-tr proj-thead" role="row">
               <span role="columnheader">On the statement</span>
-              <span role="columnheader">CBMR</span>
+              <span role="columnheader">Resort manager</span>
               <span role="columnheader" className="proj-ours">
                 With Traverse
               </span>
@@ -389,7 +399,7 @@ export default function ProjectionPage() {
                 </span>
                 <span role="cell" className="proj-num">
                   <span className="proj-collabel" aria-hidden="true">
-                    CBMR
+                    Resort manager
                   </span>
                   {cell(r.other)}
                 </span>
@@ -409,7 +419,7 @@ export default function ProjectionPage() {
                 </span>
                 <span role="cell" className="proj-num">
                   <span className="proj-collabel" aria-hidden="true">
-                    CBMR
+                    Resort manager
                   </span>
                   {money(t.other)}
                 </span>
@@ -459,14 +469,14 @@ export default function ProjectionPage() {
           </p>
 
           <p className="proj-illustrative">
-            The fee structures are real; the week is an example. $1,210 is a
-            quoted Grand Lodge stay and $110 is what a one-bedroom clean costs
-            here. In fairness to the comparison, CBMR&apos;s cleaners are hourly
-            and paid out of their commission — so roughly $110 of their $560.50
-            is cleaning we bill your guest for separately, which makes the
-            like-for-like gap nearer $88. Your unit, your weeks and your
-            agreement will all differ, which is why the projection we send is
-            built from your building rather than from this table.
+            Both columns come from a real quote for these dates: a $2,583.20
+            stay, $1,038.03 in taxes and fees, $3,621.23 online. $200 is what a
+            two-bedroom clean costs in this building. In fairness to the
+            comparison, resort-programme cleaners are hourly and paid out of the
+            commission — so part of that $1,360.76 is cleaning we bill your
+            guest for separately rather than bury. Your unit, your weeks and
+            your agreement will all differ, which is why the projection we send
+            is built from your building rather than from this table.
           </p>
         </div>
       </section>
@@ -550,7 +560,7 @@ export default function ProjectionPage() {
                 <h3>{b.beat}</h3>
                 <div className="proj-beat-pair">
                   <div className="proj-beat proj-beat-other">
-                    <span>CBMR</span>
+                    <span>Resort manager</span>
                     <p>{b.other}</p>
                   </div>
                   <div className="proj-beat proj-beat-ours">
@@ -701,8 +711,7 @@ export default function ProjectionPage() {
             short-term rental management · Crested Butte · Leadville · Vail
             · Avon · Granby · Twin Lakes. Comparison figures are
             illustrative. Projections are estimates based on comparable units and
-            are not a guarantee of future earnings. Traverse Hospitality is not
-            affiliated with Crested Butte Mountain Resort or Vail Resorts.
+            are not a guarantee of future earnings.
           </p>
         </div>
       </footer>
