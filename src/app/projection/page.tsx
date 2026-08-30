@@ -26,13 +26,21 @@ import "./projection.css";
 const B2B_PHONE = { tel: "+19705333583", display: "(970) 533-3583" };
 
 /**
- * Unit counts are the real, current figures from the listings mirror
- * (2026-08-26). "We manage 88 condos in your building" is the page's core
- * credibility claim, so re-check the listings table before editing.
+ * Grand Lodge is 65 per Alex/Nadim (2026-08-29). The listings mirror only tags
+ * 61 of them, so four units are missing the "The Grand Lodge Crested Butte"
+ * BEAPI tag — worth fixing at source, because the building pages on the main
+ * site filter on that tag and those four are invisible there.
+ *
+ * These counts are the page's core credibility claim, so re-check before
+ * editing. The mirror puts the whole Crested Butte portfolio at 101, which is
+ * what MT_CB_TOTAL rounds down to.
  */
-const OUR_UNITS = { grandLodge: 52, mountaineerSquare: 16, plaza: 20 };
+const OUR_UNITS = { grandLodge: 65, mountaineerSquare: 16, plaza: 20 };
 const BASE_AREA_TOTAL =
   OUR_UNITS.grandLodge + OUR_UNITS.mountaineerSquare + OUR_UNITS.plaza;
+
+/** Rounded down from the 101 the mirror holds, so it can never overstate. */
+const MT_CB_TOTAL = "100+";
 
 export const metadata: Metadata = {
   title: "What Should Your Crested Butte Condo Be Earning?",
@@ -42,7 +50,7 @@ export const metadata: Metadata = {
   openGraph: {
     title:
       "What Should Your Crested Butte Condo Be Earning? | Traverse Hospitality",
-    description: `Still paying 40-50% to your property manager? We manage ${BASE_AREA_TOTAL} condos at the Mt. Crested Butte base. See what units like yours actually earned.`,
+    description: `Still paying 40-50% to your property manager? We manage ${MT_CB_TOTAL} condos in Mt Crested Butte. See what units like yours actually earned.`,
     url: "https://projection.booktraverse.com",
   },
 };
@@ -68,9 +76,12 @@ export const metadata: Metadata = {
  */
 const HEADLINE_STATS = [
   {
-    value: "+3.6%",
-    label: "Our RevPAR, August",
-    foot: "In a Crested Butte market that fell 10.8% over the same month. Same mountain, same weather, same guests deciding.",
+    // The headline is the GAP, which is what an owner cares about, and it is
+    // 14.4 points rather than 14.4% growth — hence "ahead of the market"
+    // rather than a bare percentage, with both components spelled out below.
+    value: "+14.4%",
+    label: "Ahead of the market, August",
+    foot: "Revenue per unit rose 3.6% for us over the month, while the Crested Butte market fell 10.8%. Same mountain, same weather, same guests deciding.",
   },
   {
     value: "30%",
@@ -123,7 +134,7 @@ const reasons = [
   {
     icon: TrendingUp,
     title: "Wider distribution, and pricing that moves",
-    body: "More places selling the unit, and rates that respond to how the mountain is actually booking rather than sitting where they were set in October. In August our RevPAR was up 3.6% year over year while the Crested Butte market fell 10.8% — a fourteen-point swing, and it lands on the top line before a single fee is deducted, which is the one part of a statement that helps every line below it.",
+    body: "More places selling the unit, and rates that respond to how the mountain is actually booking rather than sitting where they were set in October. In August we finished 14.4 points ahead of the Crested Butte market — up 3.6% per unit while the market fell 10.8% — and that lands on the top line before a single fee is deducted, which is the one part of a statement that helps every line below it.",
   },
   {
     icon: CalendarCheck,
@@ -267,14 +278,14 @@ export default function ProjectionPage() {
             </h1>
             <p className="audit-lede">
               Then it is worth re-evaluating what your listing is actually
-              doing. We manage {BASE_AREA_TOTAL}{" "}
-              condos at this base area — tell us your building and we&apos;ll
+              doing. We manage {MT_CB_TOTAL}{" "}
+              condos in Mt Crested Butte — tell us your building and we&apos;ll
               show you what units like yours earned last year, and what they
               would earn with us.
             </p>
             <ul className="audit-trust">
               <li>
-                <strong>{BASE_AREA_TOTAL}</strong> condos at the base
+                <strong>{MT_CB_TOTAL}</strong> condos in Mt Crested Butte
               </li>
               <li>
                 <strong>200+</strong> homes managed
