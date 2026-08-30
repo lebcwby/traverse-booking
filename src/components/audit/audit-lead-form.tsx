@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { SmsConsent } from "@/components/legal/sms-consent";
 
 /**
  * Two-step listing-audit capture.
@@ -59,7 +60,10 @@ export function AuditLeadForm({
           email: fd.get("email") || "",
           phone: fd.get("phone") || "",
           zipcode: fd.get("zipcode") || "",
-          consent: fd.get("consent") === "on",
+          // Implied by submitting a form that asks us to email them.
+          consent: true,
+          smsNotifications: fd.get("smsNotifications") === "on",
+          smsMarketing: fd.get("smsMarketing") === "on",
           company: fd.get("company") || "",
           page: source,
           // HubSpot's visitor token. Set by the tracking script we load
@@ -201,13 +205,17 @@ export function AuditLeadForm({
         <input id={`${id}-company`} name="company" tabIndex={-1} autoComplete="off" />
       </div>
 
-      <label className="audit-consent">
-        <input type="checkbox" name="consent" required />
-        <span>
-          Email me my listing audit. We&apos;ll only use your details to send
-          the audit and follow up once — no lists, no spam.
-        </span>
-      </label>
+      {/* The email basis is the request itself — they are asking us to send
+          them an audit — so this is a statement rather than a required tick.
+          A required consent checkbox of any kind is an A2P rejection reason,
+          and a carrier reviewing the form will not stop to work out that this
+          particular one was about email. */}
+      <p className="audit-consent-note">
+        Submitting this asks us to email you the audit. We&apos;ll use your
+        details for that and follow up once — no lists, no spam.
+      </p>
+
+      <SmsConsent id={id} />
 
       <button type="submit" className="audit-btn audit-btn-full" disabled={submitting}>
         {submitting ? (

@@ -31,6 +31,9 @@ interface Payload {
   phone?: string;
   zipcode?: string;
   consent?: boolean;
+  /** A2P 10DLC: recorded separately, and neither is required to submit. */
+  smsNotifications?: boolean;
+  smsMarketing?: boolean;
   /** Honeypot — real users never see or fill this. */
   company?: string;
   page?: string;
@@ -153,6 +156,8 @@ export async function POST(request: Request) {
   const email = str(body.email, 160).toLowerCase();
   const phone = str(body.phone, 40);
   const zipcode = str(body.zipcode, 20);
+  const smsNotifications = body.smsNotifications === true;
+  const smsMarketing = body.smsMarketing === true;
   const page = str(body.page, 120) || "audit";
 
   if (!airbnbUrl || !firstName || !email) {
@@ -218,6 +223,12 @@ export async function POST(request: Request) {
         ["Zip / postal", zipcode || "(not given)"],
         ["Listing", airbnbUrl],
         ["Submitted from", page],
+        [
+          "SMS consent",
+          phone
+            ? `notifications: ${smsNotifications ? "YES" : "no"} · marketing: ${smsMarketing ? "YES" : "no"}`
+            : "(no phone given)",
+        ],
         [
           "HubSpot",
           hubspot.ok

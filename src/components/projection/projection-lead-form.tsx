@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { SmsConsent } from "@/components/legal/sms-consent";
 
 /**
  * Revenue-projection capture (projection.booktraverse.com).
@@ -81,7 +82,10 @@ export function ProjectionLeadForm({
           email: fd.get("email") || "",
           phone: fd.get("phone") || "",
           currentManager: fd.get("currentManager") || "",
-          consent: fd.get("consent") === "on",
+          // Implied by submitting a form that asks us to email them.
+          consent: true,
+          smsNotifications: fd.get("smsNotifications") === "on",
+          smsMarketing: fd.get("smsMarketing") === "on",
           company: fd.get("company") || "",
           page: source,
           // Same HubSpot visitor token the audit form passes — it's what ties
@@ -254,13 +258,15 @@ export function ProjectionLeadForm({
         />
       </div>
 
-      <label className="audit-consent">
-        <input type="checkbox" name="consent" required />
-        <span>
-          Email me my projection. We&apos;ll only use your details to send it
-          and follow up once — no lists, no spam.
-        </span>
-      </label>
+      {/* See the note in audit-lead-form: a required consent checkbox of any
+          kind is an A2P rejection reason, so the email basis is the request
+          itself rather than a tick. */}
+      <p className="audit-consent-note">
+        Submitting this asks us to email you the projection. We&apos;ll use your
+        details for that and follow up once — no lists, no spam.
+      </p>
+
+      <SmsConsent id={id} />
 
       <button
         type="submit"

@@ -34,6 +34,9 @@ interface Payload {
   phone?: string;
   currentManager?: string;
   consent?: boolean;
+  /** A2P 10DLC: recorded separately, and neither is required to submit. */
+  smsNotifications?: boolean;
+  smsMarketing?: boolean;
   /** Honeypot — real users never see or fill this. */
   company?: string;
   page?: string;
@@ -156,6 +159,8 @@ export async function POST(request: Request) {
   const email = str(body.email, 160).toLowerCase();
   const phone = str(body.phone, 40);
   const currentManager = str(body.currentManager, 120);
+  const smsNotifications = body.smsNotifications === true;
+  const smsMarketing = body.smsMarketing === true;
   const page = str(body.page, 120) || "projection";
 
   if (!firstName || !email || !building) {
@@ -213,6 +218,12 @@ export async function POST(request: Request) {
         ["Unit size", unitType || "(not given)"],
         ["Managed today by", currentManager || "(not given)"],
         ["Submitted from", page],
+        [
+          "SMS consent",
+          phone
+            ? `notifications: ${smsNotifications ? "YES" : "no"} · marketing: ${smsMarketing ? "YES" : "no"}`
+            : "(no phone given)",
+        ],
         [
           "HubSpot",
           hubspot.ok

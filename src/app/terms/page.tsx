@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { TrackedContactLink } from "@/components/analytics/tracked-contact-link";
 
 export const metadata: Metadata = {
@@ -118,9 +119,69 @@ export default function TermsPage() {
           </p>
         </section>
 
+        {/* Required for A2P 10DLC / TCPA registration. Carriers check the
+            Terms for four things specifically: who is texting and why,
+            STOP/HELP instructions, a carrier liability disclaimer, and message
+            frequency plus rates — with a link to the Privacy Policy. All four
+            are below; do not thin this section out.
+            (A2P Compliance Guide, April 2026, Step 6.) */}
         <section>
           <h2 className="text-lg font-semibold text-foreground">
-            9. Governing Law
+            9. SMS &amp; Text Messaging
+          </h2>
+          <p className="mt-2">
+            Traverse Hospitality manages short-term rental properties in
+            Colorado. If you give us your mobile number and tick the relevant
+            box, we may text you about your enquiry, your reservation or your
+            property — for example confirmations, arrival details, appointment
+            reminders and replies to questions you have asked us. Ticking the
+            separate marketing box also allows us to send occasional offers and
+            announcements.
+          </p>
+          <p className="mt-3">
+            Consent is optional and is never a condition of booking or of any
+            purchase. Notification and marketing consents are collected
+            separately, and neither is ticked for you.
+          </p>
+          <p className="mt-3">
+            <strong className="text-foreground">Stopping messages.</strong> You
+            can cancel SMS messages at any time by replying{" "}
+            <strong className="text-foreground">STOP</strong>. We will confirm
+            your unsubscription and you will not receive further messages. To
+            re-subscribe, simply sign up again. For help, reply{" "}
+            <strong className="text-foreground">HELP</strong> or contact us at{" "}
+            <TrackedContactLink
+              href="mailto:bookings@traversehospitality.com"
+              className="text-primary hover:underline"
+            >
+              bookings@traversehospitality.com
+            </TrackedContactLink>
+            .
+          </p>
+          <p className="mt-3">
+            <strong className="text-foreground">
+              Message frequency and rates.
+            </strong>{" "}
+            Message and data rates may apply. Message frequency varies. You are
+            responsible for any messaging or data fees charged by your carrier.
+          </p>
+          <p className="mt-3">
+            <strong className="text-foreground">Carriers.</strong> Carriers are
+            not liable for delayed or undelivered messages.
+          </p>
+          <p className="mt-3">
+            <strong className="text-foreground">Privacy.</strong> For
+            privacy-related questions, please review our{" "}
+            <Link href="/privacy" className="text-primary hover:underline">
+              Privacy Policy
+            </Link>
+            .
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold text-foreground">
+            10. Governing Law
           </h2>
           <p className="mt-2">
             These terms shall be governed by and construed in accordance with
@@ -130,7 +191,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-foreground">10. Contact</h2>
+          <h2 className="text-lg font-semibold text-foreground">11. Contact</h2>
           <p className="mt-2">
             If you have any questions about these terms, please contact us at{" "}
             <TrackedContactLink

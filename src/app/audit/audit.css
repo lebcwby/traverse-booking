@@ -486,6 +486,46 @@ body:has(.audit-page) > main {
   accent-color: var(--a-blue);
 }
 
+/* ── A2P 10DLC consent block ──────────────────────────────────────────────
+   Both checkboxes have to sit next to the phone field and read clearly, and
+   the Privacy/Terms links must be visible before submit rather than hidden in
+   small print — carriers check for exactly that. Keep the links at a readable
+   size; shrinking them to fit is what gets flagged. */
+.audit-sms {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.audit-legal-links {
+  margin: 2px 0 0 !important;
+  font-size: 12.5px !important;
+  line-height: 1.5;
+  color: var(--a-muted) !important;
+}
+
+.audit-legal-links a {
+  color: var(--a-blue);
+  text-decoration: underline;
+}
+
+.audit-consent-note {
+  margin: 0 !important;
+  font-size: 13px !important;
+  line-height: 1.5;
+  color: var(--a-muted) !important;
+}
+
+/* The dark footer card needs the block to stay legible on navy. */
+.audit-formcard-dark .audit-sms {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
 .audit-hp {
   position: absolute;
   left: -9999px;

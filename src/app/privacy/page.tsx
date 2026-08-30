@@ -78,17 +78,54 @@ export default function PrivacyPage() {
             </li>
             <li>Legal authorities when required by law</li>
           </ul>
+          {/* Verbatim wording required for A2P 10DLC / TCPA registration —
+              carriers check for this exact sentence and reject on a paraphrase.
+              Do not reword. (A2P Compliance Guide, April 2026, Step 5.) */}
           <p className="mt-3">
-            <strong className="text-foreground">Text messaging opt-in data and consent:</strong>{" "}
-            Text messaging originator opt-in data and consent will not be shared
-            with any third parties, excluding aggregators and providers of the
-            Text Message services.
+            <strong className="text-foreground">
+              Text messaging opt-in data and consent:
+            </strong>{" "}
+            No mobile information will be shared with third parties/affiliates
+            for marketing/promotional purposes. Information sharing to
+            subcontractors in support services, such as customer service, is
+            permitted. All other use case categories exclude text messaging
+            originator opt-in data and consent; this information will not be
+            shared with any third parties.
           </p>
         </section>
 
         <section>
           <h2 className="text-lg font-semibold text-foreground">
-            4. Cookies & Tracking
+            4. SMS &amp; Text Messaging
+          </h2>
+          <p className="mt-2">
+            Giving us your mobile number is always optional, and we ask for it
+            separately from anything else on a form. If you tick the relevant
+            box, you consent to receive text messages from Traverse Hospitality
+            about your enquiry, your booking or your property.
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            <li>
+              Notifications and alerts, and marketing messages, are separate
+              consents. Ticking one does not opt you into the other.
+            </li>
+            <li>Message frequency varies. Message and data rates may apply.</li>
+            <li>
+              Reply <strong className="text-foreground">STOP</strong> to any
+              message to unsubscribe, or{" "}
+              <strong className="text-foreground">HELP</strong> for assistance.
+              You can also call us on (970) 533-3583.
+            </li>
+            <li>
+              Consent to receive text messages is never a condition of booking
+              with us or of any purchase.
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold text-foreground">
+            5. Cookies &amp; Tracking
           </h2>
           <p className="mt-2">
             Our website uses cookies and similar technologies to enhance your
@@ -101,7 +138,7 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="text-lg font-semibold text-foreground">
-            5. Data Security
+            6. Data Security
           </h2>
           <p className="mt-2">
             We implement reasonable technical and organizational measures to
@@ -113,7 +150,7 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="text-lg font-semibold text-foreground">
-            6. Data Retention
+            7. Data Retention
           </h2>
           <p className="mt-2">
             We retain your personal information for as long as necessary to
@@ -125,7 +162,7 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="text-lg font-semibold text-foreground">
-            7. Your Rights
+            8. Your Rights
           </h2>
           <p className="mt-2">
             You have the right to access, correct, or request deletion of your
@@ -144,7 +181,7 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="text-lg font-semibold text-foreground">
-            8. Children&apos;s Privacy
+            9. Children&apos;s Privacy
           </h2>
           <p className="mt-2">
             Our services are not directed to individuals under the age of 18. We
@@ -154,7 +191,7 @@ export default function PrivacyPage() {
 
         <section>
           <h2 className="text-lg font-semibold text-foreground">
-            9. Changes to This Policy
+            10. Changes to This Policy
           </h2>
           <p className="mt-2">
             We may update this Privacy Policy from time to time. Changes will be
@@ -165,7 +202,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-foreground">10. Contact</h2>
+          <h2 className="text-lg font-semibold text-foreground">11. Contact</h2>
           <p className="mt-2">
             If you have questions about this Privacy Policy or how we handle
             your data, please contact us at{" "}
