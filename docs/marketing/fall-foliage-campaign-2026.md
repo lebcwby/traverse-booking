@@ -288,6 +288,44 @@ so once the segments exist the rest is scriptable.
 
 ---
 
+## 🚀 Rung 1 — READY TO SEND (built 2026-08-30)
+
+| Market | Campaign ID | Segment | Size |
+|---|---|---|---|
+| Leadville | `01M1AF4KNWNJA02RP3SN6PJV30` | `Tc8KQF` | **611** |
+| Crested Butte | `01M1AF5B8S9VGEDEX50VRG3W35` | `VfYUuX` | **265** |
+
+Both Draft, templates attached, UTM tracking on. **876 total.**
+
+### Targeting: the anniversary cohort, not recent stayers
+Nadim's call, and the data backs it. Repeat-booking intervals spike hard at **360–374 days**
+(174 bookings, ~4× the neighbouring buckets); by 390+ it's back to baseline. So rung 1 targets
+`guesty_last_stay` between **Aug 5 and Sep 19, 2025** — 345–389 days ago.
+
+Two things align there: it's the anniversary rebooking window *and* those guests stayed in
+late summer / early autumn last year, so they already like Colorado at this exact time of year.
+
+**The original recency-first ladder was wrong.** Its premise was that fresher addresses
+deliver better — but the win-back went to a 360–540-day cohort and got **99.1% delivery, 0
+spam complaints, 67.5% opens**. Year-old addresses on this list are fine, so ordering by
+intent beats ordering by recency.
+
+Revised ladder: 345–389d → 300–450d → 180–540d → everything else.
+
+### ⚠️ Two Klaviyo segment traps (both bit us)
+1. **Conditions stacked in ONE block are OR'd; separate blocks are AND'd.** Both date rules
+   in one block gave `after Aug 4 OR before Sep 20` = everyone → 9,695 of 12,954 Leadville
+   profiles. It looks like a working segment. Always sanity-check the count against expected
+   population size.
+2. **`guesty_next_checkin` is never cleared.** The sync writes it only when a future check-in
+   exists (`...(g.nextCheckIn ? {...} : {})`) and never nulls it, so stale past dates persist
+   forever. `is not set` alone therefore excludes anyone who *ever* had a booking — 450 → 103.
+   The rule must be `is not set` **OR** `before today`.
+   → **Fix worth making:** have the sync write `guesty_next_checkin: null` when absent. Also
+   means the **Win-Back Tier 1 segment is under-counting** (it uses `not-set` alone).
+
+---
+
 ## Templates — BUILT 2026-08-30
 
 | Market | Klaviyo template | Source of truth |
