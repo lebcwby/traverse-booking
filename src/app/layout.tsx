@@ -309,9 +309,15 @@ export default async function RootLayout({
             Required as part of the A2P 10DLC registration, and loaded here so
             it is present on every page — carriers review the whole site.
 
-            afterInteractive rather than beforeInteractive: it is a support
-            widget, not something the first paint depends on, and the same
-            reasoning already applies to gtag above.
+            beforeInteractive, NOT afterInteractive — and this is the whole
+            point. afterInteractive injects the tag client-side once React
+            hydrates, so the served HTML contains no <script> tag at all: the
+            only trace is a JS string inside the RSC flight payload. The widget
+            worked perfectly in a browser and LeadConnector's compliance check
+            still reported "chat widget is not integrated on your website",
+            because that check fetches the HTML and looks for the tag.
+            beforeInteractive is emitted into the initial HTML by the server,
+            which is what makes it findable. Do not "optimise" this back.
 
             CSP: needs https://*.leadconnectorhq.com in script/style/connect/
             frame/img/font. The bare widgets host is not enough — the loader
@@ -322,14 +328,37 @@ export default async function RootLayout({
             ⚠️ A2P: this widget can collect a phone number, and the compliance
             guide counts chat bubbles as forms. Its consent wording is
             configured inside LeadConnector, not here — check it there. */}
-        <Script
-          id="leadconnector-chat-widget"
+        {/* Rendered as a PLAIN <script>, not next/script, deliberately.
+            LeadConnector's compliance check fetches the HTML and looks for the
+            tag. next/script never emits one in the App Router: afterInteractive
+            injects it client-side after hydration (the only trace being a JS
+            string in the RSC flight payload), and beforeInteractive only adds a
+            <link rel="preload">. Both left the widget working perfectly in a
+            browser while the check reported "chat widget is not integrated on
+            your website". A literal element is what makes it findable.
+
+            `defer`, not `async`. React 19 hoists async scripts into <head>,
+            and the loader then runs before <body> exists and never mounts its
+            element — all four sub-resources fetched and no widget appeared.
+            defer leaves the tag in place in the body and runs it after parse,
+            which both mounts the widget and keeps the tag in the HTML.
+
+            CSP: needs https://*.leadconnectorhq.com in script/style/connect/
+            frame/img/font — the bare widgets host is not enough, since the
+            loader pulls chat-widget.esm.js and libphonenumber from stcdn once
+            it boots. Origins live in src/lib/csp.ts, never in next.config.ts.
+
+            ⚠️ A2P: LeadConnector's own checklist asks you to confirm that no
+            phone-collecting or SMS-opt-in form exists on any page carrying this
+            widget — and this layout wraps /audit and /projection, which do
+            both. Raised with Vintory; resolve before attesting. */}
+        <script
           src="https://widgets.leadconnectorhq.com/loader.js"
           data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js"
           data-widget-id="6a94dee3d45d62178f396363"
           data-source="WEB_USER"
-          strategy="afterInteractive"
           nonce={nonce}
+          defer
         />
 
         <ConsentManager />
