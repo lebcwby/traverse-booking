@@ -66,7 +66,15 @@ export default async function RootLayout({
   // get a nonce-based CSP without 'unsafe-inline'. Inline <Script> blocks below
   // must carry this nonce or they're blocked, breaking GTM + Google Ads enhanced
   // conversions on checkout. See src/lib/csp.ts buildSensitiveContentSecurityPolicy.
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const requestHeaders = await headers();
+  const nonce = requestHeaders.get("x-nonce") ?? undefined;
+  /**
+   * Set by middleware on the two owner landing pages, which collect a phone
+   * number and carry SMS opt-in boxes. LeadConnector's A2P submission requires
+   * attesting that no such form shares a page with the chat widget, and a wrong
+   * attestation is chargeable — so the widget renders everywhere except there.
+   */
+  const hideChatWidget = requestHeaders.get("x-hide-chat-widget") === "1";
   return (
     <html lang="en">
       <head>
@@ -348,18 +356,23 @@ export default async function RootLayout({
             loader pulls chat-widget.esm.js and libphonenumber from stcdn once
             it boots. Origins live in src/lib/csp.ts, never in next.config.ts.
 
-            ⚠️ A2P: LeadConnector's own checklist asks you to confirm that no
-            phone-collecting or SMS-opt-in form exists on any page carrying this
-            widget — and this layout wraps /audit and /projection, which do
-            both. Raised with Vintory; resolve before attesting. */}
-        <script
-          src="https://widgets.leadconnectorhq.com/loader.js"
-          data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js"
-          data-widget-id="6a94dee3d45d62178f396363"
-          data-source="WEB_USER"
-          nonce={nonce}
-          defer
-        />
+            A2P: LeadConnector's checklist requires attesting that no
+            phone-collecting or SMS-opt-in form shares a page with this widget,
+            and a wrong attestation is chargeable. /audit and /projection do
+            both, so middleware sets x-hide-chat-widget on them (by host as well
+            as path — they also serve at the root of their own subdomains) and
+            the widget is skipped there. Everywhere else keeps it, which is what
+            the compliance check reads. */}
+        {!hideChatWidget && (
+          <script
+            src="https://widgets.leadconnectorhq.com/loader.js"
+            data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js"
+            data-widget-id="6a94dee3d45d62178f396363"
+            data-source="WEB_USER"
+            nonce={nonce}
+            defer
+          />
+        )}
 
         <ConsentManager />
         <Suspense fallback={null}>

@@ -229,6 +229,32 @@ export async function middleware(request: NextRequest) {
     requestHeaders.set("Content-Security-Policy", sensitiveCsp);
   }
 
+  /**
+   * Tell the root layout whether to render the LeadConnector chat widget.
+   *
+   * LeadConnector's A2P submission makes you attest that "no forms collecting
+   * phone numbers or SMS opt-in consent exist on any page where the chat widget
+   * is embedded", and getting that wrong is chargeable. The audit and
+   * projection landing pages collect a phone number and carry SMS opt-in boxes,
+   * so the widget must not load on them — everywhere else keeps it, which is
+   * what their compliance check looks at.
+   *
+   * Host AND path, not path alone: these pages also serve at the root of
+   * audit.booktraverse.com and projection.booktraverse.com, where the rewrite
+   * is server-side and the pathname is plain "/". A path-only check would miss
+   * the subdomains entirely — the same trap that left the guest mobile nav
+   * showing on those hosts for weeks.
+   */
+  const hidesChatWidget =
+    /^(audit|projection)\./i.test(host) ||
+    path === "/audit" ||
+    path.startsWith("/audit/") ||
+    path === "/projection" ||
+    path.startsWith("/projection/");
+  if (hidesChatWidget) {
+    requestHeaders.set("x-hide-chat-widget", "1");
+  }
+
   const response = NextResponse.next({
     request: {
       headers: requestHeaders,
