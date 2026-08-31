@@ -512,7 +512,7 @@ export default function ProjectionPage() {
             <h2>See the numbers for your condo</h2>
             <p>Your building and your unit size. That&apos;s the whole ask.</p>
           </div>
-          <ProjectionLeadForm id="projection-mid" source="mid" compact />
+          <ProjectionLeadForm id="projection-mid" source="mid" />
         </div>
       </section>
 
@@ -589,7 +589,8 @@ export default function ProjectionPage() {
             <a href={`tel:${B2B_PHONE.tel}`}>{B2B_PHONE.display}</a>
           </div>
           <p className="audit-footer-fine">
-            © {new Date().getFullYear()} Traverse Hospitality · Colorado
+            © {new Date().getFullYear()} HALTAN LLC dba Traverse Hospitality ·
+            Colorado
             short-term rental management · Crested Butte · Leadville · Vail
             · Avon · Granby · Twin Lakes. Comparison figures are
             illustrative. Projections are estimates based on comparable units and

@@ -256,7 +256,7 @@ export default function ListingAuditPage() {
               Paste your listing link. We&apos;ll do the rest.
             </p>
           </div>
-          <AuditLeadForm id="audit-mid" source="mid" compact />
+          <AuditLeadForm id="audit-mid" source="mid" />
         </div>
       </section>
 
@@ -389,7 +389,8 @@ export default function ListingAuditPage() {
             <a href={`tel:${B2B_PHONE.tel}`}>{B2B_PHONE.display}</a>
           </div>
           <p className="audit-footer-fine">
-            © {new Date().getFullYear()} Traverse Hospitality · Colorado short-term
+            © {new Date().getFullYear()} HALTAN LLC dba Traverse Hospitality ·
+            Colorado short-term
             rental management · Crested Butte · Leadville · Vail · Avon · Granby ·
             Twin Lakes
           </p>

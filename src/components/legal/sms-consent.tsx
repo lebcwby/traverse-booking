@@ -18,12 +18,16 @@
  *
  * ⚠️ LEGAL_NAME must match the EIN registration exactly — punctuation,
  * capitalisation and spacing included — and must match what is submitted for
- * the A2P brand. If the registered entity is anything other than the string
- * below (e.g. it carries an LLC suffix, or the site trades under a DBA), fix it
- * here and make sure the same name is visible elsewhere on the site. A mismatch
- * between the checkbox text and the registration is a rejection reason.
+ * the A2P brand. A mismatch between the checkbox text and the registration is a
+ * rejection reason.
+ *
+ * We trade under a DBA, so the guide's required format is
+ * "[Legal Business Name] DBA [Trade Name]". The same DBA line also has to be
+ * visible somewhere on the site outside the form — it is in the footers of the
+ * main site and of both landing pages. "DBA name is used but not explained
+ * anywhere on the website" is its own rejection reason.
  */
-export const LEGAL_NAME = "Traverse Hospitality";
+export const LEGAL_NAME = "HALTAN LLC dba Traverse Hospitality";
 
 /** Used for the "Text HELP to …" instruction. B2B line, since these are owner forms. */
 export const SMS_HELP_NUMBER = "(970) 533-3583";

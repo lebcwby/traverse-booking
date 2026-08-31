@@ -5,16 +5,19 @@ import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { SmsConsent } from "@/components/legal/sms-consent";
 
 /**
- * Revenue-projection capture (projection.booktraverse.com).
+ * Revenue-projection capture — deliberately ONE step.
  *
- * Two steps, and step one is a single dropdown on purpose. The audit page opens
- * by asking for a listing URL, which is wrong here: a unit in a resort program
- * is usually listed under the manager's or a distribution partner's account, so
- * the owner has no link of their own to paste. Asking the building instead is
- * one click, costs nothing, and is the qualifying question — the comp we send
- * back is only credible because it comes from the same building.
+ * It used to open on the building dropdown alone and reveal the contact fields
+ * afterwards. A2P 10DLC killed that: carriers review the opt-in URL themselves,
+ * and a reviewer landing on a page whose form is a lone dropdown sees no phone
+ * field and no consent checkboxes. "Form collects phone numbers without consent
+ * language" is a listed rejection reason, and nothing tells them there is a
+ * second step behind it.
+ *
+ * The building is still the first field, and still the qualifying question —
+ * the comp we send back is only credible because it comes from the same
+ * building. It just no longer hides everything else.
  */
-
 /**
  * Only the three buildings we actually manage in. The whole page rests on
  * comping a unit against the ones down its own hallway, so a building we have
@@ -39,34 +42,22 @@ const UNIT_TYPES = [
 export function ProjectionLeadForm({
   id = "projection-form",
   source = "hero",
-  compact = false,
 }: {
   id?: string;
   source?: string;
-  compact?: boolean;
 }) {
-  const [step, setStep] = useState<1 | 2>(1);
   const [building, setBuilding] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function advance(e: FormEvent) {
+  async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     if (!building) {
       setError("Pick your building so we can pull the right comparison.");
       return;
     }
-    setStep(2);
-    requestAnimationFrame(() => {
-      document.getElementById(`${id}-firstName`)?.focus();
-    });
-  }
-
-  async function submit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
     setSubmitting(true);
 
     const fd = new FormData(e.currentTarget);
@@ -136,53 +127,25 @@ export function ProjectionLeadForm({
     );
   }
 
-  if (step === 1) {
-    return (
-      <form className="audit-urlform proj-pickform" onSubmit={advance} id={id}>
-        <label className="audit-sr" htmlFor={`${id}-building`}>
-          Your building
-        </label>
-        <select
-          id={`${id}-building`}
-          className="audit-input proj-select"
-          value={building}
-          onChange={(e) => setBuilding(e.target.value)}
-        >
-          <option value="">Choose your building…</option>
-          {BUILDINGS.map((b) => (
-            <option key={b} value={b}>
-              {b}
-            </option>
-          ))}
-        </select>
-        <button type="submit" className="audit-btn">
-          {compact ? "See the numbers" : "Show me the numbers"}
-          <ArrowRight className="audit-btn-icon" aria-hidden="true" />
-        </button>
-        {error && (
-          <p className="audit-err" role="alert">
-            {error}
-          </p>
-        )}
-      </form>
-    );
-  }
-
   return (
     <form className="audit-fields" onSubmit={submit} id={id}>
-      <div className="audit-urlchip">
-        <span className="audit-urlchip-label">Comparing against</span>
-        <span className="audit-urlchip-url">{building}</span>
-        <button
-          type="button"
-          className="audit-urlchip-edit"
-          onClick={() => setStep(1)}
-        >
-          Change
-        </button>
-      </div>
-
       <div className="audit-grid">
+        <div className="audit-span2">
+          <label htmlFor={`${id}-building`}>Your building *</label>
+          <select
+            id={`${id}-building`}
+            className="proj-select"
+            value={building}
+            onChange={(e) => setBuilding(e.target.value)}
+          >
+            <option value="">Choose your building…</option>
+            {BUILDINGS.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="audit-span2">
           <label htmlFor={`${id}-unitType`}>Unit size *</label>
           <select id={`${id}-unitType`} name="unitType" required defaultValue="">

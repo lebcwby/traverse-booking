@@ -305,6 +305,33 @@ export default async function RootLayout({
           nonce={nonce}
         />
 
+        {/* LeadConnector (GoHighLevel / Vintory) chat widget.
+            Required as part of the A2P 10DLC registration, and loaded here so
+            it is present on every page — carriers review the whole site.
+
+            afterInteractive rather than beforeInteractive: it is a support
+            widget, not something the first paint depends on, and the same
+            reasoning already applies to gtag above.
+
+            CSP: needs https://*.leadconnectorhq.com in script/style/connect/
+            frame/img/font. The bare widgets host is not enough — the loader
+            fetches from the backend and services subdomains once it boots, and
+            without the wildcard it loads and then silently dies. Origins live
+            in src/lib/csp.ts, never in next.config.ts.
+
+            ⚠️ A2P: this widget can collect a phone number, and the compliance
+            guide counts chat bubbles as forms. Its consent wording is
+            configured inside LeadConnector, not here — check it there. */}
+        <Script
+          id="leadconnector-chat-widget"
+          src="https://widgets.leadconnectorhq.com/loader.js"
+          data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js"
+          data-widget-id="6a94dee3d45d62178f396363"
+          data-source="WEB_USER"
+          strategy="afterInteractive"
+          nonce={nonce}
+        />
+
         <ConsentManager />
         <Suspense fallback={null}>
           <MetaPageViewTracker />

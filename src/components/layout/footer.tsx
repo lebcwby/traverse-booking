@@ -65,7 +65,12 @@ function SocialIcons() {
 function Copyright() {
   return (
     <div className="text-center text-xs text-primary-foreground/40">
-      &copy; {new Date().getFullYear()} Book Traverse. All rights reserved.
+      {/* The legal entity and DBA are stated here on purpose. A2P 10DLC
+          registration is rejected if the registered business name cannot be
+          found on the site, or if a DBA is used without being explained
+          anywhere. (A2P Compliance Guide, April 2026, Steps 1 and 7.) */}
+      &copy; {new Date().getFullYear()} HALTAN LLC dba Traverse Hospitality. All
+      rights reserved.
     </div>
   );
 }

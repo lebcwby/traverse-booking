@@ -70,12 +70,18 @@ export const SCRIPT_SOURCES = [
   "https://challenges.cloudflare.com",
   // Conduit AI chat widget — widget.min.js + any sub-resources it pulls.
   "https://*.conduit.ai",
+  // LeadConnector (GoHighLevel / Vintory) chat widget. Two hosts: loader.js
+  // comes from widgets.leadconnectorhq.com and the widget then talks to the
+  // backend and services subdomains, so the wildcard is what actually makes it
+  // work — the bare widgets host alone loads the loader and then dies.
+  "https://*.leadconnectorhq.com",
 ];
 
 export const STYLE_SOURCES = [
   "'self'",
   "'unsafe-inline'",
   "https://*.conduit.ai",
+  "https://*.leadconnectorhq.com",
   "https://api.mapbox.com",
   "https://fonts.googleapis.com",
   "https://static.klaviyo.com",
@@ -115,6 +121,7 @@ export const IMG_SOURCES = [
   "https://*.hsforms.net",
   "https://*.hubspotusercontent-na2.net",
   "https://*.conduit.ai",
+  "https://*.leadconnectorhq.com",
 ];
 
 export const CONNECT_SOURCES = [
@@ -173,6 +180,7 @@ export const CONNECT_SOURCES = [
   "https://team.traversehospitality.com",
   // Cloudflare Turnstile widget telemetry/challenge XHRs.
   "https://challenges.cloudflare.com",
+  "https://*.leadconnectorhq.com",
 ];
 
 export const FRAME_SOURCES = [
@@ -205,6 +213,7 @@ export const FRAME_SOURCES = [
   // /w9-and-payment-authorization-form. Wildcard covers regional subdomains
   // (na1/na2/na3.documents.adobe.com).
   "https://*.documents.adobe.com",
+  "https://*.leadconnectorhq.com",
 ];
 
 const SENSITIVE_CSP_PATH_PREFIXES = [
@@ -257,7 +266,12 @@ export function buildBaseContentSecurityPolicy({
     "script-src-attr": ["'none'"],
     "style-src": STYLE_SOURCES,
     "img-src": [...IMG_SOURCES, ...SUPABASE_ORIGINS],
-    "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
+    "font-src": [
+      "'self'",
+      "https://fonts.gstatic.com",
+      "data:",
+      "https://*.leadconnectorhq.com",
+    ],
     "connect-src": [...CONNECT_SOURCES, ...SUPABASE_ORIGINS],
     "frame-src": FRAME_SOURCES,
     "worker-src": ["'self'", "blob:"],
@@ -293,7 +307,12 @@ export function buildSensitiveContentSecurityPolicy({
     "script-src-attr": ["'none'"],
     "style-src": STYLE_SOURCES,
     "img-src": [...IMG_SOURCES, ...SUPABASE_ORIGINS],
-    "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
+    "font-src": [
+      "'self'",
+      "https://fonts.gstatic.com",
+      "data:",
+      "https://*.leadconnectorhq.com",
+    ],
     "connect-src": [...CONNECT_SOURCES, ...SUPABASE_ORIGINS],
     "frame-src": FRAME_SOURCES,
     "worker-src": ["'self'", "blob:"],

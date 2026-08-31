@@ -5,47 +5,40 @@ import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { SmsConsent } from "@/components/legal/sms-consent";
 
 /**
- * Two-step listing-audit capture.
+ * Listing-audit capture — deliberately ONE step.
  *
- * Step 1 asks only for the listing URL — the lowest-friction possible opening,
- * and the same reason the page repeats a URL box in the hero, mid-page and
- * footer: whichever one an owner uses, they land here with the URL already
- * filled and only contact details left to give.
+ * It used to open on the listing URL alone and reveal the contact fields
+ * afterwards, which converted better. A2P 10DLC killed that: carriers review
+ * the opt-in URL themselves, and a reviewer landing on a page whose form is
+ * just a URL box sees no phone field and no consent checkboxes. "Form collects
+ * phone numbers without consent language" is a listed rejection reason, and
+ * they have no reason to guess there is a second step behind it.
+ *
+ * So everything is visible on load, including the phone field and the two SMS
+ * consent boxes beside it. Longer form, but an unapproved A2P campaign means
+ * no SMS at all.
  */
 export function AuditLeadForm({
   id = "audit-form",
   initialUrl = "",
   source = "hero",
-  compact = false,
 }: {
   id?: string;
   initialUrl?: string;
   source?: string;
-  compact?: boolean;
 }) {
-  const [step, setStep] = useState<1 | 2>(initialUrl ? 2 : 1);
   const [url, setUrl] = useState(initialUrl);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function advance(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    if (!url.trim()) {
-      setError("Paste your listing link to get started.");
-      return;
-    }
-    setStep(2);
-    // Give the newly-revealed fields focus without yanking the page around.
-    requestAnimationFrame(() => {
-      document.getElementById(`${id}-firstName`)?.focus();
-    });
-  }
-
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    if (!url.trim()) {
+      setError("Paste your listing link so we know what to look at.");
+      return;
+    }
     setSubmitting(true);
 
     const fd = new FormData(e.currentTarget);
@@ -115,50 +108,21 @@ export function AuditLeadForm({
     );
   }
 
-  if (step === 1) {
-    return (
-      <form className="audit-urlform" onSubmit={advance} id={id}>
-        <label className="audit-sr" htmlFor={`${id}-url`}>
-          Your listing URL
-        </label>
-        <input
-          id={`${id}-url`}
-          type="url"
-          inputMode="url"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://www.airbnb.com/rooms/12345678"
-          className="audit-input"
-          autoComplete="off"
-        />
-        <button type="submit" className="audit-btn">
-          {compact ? "Get my free audit" : "Get my free audit"}
-          <ArrowRight className="audit-btn-icon" aria-hidden="true" />
-        </button>
-        {error && (
-          <p className="audit-err" role="alert">
-            {error}
-          </p>
-        )}
-      </form>
-    );
-  }
-
   return (
     <form className="audit-fields" onSubmit={submit} id={id}>
-      <div className="audit-urlchip">
-        <span className="audit-urlchip-label">Auditing</span>
-        <span className="audit-urlchip-url">{url}</span>
-        <button
-          type="button"
-          className="audit-urlchip-edit"
-          onClick={() => setStep(1)}
-        >
-          Change
-        </button>
-      </div>
-
       <div className="audit-grid">
+        <div className="audit-span2">
+          <label htmlFor={`${id}-url`}>Your listing link *</label>
+          <input
+            id={`${id}-url`}
+            type="url"
+            inputMode="url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://www.airbnb.com/rooms/12345678"
+            autoComplete="off"
+          />
+        </div>
         <div>
           <label htmlFor={`${id}-firstName`}>First name *</label>
           <input id={`${id}-firstName`} name="firstName" required autoComplete="given-name" />
