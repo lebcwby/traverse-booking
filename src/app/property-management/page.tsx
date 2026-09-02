@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import Image from "next/image";
 import {
@@ -458,6 +459,31 @@ export default function PropertyManagementPage() {
                   }
                 }}
               />
+
+              {/* A2P 10DLC, Step 4: every form collecting a phone number needs
+                  visible Privacy and Terms links before submit — not behind a
+                  modal, not in small print. This form takes a REQUIRED phone
+                  number, so it counts, and carriers review the whole site
+                  rather than only the registered opt-in URL.
+
+                  ⚠️ The two SMS consent checkboxes this form also needs live
+                  inside HubSpot's form editor (portal 7792991, form
+                  49d127fb-581a-4606-9669-145f15e64a0f) — they cannot be added
+                  from here, because the fields are rendered by HubSpot. See
+                  src/components/legal/sms-consent.tsx for the exact wording our
+                  own forms use, including the legal name. */}
+              <p className="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
+                By submitting, you agree to our{" "}
+                <Link href="/privacy" className="underline hover:text-foreground">
+                  Privacy Policy
+                </Link>{" "}
+                and{" "}
+                <Link href="/terms" className="underline hover:text-foreground">
+                  Terms &amp; Conditions
+                </Link>
+                . We use your details to prepare your projection and follow up
+                once.
+              </p>
             </div>
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-muted-foreground">
