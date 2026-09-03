@@ -66,15 +66,7 @@ export default async function RootLayout({
   // get a nonce-based CSP without 'unsafe-inline'. Inline <Script> blocks below
   // must carry this nonce or they're blocked, breaking GTM + Google Ads enhanced
   // conversions on checkout. See src/lib/csp.ts buildSensitiveContentSecurityPolicy.
-  const requestHeaders = await headers();
-  const nonce = requestHeaders.get("x-nonce") ?? undefined;
-  /**
-   * Set by middleware on the two owner landing pages, which collect a phone
-   * number and carry SMS opt-in boxes. LeadConnector's A2P submission requires
-   * attesting that no such form shares a page with the chat widget, and a wrong
-   * attestation is chargeable — so the widget renders everywhere except there.
-   */
-  const hideChatWidget = requestHeaders.get("x-hide-chat-widget") === "1";
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <html lang="en">
       <head>
@@ -336,44 +328,20 @@ export default async function RootLayout({
             ⚠️ A2P: this widget can collect a phone number, and the compliance
             guide counts chat bubbles as forms. Its consent wording is
             configured inside LeadConnector, not here — check it there. */}
-        {/* Rendered as a PLAIN <script>, not next/script, deliberately.
-            LeadConnector's compliance check fetches the HTML and looks for the
-            tag. next/script never emits one in the App Router: afterInteractive
-            injects it client-side after hydration (the only trace being a JS
-            string in the RSC flight payload), and beforeInteractive only adds a
-            <link rel="preload">. Both left the widget working perfectly in a
-            browser while the check reported "chat widget is not integrated on
-            your website". A literal element is what makes it findable.
+        {/* No LeadConnector chat widget, deliberately.
+            It was only ever here to satisfy the automated A2P compliance
+            check. Vintory registered the campaign manually instead
+            (Erick Luzada, 2026-08-31), so the widget is not needed at all —
+            and its own checklist forbids it sharing a page with any
+            phone-collecting form, which /audit, /projection, /book and the
+            HubSpot form on /property-management all are. Removing it also
+            takes a third-party script off every page and closes six CSP
+            origins.
 
-            `defer`, not `async`. React 19 hoists async scripts into <head>,
-            and the loader then runs before <body> exists and never mounts its
-            element — all four sub-resources fetched and no widget appeared.
-            defer leaves the tag in place in the body and runs it after parse,
-            which both mounts the widget and keeps the tag in the HTML.
-
-            CSP: needs https://*.leadconnectorhq.com in script/style/connect/
-            frame/img/font — the bare widgets host is not enough, since the
-            loader pulls chat-widget.esm.js and libphonenumber from stcdn once
-            it boots. Origins live in src/lib/csp.ts, never in next.config.ts.
-
-            A2P: LeadConnector's checklist requires attesting that no
-            phone-collecting or SMS-opt-in form shares a page with this widget,
-            and a wrong attestation is chargeable. /audit and /projection do
-            both, so middleware sets x-hide-chat-widget on them (by host as well
-            as path — they also serve at the root of their own subdomains) and
-            the widget is skipped there. Everywhere else keeps it, which is what
-            the compliance check reads. */}
-        {!hideChatWidget && (
-          <script
-            src="https://widgets.leadconnectorhq.com/loader.js"
-            data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js"
-            data-widget-id="6a94dee3d45d62178f396363"
-            data-source="WEB_USER"
-            nonce={nonce}
-            defer
-          />
-        )}
-
+            If it is ever reinstated: it must be a literal <script defer>, not
+            next/script (which emits no tag in the App Router, so their scraper
+            reports it missing), and it must be kept off every page carrying a
+            phone field. See git history for the middleware exclusion. */}
         <ConsentManager />
         <Suspense fallback={null}>
           <MetaPageViewTracker />

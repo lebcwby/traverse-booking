@@ -130,22 +130,6 @@ function buildRateLimitHeaders(
   };
 }
 
-/**
- * Routes that collect a phone number, and therefore must not carry the
- * LeadConnector chat widget. See the note at its use below.
- */
-const CHAT_WIDGET_EXCLUDED_PREFIXES = [
-  "/audit",
-  "/projection",
-  // Guest checkout — guest-form, checkout-form and guesty-pay-checkout all
-  // take a phone number.
-  "/book",
-  // Account settings lets an owner edit their phone. Auth-gated, so a crawler
-  // will not reach it, but it is still a form collecting a phone number and
-  // costs nothing to exclude.
-  "/account",
-];
-
 export async function middleware(request: NextRequest) {
   const host = request.headers.get("host") || "";
 
@@ -243,33 +227,6 @@ export async function middleware(request: NextRequest) {
   if (nonce && sensitiveCsp) {
     requestHeaders.set("x-nonce", nonce);
     requestHeaders.set("Content-Security-Policy", sensitiveCsp);
-  }
-
-  /**
-   * Tell the root layout whether to render the LeadConnector chat widget.
-   *
-   * LeadConnector's A2P submission makes you attest that "no forms collecting
-   * phone numbers or SMS opt-in consent exist on any page where the chat widget
-   * is embedded", and warns that a wrong attestation is chargeable. So the
-   * widget is suppressed on every route that takes a phone number.
-   *
-   * Host AND path, not path alone: /audit and /projection also serve at the
-   * root of audit.booktraverse.com and projection.booktraverse.com, where the
-   * rewrite is server-side and the pathname is plain "/". A path-only check
-   * would miss the subdomains entirely — the same trap that left the guest
-   * mobile nav showing on those hosts for weeks.
-   *
-   * Keep this in step with the phone fields themselves: `grep -rl 'type="tel"'
-   * src` is the check. Today that is the two landing-page forms, the checkout
-   * components under /book, and the account settings page.
-   */
-  const hidesChatWidget =
-    /^(audit|projection)\./i.test(host) ||
-    CHAT_WIDGET_EXCLUDED_PREFIXES.some(
-      (prefix) => path === prefix || path.startsWith(`${prefix}/`)
-    );
-  if (hidesChatWidget) {
-    requestHeaders.set("x-hide-chat-widget", "1");
   }
 
   const response = NextResponse.next({
