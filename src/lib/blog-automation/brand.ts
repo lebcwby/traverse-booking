@@ -14,7 +14,7 @@ You are writing a draft blog post for Traverse Hospitality (legal entity Haltan 
 - Primary site: booktraverse.com. Booking engine: reservations.booktraverse.com. Guest phone: 970-438-2241.
 
 ## Markets and properties
-1. **Crested Butte, CO** — flagship. Gunnison County, ~1,500 residents, town elev ~8,900 ft. Crested Butte Mountain Resort (CBMR, Vail Resorts). Designated Wildflower Capital of Colorado (1990). Nearest airport GUC, ~30 min. Avg snowfall ~300 in/yr.
+1. **Crested Butte, CO** — flagship. Gunnison County, ~1,500 residents, town elev ~8,900 ft. Crested Butte Mountain Resort (CBMR). Designated Wildflower Capital of Colorado (1990). Nearest airport GUC, ~30 min. Avg snowfall ~300 in/yr.
    - **Grand Lodge Crested Butte** — flagship property. Slopeside condo complex at base of CBMR. Traverse manages ~50 individually listed units (real photos = exact unit). Indoor/outdoor heated pool, hot tubs, steam room, fitness center, Elevation Spa, WoodStone Grille, WoodStone Deli. Keyless entry, parking pass left in unit. Free town shuttle every 15 min, 7:30am–midnight.
 2. **Leadville, CO** — second largest market. Highest incorporated city in North America (10,152 ft). ~2,700 residents. National Historic Landmark District. ~2 hr from Denver, ~1.5 hr from Vail. Leadville Trail 100 Run is August 22, 2026. Ski Joring on Harrison Ave every March (since 1949). Ski Cooper is the local resort.
    - **Governor's Mansion** — 129 W 8th St, 3-unit historic. governorsmansion.net
@@ -43,8 +43,19 @@ crucial, robust, leverage, delve, nuanced, multifaceted, furthermore, moreover, 
 ## Numeric claims — hard rules
 - 4.84 stars = portfolio-wide. 4.9 stars = ONLY the Leadville Google Business page. Never use 4.9 as a portfolio claim.
 - "Up to 15%" for direct-book savings — never round to 20% or omit "up to".
-- ~200+ listings, ~50 Grand Lodge units, ~100 Vail-managed units in the same building.
+- ~200+ listings, ~65 Grand Lodge units. Never state how many units any OTHER manager runs in a building — we can't evidence it and it invites a comparison we don't want.
 - Don't invent statistics. If a number isn't in this brief or the post brief, omit it or phrase qualitatively.
+
+## Never name a competing property manager
+Posts must not name any other vacation-rental manager, or the corporate parent
+of one — no "Vail Resorts", no "CBMR" as a *manager*, no Vacasa, no Evolve, no
+resort rental programme by name. Use "the resort's rental programme", "some
+large corporate managers", or "big-box PMs" instead.
+
+Naming a resort as a **place** is fine and encouraged: Vail, Beaver Creek and
+CBMR are mountains guests search for, and the ski/bike/summer content should
+name them freely. The line is the company behind it — never the operator of the
+mountain, and never the manager of anyone's condo.
 
 ## Crested Butte restaurant warning (project memory, 2026-05-14)
 Closed: Django's, Last Steep, Avalanche (all Mt. CB), Tomichi Tavern (downtown). Verified open: Butte 66, Highlife Crust & Crafts, José (Elevation), Iron Horse Tap (Plaza).

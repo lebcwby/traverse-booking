@@ -152,7 +152,7 @@ export const pageContent = `<main id="main">
 
     <details style="border-top:1px solid var(--line);padding:24px 0;border-bottom:1px solid var(--line);">
       <summary style="cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:600;color:var(--ink);">How does Vail compare to Beaver Creek?</summary>
-      <p style="margin-top:14px;color:var(--ink-soft);">Vail is bigger (5,317 vs 1,815 acres), busier, has a more lively village scene, and offers the Back Bowls and Blue Sky Basin. Beaver Creek is smaller, quieter, famously well-groomed, more family-oriented, and includes the legendary 3 PM warm chocolate-chip cookies at every base lodge. Both are on the Epic Pass, both are Vail Resorts, and both are reachable in under 15 minutes from each other.</p>
+      <p style="margin-top:14px;color:var(--ink-soft);">Vail is bigger (5,317 vs 1,815 acres), busier, has a more lively village scene, and offers the Back Bowls and Blue Sky Basin. Beaver Creek is smaller, quieter, famously well-groomed, more family-oriented, and includes the legendary 3 PM warm chocolate-chip cookies at every base lodge. Both are on the Epic Pass, and both are reachable in under 15 minutes from each other.</p>
     </details>
   </div>
 </section>

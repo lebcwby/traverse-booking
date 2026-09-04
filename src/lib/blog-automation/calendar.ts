@@ -329,7 +329,7 @@ export const CONTENT_CALENDAR: CalendarEntry[] = [
     market: "crested-butte",
     category: "Crested Butte",
     brief:
-      "Timely pre-season post covering the 2026-27 CBMR season. Cover: typical opening-day timing (late November — do NOT commit to a specific date without confirming with CBMR), Epic Pass access (CBMR is a Vail Resorts property), how the ski calendar breaks down (opening weekend, Thanksgiving, Christmas, MLK, President's, spring break, closing weekend around early April), when snow is most reliable (mid-Dec through Feb — averages ~300 inches/year), when to book by season, and why booking direct through Traverse saves up to 15%. Publish in August so it starts indexing before searches peak in Sept-Nov.",
+      "Timely pre-season post covering the 2026-27 CBMR season. Cover: typical opening-day timing (late November — do NOT commit to a specific date without confirming with CBMR), Epic Pass access (CBMR is on the Epic Pass — do NOT name the resort's corporate owner), how the ski calendar breaks down (opening weekend, Thanksgiving, Christmas, MLK, President's, spring break, closing weekend around early April), when snow is most reliable (mid-Dec through Feb — averages ~300 inches/year), when to book by season, and why booking direct through Traverse saves up to 15%. Publish in August so it starts indexing before searches peak in Sept-Nov.",
     status: "pending",
   },
   {

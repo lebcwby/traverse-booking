@@ -5,7 +5,7 @@ export const pageContent = `<h2>What Owners Are Really Asking</h2>
 <hr>
 <h2>Crested Butte's Two Peak Seasons (And the Hidden Third One)</h2>
 <h3>Winter: December Through February</h3>
-<p>Crested Butte Mountain Resort — operated by Vail Resorts — draws skiers and snowboarders from across the country. The mountain sits right at the base of town, average snowfall is around 300 inches per year, and the terrain is genuinely steep and varied in a way that keeps intermediate and expert skiers coming back. December through February is when nightly rates climb, weekends fill first, and well-managed units see their highest occupancy of the year.</p>
+<p>Crested Butte Mountain Resort draws skiers and snowboarders from across the country. The mountain sits right at the base of town, average snowfall is around 300 inches per year, and the terrain is genuinely steep and varied in a way that keeps intermediate and expert skiers coming back. December through February is when nightly rates climb, weekends fill first, and well-managed units see their highest occupancy of the year.</p>
 <p>Holiday weeks — Christmas/New Year's and Presidents' Day weekend — are typically the most competitive booking periods. Owners who are priced and listed well in advance of those windows capture significantly more revenue than those who list late or leave rates static.</p>
 <h3>Summer: July's Wildflower Explosion</h3>
 <p>Colorado officially designated Crested Butte the Wildflower Capital of Colorado in 1990, and that distinction is not just ceremonial. July transforms the surrounding hillsides into something you have to see to believe, drawing a different guest profile than winter — hikers, mountain bikers, families, and people who discovered CB skiing and want to see the other side of the mountain. Summer peak is shorter than winter (roughly mid-June through mid-August), but nightly rates can rival winter in a well-managed unit.</p>
@@ -69,7 +69,7 @@ export const pageContent = `<h2>What Owners Are Really Asking</h2>
 <hr>
 <p><strong>External references:</strong></p>
 <ul>
-<li><a href="https://www.skicb.com/">Crested Butte Mountain Resort — Official Site</a> — current lift and terrain information for CBMR, operated by Vail Resorts</li>
+<li><a href="https://www.skicb.com/">Crested Butte Mountain Resort — Official Site</a> — current lift and terrain information for the resort</li>
 <li><a href="https://www.gunnisoncounty.org/">Gunnison County Short-Term Rental Regulations</a> — licensing requirements and compliance information for STR operators in Gunnison County</li>
 <li><a href="https://www.colorado.com/cities-and-places/crested-butte">Colorado Tourism Office — Crested Butte</a> — destination overview including seasonal events and visitor information</li>
 </ul>`;

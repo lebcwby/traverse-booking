@@ -137,7 +137,7 @@ export const pageContent = `<main id="main">
 
     <details style="border-top:1px solid var(--line);padding:24px 0;">
       <summary style="cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:600;color:var(--ink);">Can I ski Beaver Creek and Vail on the same pass?</summary>
-      <p style="margin-top:14px;color:var(--ink-soft);">Yes — both are Vail Resorts properties on the Epic Pass. Single-day lift tickets at the window also work at both. The free ECO Transit bus connects them in 25 minutes; most guests take it.</p>
+      <p style="margin-top:14px;color:var(--ink-soft);">Yes — both mountains are on the Epic Pass. Single-day lift tickets at the window also work at both. The free ECO Transit bus connects them in 25 minutes; most guests take it.</p>
     </details>
 
     <details style="border-top:1px solid var(--line);padding:24px 0;">
@@ -203,7 +203,7 @@ export const schemaBlocks: Array<Record<string, unknown>> = [
         name: "Can I ski Beaver Creek and Vail on the same pass?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Yes — both are Vail Resorts properties on the Epic Pass, and single-day window tickets work at both. Free ECO Transit connects them in 25 minutes.",
+          text: "Yes — both mountains are on the Epic Pass, and single-day window tickets work at both. Free ECO Transit connects them in 25 minutes.",
         },
       },
       {

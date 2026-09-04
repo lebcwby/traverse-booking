@@ -42,7 +42,7 @@ export const pageContent = `<h2>Vail Vacation Rentals: How to Pick the Right Nei
 <p>The math gets significant fast on a week-long ski trip. A $400/night condo for seven nights totals $2,800 before fees. A 15% OTA fee adds $420. That's a lift ticket — or two.</p>
 <p>Beyond price, booking direct gives you a local point of contact. Traverse Hospitality has boots-on-the-ground management in each market, so if something needs attention at your property, you're not filing a ticket with a call center in another time zone. You're texting someone who can drive over.</p>
 <p><a href="https://reservations.booktraverse.com">Book your Vail vacation rental directly at reservations.booktraverse.com</a> and skip the middleman fees entirely.</p>
-<p>For comparison: <a href="https://www.vail.com">Vail Resorts' official site</a> is the best source for lift tickets, ski school, and mountain conditions. For local dining and event calendars, <a href="https://www.vaildaily.com">Vail Daily</a> covers the valley year-round.</p>
+<p>For comparison: <a href="https://www.vail.com">Vail Mountain's official site</a> is the best source for lift tickets, ski school, and mountain conditions. For local dining and event calendars, <a href="https://www.vaildaily.com">Vail Daily</a> covers the valley year-round.</p>
 <hr>
 <h2>Summer in Vail: An Underrated Reason to Book Early</h2>
 <p>Vail's summer season draws hikers, cyclists, and music festival crowds that rival the ski crowds in peak winter weeks. The Vail Valley's elevation keeps summer temperatures comfortable — highs typically in the 70s — while the rest of Colorado bakes. The ski mountain opens its trails to hikers and mountain bikers, and the village hosts outdoor events most summer weekends.</p>
