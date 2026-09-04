@@ -594,6 +594,7 @@ What is auto-included vs. manual:
 | Static `page.tsx` (market/building/guide/content) | `static` | **YES — edit sitemap.ts** |
 | Listing | `properties` | No — nightly BEAPI sync |
 | Blog post (added to `BLOG_POSTS` in `src/app/blog/posts.ts`) | `blog` | No — sourced from that array |
+| Press release (added to `PRESS_RELEASES` in `src/app/press/releases.ts`) | `press` | No — sourced from that array |
 | Landing page `/s/*` (added to landing-pages config) | `landing-pages` | No |
 | Neighborhood / stay / event (Supabase `sp_*`) | those segments | No |
 
