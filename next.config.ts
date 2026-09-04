@@ -168,7 +168,9 @@ const nextConfig: NextConfig = {
       { source: "/traversehospitality/blog/best-hiking-near-leadville-colorado", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/best-hiking-near-leadville-colorado", permanent: true },
       { source: "/traversehospitality/blog/what-to-pack-colorado-mountain-trip", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/what-to-pack-colorado-mountain-trip", permanent: true },
       { source: "/traversehospitality/blog/crested-butte-wildflower-season-guide-2026", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/crested-butte-wildflower-season-guide-2026", permanent: true },
-      { source: "/traversehospitality/blog/grand-lodge-crested-butte-condos-traverse-vs-vail-resorts-what-s-the-difference", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/grand-lodge-traverse-vs-vail-resorts", permanent: true },
+      // Post unpublished 2026-09-04 — retargeted to the building page rather than
+      // left pointing at a URL that now 404s.
+      { source: "/traversehospitality/blog/grand-lodge-crested-butte-condos-traverse-vs-vail-resorts-what-s-the-difference", has: oldDomainHost, destination: "https://www.booktraverse.com/crested-butte/grand-lodge", permanent: true },
       { source: "/traversehospitality/blog/pet-friendly-crested-butte-condo-grand-lodge-studio-153-walk-to-the-lifts-pool-hot-tub", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/pet-friendly-crested-butte-grand-lodge-153", permanent: true },
       { source: "/traversehospitality/blog/leadville-colorado-the-complete-visitor-s-guide-2026-2", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/leadville-complete-visitors-guide", permanent: true },
       { source: "/traversehospitality/blog/budget-friendly-ski-vacation-affordable-leadville-rentals-near-top-resorts", has: oldDomainHost, destination: "https://www.booktraverse.com/blog/budget-friendly-ski-vacation-leadville", permanent: true },
@@ -542,6 +544,14 @@ const nextConfig: NextConfig = {
       {
         source: "/furnished-rentals",
         destination: "/s/furnished-apartments",
+        permanent: true,
+      },
+      // Unpublished 2026-09-04: the post compared Traverse with the competitor
+      // by name. 301 rather than a bare 404 — it was indexed, and the building
+      // page serves the same search intent (booking a Grand Lodge condo).
+      {
+        source: "/blog/grand-lodge-traverse-vs-vail-resorts",
+        destination: "/crested-butte/grand-lodge",
         permanent: true,
       },
       { source: "/general-1-2", destination: "/", permanent: true },

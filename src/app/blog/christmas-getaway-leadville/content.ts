@@ -96,30 +96,7 @@ export const pageContent = `<div class="elementor elementor-2066">
 				
 				
 							<div class="elementor-posts-container elementor-posts elementor-posts--skin-classic elementor-grid">
-				<article class="elementor-post elementor-grid-item post-2769 post type-post status-publish format-standard has-post-thumbnail hentry category-travel-guides tag-colorado tag-crested-butte tag-grand-lodge tag-property-management tag-ski-condos tag-vacation-rentals">
-				<a class="elementor-post__thumbnail__link" href="https://booktraverse.com/traversehospitality/blog/grand-lodge-crested-butte-condos-traverse-vs-vail-resorts-what-s-the-difference/" tabindex="-1" >
-			<div class="elementor-post__thumbnail"><img width="300" height="223" src="/blog/grand-lodge-28.jpg" class="attachment-medium size-medium wp-image-2770" alt="" /></div>
-		</a>
-				<div class="elementor-post__text">
-				<h3 class="elementor-post__title">
-			<a href="https://booktraverse.com/traversehospitality/blog/grand-lodge-crested-butte-condos-traverse-vs-vail-resorts-what-s-the-difference/" >
-				Grand Lodge Crested Butte Condos: Traverse vs. Vail Resorts — What&#8217;s the Difference?			</a>
-		</h3>
-				<div class="elementor-post__meta-data">
-					<span class="elementor-post-date">
-			April 27, 2026		</span>
-				<span class="elementor-post-avatar">
-			No Comments		</span>
-				</div>
-				<div class="elementor-post__excerpt">
-			<p>*This article was written and published on April 27, 2026. Property management details, unit counts, ratings, and policies are subject to change. For the most</p>
-		</div>
-		
-		<a class="elementor-post__read-more" href="https://booktraverse.com/traversehospitality/blog/grand-lodge-crested-butte-condos-traverse-vs-vail-resorts-what-s-the-difference/" aria-label="Read more about Grand Lodge Crested Butte Condos: Traverse vs. Vail Resorts — What&#8217;s the Difference?" tabindex="-1" >
-			Read More »		</a>
-
-				</div>
-				</article>
+				
 				<article class="elementor-post elementor-grid-item post-2645 post type-post status-publish format-standard has-post-thumbnail hentry category-crested-butte tag-colorado tag-crested-butte tag-family-friendly tag-grand-lodge tag-pet-friendly tag-vacation-rentals">
 				<a class="elementor-post__thumbnail__link" href="https://booktraverse.com/traversehospitality/blog/pet-friendly-crested-butte-condo-grand-lodge-studio-153-walk-to-the-lifts-pool-hot-tub/" tabindex="-1" >
 			<div class="elementor-post__thumbnail"><img loading="lazy" width="300" height="195" src="/blog/153-living-room.jpg" class="attachment-medium size-medium wp-image-2650" alt="" /></div>

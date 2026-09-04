@@ -108,17 +108,13 @@ export const BLOG_POSTS: BlogPost[] = [
     market: "crested-butte",
     image: "",
   },
-  {
-    slug: "grand-lodge-traverse-vs-vail-resorts",
-    oldSlug: "grand-lodge-crested-butte-condos-traverse-vs-vail-resorts-what-s-the-difference",
-    title: "Grand Lodge Crested Butte Condos: Traverse vs. Vail Resorts — What's the Difference?",
-    excerpt: "A side-by-side comparison of booking a Grand Lodge condo through Traverse Hospitality vs. Vail Resorts — pricing, services, and what you actually get.",
-    date: "2026-04-27",
-    author: "Traverse",
-    category: "Crested Butte",
-    market: "crested-butte",
-    image: "/blog/grand-lodge-28.jpg",
-  },
+  // "grand-lodge-traverse-vs-vail-resorts" was unpublished 2026-09-04. It named
+  // the competitor in its URL, title, meta description and BlogPosting schema,
+  // and its title propagated into the Recent Posts sidebar of ~20 other posts.
+  // /blog/<slug> is force-static with dynamicParams:false, so removing it here
+  // is what unpublishes it — the route stops building and the URL 404s, which
+  // is why next.config.ts carries a 301 to /crested-butte/grand-lodge instead.
+  // Copy is in git history if it is ever rewritten without naming them.
   {
     slug: "pet-friendly-crested-butte-grand-lodge-153",
     oldSlug: "pet-friendly-crested-butte-condo-grand-lodge-studio-153-walk-to-the-lifts-pool-hot-tub",
