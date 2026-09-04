@@ -13,6 +13,7 @@ import {
 } from "@/lib/seo-content";
 import { shouldSkipCiSupabaseFetches } from "@/lib/build-environment";
 import { BLOG_POSTS } from "./blog/posts";
+import { PRESS_RELEASES } from "./press/releases";
 
 const BASE = "https://www.booktraverse.com";
 
@@ -28,6 +29,7 @@ export async function generateSitemaps() {
     { id: "stays" },
     { id: "events" },
     { id: "blog" },
+    { id: "press" },
     { id: "properties" },
   ];
 }
@@ -46,6 +48,7 @@ const CORE_PAGES: { path: string; changeFrequency: ChangeFreq; priority: number 
     { path: "/property-management", changeFrequency: "monthly", priority: 0.8 },
     { path: "/contact", changeFrequency: "monthly", priority: 0.5 },
     { path: "/blog", changeFrequency: "weekly", priority: 0.7 },
+    { path: "/press", changeFrequency: "monthly", priority: 0.6 },
   ];
 
 // Statically-rendered, indexable content pages — market hubs, building pages,
@@ -198,6 +201,18 @@ export default async function sitemap(props: {
       lastModified: post.date ? new Date(post.date) : undefined,
       changeFrequency: "monthly" as const,
       priority: 0.6,
+    }));
+  }
+
+  if (id === "press") {
+    // Sourced from `src/app/press/releases.ts` — the same static array the
+    // /press index and /press/[slug] render from, so a new release needs no
+    // sitemap edit.
+    return PRESS_RELEASES.map((r) => ({
+      url: `${BASE}/press/${r.slug}`,
+      lastModified: r.date ? new Date(r.date) : undefined,
+      changeFrequency: "yearly" as const,
+      priority: 0.5,
     }));
   }
 

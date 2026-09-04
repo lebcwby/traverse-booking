@@ -525,6 +525,12 @@ function DesktopFooter() {
                 Blog
               </Link>
               <Link
+                href="/press"
+                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
+              >
+                Press Room
+              </Link>
+              <Link
                 href="/contact"
                 className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
               >
