@@ -88,12 +88,12 @@ export default function PressPage() {
             }}
           >
             Company news and announcements from Traverse Hospitality. For
-            interviews, data, or photography, reach our team at{" "}
+            interviews, data, or photography, email{" "}
             <a
-              href="tel:+19705333583"
+              href="mailto:press@traversehospitality.com"
               style={{ color: "#fff", textDecoration: "underline" }}
             >
-              (970) 533-3583
+              press@traversehospitality.com
             </a>
             .
           </p>
@@ -315,15 +315,18 @@ export default function PressPage() {
           </p>
           <p style={{ fontSize: "16px", lineHeight: 1.65, margin: 0 }}>
             <a
+              href="mailto:press@traversehospitality.com"
+              style={{ color: "#0f766e", fontWeight: 600 }}
+            >
+              press@traversehospitality.com
+            </a>
+            <span style={{ color: "#94a3b8" }}> · </span>
+            <a
               href="tel:+19705333583"
               style={{ color: "#0f766e", fontWeight: 600 }}
             >
               (970) 533-3583
             </a>
-            <span style={{ color: "#94a3b8" }}> · </span>
-            <Link href="/contact" style={{ color: "#0f766e", fontWeight: 600 }}>
-              Contact form
-            </Link>
           </p>
         </div>
       </div>

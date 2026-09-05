@@ -44,5 +44,5 @@ export const pageContent = `
 
 <p>Traverse Hospitality<br>
 11 Snowmass Road, Mt. Crested Butte, CO 81225<br>
-<a href="tel:+19705333583">(970) 533-3583</a> &middot; <a href="https://www.booktraverse.com/contact">booktraverse.com/contact</a></p>
+<a href="mailto:press@traversehospitality.com">press@traversehospitality.com</a> &middot; <a href="tel:+19705333583">(970) 533-3583</a></p>
 `;
