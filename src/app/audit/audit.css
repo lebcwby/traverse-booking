@@ -990,3 +990,14 @@ body:has(.audit-page) > main {
   color: #6e7590 !important;
   line-height: 1.6;
 }
+
+/* Conduit is guest support, and these are owner-acquisition pages — the widget
+   is suppressed at the source in components/chat/conduit-widget.tsx. This is
+   the belt-and-braces half: next/script does not remove what the widget already
+   injected, so a client-side navigation from a guest page into one of these
+   would otherwise leave the bubble behind. `.audit-page` is on both /audit and
+   /projection (which carries `audit-page proj-page`). */
+body:has(.audit-page) #conduit-widget-container,
+body:has(.audit-page) [id^="conduit-widget"]:not(script) {
+  display: none !important;
+}
