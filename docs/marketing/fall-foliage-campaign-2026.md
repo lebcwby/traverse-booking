@@ -288,7 +288,80 @@ so once the segments exist the rest is scriptable.
 
 ---
 
-## 🚀 Rung 1 — READY TO SEND (built 2026-08-30)
+## 📊 RUNG 1 RESULTS — analysed 2026-09-06 (7 days post-send)
+
+| Metric | Leadville | Crested Butte | Combined |
+|---|---|---|---|
+| Recipients | 610 | 265 | **875** |
+| Delivered | 605 (99.2%) | 262 (98.9%) | 867 (99.1%) |
+| Bounced | 5 (0.82%) | 3 (1.13%) | 8 (0.92%) |
+| Spam complaints | **0** | **0** | **0** |
+| Opens (reported) | 293 (48.4%) | 141 (53.8%) | 434 (49.6%) |
+| **Clicks** | **5 (0.83%)** | **2 (0.76%)** | **7 (0.80%)** |
+| Unsubscribes | 14 (**2.31%**) | 3 (1.15%) | 17 (1.94%) |
+| **Bookings** | **0** | **0** | **0** |
+
+**Gates: all passed** — bounce 0.92% (<2%), complaints 0% (<0.1%). The domain and the
+warming worked. Nothing here blocks rung 2.
+
+### ❌ The redesign did NOT improve click-through
+| | Win-back (Jul 30) | Fall foliage (Aug 30) |
+|---|---|---|
+| Click rate | 0.94% | **0.80%** |
+| Click-to-open | ~1.4% | 1.4–1.7% |
+| Bookings | 0 | **0** |
+
+Real listing cards, above-the-fold CTA, date-filtered deep links, market segmentation and
+anniversary targeting produced **no lift**. Two campaigns, ~1,100 recipients, 12 clicks total,
+zero attributable bookings. The "fix the body" diagnosis was wrong.
+
+### ⭐ Why: the open rate is mostly machines
+`Opened Email` events Aug 30 – Sep 7, grouped by Client Name:
+
+| Client | Events | Share |
+|---|---|---|
+| **(blank)** | 442 | **71%** |
+| Gmail image proxy | 127 | 21% |
+| Chrome | 39 | 6% |
+| Mobile Safari / Android / Apple Mail | 10 | 2% |
+
+A 71% blank-client share is the signature of automated prefetch (Apple MPP and security
+scanners), which Klaviyo can't attribute to a real client. So the true human open rate is
+plausibly **~15–17%, not 49%** — and click-to-open on *real* opens is roughly **5%**, which is
+mediocre rather than catastrophic.
+
+**This reframes the problem.** The binding constraint isn't the email body — it's how few
+people genuinely open. Levers are the subject line, the sender, and audience intent. Design
+effort past "clean and fast" has low marginal return.
+
+⚠️ It also means **the "pause if open rate < 15%" gate is meaningless** while opens are
+MPP-inflated. Judge on clicks and bookings.
+
+### ❌ The A/B test taught us nothing
+Klaviyo ran test-then-winner, not 50/50, and picked winners off tiny samples:
+
+| | Variation A | Variation B |
+|---|---|---|
+| Leadville | 61 sent, 55.7% open, 0 clicks | **549 sent**, 47.6% open, 5 clicks |
+| Crested Butte | **239 sent**, 53.4% open, 2 clicks | 26 sent, 57.7% open, 0 clicks |
+
+It chose B for Leadville and A for Crested Butte from test groups of 61 and 26 — pure noise.
+In both cases the small test group then *out-opened* the "winning" variation.
+
+**Rule going forward: under ~2,000 recipients, use a true 50/50 split with no auto-winner, or
+don't A/B at all.**
+
+### Other signals
+- **Leadville unsubscribes ran 2× Crested Butte** (2.31% vs 1.15%). Both are above a healthy
+  0.1–0.5%. Re-sending to the same rung-1 people carries real fatigue risk.
+- **23 direct bookings** landed in the 7 days after the send (13 for foliage dates), including
+  one Leadville website booking **28 minutes** after it went out. Klaviyo attributed none of
+  them. `Booked Reservation` (`SuqpZn`) *is* firing — 21 events that week — so this is a
+  genuine zero, not a tracking gap. Direct booking is happening; the email isn't causing it.
+
+---
+
+## 🚀 Rung 1 — SENT 2026-08-30
 
 | Market | Campaign ID | Segment | Size |
 |---|---|---|---|
