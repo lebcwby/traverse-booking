@@ -356,12 +356,26 @@ export function NoFeesHeader({ phoneOverride }: NoFeesHeaderProps = {}) {
           <Link href="/blog" onClick={() => setMobileOpen(false)}>
             Blog
           </Link>
-          <Link href="/property-management" onClick={() => setMobileOpen(false)}>
-            For Owners
+          <Link href="/press" onClick={() => setMobileOpen(false)}>
+            Press Room
           </Link>
           <Link href="/contact" onClick={() => setMobileOpen(false)}>
             Contact
           </Link>
+
+          {/* Owners are a second audience, not a footnote under "More" — which
+              is where this link used to sit, four items down, on a drawer that
+              couldn't be opened. Own heading, own phone number (the B2B line,
+              not the guest one shown below). */}
+          <strong style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--muted)", padding: "28px 0 8px", display: "block", marginTop: "12px", borderTop: "1px solid var(--line, #e2e8f0)" }}>
+            Own a property?
+          </strong>
+          <Link href="/property-management" onClick={() => setMobileOpen(false)}>
+            Property Management
+          </Link>
+          <a href="tel:+19705333583" onClick={() => setMobileOpen(false)}>
+            Owners: (970) 533-3583
+          </a>
           {email ? (
             <Link href="/account/reservations" onClick={() => setMobileOpen(false)}>
               Account

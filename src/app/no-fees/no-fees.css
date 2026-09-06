@@ -1635,8 +1635,23 @@ body:has(main .site-header) > header {
     width: 11px;
     height: 11px;
   }
+  /* The drawer below (.mobile-nav) was fully built but unreachable: this rule
+     said `none`, and so does the base rule, so the hamburger had never been
+     visible at any width since the initial commit. With .primary-nav also
+     hidden here, mobile had no route to anything that isn't a booking funnel
+     — /property-management, /blog, /press and /contact were all orphaned. */
   .menu-toggle {
-    display: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    /* 44px is the minimum comfortable touch target. */
+    min-width: 44px;
+    min-height: 44px;
+    margin-right: -8px;
+    background: none;
+    border: 0;
+    cursor: pointer;
   }
   .logo {
     flex-shrink: 0;
