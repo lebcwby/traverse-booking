@@ -67,7 +67,12 @@ export default async function RootLayout({
   // get a nonce-based CSP without 'unsafe-inline'. Inline <Script> blocks below
   // must carry this nonce or they're blocked, breaking GTM + Google Ads enhanced
   // conversions on checkout. See src/lib/csp.ts buildSensitiveContentSecurityPolicy.
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const requestHeaders = await headers();
+  const nonce = requestHeaders.get("x-nonce") ?? undefined;
+  // The landing subdomains are host-scoped rewrites, so the client router never
+  // sees /audit or /projection. Passing the real Host down is the only way
+  // ConduitWidget can tell it's on one during server render.
+  const host = requestHeaders.get("host") ?? "";
   return (
     <html lang="en">
       <head>
@@ -220,7 +225,7 @@ export default async function RootLayout({
             The component decides which pages get it — guest surfaces only, not
             the owner-acquisition pages. Suspense because it reads usePathname. */}
         <Suspense>
-          <ConduitWidget nonce={nonce} />
+          <ConduitWidget nonce={nonce} host={host} />
         </Suspense>
 
         {/* Microsoft Ads UET — loaded directly (not via GTM) to avoid CSP nonce

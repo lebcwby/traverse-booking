@@ -19,20 +19,29 @@ import { usePathname } from "next/navigation";
 const OWNER_HOST_PREFIXES = ["audit.", "projection."];
 const OWNER_PATHS = ["/property-management", "/audit", "/projection"];
 
-function isOwnerSurface(pathname: string): boolean {
-  if (typeof window !== "undefined") {
-    const host = window.location.hostname;
-    if (OWNER_HOST_PREFIXES.some((h) => host.startsWith(h))) return true;
-  }
+function isOwnerSurface(pathname: string, host: string): boolean {
+  // `host` comes from the request header during server render and from
+  // window.location afterwards. Without the header the subdomains would only be
+  // recognised on the client, and the script would already be in the SSR HTML.
+  const h = (
+    typeof window !== "undefined" ? window.location.hostname : host
+  ).toLowerCase();
+  if (OWNER_HOST_PREFIXES.some((p) => h.startsWith(p))) return true;
   return OWNER_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
-export function ConduitWidget({ nonce }: { nonce?: string }) {
+export function ConduitWidget({
+  nonce,
+  host = "",
+}: {
+  nonce?: string;
+  host?: string;
+}) {
   const pathname = usePathname();
   // Computed during render rather than in state: on a direct load of an owner
   // page this has to be right on the FIRST render, or the 3MB widget bundle
   // starts downloading before an effect could stop it.
-  const owner = isOwnerSurface(pathname);
+  const owner = isOwnerSurface(pathname, host);
 
   // Un-rendering the <Script> does not remove what the widget already injected,
   // so arriving at an owner page by client-side navigation would otherwise
