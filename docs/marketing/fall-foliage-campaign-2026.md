@@ -288,10 +288,40 @@ so once the segments exist the rest is scriptable.
 
 ---
 
-## 🔔 RUNG 2 — FALL REMINDER (built 2026-09-08, send Wed 2026-09-09 10am local)
+## 🔔 RUNG 2 — FALL REMINDER (built 2026-09-08, scheduled Wed 2026-09-09 10am local)
 
-Templates: **`TATeFq`** Leadville · **`XRXyye`** Crested Butte
+| Market | Campaign | Segment | Excludes | Template | Segment size |
+|---|---|---|---|---|---|
+| Leadville | `01M216GCRHFWTJ87V3DSS2B37T` | `RktPb8` | `Tc8KQF` | `TATeFq` | 1,875 |
+| Crested Butte | `01M216GF1R3WYX83TM3JH6KCGP` | `UL55vi` | `VfYUuX` | `XRXyye` | 931 |
+
+Both **Draft**, templates attached, from **"Nadim at Traverse Hospitality"**
+`<hello@booktraverse.com>`, UTM tracking on, send strategy
+`static / is_local: true / 2026-09-09T10:00`. Rung-1 recipients are excluded at campaign
+level, so net send ≈ **1,264 LV + 666 CB ≈ 1,930**.
+
 Sources: `docs/marketing/templates/fall-reminder-{leadville,crested-butte}.html`
+
+### ⚠️ Klaviyo REST revision `2024-10-15` differs from the MCP connector's
+Two shapes bit us when creating campaigns directly over REST (the MCP uses a newer revision):
+- campaign-message attributes are **flat** — `channel` + `content` at the top level, *not*
+  wrapped in `definition`
+- send strategy uses **`options_static`** (`{datetime, is_local, send_past_recipients_immediately}`),
+  not `datetime` + `options`
+
+### Segment creation is REST-only
+The Klaviyo MCP connector exposes `get_segment`/`get_segments` but **no create tool**, so
+segments must be made either in the UI or via `POST /api/segments` with a key carrying
+`segments:write`. The condition-group JSON that works:
+
+```
+condition_groups: [                      # groups are AND-ed
+  [ markets contains "Leadville" ],
+  [ last_stay after  2025-06-08 ],
+  [ last_stay before 2025-11-13 ],
+  [ next_checkin not-set, next_checkin before today ]   # 2 conditions in ONE group = OR
+]
+```
 
 ### Format change: plain-text style, from Nadim
 Rung 1 proved the constraint is *real opens*, not design. These are minimal — no images, no
