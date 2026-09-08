@@ -70,6 +70,12 @@ export const SCRIPT_SOURCES = [
   "https://challenges.cloudflare.com",
   // Conduit AI chat widget — widget.min.js + any sub-resources it pulls.
   "https://*.conduit.ai",
+  // reCAPTCHA Enterprise, loaded by the HubSpot form on /property-management.
+  // frame-src already allowed www.google.com for the challenge iframe, but the
+  // script itself was blocked — so the captcha never initialised on our main
+  // owner-conversion page. gstatic serves its runtime chunks.
+  "https://www.google.com",
+  "https://www.gstatic.com",
   // Vintory (LeadConnector) chat — owner-acquisition pages only, see
   // components/chat/vintory-widget.tsx. The wildcard is deliberate: the loader
   // lives on widgets.leadconnectorhq.com but then pulls chat-widget.esm.js and
@@ -182,6 +188,9 @@ export const CONNECT_SOURCES = [
   // Cloudflare Turnstile widget telemetry/challenge XHRs.
   "https://challenges.cloudflare.com",
   "https://*.leadconnectorhq.com",
+  // The chat widget posts session/attribution data here, not to its own
+  // origin — blocked at first, which silently broke Vintory lead attribution.
+  "https://*.msgsndr.com",
 ];
 
 export const FRAME_SOURCES = [
