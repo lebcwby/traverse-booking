@@ -288,6 +288,63 @@ so once the segments exist the rest is scriptable.
 
 ---
 
+## 🔔 RUNG 2 — FALL REMINDER (built 2026-09-08, send Wed 2026-09-09 10am local)
+
+Templates: **`TATeFq`** Leadville · **`XRXyye`** Crested Butte
+Sources: `docs/marketing/templates/fall-reminder-{leadville,crested-butte}.html`
+
+### Format change: plain-text style, from Nadim
+Rung 1 proved the constraint is *real opens*, not design. These are minimal — no images, no
+buttons, one column, system font, signed by Nadim personally. Cheap to produce and it reads
+like a note rather than a newsletter.
+
+**No A/B this time — deliberately.** At ~450 per market a 50/50 split gives ~225 per arm;
+detecting a move from 1% to 2% click rate needs thousands per arm. Instead this is a
+*sequential* test: the designed format now has two data points (win-back and rung 1, both
+~1.4–1.7% click-to-open), so the whole of rung 2 goes plain and we compare against that
+baseline. Underpowered either way, but it doesn't waste half the audience on a known quantity.
+
+### ⚠️ Everything had to be re-quoted — 4 of 6 rung-1 listings had sold
+Checked 2026-09-08: **all three Crested Butte** homes and one Leadville home from rung 1 were
+gone. Prices on the survivors had also **fallen sharply** as dynamic pricing discounts unsold
+fall inventory:
+
+| Listing | Aug 30 | Sep 8 |
+|---|---|---|
+| Governor's Mansion | $2,065 | **$1,506** (−27%) |
+| The Rosemont | $878 | **$734** (−16%) |
+
+That price drop is now a genuine, honest hook in the Leadville copy.
+
+### The calendar forced a different pitch per market
+- **Leadville Sep 18–21** — 9 homes genuinely available. Straight "the aspens turned, come now".
+- **Crested Butte Sep 25–28** — only **3** homes bookable for a 3-night stay. Far tighter than
+  the 24% weekly occupancy implies, because weekend nights book heaviest. Too thin to point
+  668 people at, so the CB email leads with that real scarcity and redirects to **Oct 2–5**,
+  which is 3–5% booked with 7+ homes open.
+
+### ⚠️ Two gotchas hit while building this
+- **`/api/quotes/batch` caps at 10 lines** ("Too many cart lines"). Split larger checks.
+- **`NOT IN (subquery)` returns nothing if the subquery contains a NULL.** An availability
+  query using `listing_id NOT IN (...)` silently returned zero rows because one reservation
+  had a null `listing_id`. Use `NOT EXISTS`.
+
+### Segments to build (UI — no segment API)
+Window: `guesty_last_stay` **after Jun 8, 2025** AND **before Nov 13, 2025** (300–456 days).
+Remember: **separate condition blocks = AND**, stacked in one block = OR.
+
+1. `guesty_markets` contains the text `Leadville` *(or `Crested Butte` + doesn't contain `Leadville`)*
+2. AND `guesty_last_stay` **after** `Jun 8, 2025`
+3. AND `guesty_last_stay` **before** `Nov 13, 2025`
+4. AND ( `guesty_next_checkin` **is not set** **OR** **before** today )
+
+Rung-1 recipients are excluded at the *campaign* level via `audiences.excluded`
+(`Tc8KQF` / `VfYUuX`) rather than in the segment — simpler and avoids a fifth condition.
+
+Expected ≈ **1,346 Leadville / 668 CB** (CRM counts; Klaviyo will show fewer).
+
+---
+
 ## 📊 RUNG 1 RESULTS — analysed 2026-09-06 (7 days post-send)
 
 | Metric | Leadville | Crested Butte | Combined |
