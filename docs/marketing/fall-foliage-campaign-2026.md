@@ -323,6 +323,35 @@ condition_groups: [                      # groups are AND-ed
 ]
 ```
 
+### ✅ A/B: plain vs designed — TRUE 50/50, no auto-winner
+
+| Variant | Leadville | Crested Butte |
+|---|---|---|
+| **A — plain text** (from Nadim, no images) | `TATeFq` | `XRXyye` |
+| **B — designed** (navy header, photo cards) | `Tycu6q` | `Yit5Ze` |
+
+**Both variants say exactly the same thing** — same listings, prices, dates, arguments, sign-off.
+Only the format differs, so the test isolates format alone.
+
+⚠️ **Set the test group to 100% of the audience in the Klaviyo UI.** The default is ~10% test
+/ 90% winner, which is what destroyed the rung-1 subject-line test (winners picked off 26–61
+recipients). At 100% it's a genuine 50/50 with no winner phase.
+
+At ~965 per arm this detects roughly a 3× difference, not a 1%→2% move — so treat it as
+directional and pool with rung 3 for a firmer read. **An underpowered clean test still beats
+the confounded alternative**: comparing rung 2 against rung 1 would vary audience (345–389 vs
+300–456 days) and calendar week at the same time as format, so any difference would be
+uninterpretable.
+
+### ⚠️ Never publish the pricing mechanism
+An early draft of the Leadville copy read *"our rates come down as a date gets close and the
+house is still empty."* True, but it teaches guests that **waiting is rewarded** — it trains
+the exact behaviour that erodes lead time and ADR. Cut before send.
+
+Replaced with a per-person framing, which is compelling and reveals nothing about strategy:
+the Governor's Mansion is **$36/person/night** across 14 people, the Ice Palace $29, the
+Rosemont $27. Urgency now comes from the colour window, not the price.
+
 ### Format change: plain-text style, from Nadim
 Rung 1 proved the constraint is *real opens*, not design. These are minimal — no images, no
 buttons, one column, system font, signed by Nadim personally. Cheap to produce and it reads
