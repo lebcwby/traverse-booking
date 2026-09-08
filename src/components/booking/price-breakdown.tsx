@@ -38,24 +38,31 @@ export function PriceBreakdown({
   const [taxesExpanded, setTaxesExpanded] = useState(false);
   const hasTaxBreakdown =
     Array.isArray(taxBreakdown) && taxBreakdown.length > 0;
-  // Split out the base (accommodation) and cleaning fee on separate lines
-  // per 2026-05-20 product call. Previous version bundled them as
-  // "$X × N nights = $base+cleaning" which made it look like cleaning was
-  // amortized into the nightly rate. The new layout makes both line items
-  // explicit so guests can see exactly what they're paying for.
-  const avgNightlyRate = nights > 0 ? accommodation / nights : 0;
   const hasDiscount = accommodationAdjusted < accommodation;
   const grandTotal =
     total + (upsells ? upsells.reduce((s, u) => s + u.amount, 0) : 0);
   const vrboSavings = Math.round(grandTotal * OTA_SAVINGS_FRACTION);
-  // Pre-tax subtotal = accommodation (after any promo discount) + cleaning.
-  // Upsells aren't included here because they're rendered as a separate
-  // "Extras" group below the Taxes row. This subtotal also doubles as the
-  // base for per-tax rate %, so guests can verify the math (amount / base).
-  const preTaxSubtotal = accommodationAdjusted + cleaning;
+
+  // Subtotal is derived by SUBTRACTION, not by summing the parts.
+  //
+  // The fee lines used to be itemised — accommodation, cleaning, then an
+  // "Extras" group for upsells (damage waiver, pet fee) — and the displayed
+  // rows are now collapsed to Subtotal / Taxes / Total to read the way an OTA
+  // does. Adding up components to build that subtotal would mean any fee added
+  // later, or any component we forgot, silently drops out of the subtotal and
+  // the three rows stop reconciling — the one thing a guest WILL notice on a
+  // payment screen. Taking taxes off the grand total cannot desync: whatever
+  // the total is made of, subtotal + taxes === total by construction.
+  const subtotal = grandTotal - taxes;
+
+  // Percentages stay keyed to what tax is actually levied on (accommodation
+  // after discount, plus cleaning) rather than the displayed subtotal, so the
+  // rate shown is the real rate. The two are equal unless upsells are present,
+  // since upsells are added after tax.
+  const taxBase = accommodationAdjusted + cleaning;
   const formatTaxRate = (amount: number): string | null => {
-    if (preTaxSubtotal <= 0) return null;
-    const pct = (amount / preTaxSubtotal) * 100;
+    if (taxBase <= 0) return null;
+    const pct = (amount / taxBase) * 100;
     if (!Number.isFinite(pct) || pct <= 0) return null;
     // One decimal, but drop trailing ".0" so 6.0% reads as 6%.
     return `${pct.toFixed(1).replace(/\.0$/, "")}%`;
@@ -63,31 +70,27 @@ export function PriceBreakdown({
 
   return (
     <div className="space-y-2 text-sm">
-      {/* Base fare — accommodation pre-discount, no cleaning, no taxes */}
-      <div className="flex justify-between">
-        <span className="text-muted-foreground">
-          {$(avgNightlyRate)} x {nights} {nights === 1 ? "night" : "nights"}
-        </span>
-        <span>{$(accommodation)}</span>
-      </div>
-      {hasDiscount && promotion && (
-        <div className="flex justify-between text-green-600">
-          <span>{promoDisplay(promotion)?.label ?? promotion.name}</span>
-          <span>-{$(accommodation - accommodationAdjusted)}</span>
-        </div>
-      )}
-      {/* Cleaning fee — broken out on its own line */}
-      {cleaning > 0 && (
+      {/* Subtotal — accommodation, cleaning, damage waiver, pet fee and any
+          other extra, folded into one line. Only rendered when there are taxes
+          to separate it from; with no taxes it would just restate the Total. */}
+      {taxes > 0 && subtotal > 0 && (
         <div className="flex justify-between">
-          <span className="text-muted-foreground">Cleaning fee</span>
-          <span>{$(cleaning)}</span>
+          <span className="text-muted-foreground">
+            Subtotal · {nights} {nights === 1 ? "night" : "nights"}
+          </span>
+          <span>{$(subtotal)}</span>
         </div>
       )}
-      {taxes > 0 && preTaxSubtotal > 0 && (
-        <div className="flex justify-between border-t border-border/40 pt-2 text-foreground">
-          <span>Subtotal before taxes</span>
-          <span>{$(preTaxSubtotal)}</span>
-        </div>
+      {/* A promotion stays visible — burying money we told the guest they'd
+          save is a different thing from tidying away a fee. But it reads as a
+          NOTE rather than an arithmetic row: the subtotal above is already net
+          of it, so a "-$50" line underneath would look like a second deduction
+          the guest never receives. */}
+      {hasDiscount && promotion && (
+        <p className="text-xs font-medium text-green-600">
+          {promoDisplay(promotion)?.label ?? promotion.name} applied — you saved{" "}
+          {$(accommodation - accommodationAdjusted)}
+        </p>
       )}
       {taxes > 0 && (
         <>
@@ -140,20 +143,10 @@ export function PriceBreakdown({
           )}
         </>
       )}
-      {upsells && upsells.length > 0 && (
-        <>
-          <Separator />
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Extras
-          </p>
-          {upsells.map((item) => (
-            <div key={item.title} className="flex justify-between">
-              <span className="text-muted-foreground">{item.title}</span>
-              <span>{$(item.amount)}</span>
-            </div>
-          ))}
-        </>
-      )}
+      {/* The "Extras" group (damage waiver, pet fee, any selected upsell) used
+          to be itemised here. It is inside the Subtotal now — the guest still
+          picked each one on the previous step, where they are named and priced
+          individually. */}
       <Separator />
       <div className="flex justify-between font-semibold text-base">
         <span>Total</span>

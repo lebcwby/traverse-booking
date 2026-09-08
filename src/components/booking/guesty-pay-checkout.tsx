@@ -468,10 +468,19 @@ export function GuestyPayCheckout({
             {quote.guests === 1 ? "" : "s"} · {p.nights} night
             {p.nights === 1 ? "" : "s"}
           </p>
+          {/* Subtotal / Taxes / Total only, matching the Stripe checkout's
+              PriceBreakdown. Subtotal is derived by subtracting taxes from the
+              total rather than summing the parts, so the rows reconcile no
+              matter what the total is composed of. This surface is parked
+              behind NEXT_PUBLIC_CHECKOUT_MODE; kept in step so reactivating
+              GuestyPay doesn't quietly bring the itemised fees back. */}
           <div className="space-y-1.5 text-sm">
-            <Row label="Accommodation" value={p.accommodation} />
-            {p.cleaning ? <Row label="Cleaning fee" value={p.cleaning} /> : null}
-            {p.taxes ? <Row label="Taxes" value={p.taxes} /> : null}
+            {p.taxes ? (
+              <>
+                <Row label="Subtotal" value={p.total - p.taxes} />
+                <Row label="Taxes" value={p.taxes} />
+              </>
+            ) : null}
           </div>
           <div className="mt-3 flex justify-between border-t border-border pt-3 text-base font-semibold text-foreground">
             <span>Total</span>
