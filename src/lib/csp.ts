@@ -70,11 +70,12 @@ export const SCRIPT_SOURCES = [
   "https://challenges.cloudflare.com",
   // Conduit AI chat widget — widget.min.js + any sub-resources it pulls.
   "https://*.conduit.ai",
-  // No LeadConnector origin: the chat widget was removed once Vintory
-  // registered the A2P campaign manually (2026-08-31). If it ever comes back it
-  // needs https://*.leadconnectorhq.com in script/style/connect/frame/img/font
-  // — the bare widgets host is not enough, since the loader pulls
-  // chat-widget.esm.js and libphonenumber from stcdn once it boots.
+  // Vintory (LeadConnector) chat — owner-acquisition pages only, see
+  // components/chat/vintory-widget.tsx. The wildcard is deliberate: the loader
+  // lives on widgets.leadconnectorhq.com but then pulls chat-widget.esm.js and
+  // libphonenumber from stcdn.leadconnectorhq.com, so the bare widgets host is
+  // not enough. Same reason it appears in style/img/connect/frame/font below.
+  "https://*.leadconnectorhq.com",
 ];
 
 export const STYLE_SOURCES = [
@@ -87,6 +88,7 @@ export const STYLE_SOURCES = [
   "https://*.hsforms.net",
   "https://*.hsforms.com",
   "https://*.hubspot.com",
+  "https://*.leadconnectorhq.com",
 ];
 
 export const IMG_SOURCES = [
@@ -120,6 +122,7 @@ export const IMG_SOURCES = [
   "https://*.hsforms.net",
   "https://*.hubspotusercontent-na2.net",
   "https://*.conduit.ai",
+  "https://*.leadconnectorhq.com",
 ];
 
 export const CONNECT_SOURCES = [
@@ -178,6 +181,7 @@ export const CONNECT_SOURCES = [
   "https://team.traversehospitality.com",
   // Cloudflare Turnstile widget telemetry/challenge XHRs.
   "https://challenges.cloudflare.com",
+  "https://*.leadconnectorhq.com",
 ];
 
 export const FRAME_SOURCES = [
@@ -210,6 +214,7 @@ export const FRAME_SOURCES = [
   // /w9-and-payment-authorization-form. Wildcard covers regional subdomains
   // (na1/na2/na3.documents.adobe.com).
   "https://*.documents.adobe.com",
+  "https://*.leadconnectorhq.com",
 ];
 
 const SENSITIVE_CSP_PATH_PREFIXES = [
@@ -265,6 +270,8 @@ export function buildBaseContentSecurityPolicy({
     "font-src": [
       "'self'",
       "https://fonts.gstatic.com",
+      // Vintory chat bundles its own icon font.
+      "https://*.leadconnectorhq.com",
       "data:",
     ],
     "connect-src": [...CONNECT_SOURCES, ...SUPABASE_ORIGINS],
@@ -305,6 +312,8 @@ export function buildSensitiveContentSecurityPolicy({
     "font-src": [
       "'self'",
       "https://fonts.gstatic.com",
+      // Vintory chat bundles its own icon font.
+      "https://*.leadconnectorhq.com",
       "data:",
     ],
     "connect-src": [...CONNECT_SOURCES, ...SUPABASE_ORIGINS],

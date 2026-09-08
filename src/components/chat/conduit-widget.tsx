@@ -3,33 +3,14 @@
 import Script from "next/script";
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { isOwnerSurface } from "@/lib/owner-surfaces";
 
 /**
  * Conduit is our GUEST support chat — check-in times, hot tub, parking. On an
  * owner-acquisition page it answers the wrong question entirely, and it has
  * been throwing 403s there on top of that. So it loads everywhere except the
- * owner surfaces.
- *
- * Host is checked as well as path on purpose. `audit.` and `projection.` are
- * served by host-scoped rewrites in next.config.ts, so the client router never
- * sees `/audit` — usePathname() returns "/" on those subdomains (the same trap
- * that leaked the mobile bottom bar onto them). Matching on path alone would
- * miss both hosts; matching on host alone would miss www.booktraverse.com/audit.
+ * owner surfaces, which are where the Vintory widget takes over instead.
  */
-const OWNER_HOST_PREFIXES = ["audit.", "projection."];
-const OWNER_PATHS = ["/property-management", "/audit", "/projection"];
-
-function isOwnerSurface(pathname: string, host: string): boolean {
-  // `host` comes from the request header during server render and from
-  // window.location afterwards. Without the header the subdomains would only be
-  // recognised on the client, and the script would already be in the SSR HTML.
-  const h = (
-    typeof window !== "undefined" ? window.location.hostname : host
-  ).toLowerCase();
-  if (OWNER_HOST_PREFIXES.some((p) => h.startsWith(p))) return true;
-  return OWNER_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
-}
-
 export function ConduitWidget({
   nonce,
   host = "",

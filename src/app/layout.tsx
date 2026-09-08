@@ -12,6 +12,7 @@ import { Footer } from "@/components/layout/footer";
 import { CartProvider } from "@/lib/cart/cart-store";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { ConduitWidget } from "@/components/chat/conduit-widget";
+import { VintoryWidget } from "@/components/chat/vintory-widget";
 import { ConsentManager } from "@/components/analytics/consent-manager";
 import { MetaPageViewTracker } from "@/components/layout/meta-page-view-tracker";
 import { QualifiedEngagementTracker } from "@/components/layout/qualified-engagement-tracker";
@@ -226,6 +227,13 @@ export default async function RootLayout({
             the owner-acquisition pages. Suspense because it reads usePathname. */}
         <Suspense>
           <ConduitWidget nonce={nonce} host={host} />
+        </Suspense>
+
+        {/* Vintory (LeadConnector) — the mirror image: owner-acquisition pages
+            only, where Conduit is suppressed. Both key off the same
+            isOwnerSurface() so a page can never get both bubbles or neither. */}
+        <Suspense>
+          <VintoryWidget host={host} />
         </Suspense>
 
         {/* Microsoft Ads UET — loaded directly (not via GTM) to avoid CSP nonce
