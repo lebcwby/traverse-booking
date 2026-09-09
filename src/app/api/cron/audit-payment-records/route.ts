@@ -80,6 +80,16 @@ const PAGE_SIZE = 100;
  */
 const RECENT_BOOKING_DAYS = 14;
 const RECENT_BOOKING_SCAN = 200;
+/**
+ * Records the recently-booked pass may read. It has to scale with the window,
+ * or the cap silently becomes the real filter: at a fixed 200 a 75-day
+ * ?bookedDays request still only reached the newest ~30 days of bookings and
+ * reported nothing, which reads exactly like "no double charges found".
+ * We take ~10 bookings/day with headroom, capped so a wide manual window can
+ * still not run away.
+ */
+const recentBookingScan = (windowDays: number) =>
+  Math.min(800, Math.max(RECENT_BOOKING_SCAN, windowDays * 10));
 
 /**
  * Owner and owner-guest stays are not billed to the occupant, so a balance on
@@ -220,11 +230,12 @@ export async function GET(request: Request) {
     // fixed window of the newest bookings, which is where a fresh double
     // charge always is. Deduplicated by id against the first pass.
     const seen = new Set(reservations.map((r) => String(r._id ?? "")));
-    for (let skip = 0; skip < RECENT_BOOKING_SCAN; skip += PAGE_SIZE) {
+    const recentScan = recentBookingScan(bookedDays);
+    for (let skip = 0; skip < recentScan; skip += PAGE_SIZE) {
       const { results } = await getOpenAPIReservationsPage({
         fields:
           "_id confirmationCode status source checkInDateLocalized checkOutDateLocalized money.hostPayout money.totalPaid money.balanceDue money.payments guest.fullName",
-        limit: Math.min(PAGE_SIZE, RECENT_BOOKING_SCAN - skip),
+        limit: Math.min(PAGE_SIZE, recentScan - skip),
         skip,
         sort: "-createdAt",
         filters: [
