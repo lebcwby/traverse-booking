@@ -154,7 +154,15 @@ export async function GET(request: Request) {
           "_id confirmationCode status source checkInDateLocalized checkOutDateLocalized money.hostPayout money.totalPaid money.balanceDue money.payments guest.fullName",
         limit: Math.min(PAGE_SIZE, limit - skip),
         skip,
-        sort: "-checkOutDateLocalized",
+        // ASCENDING from `since`, so the scan starts at recently-departed and
+        // imminent stays and works forward. It used to sort descending, which
+        // spent the record budget on the stays furthest in the future and
+        // could stop before reaching anything urgent: at a 200-record default
+        // this run reached no earlier than 2026-10-30, leaving a genuine
+        // double charge on a 2026-09-19 stay unscanned. Unpaid balances and
+        // double charges matter most on stays that already happened or are
+        // about to, so those get the budget first.
+        sort: "checkOutDateLocalized",
         filters: [
           { field: "status", operator: "$eq", value: "confirmed" },
           { field: "checkOutDateLocalized", operator: "$gte", value: since },
