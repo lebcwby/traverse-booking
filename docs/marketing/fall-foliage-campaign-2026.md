@@ -288,7 +288,15 @@ so once the segments exist the rest is scriptable.
 
 ---
 
-## 🔔 RUNG 2 — FALL REMINDER (built 2026-09-08, scheduled Wed 2026-09-09 10am local)
+## ✅ RUNG 2 — FALL REMINDER — SENT 2026-09-09
+
+Both sent ~10am recipient-local, plain-text style signed by Nadim with a single hero banner.
+**No A/B** (dropped by Nadim); the designed variants `Tycu6q` / `Yit5Ze` remain unused.
+
+Banners were cropped locally and uploaded to Klaviyo's CDN via `POST /api/image-upload`
+(multipart) — **no production deploy needed to host a marketing image**.
+
+Results check scheduled 2026-09-16: `fall-reminder-rung2-results`.
 
 | Market | Campaign | Segment | Excludes | Template | Segment size |
 |---|---|---|---|---|---|
