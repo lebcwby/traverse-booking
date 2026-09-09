@@ -433,6 +433,10 @@ export async function GET(request: Request) {
         const chList = await stripe.charges.list({
           customer: customerId,
           limit: 50,
+          // Refunds are not inlined on a listed charge by default — without
+          // this the refunds array below comes back empty on a charge that was
+          // in fact refunded, which is a worse answer than not asking.
+          expand: ["data.refunds"],
         });
         customerCharges = chList.data.map((c) => ({
           id: c.id,
@@ -450,6 +454,21 @@ export async function GET(request: Request) {
           }),
           paymentMethod: c.payment_method_details?.type ?? null,
           receiptUrl: c.receipt_url,
+          // WHEN a refund went out, not just that one did. "Already refunded"
+          // is the wrong answer to give ops on its own: on GY-hNBNy23v the
+          // Stripe leg was fully refunded while the guest was still looking at
+          // both charges on his statement, and the only way to tell him what
+          // to expect — or to tell whether someone had just fixed it minutes
+          // earlier — was the refund's own timestamp.
+          refunds: (c.refunds?.data ?? []).map((r) => ({
+            id: r.id,
+            amount: (r.amount ?? 0) / 100,
+            status: r.status,
+            reason: r.reason ?? null,
+            created_mt: new Date(r.created * 1000).toLocaleString("en-US", {
+              timeZone: "America/Denver",
+            }),
+          })),
         }));
       }
 
