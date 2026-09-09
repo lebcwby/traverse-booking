@@ -81,15 +81,11 @@ const PAGE_SIZE = 100;
 const RECENT_BOOKING_DAYS = 14;
 const RECENT_BOOKING_SCAN = 200;
 /**
- * Records the recently-booked pass may read. It has to scale with the window,
- * or the cap silently becomes the real filter: at a fixed 200 a 75-day
- * ?bookedDays request still only reached the newest ~30 days of bookings and
- * reported nothing, which reads exactly like "no double charges found".
- * We take ~10 bookings/day with headroom, capped so a wide manual window can
- * still not run away.
+ * Hard ceiling on the recently-booked pass. It is generous because the pass is
+ * filtered to BE-API only (see below) — roughly 3 bookings a day rather than
+ * the ~39/day across all channels — so this covers months, not days.
  */
-const recentBookingScan = (windowDays: number) =>
-  Math.min(800, Math.max(RECENT_BOOKING_SCAN, windowDays * 10));
+const RECENT_BOOKING_MAX = 600;
 
 /**
  * Owner and owner-guest stays are not billed to the occupant, so a balance on
@@ -230,16 +226,25 @@ export async function GET(request: Request) {
     // fixed window of the newest bookings, which is where a fresh double
     // charge always is. Deduplicated by id against the first pass.
     const seen = new Set(reservations.map((r) => String(r._id ?? "")));
-    const recentScan = recentBookingScan(bookedDays);
-    for (let skip = 0; skip < recentScan; skip += PAGE_SIZE) {
-      const { results } = await getOpenAPIReservationsPage({
+    // Filtered to BE-API on purpose. The shadow charge needs a payment row
+    // noted "Stripe PI …", and we only ever write those on our own direct
+    // bookings — an OTA reservation cannot produce this defect, because the
+    // ccToken that gives Guesty a chargeable card is only passed on the direct
+    // path. Scanning every channel spent the budget on reservations that could
+    // not match: at ~39 confirmed bookings a day across all sources, an
+    // 800-record cap reached back barely three weeks and a 75-day request
+    // silently missed all three known cases. BE-API alone is ~3/day.
+    let recentTotal = Infinity;
+    for (let skip = 0; skip < Math.min(RECENT_BOOKING_MAX, recentTotal); skip += PAGE_SIZE) {
+      const { results, count } = await getOpenAPIReservationsPage({
         fields:
           "_id confirmationCode status source checkInDateLocalized checkOutDateLocalized money.hostPayout money.totalPaid money.balanceDue money.payments guest.fullName",
-        limit: Math.min(PAGE_SIZE, recentScan - skip),
+        limit: PAGE_SIZE,
         skip,
         sort: "-createdAt",
         filters: [
           { field: "status", operator: "$eq", value: "confirmed" },
+          { field: "source", operator: "$eq", value: "BE-API" },
           {
             field: "createdAt",
             operator: "$gte",
@@ -247,6 +252,7 @@ export async function GET(request: Request) {
           },
         ],
       });
+      recentTotal = Number.isFinite(count) ? count : recentTotal;
       for (const r of results) {
         if (!seen.has(String(r._id ?? ""))) reservations.push(r);
       }
