@@ -110,9 +110,35 @@ stay off until the issue below is fixed.
 
 **Why parked:** a real guest was **double-charged**. We create reservations directly as
 *confirmed* via BE-API after collecting payment, so Guesty's **per-listing auto-payment rule**
-("charge 100% at confirmation using guest card") fires a second charge. Stripe bookings are
-safe (no card vaulted in Guesty → the rule can't execute); GuestyPay vaults the card, so it
-can. The rules **can't simply be disabled** — VRBO/Expedia are hotel-collect and rely on them.
+("charge 100% at confirmation using guest card") fires a second charge. The rules
+**can't simply be disabled** — VRBO/Expedia are hotel-collect and rely on them.
+
+🚨 **CORRECTED 2026-09-09 — "Stripe bookings are safe (no card vaulted in Guesty → the
+rule can't execute)" was WRONG, and it is the sentence that hid three real double
+charges.** `checkout-finalizer.ts` sets `ccToken` to the Stripe **payment-method id** and
+passes it to `createReservationInstant`, so Guesty holds a chargeable card on **every**
+direct booking. On listings where the auto-payment rule is enabled it uses that card and
+captures again **through GuestyPay** — a different processor, so the second capture never
+appears in our Stripe. Confirmed cases (all BE-API, all refunded on the Stripe leg only
+after the guest complained — 38, 6 and 28 days later):
+
+| Reservation | Guest | Amount | Booked |
+|---|---|---|---|
+| GY-hNBNy23v | Richard Welch | $592.90 | 2026-08-01 |
+| GY-5RAz3apL | Autumn Lance | $357.19 | 2026-07-20 |
+| GY-SHHhdMpj | Stewart Taub | $1,738.41 | 2026-07-14 |
+
+⚠️ **When one appears: refund the STRIPE leg, never the GuestyPay one** — GuestyPay is
+what the reservation is actually paid with, so reversing it leaves the stay unpaid. And
+**check Stripe for an existing refund first**; all three were already refunded by the
+time anyone looked.
+
+`/api/cron/audit-payment-records` now flags this as `guestypay_shadow_charge` (a
+GuestyPay capture, proven by an `AuthNumber` in `attempts[]`, matching a Stripe-noted row
+for the same amount at any status). Nothing detected it before, because the ledger looks
+*correct*: our Stripe row gets CANCELLED in Guesty, leaving `totalPaid == hostPayout` and
+`balanceDue` 0 over a card that was hit twice. **This is unfixed at the source** — the
+open question is whether to stop passing `ccToken`, or disable the rule per listing.
 
 **The fix when resumed** (Guesty support's documented flow): create as **Inquiry** →
 **record the external payment** (Open API) → **update status to Confirmed**. ~half a day plus
