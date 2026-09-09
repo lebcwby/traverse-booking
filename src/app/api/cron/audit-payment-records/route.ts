@@ -10,11 +10,25 @@
  * Normally (1) stays PENDING and is inert — it has no vaulted card to charge,
  * so it shows in the UI as "Charge / Scheduled / Missing". But if it ever flips
  * to SUCCEEDED, Guesty counts the same money twice: `totalPaid` doubles and
- * `balanceDue` goes negative. On GY-hNBNy23v that produced a phantom -$507.36
- * credit and looked, to everyone reading the Guesty screen, exactly like the
- * guest had been double-charged $592.90. He had not — Stripe held a single
- * charge. The damage is accounting, not the guest's card: `totalPaid` is what
- * owner statements and payouts read.
+ * `balanceDue` goes negative. That much is an accounting defect rather than a
+ * guest one: `totalPaid` is what owner statements and payouts read.
+ *
+ * ⚠️ CORRECTION (2026-09-09): this file used to say of GY-hNBNy23v "He had not
+ * [been double-charged] — Stripe held a single charge." That was WRONG, and the
+ * guest proved it with his card statement six weeks later. Two separate $592.90
+ * captures existed: ours through Stripe, and one through GUESTYPAY 74 minutes
+ * later, carrying auth 03216D. GuestyPay is a different processor, so its
+ * capture is invisible in our Stripe account — which is exactly why the original
+ * check "Stripe holds one charge, therefore the guest paid once" reached the
+ * wrong answer. The premise in CLAUDE.md that direct bookings are safe because
+ * no card is vaulted in Guesty is also wrong: `createReservationInstant` passes
+ * the Stripe payment method as `ccToken`, so Guesty does have a chargeable card
+ * on every direct booking, and the auto-payment rule can and does use it.
+ *
+ * A sweep of all 214 BE-API bookings since June found three (Welch $592.90,
+ * Lance $357.19, Taub $1738.41) — each refunded on the Stripe leg only after
+ * the guest complained, at 38, 6 and 28 days. `guestypay_shadow_charge` below
+ * is what should have caught them.
  *
  * WHY IT NOW ENUMERATES FROM GUESTY (2026-08-26, GY-H5JutVsw / Melissa Bell):
  * It used to read our own `reservations` table, which holds ONLY direct BE-API
@@ -37,6 +51,8 @@
  * GET /api/cron/audit-payment-records            (cron; Bearer CRON_SECRET)
  *     ?limit=<n>      reservations to scan (default 200, max 500)
  *     ?days=<n>       look-back window on check-out (default 45, max 180)
+ *     ?bookedDays=<n> look-back on BOOKING date for the double-charge pass
+ *                     (default 14, max 180)
  *     ?dryRun=1       report only, never alert
  */
 import { NextResponse } from "next/server";
@@ -55,6 +71,15 @@ const BALANCE_EPSILON = 0.5;
 
 /** Guesty caps page size; anything larger is silently truncated. */
 const PAGE_SIZE = 100;
+
+/**
+ * The recently-booked pass. Deliberately small and fixed: a double charge
+ * lands within minutes of booking (74 in the Welch case), so a fortnight of
+ * new reservations is generous, and keeping it fixed means the checkout-window
+ * knobs can be tuned without quietly starving this one.
+ */
+const RECENT_BOOKING_DAYS = 14;
+const RECENT_BOOKING_SCAN = 200;
 
 /**
  * Owner and owner-guest stays are not billed to the occupant, so a balance on
@@ -139,6 +164,18 @@ export async function GET(request: Request) {
     180,
     Math.max(1, parseInt(url.searchParams.get("days") || "45", 10) || 45)
   );
+  // Overridable so a suspected case can be re-scanned over its own booking
+  // window without a deploy — the default is what the nightly cron uses.
+  const bookedDays = Math.min(
+    180,
+    Math.max(
+      1,
+      parseInt(
+        url.searchParams.get("bookedDays") || String(RECENT_BOOKING_DAYS),
+        10
+      ) || RECENT_BOOKING_DAYS
+    )
+  );
   const dryRun = url.searchParams.get("dryRun") === "1";
 
   // ── Enumerate from Guesty, not from our own table ──────────────────────
@@ -170,6 +207,38 @@ export async function GET(request: Request) {
       });
       reportedTotal = count;
       reservations.push(...results);
+      if (results.length < PAGE_SIZE) break;
+    }
+
+    // ── Second pass: recently BOOKED, whatever their checkout date ────────
+    // A double charge is created at booking time, not at checkout, so keying
+    // it to the checkout window is the wrong axis: Stewart Taub was charged
+    // twice on 14 July for a stay that does not check out until 17 Feb 2027,
+    // and the checkout-ordered scan reaches him only after everything sooner.
+    // Whichever direction that scan runs, one end of the ledger is starved.
+    // This pass covers what the other axis structurally cannot — a small,
+    // fixed window of the newest bookings, which is where a fresh double
+    // charge always is. Deduplicated by id against the first pass.
+    const seen = new Set(reservations.map((r) => String(r._id ?? "")));
+    for (let skip = 0; skip < RECENT_BOOKING_SCAN; skip += PAGE_SIZE) {
+      const { results } = await getOpenAPIReservationsPage({
+        fields:
+          "_id confirmationCode status source checkInDateLocalized checkOutDateLocalized money.hostPayout money.totalPaid money.balanceDue money.payments guest.fullName",
+        limit: Math.min(PAGE_SIZE, RECENT_BOOKING_SCAN - skip),
+        skip,
+        sort: "-createdAt",
+        filters: [
+          { field: "status", operator: "$eq", value: "confirmed" },
+          {
+            field: "createdAt",
+            operator: "$gte",
+            value: daysAgo(bookedDays),
+          },
+        ],
+      });
+      for (const r of results) {
+        if (!seen.has(String(r._id ?? ""))) reservations.push(r);
+      }
       if (results.length < PAGE_SIZE) break;
     }
   } catch (err) {
