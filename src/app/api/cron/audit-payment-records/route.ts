@@ -63,6 +63,13 @@ const PAGE_SIZE = 100;
  */
 const UNBILLED_SOURCES = new Set(["owner", "owner-guest"]);
 
+interface GuestyPaymentAttempt {
+  payload?: {
+    ProcessorResult?: { AuthNumber?: string } | null;
+    processorResult?: { AuthNumber?: string } | null;
+  } | null;
+}
+
 interface GuestyPayment {
   amount?: number;
   status?: string;
@@ -70,6 +77,19 @@ interface GuestyPayment {
   createdAt?: string;
   /** Present when a human pressed charge; absent when automation did it. */
   createdBy?: string | null;
+  /** An AuthNumber in here is proof GuestyPay actually captured the card. */
+  attempts?: GuestyPaymentAttempt[];
+}
+
+/**
+ * A real GuestyPay capture — a different processor from our Stripe, so the
+ * money never appears in our Stripe account. The AuthNumber is the tell.
+ */
+function isGuestyPayCapture(p: GuestyPayment): boolean {
+  return (p.attempts ?? []).some((a) => {
+    const pr = a?.payload?.ProcessorResult ?? a?.payload?.processorResult;
+    return Boolean(pr?.AuthNumber);
+  });
 }
 
 interface Finding {
@@ -77,6 +97,7 @@ interface Finding {
   guestyId: string;
   kind:
     | "duplicate_succeeded"
+    | "guestypay_shadow_charge"
     | "negative_balance"
     | "unpaid_balance"
     | "unrecorded_payment";
@@ -247,6 +268,53 @@ export async function GET(request: Request) {
       continue; // already reported; don't double-report on balance too
     }
 
+    // ── GuestyPay charged the same amount our Stripe already took ─────────
+    // The signature the duplicate check above CANNOT see. On GY-hNBNy23v the
+    // guest was charged $592.90 twice — once by us through Stripe, once by
+    // Guesty's per-listing auto-payment rule through GuestyPay, 74 minutes
+    // later. Only ONE of the two rows was SUCCEEDED: our Stripe row had been
+    // CANCELLED in Guesty, which left the ledger looking balanced
+    // (totalPaid == hostPayout, balanceDue 0) while the guest's card had
+    // genuinely been hit twice. Every balance-based and duplicate-based test
+    // here passes on that shape, which is why the three known cases surfaced
+    // only when the guests themselves complained — after 6, 28 and 38 days.
+    //
+    // GuestyPay money never lands in our Stripe, so the amounts matching
+    // across the two processors is the whole signal. A GuestyPay capture on
+    // its own is normal and is NOT flagged: staff collect balances that way
+    // (Paul's stay extension), and stay additions do too.
+    const stripeNoted = payments.filter((p) => p.note?.includes("Stripe PI"));
+    const shadow = succeeded
+      .filter(isGuestyPayCapture)
+      .find((g) =>
+        stripeNoted.some(
+          (s) =>
+            num(s.amount) !== null &&
+            num(g.amount) !== null &&
+            Math.abs((num(s.amount) as number) - (num(g.amount) as number)) <
+              0.01
+        )
+      );
+
+    if (shadow) {
+      const twin = stripeNoted.find(
+        (s) =>
+          Math.abs((num(s.amount) ?? 0) - (num(shadow.amount) ?? 0)) < 0.01
+      );
+      findings.push({
+        ...base,
+        kind: "guestypay_shadow_charge",
+        detail:
+          `GuestyPay captured $${shadow.amount} (auth confirmed) and a Stripe ` +
+          `record exists for the same amount [${twin?.status ?? "?"}]. ` +
+          `The card was very likely charged twice by two different processors. ` +
+          `CHECK STRIPE for an existing refund before issuing one — all three ` +
+          `known cases were already refunded on the Stripe side. Never refund ` +
+          `the GuestyPay leg: it is the one the reservation is paid with.`,
+      });
+      continue;
+    }
+
     // ── Over-paid ─────────────────────────────────────────────────────────
     if (balanceDue !== null && balanceDue < -BALANCE_EPSILON) {
       findings.push({
@@ -343,6 +411,16 @@ export async function GET(request: Request) {
             "auto-payment rule recorded a duplicate alongside ours. The row with " +
             "<em>no</em> Stripe PI note is the one to void. The guest was probably " +
             "charged only once — confirm in Stripe first.</p>"
+          : "",
+        findings.some((f) => f.kind === "guestypay_shadow_charge")
+          ? "<p><strong>GuestyPay shadow charge — the guest really was charged " +
+            "twice.</strong> Unlike the duplicate above, this is two captures on " +
+            "two different processors, so the second one never shows in our " +
+            "Stripe. <strong>Check Stripe for an existing refund before issuing " +
+            "one</strong> — every case so far was already refunded, and refunding " +
+            "twice is its own incident. Refund the <em>Stripe</em> leg, never the " +
+            "GuestyPay one: GuestyPay is what the reservation is actually paid " +
+            "with, and reversing it leaves the stay unpaid.</p>"
           : "",
         findings.some((f) => f.kind === "unpaid_balance")
           ? "<p><strong>Uncollected after check-out:</strong> the stay is over and " +
