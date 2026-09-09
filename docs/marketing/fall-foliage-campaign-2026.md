@@ -323,6 +323,24 @@ condition_groups: [                      # groups are AND-ed
 ]
 ```
 
+### 🚨 Assigning a template CLONES it — editing the source does nothing
+`POST /campaign-message-assign-template` copies the template into the campaign
+(`"Clone of TATeFq"`). The campaign then renders **its clone**, not the source. So a later
+`PATCH /templates/{source}` silently has no effect on the campaign, and the Klaviyo preview
+keeps showing the old copy — exactly how the withdrawn pricing line survived into the
+scheduled Leadville campaign and was only caught by eye.
+
+The clone is **not patchable** either — it doesn't exist in the `/templates` collection
+(404). **The fix is to re-assign the corrected source template**, which re-clones it.
+
+✅ **Always verify against the campaign message, never the source template:**
+`GET /campaign-messages/{id}/template` → check the html actually contains your change.
+
+### ⛔ A/B variations are UI-only
+`POST /campaigns` with two entries in `campaign-messages` returns
+`"Only a single campaign-message may be provided"`. There is no endpoint to add a variation
+to an existing campaign either. A/B setup must be done by hand in the campaign editor.
+
 ### ✅ A/B: plain vs designed — TRUE 50/50, no auto-winner
 
 | Variant | Leadville | Crested Butte |
