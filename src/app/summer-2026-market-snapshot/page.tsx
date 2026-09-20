@@ -14,7 +14,7 @@ import "../blog/blog-content.css";
 const URL = "https://www.booktraverse.com/summer-2026-market-snapshot";
 const PDF = "/reports/Traverse_Summer_2026_Market_Snapshot.pdf";
 const CHART = "/press/summer-2026-revpar-vs-market.png";
-const PUBLISHED = "2026-09-22";
+const PUBLISHED = "2026-09-20";
 
 const STATS = [
   {
@@ -150,7 +150,7 @@ export default function MarketSnapshotPage() {
               Market report
             </span>
             <span style={{ fontSize: "14px", opacity: 0.7 }}>
-              Published September 22, 2026 · Data through August 31, 2026
+              Published September 20, 2026 · Data through August 31, 2026
             </span>
           </div>
 
