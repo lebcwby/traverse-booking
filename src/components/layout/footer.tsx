@@ -531,6 +531,12 @@ function DesktopFooter() {
                 Press Room
               </Link>
               <Link
+                href="/summer-2026-market-snapshot"
+                className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
+              >
+                Summer 2026 Market Report
+              </Link>
+              <Link
                 href="/contact"
                 className="text-primary-foreground/70 transition-colors hover:text-primary-foreground"
               >

@@ -77,6 +77,8 @@ const CONTENT_PAGES: { path: string; changeFrequency: ChangeFreq; priority: numb
       changeFrequency: "monthly",
       priority: 0.8,
     },
+    // Reports (see src/app/summer-2026-market-snapshot)
+    { path: "/summer-2026-market-snapshot", changeFrequency: "yearly", priority: 0.7 },
     {
       path: "/crested-butte/guides/where-to-stay",
       changeFrequency: "monthly",
