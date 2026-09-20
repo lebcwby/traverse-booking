@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { pageContent } from "../press/summer-2026-market-snapshot/content";
+import { reportBody } from "./report-body";
 import "../blog/blog-content.css";
 
-// Report page for the Summer 2026 Market Snapshot. The press release that
-// announces it lives at /press/summer-2026-market-snapshot (same body text,
-// imported above so the two can never drift). This page adds the chart, the
-// headline figures, the PDF, and the Willow Fire note the PDF predates.
+// Report page for the Summer 2026 Market Snapshot: the report in its own
+// voice (report-body.ts), plus the chart, headline figures, the PDF, and the
+// Willow Fire note the PDF predates. The press release that announces it is a
+// different text at /press/summer-2026-market-snapshot; keep them different —
+// two identical bodies on one domain get folded together by Google.
 //
 // The four figures below are the report's own (pages 2 and 4). If the PDF is
 // ever reissued, change them here and in the press release together.
@@ -290,7 +291,7 @@ export default function MarketSnapshotPage() {
           </a>
         </div>
 
-        <div className="blog-content" dangerouslySetInnerHTML={{ __html: pageContent }} />
+        <div className="blog-content" dangerouslySetInnerHTML={{ __html: reportBody }} />
 
         {/* Note added at publication */}
         <div
@@ -307,11 +308,14 @@ export default function MarketSnapshotPage() {
         >
           <strong>Note added at publication.</strong> The PDF below was written
           for Traverse owners before the Willow Fire's effect on Leadville could
-          be separated out in the data. The Leadville figures in the release
-          above (competitive sets around one-bedroom homes down about 20% for
-          the summer; Traverse-managed one-bedrooms +1.7%) come from the same
-          PriceLabs source as the report, for the same June 1 – August 31
-          window.
+          be separated out in the data. The human-caused Willow Fire started June 28
+          west of town, grew past 7,000 acres, kept evacuation orders in place
+          from July 5 to July 30 and closed the airport to all but medical
+          flights. Competitive sets around our Leadville one-bedroom homes lost
+          about 20% of their revenue per available night for the summer, roughly
+          double the decline across all Traverse markets; Traverse-managed
+          Leadville one-bedrooms finished essentially flat (+1.7%) over the same
+          June 1 – August 31 window, from the same PriceLabs source.
         </div>
 
         {/* PDF embed */}
@@ -351,7 +355,7 @@ export default function MarketSnapshotPage() {
 
         <div style={{ marginTop: "48px", paddingTop: "28px", borderTop: "1px solid #e2e8f0" }}>
           <Link href="/press/summer-2026-market-snapshot" style={{ color: "#0f766e", fontWeight: 600, fontSize: "15px" }}>
-            Read the press release →
+            Read the announcement →
           </Link>
           <span style={{ color: "#94a3b8" }}> · </span>
           <Link href="/press" style={{ color: "#0f766e", fontWeight: 600, fontSize: "15px" }}>
