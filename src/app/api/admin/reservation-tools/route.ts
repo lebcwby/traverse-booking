@@ -480,12 +480,53 @@ export async function GET(request: Request) {
           p.checkOut === recorded.checkOut
       );
 
+      // Charges for THIS payment intent, regardless of customer.
+      //
+      // Everything else here is customer-scoped, which silently fails on the
+      // case that matters most: a duplicate checkout creates its own intent
+      // with no customer attached, so the orphaned second charge shows neither
+      // in allCustomerCharges nor in possibleDoubleCharge. That is exactly the
+      // shape of GY-GpdK3b2u (Nathan Smith, charged $217.63 twice), and it
+      // cost a round trip in three separate incidents before this was added.
+      // Refund state is the specific thing ops needs: "already refunded?" must
+      // be answerable before anyone issues another one.
+      let piCharges: Record<string, unknown>[] = [];
+      try {
+        const own = await stripe.charges.list({
+          payment_intent: piId,
+          limit: 10,
+          expand: ["data.refunds"],
+        });
+        piCharges = own.data.map((c) => ({
+          id: c.id,
+          amount: (c.amount ?? 0) / 100,
+          amountRefunded: (c.amount_refunded ?? 0) / 100,
+          netAfterRefunds: ((c.amount ?? 0) - (c.amount_refunded ?? 0)) / 100,
+          status: c.status,
+          refunded: c.refunded,
+          created_mt: new Date(c.created * 1000).toLocaleString("en-US", {
+            timeZone: "America/Denver",
+          }),
+          refunds: (c.refunds?.data ?? []).map((r) => ({
+            id: r.id,
+            amount: (r.amount ?? 0) / 100,
+            status: r.status,
+            created_mt: new Date(r.created * 1000).toLocaleString("en-US", {
+              timeZone: "America/Denver",
+            }),
+          })),
+        }));
+      } catch {
+        // Best effort — never break the rest of the diagnostic.
+      }
+
       return NextResponse.json({
         action,
         livemode: basePi.livemode,
         recordedPaymentIntent: piId,
         customerId,
         recorded,
+        chargesForThisPaymentIntent: piCharges,
         possibleDoubleCharge: succeededForStay.length > 1,
         succeededPaymentIntentsForStay: succeededForStay,
         allCustomerPaymentIntents: customerPis,
