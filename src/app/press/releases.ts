@@ -31,16 +31,16 @@ export const PRESS_RELEASES: PressRelease[] = [
   {
     slug: "summer-2026-market-snapshot",
     headline:
-      "Traverse Hospitality Publishes Summer 2026 Mountain Short-Term Rental Market Snapshot: Managed Homes Grew Revenue 3.3% as Local Competitive Sets Fell 10.6%",
+      "Traverse Hospitality Publishes Summer 2026 Mountain Short-Term Rental Market Snapshot: Managed Homes Grew Revenue 2.7% as Local Competitive Sets Fell 16%",
     subheadline:
       "Colorado-owned property manager releases the report it sent to its owners, with month-by-month data on how homes in Crested Butte, Leadville, and other mountain markets performed against the market in a soft summer.",
     location: "CRESTED BUTTE, Colo.",
     date: "2026-09-20",
     excerpt:
-      "Homes Traverse has managed for more than a year earned 3.3% more per available night than in summer 2025 while their PriceLabs competitive sets earned 10.6% less, with the gap holding in every month. The full report, with methodology, is published at booktraverse.com/summer-2026-market-snapshot.",
+      "Colorado mountain homes Traverse has managed for more than a year earned 2.7% more per available night than in summer 2025 while their PriceLabs competitive sets earned 16% less, with the gap holding in every month. The full report, with methodology, is published at booktraverse.com/summer-2026-market-snapshot.",
     image: "/press/summer-2026-revpar-vs-market.jpg",
     imageAlt:
-      "Bar chart: revenue per available night, change vs. summer 2025 — Traverse-managed homes +3.3% for the summer, their competitive sets −10.6%",
+      "Bar chart: revenue per available night, change vs. summer 2025 — Traverse-managed Colorado mountain homes +2.7% for the summer, their competitive sets −16.0%",
   },
   {
     slug: "largest-independent-manager-crested-butte-base-area",

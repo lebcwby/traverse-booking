@@ -16,22 +16,23 @@ const URL = "https://www.booktraverse.com/summer-2026-market-snapshot";
 const PDF = "/reports/Traverse_Summer_2026_Market_Snapshot.pdf";
 const CHART = "/press/summer-2026-revpar-vs-market.png";
 const PUBLISHED = "2026-09-20";
+const MODIFIED = "2026-09-22";
 
 const STATS = [
   {
-    value: "+3.3%",
+    value: "+2.7%",
     label: "Revenue per available night vs. summer 2025",
-    note: "Competitive sets: −10.6%",
+    note: "Competitive sets: −16.0%",
   },
   {
-    value: "+7.8%",
+    value: "+7.0%",
     label: "Average nightly rate vs. summer 2025",
-    note: "Competitive sets: roughly flat",
+    note: "Competitive sets: about −5%",
   },
   {
-    value: "71.8%",
+    value: "71.4%",
     label: "Summer occupancy, June–August",
-    note: "Competitive sets: about 62%",
+    note: "Competitive sets: about 61%",
   },
   {
     value: "4.88",
@@ -44,14 +45,14 @@ export const metadata: Metadata = {
   // Layout title template appends " | Traverse Hospitality".
   title: "Summer 2026 Market Snapshot",
   description:
-    "Traverse Hospitality's Summer 2026 Market Snapshot: managed homes grew revenue per available night 3.3% while Colorado mountain competitive sets fell 10.6%. Month-by-month data, methodology, and full PDF.",
+    "Traverse Hospitality's Summer 2026 Market Snapshot: managed mountain homes grew revenue per available night 2.7% while Colorado mountain competitive sets fell 16%. Month-by-month data, methodology, and full PDF.",
   alternates: { canonical: URL },
   openGraph: {
     type: "article",
     url: URL,
     title: "Summer 2026 Market Snapshot | Traverse Hospitality",
     description:
-      "Managed homes grew revenue per available night 3.3% while Colorado mountain competitive sets fell 10.6%. Month-by-month data, methodology, and full PDF.",
+      "Managed mountain homes grew revenue per available night 2.7% while Colorado mountain competitive sets fell 16%. Month-by-month data, methodology, and full PDF.",
     images: [{ url: "/press/summer-2026-revpar-vs-market.jpg", width: 1200, height: 675 }],
     publishedTime: PUBLISHED,
   },
@@ -59,7 +60,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Summer 2026 Market Snapshot | Traverse Hospitality",
     description:
-      "Managed homes grew revenue per available night 3.3% while competitive sets fell 10.6%.",
+      "Managed mountain homes grew revenue per available night 2.7% while competitive sets fell 16%.",
     images: ["/press/summer-2026-revpar-vs-market.jpg"],
   },
 };
@@ -74,10 +75,10 @@ export default function MarketSnapshotPage() {
       headline:
         "Summer 2026 Market Snapshot: how the mountain short-term rental market moved, and how Traverse-managed homes performed against it",
       description:
-        "An eight-page report on the Colorado mountain short-term rental market for June–August 2026. Traverse-managed homes with a full prior-year history grew revenue per available night 3.3% while their PriceLabs competitive sets fell 10.6%.",
+        "An eight-page report on the Colorado mountain short-term rental market (Crested Butte, Leadville, Twin Lakes, Granby, Vail Valley) for June–August 2026. Traverse-managed Colorado mountain homes with a full prior-year history grew revenue per available night 2.7% while their PriceLabs competitive sets fell 16.0%.",
       url: URL,
       datePublished: PUBLISHED,
-      dateModified: PUBLISHED,
+      dateModified: MODIFIED,
       inLanguage: "en-US",
       about: [
         "short-term rental market",
@@ -151,7 +152,7 @@ export default function MarketSnapshotPage() {
               Market report
             </span>
             <span style={{ fontSize: "14px", opacity: 0.7 }}>
-              Published September 20, 2026 · Data through August 31, 2026
+              Published September 20, 2026 · Revised September 22 · Data through August 31, 2026
             </span>
           </div>
 
@@ -182,7 +183,7 @@ export default function MarketSnapshotPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={CHART}
-            alt="Bar chart: revenue per available night, change vs. summer 2025. Traverse-managed homes +14.5% in June, −5.1% in July, +6.3% in August, +3.3% for the summer; their competitive sets −4.3%, −14.3%, −9.8%, and −10.6%."
+            alt="Bar chart: revenue per available night, change vs. summer 2025. Traverse-managed Colorado mountain homes +14.7% in June, −7.0% in July, +6.9% in August, +2.7% for the summer; their competitive sets −9.2%, −22.3%, −14.6%, and −16.0%."
             style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }}
           />
         </div>
@@ -199,9 +200,9 @@ export default function MarketSnapshotPage() {
           }}
         >
           Revenue per available night, change vs. summer 2025: Traverse-managed
-          homes with a full prior-year history vs. their PriceLabs competitive
-          sets, June–August 2026. Source: Traverse Hospitality Summer 2026 Market
-          Snapshot; PriceLabs Portfolio Analytics.
+          Colorado mountain homes with a full prior-year history vs. their PriceLabs
+          competitive sets, June–August 2026. Source: Traverse Hospitality Summer
+          2026 Market Snapshot, Mountain Markets edition; PriceLabs Portfolio Analytics.
         </p>
 
         {/* Headline figures */}
@@ -312,8 +313,8 @@ export default function MarketSnapshotPage() {
           west of town, grew past 7,000 acres, kept evacuation orders in place
           from July 5 to July 30 and closed the airport to all but medical
           flights. Competitive sets around our Leadville one-bedroom homes lost
-          about 20% of their revenue per available night for the summer, roughly
-          double the decline across all Traverse markets; Traverse-managed
+          more than 23% of their revenue per available night for the summer,
+          against 16% across our mountain markets as a whole; Traverse-managed
           Leadville one-bedrooms finished essentially flat (+1.7%) over the same
           June 1 – August 31 window, from the same PriceLabs source.
         </div>
