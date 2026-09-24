@@ -35,7 +35,7 @@ export const PRESS_RELEASES: PressRelease[] = [
     subheadline:
       "Colorado-owned property manager releases the report it sent to its owners, with month-by-month data on how homes in Crested Butte, Leadville, and other mountain markets performed against the market in a soft summer.",
     location: "CRESTED BUTTE, Colo.",
-    date: "2026-09-20",
+    date: "2026-09-22",
     excerpt:
       "Colorado mountain homes Traverse has managed for more than a year earned 2.7% more per available night than in summer 2025 while their PriceLabs competitive sets earned 16% less, with the gap holding in every month. The full report, with methodology, is published at booktraverse.com/summer-2026-market-snapshot.",
     image: "/press/summer-2026-revpar-vs-market.jpg",

@@ -1,5 +1,5 @@
 export const pageContent = `
-<p><strong>CRESTED BUTTE, Colo. — September 20, 2026</strong> — Traverse Hospitality, a Colorado-owned vacation rental and property management company based in Mt. Crested Butte, has published its Summer 2026 Market Snapshot, an eight-page report on how the Colorado mountain short-term rental market moved between June and August 2026 and how the homes under its management in Crested Butte, Leadville, Twin Lakes, Granby, and the Vail Valley performed against it. The report was prepared for the company's owners and is now available to the public at <a href="/summer-2026-market-snapshot">booktraverse.com/summer-2026-market-snapshot</a>.</p>
+<p><strong>CRESTED BUTTE, Colo. — September 22, 2026</strong> — Traverse Hospitality, a Colorado-owned vacation rental and property management company based in Mt. Crested Butte, has published its Summer 2026 Market Snapshot, an eight-page report on how the Colorado mountain short-term rental market moved between June and August 2026 and how the homes under its management in Crested Butte, Leadville, Twin Lakes, Granby, and the Vail Valley performed against it. The report was prepared for the company's owners and is now available to the public at <a href="/summer-2026-market-snapshot">booktraverse.com/summer-2026-market-snapshot</a>.</p>
 
 <p>The report's central finding: mountain homes Traverse has managed for more than a year earned 2.7% more per available night than in summer 2025, while the local competitive sets around those homes, the nearby listings of similar size and type identified by PriceLabs, earned 16.0% less. The gap held in every month. In June, Traverse-managed homes grew revenue per available night 14.7% while comp sets fell 9.2%; in July, the portfolio declined 7.0% against a comp-set decline of 22.3%; in August, the portfolio grew 6.9% against a comp-set decline of 14.6%.</p>
 
@@ -30,8 +30,6 @@ export const pageContent = `
 <p>Regional indicators for the shoulder season are positive, with DestiMetrics reporting September bookings at western mountain destinations 27% ahead of last year and October 23% ahead as of mid-July. Traverse's winter reservations for December through March are arriving earlier than a year ago. The company plans to hold base rates into September rather than discount early, and to continue broadening distribution for its Crested Butte condos ahead of ski season.</p>
 
 <p>The full report, including methodology and sources, is available at <a href="/summer-2026-market-snapshot">booktraverse.com/summer-2026-market-snapshot</a>. Homeowners in Colorado mountain markets can request a revenue projection for their property at <a href="/projection">booktraverse.com/projection</a>.</p>
-
-<p><em>Revised September 22, 2026: figures restated to cover Traverse's Colorado mountain markets only, with PriceLabs data refreshed September 21. An earlier version of this release included homes in Denver, Frisco, Des Moines, and Panama City Beach in the portfolio and competitive-set figures.</em></p>
 
 <h2>About Traverse Hospitality</h2>
 
