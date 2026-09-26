@@ -53,8 +53,13 @@ function getAnonymousMatching(): Record<string, string> {
   return out;
 }
 
-const META_PIXEL_ID =
-  process.env.NEXT_PUBLIC_META_PIXEL_ID || "1449075326140271";
+// No hardcoded fallback on purpose. The old default was 1449075326140271, a
+// LEGACY pixel — so a missing env var wouldn't disable tracking, it would
+// silently divert every browser event to a dataset nobody reads, which is
+// indistinguishable from working. Prod sets this (and META_PIXEL_ID, which the
+// server-side CAPI uses, to the same 957711153724958). If it is ever unset,
+// firing nothing is the honest failure.
+const META_PIXEL_ID = (process.env.NEXT_PUBLIC_META_PIXEL_ID || "").trim();
 const KLAVIYO_COMPANY_ID =
   process.env.NEXT_PUBLIC_KLAVIYO_COMPANY_ID || "UMUgtM";
 const HUBSPOT_PORTAL_ID =
@@ -93,6 +98,9 @@ function toAdvancedMatching(guest: KnownGuest): Record<string, string> {
 }
 
 function loadMetaPixel(advancedMatching?: Record<string, string>) {
+  // Without an id there is nothing safe to init against — see the note on
+  // META_PIXEL_ID. Bail rather than fire at a default.
+  if (!META_PIXEL_ID) return;
   if (window.fbq) {
     window.fbq("consent", "grant");
     // If we got user data after pixel was already initialized, re-init to update matching
@@ -194,7 +202,7 @@ export function ConsentManager() {
     const handler = () => {
       const matching = toAdvancedMatching(getKnownGuest());
       advancedMatchingRef.current = matching;
-      if (window.fbq && Object.keys(matching).length > 0) {
+      if (META_PIXEL_ID && window.fbq && Object.keys(matching).length > 0) {
         window.fbq("init", META_PIXEL_ID, matching);
       }
     };

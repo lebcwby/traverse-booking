@@ -70,6 +70,7 @@ export default async function RootLayout({
   // conversions on checkout. See src/lib/csp.ts buildSensitiveContentSecurityPolicy.
   const requestHeaders = await headers();
   const nonce = requestHeaders.get("x-nonce") ?? undefined;
+  const metaPixelId = (process.env.NEXT_PUBLIC_META_PIXEL_ID || "").trim();
   // The landing subdomains are host-scoped rewrites, so the client router never
   // sees /audit or /projection. Passing the real Host down is the only way
   // ConduitWidget can tell it's on one during server render.
@@ -194,16 +195,24 @@ export default async function RootLayout({
             style={{ display: "none", visibility: "hidden" }}
           />
         </noscript>
-        {/* Meta Pixel (noscript fallback) */}
-        <noscript>
-          <img
-            height="1"
-            width="1"
-            style={{ display: "none" }}
-            src="https://www.facebook.com/tr?id=1449075326140271&ev=PageView&noscript=1"
-            alt=""
-          />
-        </noscript>
+        {/* Meta Pixel (noscript fallback).
+            The id was hardcoded to 1449075326140271 — a LEGACY pixel, not the
+            one the browser pixel and server-side CAPI both use. Anything that
+            reads the HTML without running JS (crawlers, and a partner viewing
+            page source, which is how Travel Crested Butte spotted it) was
+            hitting the wrong dataset. Driven by the env var now, and omitted
+            entirely when it is unset. */}
+        {metaPixelId ? (
+          <noscript>
+            <img
+              height="1"
+              width="1"
+              style={{ display: "none" }}
+              src={`https://www.facebook.com/tr?id=${metaPixelId}&ev=PageView&noscript=1`}
+              alt=""
+            />
+          </noscript>
+        ) : null}
 
         {/* CartProvider wraps Header (so the cart icon + drawer can read state)
             and {children} (so AddToCartButton on property pages can write).
