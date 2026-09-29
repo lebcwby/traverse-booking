@@ -288,7 +288,21 @@ export function buildBaseContentSecurityPolicy({
     "worker-src": ["'self'", "blob:"],
     "object-src": ["'none'"],
     "base-uri": ["'self'"],
-    "form-action": ["'self'", "https://www.facebook.com"],
+    // HubSpot's embedded form renders into an about:blank iframe, which is
+    // SAME-ORIGIN and therefore inherits this policy. Its submit is a native
+    // multipart POST to forms-<region>.hsforms.com, so it is governed by
+    // form-action — not connect-src, where HubSpot was already allowed. With
+    // only 'self' here the browser blocked every submission silently: the
+    // same form worked on HubSpot's own standalone page and failed on ours,
+    // and the owner "free earnings estimate" funnel took traffic without
+    // recording a single lead.
+    "form-action": [
+      "'self'",
+      "https://www.facebook.com",
+      "https://*.hsforms.com",
+      "https://*.hsforms.net",
+      "https://forms.hubspot.com",
+    ],
     "frame-ancestors": ["'none'"],
     "manifest-src": ["'self'"],
     ...(isProduction ? { "upgrade-insecure-requests": [] } : {}),
@@ -330,7 +344,21 @@ export function buildSensitiveContentSecurityPolicy({
     "worker-src": ["'self'", "blob:"],
     "object-src": ["'none'"],
     "base-uri": ["'self'"],
-    "form-action": ["'self'", "https://www.facebook.com"],
+    // HubSpot's embedded form renders into an about:blank iframe, which is
+    // SAME-ORIGIN and therefore inherits this policy. Its submit is a native
+    // multipart POST to forms-<region>.hsforms.com, so it is governed by
+    // form-action — not connect-src, where HubSpot was already allowed. With
+    // only 'self' here the browser blocked every submission silently: the
+    // same form worked on HubSpot's own standalone page and failed on ours,
+    // and the owner "free earnings estimate" funnel took traffic without
+    // recording a single lead.
+    "form-action": [
+      "'self'",
+      "https://www.facebook.com",
+      "https://*.hsforms.com",
+      "https://*.hsforms.net",
+      "https://forms.hubspot.com",
+    ],
     "frame-ancestors": ["'none'"],
     "manifest-src": ["'self'"],
     ...(isProduction ? { "upgrade-insecure-requests": [] } : {}),
