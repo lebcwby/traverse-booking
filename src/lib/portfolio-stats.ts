@@ -10,7 +10,7 @@
  *   3. Sweeps marketing-copy files (src/app/page.tsx, src/components/layout/footer.tsx)
  *      so user-visible "220+ homes" marketing strings (hand-set, see MARKETING_COUNT in the refresh script).
  *
- * Last refreshed: 2026-08-03
+ * Last refreshed: 2026-09-30
  */
 export const PORTFOLIO_STATS = {
   /** Total active listings across all markets */
@@ -20,7 +20,7 @@ export const PORTFOLIO_STATS = {
    * each quarterly run. This is the honest number the marketing-count audit
    * compares against.
    */
-  totalListings: 186,
+  totalListings: 195,
   /**
    * The number shown to people, set by hand. Deliberately allowed to lead
    * `totalListings`, because listings are active in the PMS (214 as of
@@ -37,10 +37,10 @@ export const PORTFOLIO_STATS = {
   channels: 50,
   /** Per-market counts. Use these strings directly in UI copy. */
   perMarket: {
-    crestedButte: "80+ properties",
+    crestedButte: "90+ properties",
     leadville: "80+ properties (incl. Lake County)",
     vail: "2+ properties",
-    avon: "2+ properties",
+    avon: "1+ properties",
     granby: "3+ properties",
     twinLakes: "7+ properties",
   },

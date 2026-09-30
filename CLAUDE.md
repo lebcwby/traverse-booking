@@ -639,6 +639,35 @@ fixed 2026-06-09):
    `robots: { index: false }` — `/terms`, `/privacy`, `/book`, `/account`,
    etc.). Sitemap should advertise only indexable URLs.
 
+### Updating the public portfolio count ("220+ homes")
+
+One command — do NOT hand-edit, and do not crawl the site looking for them:
+
+```bash
+npx tsx scripts/refresh-portfolio-data.ts --set-count=230 --dry-run   # preview
+npx tsx scripts/refresh-portfolio-data.ts --set-count=230             # apply
+```
+
+It rewrites all 22 count-bearing surfaces (pages, footer, stat bar, schema.org,
+FAQ data, meta + OG descriptions, the plan surfaces, the AI prompts,
+`llms.txt`/`llms-full.txt`, the blog generator's brand brief) plus
+`portfolio-stats.marketingCount`, then scans the repo for stragglers and tells
+you to add any new file to `MARKETING_AUDIT_FILES`. No API calls; ~1 second.
+
+- It is a **literal token swap** of the current value ("220+" → "230+"), taken
+  from `portfolio-stats.marketingCount`. That is why it can't damage
+  "approximately 200 yards" (the walk to the lifts on the Grand Lodge page) or
+  "save 10–15%".
+- **Blog posts and press releases are excluded on purpose** — dated statements
+  that were true when published.
+- `totalListings` is the separate, honest BEAPI figure and stays owned by the
+  full quarterly run. `marketingCount` is allowed to lead it (listings are
+  active in the PMS before they are bookable), but check the gap: as of
+  2026-09-30 the site says 220+ while BEAPI has 195 and Guesty 214 active.
+
+⚠️ Do NOT use `--sweep-copy` to change the public number. That flag forces the
+copy down to the raw BEAPI total and would undo it.
+
 ### Phone numbers
 - **B2C (guests)**: `(720) 759-2013` — in header, footer, property pages
 - **B2C (Crested Butte)**: `(970) 438-2241`

@@ -20,6 +20,16 @@
  *   npx tsx scripts/refresh-portfolio-data.ts --sweep-copy  # also force
  *                                    marketing copy to match the BEAPI total
  *
+ *   ── Changing the public number (the common case) ──
+ *   npx tsx scripts/refresh-portfolio-data.ts --set-count=230
+ *   npx tsx scripts/refresh-portfolio-data.ts --set-count=230 --dry-run
+ *
+ *   Rewrites every count-bearing surface in one pass (pages, footer, schema,
+ *   FAQ, AI prompts, llms*.txt, the blog generator's brand brief) plus
+ *   portfolio-stats.marketingCount, then scans the repo for stragglers. Makes
+ *   no API calls, so it takes about a second. Does NOT touch blog posts or
+ *   press releases — those are dated statements.
+ *
  * Required env (loaded from .env.local):
  *   NEXT_PUBLIC_SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
@@ -242,6 +252,15 @@ const MARKETING_AUDIT_FILES = [
   "src/lib/plan/system-prompt.ts",
   "src/lib/plan/slug-content.ts",
   "src/lib/blog-automation/brand.ts",
+  // Added 2026-09-30. These carried the count too and were missed for two
+  // revisions — layout.tsx and /properties still said "180+" when the rest of
+  // the site had moved to 200+, which is what search engines were showing.
+  // The --set-count straggler scan is what surfaced them.
+  "src/app/layout.tsx",
+  "src/app/properties/page.tsx",
+  "src/app/plan/[id]/opengraph-image.tsx",
+  "src/components/plan/portland-animation.tsx",
+  "src/components/plan/static-plan-page.tsx",
   "public/llms.txt",
   "public/llms-full.txt",
 ].map((p) => path.resolve(process.cwd(), p));
@@ -440,9 +459,141 @@ function diff(a: string, b: string): string {
   return out.join("\n") || "(no changes)";
 }
 
+/**
+ * Fast path: change the public portfolio number everywhere, in one command.
+ *
+ *   npx tsx scripts/refresh-portfolio-data.ts --set-count=230
+ *
+ * Deliberately a LITERAL token swap of the current value ("220+" → "230+")
+ * rather than a pattern match on numbers. Two reasons, both learned the hard
+ * way while doing this by hand:
+ *   · "approximately 200 yards" on the Grand Lodge page is the walk to the
+ *     lifts. Any regex matching a bare number next to portfolio-ish words is
+ *     one bad day away from rewriting it. A literal "220+" cannot.
+ *   · Percentages and guest counts ("save 10–15%", "sleeps 8") live in the
+ *     same files and must not move.
+ *
+ * The previous value comes from portfolio-stats.marketingCount, which is the
+ * single source of truth for what the site currently claims, so the two can
+ * never drift apart.
+ *
+ * It finishes with a repo-wide scan for any stragglers carrying the old token
+ * outside the known surfaces — that is what makes this safe to run without
+ * re-crawling the site. Blog posts and press releases are excluded on purpose:
+ * they are dated statements that were true when published.
+ */
+async function setMarketingCount(
+  newCount: number,
+  dryRun: boolean
+): Promise<void> {
+  const statsBefore = await fs.readFile(STATS_FILE, "utf8");
+  const currentMatch = statsBefore.match(/marketingCount:\s*"(\d+)\+"/);
+  if (!currentMatch) {
+    throw new Error(
+      "Could not read marketingCount from portfolio-stats.ts — has its shape changed?"
+    );
+  }
+  const oldToken = `${currentMatch[1]}+`;
+  const newToken = `${newCount}+`;
+  console.log(
+    `🔢 Portfolio count: ${oldToken} → ${newToken}${dryRun ? " (DRY RUN)" : ""}\n`
+  );
+  if (oldToken === newToken) {
+    console.log("  Already set — nothing to do.");
+    return;
+  }
+
+  // Every count-bearing surface, plus portfolio-stats itself.
+  const targets = [...MARKETING_AUDIT_FILES, STATS_FILE];
+  let filesChanged = 0;
+  let linesChanged = 0;
+
+  for (const file of targets) {
+    let before: string;
+    try {
+      before = await fs.readFile(file, "utf8");
+    } catch {
+      continue;
+    }
+    const after = before.split(oldToken).join(newToken);
+    if (after === before) continue;
+    filesChanged++;
+    const n = countDifferences(before, after);
+    linesChanged += n;
+    console.log(`  ${path.relative(process.cwd(), file)} — ${n} line(s)`);
+    if (!dryRun) await fs.writeFile(file, after, "utf8");
+  }
+
+  console.log(`\n  ${filesChanged} file(s), ${linesChanged} line(s)\n`);
+
+  // Catch surfaces that aren't on the list yet. A missed file is exactly how
+  // the site ended up serving three different numbers at once.
+  const strays: string[] = [];
+  const skipDirs = new Set([
+    "node_modules",
+    ".next",
+    ".git",
+    "press",
+    "blog",
+    "incidents",
+  ]);
+  async function walk(dir: string): Promise<void> {
+    for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+      if (entry.name.startsWith(".") || skipDirs.has(entry.name)) continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full);
+        continue;
+      }
+      if (!/\.(tsx?|txt|md|json)$/.test(entry.name)) continue;
+      if (targets.includes(full)) continue;
+      // This file documents the swap using a literal example, so it always
+      // "contains" the old token. Skip it rather than report itself forever.
+      if (full === path.resolve(process.cwd(), "scripts/refresh-portfolio-data.ts")) continue;
+      const text = await fs.readFile(full, "utf8").catch(() => "");
+      if (text.includes(oldToken)) {
+        strays.push(path.relative(process.cwd(), full));
+      }
+    }
+  }
+  for (const root of ["src", "public", "scripts"]) {
+    await walk(path.resolve(process.cwd(), root)).catch(() => {});
+  }
+
+  if (strays.length) {
+    console.log(`  ⚠️  "${oldToken}" still appears in ${strays.length} file(s) NOT on the`);
+    console.log("     marketing list. Check them, then add them to");
+    console.log("     MARKETING_AUDIT_FILES so the next run catches them:");
+    for (const s of strays) console.log(`       ${s}`);
+  } else {
+    console.log(`  ✓ No stray "${oldToken}" left anywhere outside blog/press.`);
+  }
+
+  console.log(
+    dryRun
+      ? "\nDry run — no files changed."
+      : "\nNext: npx tsc --noEmit, commit, then npx vercel@53.1.0 deploy --prod --yes"
+  );
+}
+
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
   const sweepCopy = process.argv.includes("--sweep-copy");
+
+  // Count-only fast path: no Guesty calls, no photo downloads, no Supabase.
+  const setCountArg = process.argv.find((a) => a.startsWith("--set-count"));
+  if (setCountArg) {
+    const raw = setCountArg.split("=")[1];
+    const parsed = Number(raw);
+    if (!raw || !Number.isInteger(parsed) || parsed <= 0 || parsed > 10000) {
+      throw new Error(
+        `--set-count needs a whole number, e.g. --set-count=230 (got "${raw ?? ""}")`
+      );
+    }
+    await setMarketingCount(parsed, dryRun);
+    return;
+  }
+
   console.log(`🔄 Portfolio refresh${dryRun ? " (DRY RUN)" : ""}\n`);
 
   const token = await getBeapiToken();
