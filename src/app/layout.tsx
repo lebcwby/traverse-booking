@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     template: "%s | Traverse Hospitality",
   },
   description:
-    "Colorado's locally managed vacation rental company. Browse 180+ homes in Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes. No booking fees — book direct and save 10–15% vs. Airbnb and VRBO.",
+    "Colorado's locally managed vacation rental company. Browse 220+ homes in Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes. No booking fees — book direct and save 10–15% vs. Airbnb and VRBO.",
   icons: null,
   manifest: "/site.webmanifest",
   verification: {
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     siteName: "Traverse Hospitality",
     locale: "en_US",
     description:
-      "Colorado's locally managed vacation rental company. Browse 180+ homes in Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes. No booking fees — book direct and save 10–15% vs. Airbnb and VRBO.",
+      "Colorado's locally managed vacation rental company. Browse 220+ homes in Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes. No booking fees — book direct and save 10–15% vs. Airbnb and VRBO.",
     images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
   },
   twitter: {

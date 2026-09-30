@@ -54,7 +54,7 @@ interface Props {
 export const metadata: Metadata = {
   title: "Colorado Vacation Rentals — Browse & Book Direct",
   description:
-    "Browse 180+ vacation rentals across Colorado. Filter by dates, guests, neighborhood, and amenities. No booking fees — book direct with Traverse Hospitality and save.",
+    "Browse 220+ vacation rentals across Colorado. Filter by dates, guests, neighborhood, and amenities. No booking fees — book direct with Traverse Hospitality and save.",
   alternates: { canonical: "/properties" },
   other: {
     keywords:
@@ -68,7 +68,7 @@ const propertiesJsonLd = JSON.stringify({
   "@type": "CollectionPage",
   name: "Colorado Vacation Rentals",
   description:
-    "Browse and book 200+ vacation rentals across Colorado. From slope-side condos in Crested Butte to cabins in Leadville and homes near Vail.",
+    "Browse and book 220+ vacation rentals across Colorado. From slope-side condos in Crested Butte to cabins in Leadville and homes near Vail.",
   url: "https://www.booktraverse.com/properties",
   provider: { "@id": "https://www.booktraverse.com/#organization" },
 });
@@ -379,7 +379,7 @@ export default async function PropertiesPage({
       />
       <h1 className="sr-only">Colorado Vacation Rentals</h1>
       <p className="sr-only">
-        Browse and book 200+ vacation rentals across Colorado. From cozy
+        Browse and book 220+ vacation rentals across Colorado. From cozy
         slope-side condos to mountain cabins across Crested Butte, Leadville, Vail, and more.
         Filter by dates, guests, bedrooms, pet-friendly, and more. No booking
         — book direct and save up to 15%.

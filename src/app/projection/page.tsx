@@ -109,7 +109,7 @@ const HEADLINE_STATS = [
   },
   {
     value: "4.8",
-    label: "Guest rating across 200+ homes",
+    label: "Guest rating across 220+ homes",
     foot: "The one part of service nobody can claim for themselves — guests decide it, stay by stay.",
   },
 ];
@@ -307,7 +307,7 @@ export default function ProjectionPage() {
                 <strong>{MT_CB_TOTAL}</strong> condos in Mt Crested Butte
               </li>
               <li>
-                <strong>200+</strong> homes managed
+                <strong>220+</strong> homes managed
               </li>
               <li>
                 <strong>4.8</strong> guest rating

@@ -146,7 +146,7 @@ export function StaticPlanPage({
             href="/properties"
             className="inline-flex items-center gap-2 rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-800 hover:border-neutral-400"
           >
-            Browse 180+ Colorado rentals
+            Browse 220+ Colorado rentals
           </Link>
         </div>
         {/* E-E-A-T author byline — small but visible attribution block. */}

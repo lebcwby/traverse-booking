@@ -115,7 +115,7 @@ export default async function PlanOgImage({ params }: Props) {
           color: "rgba(250, 248, 245, 0.65)",
         }}
       >
-        <span>180+ Colorado homes</span>
+        <span>220+ Colorado homes</span>
         <span>·</span>
         <span>6 mountain markets</span>
         <span>·</span>
