@@ -668,6 +668,34 @@ you to add any new file to `MARKETING_AUDIT_FILES`. No API calls; ~1 second.
 ⚠️ Do NOT use `--sweep-copy` to change the public number. That flag forces the
 copy down to the raw BEAPI total and would undo it.
 
+### ⚠️ Advisory locks are a NO-OP in production (unfixed — needs an env var)
+
+`withAdvisoryLock()` (src/lib/db.ts) is what stops the Stripe webhook and the
+frontend `POST /api/reservations` from finalizing the same payment twice. It
+needs a **session-mode** connection. Production has only `DATABASE_URL`, which
+points at Supabase's **transaction pooler on :6543**, where `pg_advisory_lock`
+provides no session-scoped exclusion — so every call has silently done nothing.
+
+That is how **GY-ty5Dgqzs / GY-8RHBqLsm** happened (2026-10-02): one payment,
+two confirmed reservations for the same listing and dates, created 117ms apart,
+double-blocking a Leadville house over the December peak and recording the
+same $1,558.34 against both. The guest was charged only once.
+
+**The fix only you can apply:** set `SHARED_DATABASE_URL_DIRECT` in Vercel to
+the session-mode URL (same credentials, **port 5432**). Until then the lock
+stays inert and `finalizeCartCheckout` is unprotected too — it uses the same
+helper.
+
+Partially mitigated: `reservations_one_active_per_stay_idx` (migration
+20261003130000) makes it impossible for our table to hold two ACTIVE rows for
+the same (payment intent, listing, stay). It is deliberately NOT keyed on the
+payment intent alone — multi-unit **cart** checkouts legitimately share one
+intent across listings. The index protects our data; it does NOT stop a second
+reservation being created in Guesty. Only a working lock does that.
+
+`withAdvisoryLock` now logs loudly when it detects :6543, and
+`advisoryLocksEffective()` exposes the state for a health check.
+
 ### Phone numbers
 - **B2C (guests)**: `(720) 759-2013` — in header, footer, property pages
 - **B2C (Crested Butte)**: `(970) 438-2241`

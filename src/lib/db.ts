@@ -55,6 +55,53 @@ export function getPool(): Pool {
   return pool;
 }
 
+/**
+ * True when the connection this lock would use goes through Supabase's
+ * TRANSACTION pooler (port 6543), where pg_advisory_lock buys nothing:
+ * statements are handed to whichever backend is free, so the lock and the
+ * work it is meant to protect can land on different sessions, and the unlock
+ * can release a lock nobody is holding.
+ *
+ * This is not hypothetical. Production ran for months with no
+ * SHARED_DATABASE_URL_DIRECT, so getDirectConnectionString() fell back to
+ * DATABASE_URL on :6543 and every withAdvisoryLock call was a no-op. That is
+ * how GY-ty5Dgqzs / GY-8RHBqLsm — one payment, two confirmed reservations for
+ * the same stay — got created 117ms apart by the webhook and the frontend
+ * racing each other. The cart coordinator relies on the same helper.
+ *
+ * A lock that silently does nothing is worse than no lock, because the code
+ * above it is written as if the race were impossible. So: say so, loudly and
+ * once per instance. We do NOT throw — failing a booking outright would be a
+ * worse outcome than the race, and the
+ * reservations_one_active_per_stay_idx unique index now backstops the
+ * single-listing path regardless of connection mode.
+ *
+ * Fix: set SHARED_DATABASE_URL_DIRECT to the session-mode URL (port 5432).
+ */
+let warnedAboutPooledLocking = false;
+function locksAreEffective(connectionString: string): boolean {
+  const pooled = /:6543(\/|\?|$)/.test(connectionString);
+  if (pooled && !warnedAboutPooledLocking) {
+    warnedAboutPooledLocking = true;
+    console.error(
+      "[withAdvisoryLock] Advisory locks are INEFFECTIVE: the connection uses " +
+        "the transaction pooler (:6543). Concurrent work is NOT serialised. " +
+        "Set SHARED_DATABASE_URL_DIRECT to the session-mode URL (:5432)."
+    );
+  }
+  return !pooled;
+}
+
+/** Whether advisory locking actually works in this environment. Exposed so a
+ *  health check can report the degraded state rather than it being invisible. */
+export function advisoryLocksEffective(): boolean {
+  try {
+    return locksAreEffective(getDirectConnectionString());
+  } catch {
+    return false;
+  }
+}
+
 // Serializes concurrent work keyed on an arbitrary string. Uses a dedicated
 // pg.Client (not the shared max=1 pool) so the caller can still run queries
 // through the shared pool inside `fn` without deadlocking on the held session.
@@ -70,10 +117,12 @@ export async function withAdvisoryLock<T>(
     .digest()
     .readBigInt64BE(0)
     .toString();
+  const connectionString = getDirectConnectionString();
   const client = new Client({
-    connectionString: getDirectConnectionString(),
+    connectionString,
     ssl: { rejectUnauthorized: false },
   });
+  locksAreEffective(connectionString);
   await client.connect();
   try {
     // Abort the lock wait before Vercel's 60s maxDuration so stuck locks
