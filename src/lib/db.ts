@@ -158,8 +158,19 @@ export async function withAdvisoryLock<T>(
 export async function probeAdvisoryLock(): Promise<{
   effective: boolean;
   detail: string;
+  target: string;
 }> {
   const connectionString = getDirectConnectionString();
+  // Host and port only — never the password. Without this a bad value is a
+  // guessing game: the first attempt at SHARED_DATABASE_URL_DIRECT resolved to
+  // a host literally called "base", and nothing could say so.
+  let target = "unparseable";
+  try {
+    const u = new URL(connectionString);
+    target = `${u.hostname}:${u.port || "(default)"}${u.pathname}`;
+  } catch {
+    target = `unparseable (${connectionString.length} chars)`;
+  }
   const probeKey = createHash("sha256")
     .update(`advisory-probe:${Date.now()}:${Math.random()}`)
     .digest()
@@ -189,6 +200,7 @@ export async function probeAdvisoryLock(): Promise<{
     return contenderGotIt
       ? {
           effective: false,
+          target,
           detail:
             "A second connection acquired a lock already held — concurrent " +
             "finalizers are NOT serialised. Point SHARED_DATABASE_URL_DIRECT " +
@@ -196,11 +208,13 @@ export async function probeAdvisoryLock(): Promise<{
         }
       : {
           effective: true,
+          target,
           detail: "A second connection was correctly refused the held lock.",
         };
   } catch (err) {
     return {
       effective: false,
+      target,
       detail: `Probe failed: ${err instanceof Error ? err.message : String(err)}`,
     };
   } finally {

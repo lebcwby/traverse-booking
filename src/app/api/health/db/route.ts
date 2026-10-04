@@ -30,6 +30,7 @@ export async function GET(request: Request) {
         advisoryLocks: {
           effective: probe.effective,
           detail: probe.detail,
+          target: probe.target,
           connectionLooksSessionMode: advisoryLocksEffective(),
         },
         checkedAt: new Date().toISOString(),
