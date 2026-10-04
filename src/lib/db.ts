@@ -140,3 +140,71 @@ export async function withAdvisoryLock<T>(
     await client.end().catch(() => {});
   }
 }
+
+/**
+ * Prove — not assume — that advisory locking actually serialises work.
+ *
+ * The port heuristic in locksAreEffective() catches the known-bad case, but a
+ * URL that merely *looks* right is what let this go unnoticed for months: the
+ * code read as though the race were impossible while pg_advisory_lock was
+ * doing nothing on the transaction pooler. So this takes the lock on one
+ * connection and tries to take the SAME lock on a second. If the second
+ * succeeds, mutual exclusion does not work, whatever the connection string
+ * says.
+ *
+ * Used by /api/health/db. Cheap, and safe to run against production: it locks
+ * a random key nothing else uses, and releases it.
+ */
+export async function probeAdvisoryLock(): Promise<{
+  effective: boolean;
+  detail: string;
+}> {
+  const connectionString = getDirectConnectionString();
+  const probeKey = createHash("sha256")
+    .update(`advisory-probe:${Date.now()}:${Math.random()}`)
+    .digest()
+    .readBigInt64BE(0)
+    .toString();
+
+  const holder = new Client({ connectionString, ssl: { rejectUnauthorized: false } });
+  const contender = new Client({ connectionString, ssl: { rejectUnauthorized: false } });
+  try {
+    await holder.connect();
+    await contender.connect();
+    await holder.query("SELECT pg_advisory_lock($1::bigint)", [probeKey]);
+    const res = await contender.query(
+      "SELECT pg_try_advisory_lock($1::bigint) AS got",
+      [probeKey]
+    );
+    const contenderGotIt = res.rows[0]?.got === true;
+    if (contenderGotIt) {
+      // Release what the contender wrongly acquired before reporting.
+      await contender
+        .query("SELECT pg_advisory_unlock($1::bigint)", [probeKey])
+        .catch(() => {});
+    }
+    await holder
+      .query("SELECT pg_advisory_unlock($1::bigint)", [probeKey])
+      .catch(() => {});
+    return contenderGotIt
+      ? {
+          effective: false,
+          detail:
+            "A second connection acquired a lock already held — concurrent " +
+            "finalizers are NOT serialised. Point SHARED_DATABASE_URL_DIRECT " +
+            "at the session-mode URL (:5432).",
+        }
+      : {
+          effective: true,
+          detail: "A second connection was correctly refused the held lock.",
+        };
+  } catch (err) {
+    return {
+      effective: false,
+      detail: `Probe failed: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  } finally {
+    await holder.end().catch(() => {});
+    await contender.end().catch(() => {});
+  }
+}
