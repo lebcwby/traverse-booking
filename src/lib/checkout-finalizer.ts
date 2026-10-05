@@ -86,9 +86,22 @@ export interface ReservationFinalizeResult {
 }
 
 export class ReservationPendingRecoveryError extends Error {
-  constructor(message: string) {
+  /**
+   * The underlying Guesty failure, kept OFF `message` on purpose.
+   *
+   * `message` is shown to the guest, so it must stay the reassuring
+   * "payment received, still finalizing" text. But it was also the only thing
+   * thrown, so recover-checkouts caught it and wrote that generic sentence
+   * over the detailed `... Guesty error: <cause>` the finalizer had just
+   * recorded. Every stuck checkout therefore ended up with 122 characters of
+   * boilerplate and no cause — which is why Yang Zhang (2026-09-16) and Ed
+   * Frank (2026-10-05) both had to be diagnosed from scratch.
+   */
+  readonly detail?: string;
+  constructor(message: string, detail?: string) {
     super(message);
     this.name = "ReservationPendingRecoveryError";
+    this.detail = detail;
   }
 }
 
@@ -448,7 +461,10 @@ async function finalizeReservationLocked(
       ].join(""),
       `paid-booking-manual-recovery-${paymentIntentId}`
     );
-    throw new ReservationPendingRecoveryError(message);
+    throw new ReservationPendingRecoveryError(
+      message,
+      guestyError instanceof Error ? guestyError.message : String(guestyError)
+    );
   }
 
   const reservationId = String(

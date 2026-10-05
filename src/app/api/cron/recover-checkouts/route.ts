@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { finalizeReservation } from "@/lib/checkout-finalizer";
+import {
+  finalizeReservation,
+  ReservationPendingRecoveryError,
+} from "@/lib/checkout-finalizer";
 import {
   listRecoverablePendingCheckouts,
   markPendingCheckoutError,
@@ -61,8 +64,15 @@ export async function GET() {
         });
         recovered++;
       } catch (error) {
+        // Preserve the underlying Guesty cause. Writing only error.message
+        // here is what erased the diagnostic on every stuck checkout.
+        const detail =
+          error instanceof ReservationPendingRecoveryError && error.detail
+            ? ` Guesty error: ${error.detail}`
+            : "";
         const message =
-          error instanceof Error ? error.message : "Unknown recovery error";
+          (error instanceof Error ? error.message : "Unknown recovery error") +
+          detail;
         errors.push(`${row.paymentIntentId}: ${message}`);
         console.error("[Recover Checkouts] Failed recovery attempt", {
           paymentIntentId: row.paymentIntentId,
