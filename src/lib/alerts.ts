@@ -8,8 +8,37 @@ const ALERT_TO = (process.env.ALERT_TO_EMAIL ?? "")
   .split(/[,;]/)
   .map((e) => e.trim())
   .filter(Boolean);
+// Default MUST be a domain verified in our Resend account. Resend accepts a
+// send from an unverified domain with a 200 and an id, then parks it in
+// `queued` forever — no exception, no bounce, nothing to log. Production ran
+// 155 days on the scaffold value "noreply@yourdomain.com" and every ops alert
+// and booking notification silently went nowhere, while the cooldown rows
+// recorded them as sent. A placeholder default here is indistinguishable from
+// working, so don't ship one.
 const ALERT_FROM =
-  process.env.ALERT_FROM_EMAIL ?? "Alerts <noreply@example.com>";
+  process.env.ALERT_FROM_EMAIL ?? "Traverse Alerts <alerts@booktraverse.com>";
+
+/**
+ * The exact sender and recipients sendAlert() will use. Exported so
+ * /api/health/email reports the live config rather than re-deriving it — a
+ * diagnostic that re-implements this parsing can report a setup the sender
+ * never actually used, which is the failure mode we are trying to detect.
+ */
+export function getAlertRouting() {
+  return {
+    from: ALERT_FROM,
+    fromAddress: extractEmailAddress(ALERT_FROM),
+    fromDomain: extractEmailAddress(ALERT_FROM).split("@")[1] ?? null,
+    recipients: [...ALERT_TO],
+    hasApiKey: Boolean((process.env.RESEND_API_KEY || "").trim()),
+  };
+}
+
+/** "Alerts <noreply@x.com>" → "noreply@x.com"; a bare address passes through. */
+function extractEmailAddress(value: string): string {
+  const angled = value.match(/<([^>]+)>/);
+  return (angled ? angled[1] : value).trim();
+}
 
 // Throttle: don't send the same alert type more than once per hour
 const alertCooldowns = new Map<string, number>();
