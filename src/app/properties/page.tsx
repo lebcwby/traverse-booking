@@ -7,10 +7,7 @@ import {
   getListingPricingCache,
   type Listing,
 } from "@/lib/supabase";
-import {
-  searchListings,
-  type SearchListingsParams,
-} from "@/lib/guesty-beapi";
+import { searchListings, type SearchListingsParams } from "@/lib/guesty-beapi";
 import { rankListings, type SearchMode } from "@/lib/ranking";
 import {
   mapBeapiToListing,
@@ -18,6 +15,7 @@ import {
 } from "@/lib/listing-utils";
 import { enrichListingsWithReviewAverages } from "@/lib/reviews";
 import { PropertiesLayout } from "@/components/properties/properties-layout";
+import { ListingLinkList } from "@/components/seo/listing-link-list";
 import { TrackPropertiesList } from "@/components/properties/track-properties-list";
 import { FloatingSearchBar } from "@/components/home/floating-search-bar";
 import { FiltersDialog } from "@/components/properties/filters-dialog";
@@ -380,9 +378,9 @@ export default async function PropertiesPage({
       <h1 className="sr-only">Colorado Vacation Rentals</h1>
       <p className="sr-only">
         Browse and book 220+ vacation rentals across Colorado. From cozy
-        slope-side condos to mountain cabins across Crested Butte, Leadville, Vail, and more.
-        Filter by dates, guests, bedrooms, pet-friendly, and more. No booking
-        — book direct and save up to 15%.
+        slope-side condos to mountain cabins across Crested Butte, Leadville,
+        Vail, and more. Filter by dates, guests, bedrooms, pet-friendly, and
+        more. No booking — book direct and save up to 15%.
       </p>
       <TrackPropertiesList listings={listings} />
       <Suspense>
@@ -399,6 +397,15 @@ export default async function PropertiesPage({
           checkOut={searchParams.checkOut}
           showCachedPricing={showCachedPricing}
           cityParam={searchParams.city}
+          directoryLinks={
+            <ListingLinkList
+              units={listings}
+              max={60}
+              embedded
+              heading="More stays across Colorado"
+              description="Direct links to individual homes and condos in these results."
+            />
+          }
         />
       </Suspense>
     </div>

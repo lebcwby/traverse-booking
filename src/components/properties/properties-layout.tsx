@@ -78,12 +78,16 @@ export function PropertiesLayout({
   checkOut,
   showCachedPricing,
   cityParam,
+  directoryLinks,
 }: {
   listings: Listing[];
   dateFiltered?: boolean;
   checkIn?: string;
   checkOut?: string;
   showCachedPricing?: boolean;
+  /** Server-rendered node appended below the desktop results column. Used to
+   *  emit canonical listing links that client-side pagination would hide. */
+  directoryLinks?: React.ReactNode;
   /** Pass-through of the `?city=` URL param so the map can hint-center
    *  on that market when listings is empty. */
   cityParam?: string;
@@ -504,6 +508,14 @@ export function PropertiesLayout({
               </button>
             </div>
           )}
+
+          {/* Server-rendered canonical listing links. Pagination above is
+              client state, so pages 2..N never exist as crawlable HTML — this
+              slot is how listings past the first PAGE_SIZE get discovered.
+              Rendered only in the desktop branch: the mobile branch is in the
+              same DOM (hidden via CSS), so putting it in both would duplicate
+              every link in the HTML. */}
+          {directoryLinks}
         </div>
 
         {/* Right: map */}
