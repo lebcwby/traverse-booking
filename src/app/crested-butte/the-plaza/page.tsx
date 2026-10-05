@@ -37,7 +37,7 @@ export default async function Page() {
   }).toString()}`;
 
   // Fetch once: drives both the hero aggregate rating and the units grid.
-  const units = await fetchUnitsForTag(PLAZA_TAG, 60);
+  const units = await fetchUnitsForTag(PLAZA_TAG, 100);
   const ratingSummary = aggregateUnitRating(units);
 
   return (
@@ -83,6 +83,7 @@ export default async function Page() {
       />
       <ListingLinkList
         units={units}
+        max={100}
         heading="All units at The Plaza"
         description="Every Traverse-managed unit in this building. Open any unit for photos, amenities and live availability."
       />

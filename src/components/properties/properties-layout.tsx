@@ -512,9 +512,8 @@ export function PropertiesLayout({
           {/* Server-rendered canonical listing links. Pagination above is
               client state, so pages 2..N never exist as crawlable HTML — this
               slot is how listings past the first PAGE_SIZE get discovered.
-              Rendered only in the desktop branch: the mobile branch is in the
-              same DOM (hidden via CSS), so putting it in both would duplicate
-              every link in the HTML. */}
+              Also rendered in the mobile sheet below; see the note there on
+              why the duplication is the right trade. */}
           {directoryLinks}
         </div>
 
@@ -598,6 +597,15 @@ export function PropertiesLayout({
             />
 
             {hasMoreMobile && <div ref={sentinelRef} className="h-1" />}
+
+            {/* Same canonical listing links as the desktop column. This does
+                duplicate the hrefs in the HTML — both branches are in the same
+                DOM, only CSS-switched — but duplicate internal links are
+                ordinary (nav and footer do it) and crawlers dedupe per URL. The
+                alternative was leaving the links invisible to every mobile
+                visitor, which is worse: a block only crawlers can see is the
+                thing we were careful NOT to build. */}
+            {directoryLinks}
           </div>
 
           {/* Floating Map button */}
