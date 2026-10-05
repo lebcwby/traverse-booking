@@ -18,9 +18,16 @@ const jakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
+// No `weight` array on purpose. Inter is served as a VARIABLE font, and
+// asking for four static weights made Turbopack emit 28 copies of
+// "Module not found: can't resolve @vercel/turbopack-next/internal/font/
+// google/font … next/font/google queries have exactly one entry", failing
+// every production build on 2026-10-05. It passed for weeks only because
+// Vercel's build cache still held the fonts; the first cache-busting deploy
+// exposed it. A variable font covers the whole 100–900 range, so every
+// font-weight the page already uses still renders.
 const inter = Inter({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
   variable: "--nof-font-body",
   display: "swap",
 });
@@ -33,8 +40,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   openGraph: {
     url: "https://www.booktraverse.com/",
-    title:
-      "Traverse Hospitality — Colorado's Locally Managed Vacation Rentals",
+    title: "Traverse Hospitality — Colorado's Locally Managed Vacation Rentals",
     description:
       "220+ vacation rentals across 6 Colorado mountain markets. Ski-in condos, cabins, historic homes. Book direct and save 15%.",
     images: [{ url: "/og-image-v2.png", width: 1200, height: 630 }],
@@ -287,7 +293,10 @@ export default async function HomePage() {
   // hardcoded price until the pricing cache has an entry).
   const pricing = await getListingPricingCache();
   return (
-    <div data-no-fees-layout="hide-chrome" className={`${jakarta.variable} ${inter.variable}`}>
+    <div
+      data-no-fees-layout="hide-chrome"
+      className={`${jakarta.variable} ${inter.variable}`}
+    >
       {/* JSON-LD */}
       <script
         type="application/ld+json"
@@ -321,7 +330,8 @@ export default async function HomePage() {
             </h1>
             <p className="hero-sub">
               220+ managed rentals across 6 Colorado mountain markets — with
-              locally managed comfort and <strong>save up to 15% by booking direct.</strong>
+              locally managed comfort and{" "}
+              <strong>save up to 15% by booking direct.</strong>
             </p>
             <div className="hero-stats">
               <div className="hero-stats-item">
@@ -351,29 +361,68 @@ export default async function HomePage() {
       {/* ================= TRUST STRIP ================= */}
       <section className="trust-inline wrap">
         <div className="trust-pill">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2.2}
+            strokeLinecap="round"
+          >
             <polyline points="20 6 9 17 4 12" />
           </svg>
-          <span><strong>Save up to 15%</strong> by booking direct</span>
+          <span>
+            <strong>Save up to 15%</strong> by booking direct
+          </span>
         </div>
         <div className="trust-pill">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2}>
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           </svg>
-          <span><strong>Best price</strong> guaranteed</span>
+          <span>
+            <strong>Best price</strong> guaranteed
+          </span>
         </div>
         <div className="trust-pill">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="3 4 3 10 9 10" />
             <path d="M3.5 10A9 9 0 1 1 6 18.5" />
           </svg>
-          <span><strong>Flexible</strong> cancellation</span>
+          <span>
+            <strong>Flexible</strong> cancellation
+          </span>
         </div>
         <div className="trust-pill">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2}>
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
             <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
           </svg>
-          <span><strong>24/7</strong> local support</span>
+          <span>
+            <strong>24/7</strong> local support
+          </span>
         </div>
       </section>
 
@@ -383,7 +432,8 @@ export default async function HomePage() {
           <div className="section-head centered">
             <h2>Explore Our Markets</h2>
             <p className="section-lede">
-              Six Colorado mountain towns. From slope-side condos to lakeside cabins — find your basecamp.
+              Six Colorado mountain towns. From slope-side condos to lakeside
+              cabins — find your basecamp.
             </p>
           </div>
           <div className="neighborhoods-grid">
@@ -393,7 +443,9 @@ export default async function HomePage() {
                 <img src={m.img} alt={m.name} loading="lazy" />
                 <div className="nbr-label">
                   <strong>{m.name}</strong>
-                  <span>{m.count ? `${m.count} rentals · ${m.sub}` : m.sub}</span>
+                  <span>
+                    {m.count ? `${m.count} rentals · ${m.sub}` : m.sub}
+                  </span>
                 </div>
               </Link>
             ))}
@@ -422,35 +474,35 @@ export default async function HomePage() {
             const priceLabel = liveNightly ? `$${liveNightly}` : s.price;
             const promoPct = cached?.promoPct;
             return (
-            <UnitLink key={s.href} href={s.href} className="stay-card">
-              <div className="stay-media">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={s.img} alt={s.alt} loading="lazy" />
-                <span className="sp-badge sp-badge-favorite">
-                  📍 {s.badge}
-                </span>
-                {promoPct ? (
-                  <span className="absolute bottom-2.5 left-2.5 z-10 rounded-full bg-green-600 px-2.5 py-1 text-xs font-semibold text-white shadow-md">
-                    Save {promoPct}%
+              <UnitLink key={s.href} href={s.href} className="stay-card">
+                <div className="stay-media">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={s.img} alt={s.alt} loading="lazy" />
+                  <span className="sp-badge sp-badge-favorite">
+                    📍 {s.badge}
                   </span>
-                ) : null}
-              </div>
-              <div className="stay-info">
-                <h3>{s.title}</h3>
-                <div className="stay-meta">
-                  <span className="stay-stars">
-                    ★ {s.rating} ({s.reviews})
-                  </span>
-                  <span>
-                    {s.sleeps} guests · {s.bedrooms} bed · {s.bathrooms} bath
-                  </span>
+                  {promoPct ? (
+                    <span className="absolute bottom-2.5 left-2.5 z-10 rounded-full bg-green-600 px-2.5 py-1 text-xs font-semibold text-white shadow-md">
+                      Save {promoPct}%
+                    </span>
+                  ) : null}
                 </div>
-                <div className="stay-price">
-                  From <strong>{priceLabel}</strong>
-                  <span>/night</span>
+                <div className="stay-info">
+                  <h3>{s.title}</h3>
+                  <div className="stay-meta">
+                    <span className="stay-stars">
+                      ★ {s.rating} ({s.reviews})
+                    </span>
+                    <span>
+                      {s.sleeps} guests · {s.bedrooms} bed · {s.bathrooms} bath
+                    </span>
+                  </div>
+                  <div className="stay-price">
+                    From <strong>{priceLabel}</strong>
+                    <span>/night</span>
+                  </div>
                 </div>
-              </div>
-            </UnitLink>
+              </UnitLink>
             );
           })}
         </div>
@@ -458,18 +510,36 @@ export default async function HomePage() {
 
       {/* ================= TRIP PLANNER PROMO ================= */}
       <section id="plan" className="section wrap">
-        <a href="/plan" target="_blank" rel="noopener" className="trip-planner-banner">
+        <a
+          href="/plan"
+          target="_blank"
+          rel="noopener"
+          className="trip-planner-banner"
+        >
           <div className="tp-copy">
             <span className="tp-kicker">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+              <svg
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.2}
+                strokeLinecap="round"
+              >
                 <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
                 <circle cx="12" cy="12" r="4" />
               </svg>
               Free Trip Planner
             </span>
-            <h3>Tell us what you love. We&apos;ll plan your Colorado trip in 2 minutes.</h3>
+            <h3>
+              Tell us what you love. We&apos;ll plan your Colorado trip in 2
+              minutes.
+            </h3>
             <p>
-              Real picks from the team managing 220+ Colorado rentals — skiing, hiking, restaurants, and a matching vacation rental, built around your dates.
+              Real picks from the team managing 220+ Colorado rentals — skiing,
+              hiking, restaurants, and a matching vacation rental, built around
+              your dates.
             </p>
           </div>
           <div className="tp-visual">
@@ -504,26 +574,29 @@ export default async function HomePage() {
             <span className="hero-kicker" style={{ color: "var(--muted)" }}>
               Why Book Direct
             </span>
-            <h2>
-              Colorado&apos;s locally managed vacation rental company.
-            </h2>
+            <h2>Colorado&apos;s locally managed vacation rental company.</h2>
             <p>
-              Book Traverse isn&apos;t a platform — we&apos;re the team that manages
-              the property. Local offices in Leadville and Crested Butte.
-              When you call, you reach someone who lives where your rental is.
+              Book Traverse isn&apos;t a platform — we&apos;re the team that
+              manages the property. Local offices in Leadville and Crested
+              Butte. When you call, you reach someone who lives where your
+              rental is.
             </p>
             <ul className="why-perks">
               <li>
-                <strong>No booking fees</strong> — save 10–15% vs. Airbnb and VRBO. The price you see is the price you pay
+                <strong>No booking fees</strong> — save 10–15% vs. Airbnb and
+                VRBO. The price you see is the price you pay
               </li>
               <li>
-                <strong>Local 24/7 support</strong> — real people in Leadville (115 W 6th St) and Mt. Crested Butte (the Plaza)
+                <strong>Local 24/7 support</strong> — real people in Leadville
+                (115 W 6th St) and Mt. Crested Butte (the Plaza)
               </li>
               <li>
-                <strong>One simple cancellation policy</strong> — full refund up to 14 days before check-in, every property
+                <strong>One simple cancellation policy</strong> — full refund up
+                to 14 days before check-in, every property
               </li>
               <li>
-                <strong>Direct relationships</strong> — talk to the team that actually manages your home
+                <strong>Direct relationships</strong> — talk to the team that
+                actually manages your home
               </li>
             </ul>
             <NoFeesEmailSignup />
@@ -532,24 +605,62 @@ export default async function HomePage() {
       </section>
 
       {/* ================= FOR PROPERTY OWNERS ================= */}
-      <section className="section" style={{ background: "var(--bg-2)", padding: "80px 0" }}>
+      <section
+        className="section"
+        style={{ background: "var(--bg-2)", padding: "80px 0" }}
+      >
         <div className="wrap">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "64px", alignItems: "center" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "64px",
+              alignItems: "center",
+            }}
+          >
             <div>
-              <span className="hero-kicker" style={{ color: "var(--muted)", marginBottom: "16px", display: "block" }}>
+              <span
+                className="hero-kicker"
+                style={{
+                  color: "var(--muted)",
+                  marginBottom: "16px",
+                  display: "block",
+                }}
+              >
                 For Property Owners
               </span>
-              <h2 style={{ fontSize: "clamp(28px, 3.5vw, 42px)", marginBottom: "20px", lineHeight: "1.15" }}>
+              <h2
+                style={{
+                  fontSize: "clamp(28px, 3.5vw, 42px)",
+                  marginBottom: "20px",
+                  lineHeight: "1.15",
+                }}
+              >
                 Your property, professionally managed.
               </h2>
-              <p style={{ fontSize: "16px", lineHeight: "1.7", color: "var(--muted)", marginBottom: "16px" }}>
-                Traverse handles everything — guest communication, dynamic pricing,
-                professional photography, cleaning, maintenance coordination, and owner
-                reporting. You earn rental income without the operational overhead.
+              <p
+                style={{
+                  fontSize: "16px",
+                  lineHeight: "1.7",
+                  color: "var(--muted)",
+                  marginBottom: "16px",
+                }}
+              >
+                Traverse handles everything — guest communication, dynamic
+                pricing, professional photography, cleaning, maintenance
+                coordination, and owner reporting. You earn rental income
+                without the operational overhead.
               </p>
-              <p style={{ fontSize: "16px", lineHeight: "1.7", color: "var(--muted)", marginBottom: "28px" }}>
-                Our offices are in Leadville and Crested Butte. We&apos;re not managing
-                your property from Denver — we&apos;re down the street.
+              <p
+                style={{
+                  fontSize: "16px",
+                  lineHeight: "1.7",
+                  color: "var(--muted)",
+                  marginBottom: "28px",
+                }}
+              >
+                Our offices are in Leadville and Crested Butte. We&apos;re not
+                managing your property from Denver — we&apos;re down the street.
               </p>
               <Link
                 href="/property-management"
@@ -559,28 +670,126 @@ export default async function HomePage() {
                 Learn About Property Management →
               </Link>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-              <div style={{ padding: "28px", background: "var(--card)", border: "1px solid var(--line)", borderRadius: "var(--radius-md)" }}>
-                <strong style={{ fontSize: "36px", fontWeight: 800, display: "block", marginBottom: "4px" }}>220+</strong>
-                <span style={{ fontSize: "13px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "16px",
+              }}
+            >
+              <div
+                style={{
+                  padding: "28px",
+                  background: "var(--card)",
+                  border: "1px solid var(--line)",
+                  borderRadius: "var(--radius-md)",
+                }}
+              >
+                <strong
+                  style={{
+                    fontSize: "36px",
+                    fontWeight: 800,
+                    display: "block",
+                    marginBottom: "4px",
+                  }}
+                >
+                  220+
+                </strong>
+                <span
+                  style={{
+                    fontSize: "13px",
+                    color: "var(--muted)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                  }}
+                >
                   Managed properties
                 </span>
               </div>
-              <div style={{ padding: "28px", background: "var(--card)", border: "1px solid var(--line)", borderRadius: "var(--radius-md)" }}>
-                <strong style={{ fontSize: "36px", fontWeight: 800, display: "block", marginBottom: "4px" }}>6</strong>
-                <span style={{ fontSize: "13px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              <div
+                style={{
+                  padding: "28px",
+                  background: "var(--card)",
+                  border: "1px solid var(--line)",
+                  borderRadius: "var(--radius-md)",
+                }}
+              >
+                <strong
+                  style={{
+                    fontSize: "36px",
+                    fontWeight: 800,
+                    display: "block",
+                    marginBottom: "4px",
+                  }}
+                >
+                  6
+                </strong>
+                <span
+                  style={{
+                    fontSize: "13px",
+                    color: "var(--muted)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                  }}
+                >
                   Colorado markets
                 </span>
               </div>
-              <div style={{ padding: "28px", background: "var(--card)", border: "1px solid var(--line)", borderRadius: "var(--radius-md)" }}>
-                <strong style={{ fontSize: "36px", fontWeight: 800, display: "block", marginBottom: "4px" }}>4.8★</strong>
-                <span style={{ fontSize: "13px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              <div
+                style={{
+                  padding: "28px",
+                  background: "var(--card)",
+                  border: "1px solid var(--line)",
+                  borderRadius: "var(--radius-md)",
+                }}
+              >
+                <strong
+                  style={{
+                    fontSize: "36px",
+                    fontWeight: 800,
+                    display: "block",
+                    marginBottom: "4px",
+                  }}
+                >
+                  4.8★
+                </strong>
+                <span
+                  style={{
+                    fontSize: "13px",
+                    color: "var(--muted)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                  }}
+                >
                   Guest rating
                 </span>
               </div>
-              <div style={{ padding: "28px", background: "var(--card)", border: "1px solid var(--line)", borderRadius: "var(--radius-md)" }}>
-                <strong style={{ fontSize: "36px", fontWeight: 800, display: "block", marginBottom: "4px" }}>2</strong>
-                <span style={{ fontSize: "13px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              <div
+                style={{
+                  padding: "28px",
+                  background: "var(--card)",
+                  border: "1px solid var(--line)",
+                  borderRadius: "var(--radius-md)",
+                }}
+              >
+                <strong
+                  style={{
+                    fontSize: "36px",
+                    fontWeight: 800,
+                    display: "block",
+                    marginBottom: "4px",
+                  }}
+                >
+                  2
+                </strong>
+                <span
+                  style={{
+                    fontSize: "13px",
+                    color: "var(--muted)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                  }}
+                >
                   Local offices
                 </span>
               </div>
@@ -601,7 +810,14 @@ export default async function HomePage() {
           <div className="section-head centered">
             <h2>Guides & Resources</h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px", marginTop: "40px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+              gap: "20px",
+              marginTop: "40px",
+            }}
+          >
             <Link
               href="/crested-butte/guides/where-to-stay"
               style={{
@@ -615,14 +831,29 @@ export default async function HomePage() {
                 transition: "border-color 0.2s",
               }}
             >
-              <span style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--muted)", fontWeight: 600 }}>
+              <span
+                style={{
+                  fontSize: "12px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                  color: "var(--muted)",
+                  fontWeight: 600,
+                }}
+              >
                 Lodging Guide
               </span>
-              <h3 style={{ fontSize: "20px", marginTop: "8px", marginBottom: "8px" }}>
+              <h3
+                style={{
+                  fontSize: "20px",
+                  marginTop: "8px",
+                  marginBottom: "8px",
+                }}
+              >
                 Where to Stay in Crested Butte
               </h3>
               <p style={{ fontSize: "14px", color: "var(--muted)" }}>
-                An honest comparison of slope-side lodging options — including properties we don&apos;t manage.
+                An honest comparison of slope-side lodging options — including
+                properties we don&apos;t manage.
               </p>
             </Link>
             <Link
@@ -638,14 +869,29 @@ export default async function HomePage() {
                 transition: "border-color 0.2s",
               }}
             >
-              <span style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--muted)", fontWeight: 600 }}>
+              <span
+                style={{
+                  fontSize: "12px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                  color: "var(--muted)",
+                  fontWeight: 600,
+                }}
+              >
                 Market Hub
               </span>
-              <h3 style={{ fontSize: "20px", marginTop: "8px", marginBottom: "8px" }}>
+              <h3
+                style={{
+                  fontSize: "20px",
+                  marginTop: "8px",
+                  marginBottom: "8px",
+                }}
+              >
                 Crested Butte Vacation Rentals
               </h3>
               <p style={{ fontSize: "14px", color: "var(--muted)" }}>
-                Browse slope-side condos at the Grand Lodge, Lodge at Mountaineer Square, and the Plaza.
+                Browse slope-side condos at the Grand Lodge, Lodge at
+                Mountaineer Square, and the Plaza.
               </p>
             </Link>
             <Link
@@ -661,14 +907,29 @@ export default async function HomePage() {
                 transition: "border-color 0.2s",
               }}
             >
-              <span style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--muted)", fontWeight: 600 }}>
+              <span
+                style={{
+                  fontSize: "12px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                  color: "var(--muted)",
+                  fontWeight: 600,
+                }}
+              >
                 Market Hub
               </span>
-              <h3 style={{ fontSize: "20px", marginTop: "8px", marginBottom: "8px" }}>
+              <h3
+                style={{
+                  fontSize: "20px",
+                  marginTop: "8px",
+                  marginBottom: "8px",
+                }}
+              >
                 Leadville Vacation Rentals
               </h3>
               <p style={{ fontSize: "14px", color: "var(--muted)" }}>
-                70+ cabins, historic homes, and hot tub rentals in America&apos;s highest city.
+                70+ cabins, historic homes, and hot tub rentals in
+                America&apos;s highest city.
               </p>
             </Link>
           </div>
@@ -686,69 +947,231 @@ export default async function HomePage() {
         }}
       >
         <div className="wrap">
-          <h2 style={{ fontSize: "clamp(30px, 5vw, 52px)", color: "#fff", marginBottom: "18px" }}>
+          <h2
+            style={{
+              fontSize: "clamp(30px, 5vw, 52px)",
+              color: "#fff",
+              marginBottom: "18px",
+            }}
+          >
             Find your Colorado rental.
           </h2>
-          <p style={{ fontSize: "18px", maxWidth: "55ch", margin: "0 auto 36px", opacity: 0.6 }}>
-            220+ locally managed properties across 6 mountain markets. Book direct and save up to 15%.
+          <p
+            style={{
+              fontSize: "18px",
+              maxWidth: "55ch",
+              margin: "0 auto 36px",
+              opacity: 0.6,
+            }}
+          >
+            220+ locally managed properties across 6 mountain markets. Book
+            direct and save up to 15%.
           </p>
-          <Link href="/properties" className="btn btn-primary" style={{ display: "inline-block" }}>
+          <Link
+            href="/properties"
+            className="btn btn-primary"
+            style={{ display: "inline-block" }}
+          >
             Search Available Dates
           </Link>
         </div>
       </section>
 
       {/* ================= FOOTER ================= */}
-      <footer style={{ background: "var(--ink-2)", color: "rgba(255,255,255,0.6)", padding: "64px 0 32px", fontSize: "14px" }}>
-        <div className="wrap" style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: "48px", marginBottom: "48px" }}>
+      <footer
+        style={{
+          background: "var(--ink-2)",
+          color: "rgba(255,255,255,0.6)",
+          padding: "64px 0 32px",
+          fontSize: "14px",
+        }}
+      >
+        <div
+          className="wrap"
+          style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "2fr 1fr 1fr 1fr",
+              gap: "48px",
+              marginBottom: "48px",
+            }}
+          >
             <div>
-              <strong style={{ color: "#fff", fontSize: "18px", display: "block", marginBottom: "12px" }}>
+              <strong
+                style={{
+                  color: "#fff",
+                  fontSize: "18px",
+                  display: "block",
+                  marginBottom: "12px",
+                }}
+              >
                 Traverse Hospitality
               </strong>
               <p style={{ lineHeight: "1.7", maxWidth: "300px" }}>
-                Colorado&apos;s locally managed vacation rental company. Offices in Leadville and Crested Butte.
+                Colorado&apos;s locally managed vacation rental company. Offices
+                in Leadville and Crested Butte.
               </p>
               <div style={{ marginTop: "16px" }}>
-                <div>Leadville: <a href="tel:+17207592013" style={{ color: "rgba(255,255,255,0.8)", textDecoration: "none" }}>(720) 759-2013</a></div>
-                <div>Crested Butte: <a href="tel:+19704382241" style={{ color: "rgba(255,255,255,0.8)", textDecoration: "none" }}>(970) 438-2241</a></div>
+                <div>
+                  Leadville:{" "}
+                  <a
+                    href="tel:+17207592013"
+                    style={{
+                      color: "rgba(255,255,255,0.8)",
+                      textDecoration: "none",
+                    }}
+                  >
+                    (720) 759-2013
+                  </a>
+                </div>
+                <div>
+                  Crested Butte:{" "}
+                  <a
+                    href="tel:+19704382241"
+                    style={{
+                      color: "rgba(255,255,255,0.8)",
+                      textDecoration: "none",
+                    }}
+                  >
+                    (970) 438-2241
+                  </a>
+                </div>
               </div>
             </div>
             <div>
-              <strong style={{ color: "#fff", fontSize: "14px", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: "12px" }}>
+              <strong
+                style={{
+                  color: "#fff",
+                  fontSize: "14px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  display: "block",
+                  marginBottom: "12px",
+                }}
+              >
                 Guests
               </strong>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <Link href="/properties" style={{ color: "inherit", textDecoration: "none" }}>All Rentals</Link>
-                <Link href="/crested-butte" style={{ color: "inherit", textDecoration: "none" }}>Crested Butte</Link>
-                <Link href="/leadville" style={{ color: "inherit", textDecoration: "none" }}>Leadville</Link>
-                <Link href="/crested-butte/guides/where-to-stay" style={{ color: "inherit", textDecoration: "none" }}>Where to Stay Guide</Link>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+              >
+                <Link
+                  href="/properties"
+                  style={{ color: "inherit", textDecoration: "none" }}
+                >
+                  All Rentals
+                </Link>
+                <Link
+                  href="/crested-butte"
+                  style={{ color: "inherit", textDecoration: "none" }}
+                >
+                  Crested Butte
+                </Link>
+                <Link
+                  href="/leadville"
+                  style={{ color: "inherit", textDecoration: "none" }}
+                >
+                  Leadville
+                </Link>
+                <Link
+                  href="/crested-butte/guides/where-to-stay"
+                  style={{ color: "inherit", textDecoration: "none" }}
+                >
+                  Where to Stay Guide
+                </Link>
               </div>
             </div>
             <div>
-              <strong style={{ color: "#fff", fontSize: "14px", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: "12px" }}>
+              <strong
+                style={{
+                  color: "#fff",
+                  fontSize: "14px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  display: "block",
+                  marginBottom: "12px",
+                }}
+              >
                 Owners
               </strong>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <Link href="/property-management" style={{ color: "inherit", textDecoration: "none" }}>Property Management</Link>
-                <a href="https://dashboard.traversehospitality.com" style={{ color: "inherit", textDecoration: "none" }}>Owner Portal</a>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+              >
+                <Link
+                  href="/property-management"
+                  style={{ color: "inherit", textDecoration: "none" }}
+                >
+                  Property Management
+                </Link>
+                <a
+                  href="https://dashboard.traversehospitality.com"
+                  style={{ color: "inherit", textDecoration: "none" }}
+                >
+                  Owner Portal
+                </a>
               </div>
             </div>
             <div>
-              <strong style={{ color: "#fff", fontSize: "14px", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: "12px" }}>
+              <strong
+                style={{
+                  color: "#fff",
+                  fontSize: "14px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  display: "block",
+                  marginBottom: "12px",
+                }}
+              >
                 Company
               </strong>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <Link href="/about" style={{ color: "inherit", textDecoration: "none" }}>About Us</Link>
-                <Link href="/contact" style={{ color: "inherit", textDecoration: "none" }}>Contact</Link>
-                <Link href="/reviews" style={{ color: "inherit", textDecoration: "none" }}>Reviews</Link>
-                <Link href="/terms" style={{ color: "inherit", textDecoration: "none" }}>Terms</Link>
-                <Link href="/privacy" style={{ color: "inherit", textDecoration: "none" }}>Privacy</Link>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+              >
+                <Link
+                  href="/about"
+                  style={{ color: "inherit", textDecoration: "none" }}
+                >
+                  About Us
+                </Link>
+                <Link
+                  href="/contact"
+                  style={{ color: "inherit", textDecoration: "none" }}
+                >
+                  Contact
+                </Link>
+                <Link
+                  href="/reviews"
+                  style={{ color: "inherit", textDecoration: "none" }}
+                >
+                  Reviews
+                </Link>
+                <Link
+                  href="/terms"
+                  style={{ color: "inherit", textDecoration: "none" }}
+                >
+                  Terms
+                </Link>
+                <Link
+                  href="/privacy"
+                  style={{ color: "inherit", textDecoration: "none" }}
+                >
+                  Privacy
+                </Link>
               </div>
             </div>
           </div>
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "24px", textAlign: "center", fontSize: "13px", opacity: 0.5 }}>
-            © 2026 Traverse Hospitality · Locally managed in Leadville & Crested Butte, CO
+          <div
+            style={{
+              borderTop: "1px solid rgba(255,255,255,0.1)",
+              paddingTop: "24px",
+              textAlign: "center",
+              fontSize: "13px",
+              opacity: 0.5,
+            }}
+          >
+            © 2026 Traverse Hospitality · Locally managed in Leadville & Crested
+            Butte, CO
           </div>
         </div>
       </footer>
