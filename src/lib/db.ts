@@ -117,28 +117,94 @@ export async function withAdvisoryLock<T>(
     .digest()
     .readBigInt64BE(0)
     .toString();
-  const connectionString = getDirectConnectionString();
+  let connectionString: string;
+  try {
+    connectionString = getDirectConnectionString();
+  } catch (err) {
+    return runDegraded(key, fn, err);
+  }
+  locksAreEffective(connectionString);
+
+  // ── Acquire the lock, or degrade ────────────────────────────────────────
+  // Everything up to and including taking the lock is best-effort. A lock is
+  // a SAFETY feature; it must never be able to cause the harm it exists to
+  // prevent. On 2026-10-05 SHARED_DATABASE_URL_DIRECT was set to a 4-character
+  // string, this function threw ENOTFOUND before reaching fn(), and that took
+  // the whole of checkout with it: Ed Frank and Gavin Gunderson were charged
+  // with no reservation created. A missing lock risks a rare race; a throwing
+  // lock guarantees a stranded payment on EVERY booking.
   const client = new Client({
     connectionString,
     ssl: { rejectUnauthorized: false },
   });
-  locksAreEffective(connectionString);
-  await client.connect();
   try {
+    await client.connect();
     // Abort the lock wait before Vercel's 60s maxDuration so stuck locks
     // surface as a clean error instead of a 504.
     await client.query("SET statement_timeout = '45s'");
     await client.query("SELECT pg_advisory_lock($1::bigint)", [lockKey]);
-    try {
-      return await fn();
-    } finally {
-      await client
-        .query("SELECT pg_advisory_unlock($1::bigint)", [lockKey])
-        .catch(() => {});
-    }
+  } catch (err) {
+    await client.end().catch(() => {});
+    // A statement timeout means the lock is genuinely HELD by a concurrent
+    // caller. Running anyway is the one case that would actively cause the
+    // duplicate, so this still fails loudly and lets the recovery crons retry.
+    if (isLockContention(err)) throw err;
+    return runDegraded(key, fn, err);
+  }
+
+  try {
+    return await fn();
   } finally {
+    await client
+      .query("SELECT pg_advisory_unlock($1::bigint)", [lockKey])
+      .catch(() => {});
     await client.end().catch(() => {});
   }
+}
+
+/** Postgres cancels a statement that exceeds statement_timeout with 57014. */
+function isLockContention(err: unknown): boolean {
+  const code = (err as { code?: string } | null)?.code;
+  if (code === "57014") return true;
+  const message = err instanceof Error ? err.message.toLowerCase() : "";
+  return (
+    message.includes("statement timeout") ||
+    message.includes("canceling statement")
+  );
+}
+
+let warnedDegraded = false;
+/**
+ * Run the work WITHOUT the lock, having failed to take it. Degraded, not
+ * broken: concurrent callers are no longer serialised, so the caller's own
+ * dedup and the database constraints behind it are what prevent duplicates —
+ * for reservations that is reservations_one_active_per_stay_idx.
+ */
+async function runDegraded<T>(
+  key: string,
+  fn: () => Promise<T>,
+  err: unknown
+): Promise<T> {
+  const reason = err instanceof Error ? err.message : String(err);
+  console.error(
+    `[withAdvisoryLock] DEGRADED — could not take lock "${key}" (${reason}). ` +
+      "Running UNLOCKED: concurrent callers are not serialised. " +
+      "Check SHARED_DATABASE_URL_DIRECT and /api/health/db."
+  );
+  if (!warnedDegraded) {
+    warnedDegraded = true;
+    const { sendAlert } = await import("@/lib/alerts").catch(() => ({
+      sendAlert: null as unknown as typeof import("@/lib/alerts").sendAlert,
+    }));
+    if (sendAlert) {
+      await sendAlert(
+        "ADVISORY LOCKS DEGRADED — bookings running unserialised",
+        `<p>withAdvisoryLock could not acquire a lock and is running work <strong>unlocked</strong>. Bookings still complete, but concurrent finalizers are no longer serialised, so a duplicate reservation is possible.</p><p>Key: <code>${key}</code><br>Reason: <code>${reason}</code></p><p>Check <code>SHARED_DATABASE_URL_DIRECT</code> (must be the session-mode URL on port 5432) and <code>/api/health/db</code>.</p>`,
+        "advisory-locks-degraded"
+      ).catch(() => {});
+    }
+  }
+  return fn();
 }
 
 /**
@@ -177,8 +243,14 @@ export async function probeAdvisoryLock(): Promise<{
     .readBigInt64BE(0)
     .toString();
 
-  const holder = new Client({ connectionString, ssl: { rejectUnauthorized: false } });
-  const contender = new Client({ connectionString, ssl: { rejectUnauthorized: false } });
+  const holder = new Client({
+    connectionString,
+    ssl: { rejectUnauthorized: false },
+  });
+  const contender = new Client({
+    connectionString,
+    ssl: { rejectUnauthorized: false },
+  });
   try {
     await holder.connect();
     await contender.connect();
