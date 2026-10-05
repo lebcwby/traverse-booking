@@ -512,3 +512,56 @@ export async function createReservationFromQuote(params: {
     }),
   });
 }
+
+/**
+ * Read a listing's Guesty calendar (Open API).
+ *
+ * The BEAPI calendar (guesty-beapi.getListingCalendar) shows what a guest can
+ * book; this one shows the manager's view, including WHY a day is closed —
+ * `blocks.m` is a manual block, `blocks.b` a booking. Ops blocks dates by hand
+ * to hold a stay while a stuck checkout is sorted out, and those blocks then
+ * stop the real reservation being created.
+ */
+export async function getOpenAPIListingCalendar(params: {
+  listingId: string;
+  startDate: string;
+  endDate: string;
+}) {
+  const sp = new URLSearchParams({
+    startDate: params.startDate,
+    endDate: params.endDate,
+  });
+  return openapiFetch(
+    `/v1/availability-pricing/api/calendar/listings/${params.listingId}?${sp.toString()}`
+  );
+}
+
+/**
+ * Open or close a date range on a listing's calendar.
+ *
+ * ⚠️ This frees or removes inventory. Only call it for a specific, known
+ * reason — the case it was written for is releasing an ops hold so the paid
+ * reservation behind it can finally be created (Ed Frank, 2026-10-05: team
+ * blocked Oct 5–8 to hold the unit, which then made BEAPI refuse the booking
+ * with "There is not availability to create this reservation in these dates").
+ *
+ * Releasing a hold opens a window where someone else could book the dates, so
+ * create the reservation immediately afterwards and re-check the calendar.
+ */
+export async function setListingCalendarAvailability(params: {
+  listingId: string;
+  startDate: string;
+  endDate: string;
+  status: "available" | "unavailable";
+  note?: string;
+}) {
+  return openapiFetch(`/v1/availability-pricing/api/calendar/listings/${params.listingId}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      startDate: params.startDate,
+      endDate: params.endDate,
+      status: params.status,
+      ...(params.note ? { note: params.note } : {}),
+    }),
+  });
+}
