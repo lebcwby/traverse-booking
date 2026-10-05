@@ -31,17 +31,20 @@ export function ListingLinkList({
   units,
   heading,
   description,
-  max = 60,
+  max,
   embedded = false,
 }: {
   units: Listing[];
   heading: string;
   description?: string;
+  /** Omit to link EVERY unit passed in. A cap here silently drops listings
+   *  from the crawl surface this component exists to provide, so callers
+   *  should bound the fetch instead of bounding the render. */
   max?: number;
   /** Drop the page-level gutters when rendered inside an existing column. */
   embedded?: boolean;
 }) {
-  const items = units.slice(0, max);
+  const items = max ? units.slice(0, max) : units;
   if (items.length === 0) return null;
 
   return (

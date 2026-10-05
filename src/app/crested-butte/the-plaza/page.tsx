@@ -83,7 +83,6 @@ export default async function Page() {
       />
       <ListingLinkList
         units={units}
-        max={100}
         heading="All units at The Plaza"
         description="Every Traverse-managed unit in this building. Open any unit for photos, amenities and live availability."
       />

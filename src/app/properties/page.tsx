@@ -400,7 +400,6 @@ export default async function PropertiesPage({
           directoryLinks={
             <ListingLinkList
               units={listings}
-              max={60}
               embedded
               heading="More stays across Colorado"
               description="Direct links to individual homes and condos in these results."
