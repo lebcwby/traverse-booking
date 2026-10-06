@@ -25,9 +25,15 @@ const n = (v: unknown): unknown => (v === undefined || v === null ? null : v);
 // `sync-website-reservations` function is gone — it was never seen
 // in practice because that function had no pg_cron.
 
+// Real Traverse addresses. These were "hayden.laverty@gmail.com" and
+// "wyatt@mossdigitalstrategies.com" — the operators of the Portland site this
+// codebase was scaffolded from — until 2026-10-06, so guest name, email,
+// phone, dates and amount went to them on every Guesty-widget booking and to
+// nobody here. Mirrored in src/lib/alerts.ts and sync-website-reservations;
+// change all three together.
 const ALERT_RECIPIENTS = [
-  "hayden.laverty@gmail.com",
-  "wyatt@mossdigitalstrategies.com",
+  "bookings@traversehospitality.com",
+  "nadim@traversehospitality.com",
 ];
 
 const EXCLUDED_ALERT_EMAILS = new Set([
