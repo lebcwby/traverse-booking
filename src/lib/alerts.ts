@@ -45,6 +45,19 @@ const BOOKING_ALERT_RECIPIENTS = [
 ];
 
 /**
+ * The ops inbox that per-alert `{ to }` overrides target — orphan charges,
+ * double charges, payment-ledger problems, inbound lead forms.
+ *
+ * sendAlert() ADDS this to ALERT_TO_EMAIL rather than replacing it, so these
+ * overrides exist to guarantee the ops inbox is reached even if the env var
+ * is wrong. That belt-and-braces only works if the address is right, and it
+ * was previously written out by hand in 11 places across 6 files. Keeping
+ * three copies of a recipient list in sync is exactly what failed with the
+ * booking alerts above, so there is one copy now. Import it.
+ */
+export const OPS_ALERT_INBOX = "bookings@traversehospitality.com";
+
+/**
  * The exact sender and recipients sendAlert() will use. Exported so
  * /api/health/email reports the live config rather than re-deriving it — a
  * diagnostic that re-implements this parsing can report a setup the sender

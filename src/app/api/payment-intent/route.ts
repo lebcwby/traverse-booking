@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { buildStripeIdempotencyKey, getStripeServer } from "@/lib/stripe";
-import { sendAlert } from "@/lib/alerts";
+import { sendAlert, OPS_ALERT_INBOX } from "@/lib/alerts";
 import { getQuote, getListingDetail } from "@/lib/guesty-beapi";
 import { getUpsellTotal, resolvePetFeePerPet } from "@/lib/upsells";
 import {
@@ -340,7 +340,7 @@ export async function POST(request: NextRequest) {
           }).`,
           `blocked-double-charge-${listingId}-${checkIn}-${checkOut}`,
           // Double-charge alerts go to the ops inbox (added to ALERT_TO_EMAIL).
-          { to: "admin@traversehospitality.com" }
+          { to: OPS_ALERT_INBOX }
         ).catch(() => {});
         return NextResponse.json(
           {

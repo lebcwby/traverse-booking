@@ -30,13 +30,13 @@ import {
 } from "@/lib/checkout-finalizer";
 import { createQuote, getQuote } from "@/lib/guesty-beapi";
 import { classifyBeapiError } from "@/lib/beapi-error";
-import { sendAlert } from "@/lib/alerts";
+import { sendAlert, OPS_ALERT_INBOX } from "@/lib/alerts";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const OPS_INBOX = "admin@traversehospitality.com";
+const OPS_INBOX = OPS_ALERT_INBOX;
 // Only act on orphans older than this so an in-flight finalize (which creates
 // the reservation a few seconds after the charge) is never mistaken for one.
 const MIN_AGE_MS = 60 * 60 * 1000; // 1h
@@ -185,7 +185,11 @@ export async function GET(request: Request) {
           `orphan-review-${pi.id}`,
           { to: OPS_INBOX }
         ).catch(() => {});
-        outcomes.push({ pi: pi.id, action: "manual-review", code: classified.code });
+        outcomes.push({
+          pi: pi.id,
+          action: "manual-review",
+          code: classified.code,
+        });
         continue;
       }
     }

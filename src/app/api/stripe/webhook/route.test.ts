@@ -21,7 +21,11 @@ vi.mock("@/lib/cart/pending-cart-checkouts", () => ({
   getPendingCartCheckoutByPaymentIntent: mockGetPendingCartCheckout,
 }));
 
-vi.mock("@/lib/alerts", () => ({
+// Keep the real module's constants (OPS_ALERT_INBOX) and mock only the
+// sender, so the assertions below compare against the address the app
+// actually ships rather than one restated in the test.
+vi.mock("@/lib/alerts", async (importActual) => ({
+  ...(await importActual<typeof import("@/lib/alerts")>()),
   sendAlert: mockSendAlert,
 }));
 
@@ -47,6 +51,7 @@ vi.mock("@/lib/stripe", () => ({
   }),
 }));
 
+import { OPS_ALERT_INBOX } from "@/lib/alerts";
 import { POST } from "./route";
 
 describe("POST /api/stripe/webhook", () => {
@@ -188,7 +193,7 @@ describe("POST /api/stripe/webhook", () => {
       "PAID BOOKING MISSING PENDING CHECKOUT",
       expect.stringContaining("pi_orphan"),
       "missing-pending-checkout-pi_orphan",
-      { to: "admin@traversehospitality.com" }
+      { to: OPS_ALERT_INBOX }
     );
   });
 
@@ -209,7 +214,7 @@ describe("POST /api/stripe/webhook", () => {
       "PAID BOOKING MISSING GUEST DETAILS",
       expect.stringContaining("pi_noguest"),
       "missing-pending-guest-pi_noguest",
-      { to: "admin@traversehospitality.com" }
+      { to: OPS_ALERT_INBOX }
     );
     expect(mockFinalizeReservation).not.toHaveBeenCalled();
   });
@@ -260,7 +265,7 @@ describe("POST /api/stripe/webhook", () => {
       "PAID CART MISSING PENDING CHECKOUT",
       expect.stringContaining("pi_cart_orphan"),
       "missing-pending-cart-pi_cart_orphan",
-      { to: "admin@traversehospitality.com" }
+      { to: OPS_ALERT_INBOX }
     );
   });
 

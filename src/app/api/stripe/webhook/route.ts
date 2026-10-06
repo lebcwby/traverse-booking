@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { sendAlert } from "@/lib/alerts";
+import { sendAlert, OPS_ALERT_INBOX } from "@/lib/alerts";
 import {
   finalizeReservation,
   ReservationPendingRecoveryError,
@@ -91,7 +91,7 @@ async function detectDoubleCharge(paymentIntent: Stripe.PaymentIntent) {
     // Cooldown per STAY (not per PI) so both PIs' webhooks don't double-send.
     `double-charge-${listingId}-${checkIn}-${checkOut}`,
     // Double-charge alerts go to the ops inbox (added to ALERT_TO_EMAIL).
-    { to: "admin@traversehospitality.com" }
+    { to: OPS_ALERT_INBOX }
   ).catch(() => {});
 }
 
@@ -161,7 +161,7 @@ async function handlePaymentIntentSucceeded(
       "PAID CART MISSING PENDING CHECKOUT",
       `Stripe webhook received <code>payment_intent.succeeded</code> for cart payment <code>${paymentIntent.id}</code>, but no pending cart checkout row was found.<br><br>Lines: ${paymentIntent.metadata.lineCount || "(unknown)"}<br>Listings: ${paymentIntent.metadata.lineListingIds || "(missing)"}<br>Total charged: $${(paymentIntent.amount / 100).toFixed(2)}`,
       `missing-pending-cart-${paymentIntent.id}`,
-      { to: "admin@traversehospitality.com" }
+      { to: OPS_ALERT_INBOX }
     ).catch(() => {});
     return;
   }
@@ -173,7 +173,7 @@ async function handlePaymentIntentSucceeded(
       `Stripe webhook received <code>payment_intent.succeeded</code> for <code>${paymentIntent.id}</code>, but no pending checkout row was found.<br><br>Quote: ${paymentIntent.metadata.quoteId || "(missing)"}<br>Guest email: ${paymentIntent.metadata.guestEmail || "(missing)"}<br>Total charged: $${(paymentIntent.amount / 100).toFixed(2)}`,
       `missing-pending-checkout-${paymentIntent.id}`,
       // Orphan-charge alert → ops inbox (a paid booking with no reservation).
-      { to: "admin@traversehospitality.com" }
+      { to: OPS_ALERT_INBOX }
     ).catch(() => {});
     return;
   }
@@ -198,7 +198,7 @@ async function handlePaymentIntentSucceeded(
       `Stripe webhook received <code>payment_intent.succeeded</code> for <code>${paymentIntent.id}</code>, but the pending checkout record is missing full guest details.<br><br>Quote: ${pending.quoteId}<br>Guest email: ${guest.email || "(missing)"}<br>Total charged: $${(paymentIntent.amount / 100).toFixed(2)}<br><br>The booking was not auto-refunded. The recovery path remains active.`,
       `missing-pending-guest-${paymentIntent.id}`,
       // Orphan-charge alert → ops inbox (a paid booking with no reservation).
-      { to: "admin@traversehospitality.com" }
+      { to: OPS_ALERT_INBOX }
     ).catch(() => {});
     return;
   }
