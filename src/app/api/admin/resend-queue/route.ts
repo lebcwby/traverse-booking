@@ -122,6 +122,10 @@ export async function GET(request: Request) {
     scanned: rows.length,
     pages,
     listError,
+    // How far back the API can actually see. The dashboard retains more than
+    // emails.list() will page through, so this bounds what we can act on.
+    windowNewest: rows[0]?.created_at ?? null,
+    windowOldest: rows.at(-1)?.created_at ?? null,
     byEvent: tally(rows),
     queuedTotal: queued.length,
     queuedToTemplateAuthors: queuedToTemplate.length,
@@ -168,12 +172,50 @@ export async function GET(request: Request) {
   }
 
   // ── Cancel, one at a time, only the narrowed set ────────────────────────
+  // `ids=` lets a human paste message ids straight from the Resend dashboard,
+  // which retains far more than emails.list() will page through. Each one is
+  // still fetched and held to the same two conditions before anything happens
+  // — being named in the URL is not sufficient.
+  const results0: Array<{ id: string; ok: boolean; detail?: string }> = [];
+
+  const explicitIds = (url.searchParams.get("ids") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
   const limit = Math.min(
     Math.max(Number(url.searchParams.get("max") ?? 200), 1),
     500
   );
-  const targets = queuedToTemplate.slice(0, limit);
-  const results: Array<{ id: string; ok: boolean; detail?: string }> = [];
+
+  let targets: Row[];
+  if (explicitIds.length > 0) {
+    targets = [];
+    for (const id of explicitIds.slice(0, limit)) {
+      const got = await resend.emails.get(id);
+      if (got.error || !got.data) {
+        results0.push({
+          id,
+          ok: false,
+          detail: got.error
+            ? `${got.error.name}: ${got.error.message}`
+            : "not found",
+        });
+        continue;
+      }
+      targets.push({
+        id: got.data.id,
+        created_at: got.data.created_at,
+        from: got.data.from,
+        to: got.data.to ?? [],
+        subject: got.data.subject,
+        last_event: got.data.last_event,
+      });
+    }
+  } else {
+    targets = queuedToTemplate.slice(0, limit);
+  }
+  const results = results0;
 
   for (const row of targets) {
     // Belt and braces: re-assert both conditions immediately before acting.
