@@ -1,4 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { OPS_ALERT_INBOX } from "./alerts";
+
+describe("OPS_ALERT_INBOX", () => {
+  // Pins the literal address. The per-alert `{ to }` overrides exist to
+  // guarantee ops mail lands even when ALERT_TO_EMAIL is wrong, so this
+  // value being correct is the entire point of them.
+  it("is the Traverse bookings inbox", () => {
+    expect(OPS_ALERT_INBOX).toBe("bookings@traversehospitality.com");
+  });
+});
 
 /**
  * Recipient resolution for sendAlert.

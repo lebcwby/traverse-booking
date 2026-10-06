@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { sendAlert } from "@/lib/alerts";
+import { sendAlert, OPS_ALERT_INBOX } from "@/lib/alerts";
 import {
   finalizeReservation,
   ReservationPendingRecoveryError,
@@ -11,6 +11,8 @@ import {
 } from "@/lib/pending-checkouts";
 import { subscribeToKlaviyoList } from "@/lib/server-tracking";
 import { getStripeServer } from "@/lib/stripe";
+import { classifyPaymentIntent } from "@/lib/stripe-payment-source";
+import { getPendingCartCheckoutByPaymentIntent } from "@/lib/cart/pending-cart-checkouts";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -89,7 +91,7 @@ async function detectDoubleCharge(paymentIntent: Stripe.PaymentIntent) {
     // Cooldown per STAY (not per PI) so both PIs' webhooks don't double-send.
     `double-charge-${listingId}-${checkIn}-${checkOut}`,
     // Double-charge alerts go to the ops inbox (added to ALERT_TO_EMAIL).
-    { to: "admin@traversehospitality.com" }
+    { to: OPS_ALERT_INBOX }
   ).catch(() => {});
 }
 
@@ -100,6 +102,70 @@ async function handlePaymentIntentSucceeded(
   // it fires even when the duplicate's pending row is missing. Never throws.
   await detectDoubleCharge(paymentIntent).catch(() => {});
 
+  // Only the website's own charges have a pending_checkouts row to be missing.
+  // The Stripe account is shared — SuiteOp damage-waiver charges land here too
+  // — and every one of them was emailing "PAID BOOKING MISSING PENDING
+  // CHECKOUT" with a per-PaymentIntent alert key, so the hourly cooldown never
+  // collapsed them. Classify before looking for a row we have no reason to
+  // expect. Every branch returns 200: throwing would make Stripe retry a
+  // charge we are deliberately ignoring.
+  const source = classifyPaymentIntent(paymentIntent);
+
+  if (source === "external") {
+    console.log(
+      "[Stripe Webhook] Ignoring non-website payment_intent.succeeded",
+      {
+        id: paymentIntent.id,
+        amount: paymentIntent.amount,
+        description: paymentIntent.description,
+        application: paymentIntent.application,
+        metadataKeys: Object.keys(paymentIntent.metadata ?? {}),
+      }
+    );
+    return;
+  }
+
+  if (source === "website_date_change") {
+    // Date changes finalize in their own route and are reconciled by the
+    // sweep-abandoned-date-changes cron against pending_date_changes. They
+    // never create a pending_checkouts row, so this branch must not alert.
+    console.log(
+      "[Stripe Webhook] Date-change payment — handled by its own flow",
+      {
+        id: paymentIntent.id,
+        reservationId: paymentIntent.metadata?.reservationId,
+      }
+    );
+    return;
+  }
+
+  if (source === "website_cart") {
+    // Cart checkouts are tracked in pending_cart_checkouts, not
+    // pending_checkouts, so before this change a multi-unit cart booking would
+    // also trip the false "missing pending checkout" alert. Check the table it
+    // actually lives in; only alert when the row is genuinely absent, which is
+    // a real stranded cart payment.
+    const cart = await getPendingCartCheckoutByPaymentIntent(paymentIntent.id);
+    if (cart) {
+      console.log(
+        "[Stripe Webhook] Cart payment — handled by the cart coordinator",
+        {
+          id: paymentIntent.id,
+          cartId: cart.cartId,
+          status: cart.status,
+        }
+      );
+      return;
+    }
+    await sendAlert(
+      "PAID CART MISSING PENDING CHECKOUT",
+      `Stripe webhook received <code>payment_intent.succeeded</code> for cart payment <code>${paymentIntent.id}</code>, but no pending cart checkout row was found.<br><br>Lines: ${paymentIntent.metadata.lineCount || "(unknown)"}<br>Listings: ${paymentIntent.metadata.lineListingIds || "(missing)"}<br>Total charged: $${(paymentIntent.amount / 100).toFixed(2)}`,
+      `missing-pending-cart-${paymentIntent.id}`,
+      { to: OPS_ALERT_INBOX }
+    ).catch(() => {});
+    return;
+  }
+
   const pending = await getPendingCheckout(paymentIntent.id);
   if (!pending) {
     await sendAlert(
@@ -107,7 +173,7 @@ async function handlePaymentIntentSucceeded(
       `Stripe webhook received <code>payment_intent.succeeded</code> for <code>${paymentIntent.id}</code>, but no pending checkout row was found.<br><br>Quote: ${paymentIntent.metadata.quoteId || "(missing)"}<br>Guest email: ${paymentIntent.metadata.guestEmail || "(missing)"}<br>Total charged: $${(paymentIntent.amount / 100).toFixed(2)}`,
       `missing-pending-checkout-${paymentIntent.id}`,
       // Orphan-charge alert → ops inbox (a paid booking with no reservation).
-      { to: "admin@traversehospitality.com" }
+      { to: OPS_ALERT_INBOX }
     ).catch(() => {});
     return;
   }
@@ -132,7 +198,7 @@ async function handlePaymentIntentSucceeded(
       `Stripe webhook received <code>payment_intent.succeeded</code> for <code>${paymentIntent.id}</code>, but the pending checkout record is missing full guest details.<br><br>Quote: ${pending.quoteId}<br>Guest email: ${guest.email || "(missing)"}<br>Total charged: $${(paymentIntent.amount / 100).toFixed(2)}<br><br>The booking was not auto-refunded. The recovery path remains active.`,
       `missing-pending-guest-${paymentIntent.id}`,
       // Orphan-charge alert → ops inbox (a paid booking with no reservation).
-      { to: "admin@traversehospitality.com" }
+      { to: OPS_ALERT_INBOX }
     ).catch(() => {});
     return;
   }

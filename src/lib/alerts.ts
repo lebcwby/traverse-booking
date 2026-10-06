@@ -19,6 +19,45 @@ const ALERT_FROM =
   process.env.ALERT_FROM_EMAIL ?? "Traverse Alerts <alerts@booktraverse.com>";
 
 /**
+ * Who gets the "New Direct Booking" email.
+ *
+ * This is NOT an ops alert: sendBookingConfirmation() calls Resend directly,
+ * so it never reads ALERT_TO_EMAIL and never hits the cooldown. The list has
+ * to be stated here.
+ *
+ * Until 2026-10-06 this was `["hayden.laverty@gmail.com",
+ * "wyatt@mossdigitalstrategies.com"]` — the operators of the Portland
+ * vacation-rental site this codebase was scaffolded from, unchanged since the
+ * initial commit. Every direct booking mailed them the guest's name, email,
+ * phone, dates and amount, plus the year-over-year nightly rate table, while
+ * nobody at Traverse received it at all. It went unnoticed because
+ * ALERT_FROM_EMAIL was an unverified domain, so Resend queued and dropped the
+ * lot; fixing the sender is what finally delivered them and exposed this.
+ *
+ * Keep these as real Traverse addresses. The same list is duplicated in the
+ * two Supabase edge functions that alert on Guesty-widget bookings
+ * (sync-reservations-v2, sync-website-reservations) — they are Deno and
+ * deploy separately, so they cannot import this. Change all three together.
+ */
+const BOOKING_ALERT_RECIPIENTS = [
+  "bookings@traversehospitality.com",
+  "nadim@traversehospitality.com",
+];
+
+/**
+ * The ops inbox that per-alert `{ to }` overrides target — orphan charges,
+ * double charges, payment-ledger problems, inbound lead forms.
+ *
+ * sendAlert() ADDS this to ALERT_TO_EMAIL rather than replacing it, so these
+ * overrides exist to guarantee the ops inbox is reached even if the env var
+ * is wrong. That belt-and-braces only works if the address is right, and it
+ * was previously written out by hand in 11 places across 6 files. Keeping
+ * three copies of a recipient list in sync is exactly what failed with the
+ * booking alerts above, so there is one copy now. Import it.
+ */
+export const OPS_ALERT_INBOX = "bookings@traversehospitality.com";
+
+/**
  * The exact sender and recipients sendAlert() will use. Exported so
  * /api/health/email reports the live config rather than re-deriving it — a
  * diagnostic that re-implements this parsing can report a setup the sender
@@ -686,7 +725,7 @@ export async function sendBookingConfirmation(details: {
     const resend = new Resend(apiKey);
     await resend.emails.send({
       from: ALERT_FROM,
-      to: ["hayden.laverty@gmail.com", "wyatt@mossdigitalstrategies.com"],
+      to: BOOKING_ALERT_RECIPIENTS,
       subject: `New Direct Booking — ${displayName}`,
       html: `
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;background:#faf8f5;">

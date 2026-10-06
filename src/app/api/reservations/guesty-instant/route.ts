@@ -16,7 +16,7 @@ import { createReservationInstant, getQuote } from "@/lib/guesty-beapi";
 import { getOpenAPIReservation } from "@/lib/guesty-openapi";
 import { getPool, withAdvisoryLock } from "@/lib/db";
 import { trackBookingServerSide } from "@/lib/server-tracking";
-import { sendAlert } from "@/lib/alerts";
+import { sendAlert, OPS_ALERT_INBOX } from "@/lib/alerts";
 import { toE164US } from "@/lib/phone";
 
 export const dynamic = "force-dynamic";
@@ -69,12 +69,21 @@ export async function POST(request: NextRequest) {
   try {
     body = (await request.json()) as Body;
   } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid request body" },
+      { status: 400 }
+    );
   }
 
   const { quoteId, ratePlanId, ccToken, guest, marketingOptIn } = body;
   const tracking = body.tracking || {};
-  if (!quoteId || !ratePlanId || !ccToken || !guest?.email || !guest?.firstName) {
+  if (
+    !quoteId ||
+    !ratePlanId ||
+    !ccToken ||
+    !guest?.email ||
+    !guest?.firstName
+  ) {
     return NextResponse.json(
       {
         error:
@@ -134,10 +143,13 @@ export async function POST(request: NextRequest) {
         "GUESTY PAY — RESERVATION CREATE FAILED",
         `createReservationInstant failed for quote <code>${quoteId}</code> (${guest.email}).<br>${err instanceof Error ? err.message : String(err)}`,
         `guesty-instant-fail-${quoteId}`,
-        { to: "admin@traversehospitality.com" }
+        { to: OPS_ALERT_INBOX }
       ).catch(() => {});
       return NextResponse.json(
-        { error: "We couldn't complete your booking. Please try again.", code: "RESERVATION_FAILED" },
+        {
+          error: "We couldn't complete your booking. Please try again.",
+          code: "RESERVATION_FAILED",
+        },
         { status: 502 }
       );
     }
@@ -196,7 +208,8 @@ export async function POST(request: NextRequest) {
     const bookedRp =
       ratePlans.find(
         (r) =>
-          ((r.ratePlan as Record<string, unknown>)?._id as string) === ratePlanId
+          ((r.ratePlan as Record<string, unknown>)?._id as string) ===
+          ratePlanId
       ) || ratePlans[0];
     const quoteAmount =
       Number(
@@ -218,7 +231,7 @@ export async function POST(request: NextRequest) {
           "GUESTY PAY — CHARGE FAILED",
           `Reservation <code>${reservationId}</code> (${confirmationCode || "?"}) was created but is NOT fully paid (balanceDue=${balanceDue}, isFullyPaid=${openApiMoney.isFullyPaid}). The dates may be held in Guesty without payment — review/cancel.`,
           `guesty-charge-failed-${reservationId}`,
-          { to: "admin@traversehospitality.com" }
+          { to: OPS_ALERT_INBOX }
         ).catch(() => {});
         return NextResponse.json(
           {
@@ -238,7 +251,7 @@ export async function POST(request: NextRequest) {
         "GUESTY PAY — CHARGE NOT VERIFIED (Open API unavailable)",
         `Reservation <code>${reservationId}</code> (${confirmationCode || "?"}) was created and treated as booked, but Open API was unavailable to confirm payment. Verify it was paid in Guesty.`,
         `guesty-charge-unverified-${reservationId}`,
-        { to: "admin@traversehospitality.com" }
+        { to: OPS_ALERT_INBOX }
       ).catch(() => {});
     }
 
@@ -263,14 +276,20 @@ export async function POST(request: NextRequest) {
           listingId,
           ((reservation.guestId || reservation.bookerId) as string) || null,
           (reservation.status as string) || "confirmed",
-          (reservation.checkInDateLocalized as string) || tracking.checkIn || null,
-          (reservation.checkOutDateLocalized as string) || tracking.checkOut || null,
+          (reservation.checkInDateLocalized as string) ||
+            tracking.checkIn ||
+            null,
+          (reservation.checkOutDateLocalized as string) ||
+            tracking.checkOut ||
+            null,
           tracking.guests || null,
           JSON.stringify({
             email: guest.email,
             firstName: guest.firstName,
             lastName: guest.lastName || null,
-            fullName: [guest.firstName, guest.lastName].filter(Boolean).join(" "),
+            fullName: [guest.firstName, guest.lastName]
+              .filter(Boolean)
+              .join(" "),
             phone: guest.phone || null,
           }),
           JSON.stringify({ total_paid: amount, currency: "USD" }),
@@ -285,7 +304,7 @@ export async function POST(request: NextRequest) {
         "GUESTY PAY — RESERVATION DB WRITE FAILED",
         `Guesty reservation <code>${reservationId}</code> (${confirmationCode || "?"}) was created + charged, but the local DB write failed. ${dbErr instanceof Error ? dbErr.message : String(dbErr)}`,
         `guesty-instant-db-${reservationId}`,
-        { to: "admin@traversehospitality.com" }
+        { to: OPS_ALERT_INBOX }
       ).catch(() => {});
     }
 

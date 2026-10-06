@@ -7,15 +7,25 @@ const {
   mockGetPendingCheckout,
   mockMarkPendingCheckoutError,
   mockConstructEvent,
+  mockGetPendingCartCheckout,
 } = vi.hoisted(() => ({
   mockSendAlert: vi.fn(),
   mockFinalizeReservation: vi.fn(),
   mockGetPendingCheckout: vi.fn(),
   mockMarkPendingCheckoutError: vi.fn(),
   mockConstructEvent: vi.fn(),
+  mockGetPendingCartCheckout: vi.fn(),
 }));
 
-vi.mock("@/lib/alerts", () => ({
+vi.mock("@/lib/cart/pending-cart-checkouts", () => ({
+  getPendingCartCheckoutByPaymentIntent: mockGetPendingCartCheckout,
+}));
+
+// Keep the real module's constants (OPS_ALERT_INBOX) and mock only the
+// sender, so the assertions below compare against the address the app
+// actually ships rather than one restated in the test.
+vi.mock("@/lib/alerts", async (importActual) => ({
+  ...(await importActual<typeof import("@/lib/alerts")>()),
   sendAlert: mockSendAlert,
 }));
 
@@ -41,6 +51,7 @@ vi.mock("@/lib/stripe", () => ({
   }),
 }));
 
+import { OPS_ALERT_INBOX } from "@/lib/alerts";
 import { POST } from "./route";
 
 describe("POST /api/stripe/webhook", () => {
@@ -126,6 +137,136 @@ describe("POST /api/stripe/webhook", () => {
       pets: 1,
     });
     await expect(response.json()).resolves.toEqual({ received: true });
+  });
+
+  // ── Shared-Stripe-account filtering ──────────────────────────────────────
+  // SuiteOp posts damage-waiver charges through the same Stripe account. Each
+  // one used to email "PAID BOOKING MISSING PENDING CHECKOUT" with a
+  // per-PaymentIntent alert key, so the hourly cooldown never collapsed them.
+
+  function succeededEvent(
+    id: string,
+    metadata: Record<string, string>,
+    amount = 800
+  ) {
+    return {
+      id: `evt_${id}`,
+      type: "payment_intent.succeeded",
+      data: { object: { id, amount, metadata } },
+    };
+  }
+
+  async function postWebhook() {
+    return POST(
+      new NextRequest("http://localhost/api/stripe/webhook", {
+        method: "POST",
+        body: '{"id":"evt"}',
+        headers: { "stripe-signature": "sig_test" },
+      })
+    );
+  }
+
+  it("ignores a third-party payment intent with no website metadata", async () => {
+    mockConstructEvent.mockReturnValue(succeededEvent("pi_suiteop", {}));
+    mockGetPendingCheckout.mockResolvedValue(null);
+
+    const response = await postWebhook();
+
+    expect(response.status).toBe(200);
+    expect(mockSendAlert).not.toHaveBeenCalled();
+    // The row lookup is skipped entirely — there is no reason to expect one.
+    expect(mockGetPendingCheckout).not.toHaveBeenCalled();
+    expect(mockFinalizeReservation).not.toHaveBeenCalled();
+  });
+
+  it("still alerts when a real website booking has no pending checkout row", async () => {
+    mockConstructEvent.mockReturnValue(
+      succeededEvent("pi_orphan", { quoteId: "quote_abc" }, 57_93)
+    );
+    mockGetPendingCheckout.mockResolvedValue(null);
+
+    const response = await postWebhook();
+
+    expect(response.status).toBe(200);
+    expect(mockGetPendingCheckout).toHaveBeenCalledWith("pi_orphan");
+    expect(mockSendAlert).toHaveBeenCalledWith(
+      "PAID BOOKING MISSING PENDING CHECKOUT",
+      expect.stringContaining("pi_orphan"),
+      "missing-pending-checkout-pi_orphan",
+      { to: OPS_ALERT_INBOX }
+    );
+  });
+
+  it("still alerts when a website booking is missing guest details", async () => {
+    mockConstructEvent.mockReturnValue(
+      succeededEvent("pi_noguest", { quoteId: "quote_xyz" })
+    );
+    mockGetPendingCheckout.mockResolvedValue({
+      paymentIntentId: "pi_noguest",
+      quoteId: "quote_xyz",
+      guest: { firstName: "", lastName: "", email: "", phone: "" },
+    });
+
+    const response = await postWebhook();
+
+    expect(response.status).toBe(200);
+    expect(mockSendAlert).toHaveBeenCalledWith(
+      "PAID BOOKING MISSING GUEST DETAILS",
+      expect.stringContaining("pi_noguest"),
+      "missing-pending-guest-pi_noguest",
+      { to: OPS_ALERT_INBOX }
+    );
+    expect(mockFinalizeReservation).not.toHaveBeenCalled();
+  });
+
+  it("ignores a date-change payment intent — that flow finalizes itself", async () => {
+    mockConstructEvent.mockReturnValue(
+      succeededEvent("pi_datechange", {
+        type: "date_change",
+        reservationId: "res_1",
+      })
+    );
+
+    const response = await postWebhook();
+
+    expect(response.status).toBe(200);
+    expect(mockSendAlert).not.toHaveBeenCalled();
+    expect(mockGetPendingCheckout).not.toHaveBeenCalled();
+  });
+
+  it("ignores a cart payment intent that has its pending cart row", async () => {
+    mockConstructEvent.mockReturnValue(
+      succeededEvent("pi_cart", { cartCheckout: "true", lineCount: "2" })
+    );
+    mockGetPendingCartCheckout.mockResolvedValue({
+      cartId: "cart_1",
+      status: "pending",
+    });
+
+    const response = await postWebhook();
+
+    expect(response.status).toBe(200);
+    expect(mockGetPendingCartCheckout).toHaveBeenCalledWith("pi_cart");
+    expect(mockSendAlert).not.toHaveBeenCalled();
+    // Cart rows live in pending_cart_checkouts, never pending_checkouts.
+    expect(mockGetPendingCheckout).not.toHaveBeenCalled();
+  });
+
+  it("alerts with the cart-specific subject when a cart payment has no row", async () => {
+    mockConstructEvent.mockReturnValue(
+      succeededEvent("pi_cart_orphan", { cartCheckout: "true", lineCount: "3" })
+    );
+    mockGetPendingCartCheckout.mockResolvedValue(null);
+
+    const response = await postWebhook();
+
+    expect(response.status).toBe(200);
+    expect(mockSendAlert).toHaveBeenCalledWith(
+      "PAID CART MISSING PENDING CHECKOUT",
+      expect.stringContaining("pi_cart_orphan"),
+      "missing-pending-cart-pi_cart_orphan",
+      { to: OPS_ALERT_INBOX }
+    );
   });
 
   it("marks failed payment intents without trying to finalize a reservation", async () => {

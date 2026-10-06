@@ -13,7 +13,7 @@
  */
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
-import { sendAlert, renderAlertDetails } from "@/lib/alerts";
+import { sendAlert, renderAlertDetails, OPS_ALERT_INBOX } from "@/lib/alerts";
 import {
   enforceRateLimit,
   rejectOversizedRequest,
@@ -103,7 +103,10 @@ async function pushToHubSpot(fields: {
   );
 
   if (res.ok) return { ok: true };
-  return { ok: false, detail: `${res.status} ${(await res.text()).slice(0, 300)}` };
+  return {
+    ok: false,
+    detail: `${res.status} ${(await res.text()).slice(0, 300)}`,
+  };
 }
 
 const str = (v: unknown, max = 300) =>
@@ -241,7 +244,7 @@ export async function POST(request: Request) {
     // Unique per submission so a second request from the same owner is never
     // swallowed by the alert cooldown.
     `listing-audit-${email}-${Date.now()}`,
-    { to: "admin@traversehospitality.com" }
+    { to: OPS_ALERT_INBOX }
   ).catch(() => {});
 
   // Acknowledgement to the owner. They ticked consent and asked us to contact
@@ -251,7 +254,9 @@ export async function POST(request: Request) {
     try {
       const resend = new Resend(apiKey);
       await resend.emails.send({
-        from: process.env.LISTING_INQUIRY_FROM || "Traverse Hospitality <noreply@booktraverse.com>",
+        from:
+          process.env.LISTING_INQUIRY_FROM ||
+          "Traverse Hospitality <noreply@booktraverse.com>",
         to: email,
         subject: "We've got your listing — audit on the way",
         html: `

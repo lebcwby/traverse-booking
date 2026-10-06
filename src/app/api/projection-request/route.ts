@@ -15,7 +15,7 @@
  */
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
-import { sendAlert, renderAlertDetails } from "@/lib/alerts";
+import { sendAlert, renderAlertDetails, OPS_ALERT_INBOX } from "@/lib/alerts";
 import {
   enforceRateLimit,
   rejectOversizedRequest,
@@ -242,7 +242,7 @@ export async function POST(request: Request) {
     // Unique per submission so a second request from the same owner is never
     // swallowed by the alert cooldown.
     `revenue-projection-${email}-${Date.now()}`,
-    { to: "admin@traversehospitality.com" }
+    { to: OPS_ALERT_INBOX }
   ).catch(() => {});
 
   // Acknowledgement to the owner. They ticked consent and asked us to contact

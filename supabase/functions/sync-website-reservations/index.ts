@@ -16,9 +16,11 @@ const PAGE_SIZE = 100;
 // write to the reservations table with stripe_payment_intent_id,
 // so they appear in existingMap and are skipped here.
 
+// Real Traverse addresses — see the note in sync-reservations-v2. Mirrored in
+// src/lib/alerts.ts; change all three together.
 const ALERT_RECIPIENTS = [
-  "hayden.laverty@gmail.com",
-  "wyatt@mossdigitalstrategies.com",
+  "bookings@traversehospitality.com",
+  "nadim@traversehospitality.com",
 ];
 
 async function sendNewBookingAlert(row: Record<string, unknown>) {
