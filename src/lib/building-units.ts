@@ -1,5 +1,8 @@
 import { searchCardListingsCached } from "@/lib/guesty-beapi";
-import { mapBeapiToListing, type BeapiListingResult } from "@/lib/listing-utils";
+import {
+  mapBeapiToListing,
+  type BeapiListingResult,
+} from "@/lib/listing-utils";
 import { enrichListingsWithReviewAverages } from "@/lib/reviews";
 import { getListingPricingCache, type Listing } from "@/lib/supabase";
 
@@ -10,13 +13,28 @@ import { getListingPricingCache, type Listing } from "@/lib/supabase";
  * (`searchCardListingsCached`, revalidate 300) so calling this from both the
  * landing page (for the aggregate rating) and the units grid is one cache hit.
  */
+/** Guesty BEAPI rejects a listings search with limit > 100. Asking for more
+ *  throws, and the catch below turns that into "this building has no units" —
+ *  which is exactly what happened when this was first raised to 120. */
+const BEAPI_MAX_LIMIT = 100;
+
 export async function fetchUnitsForTag(
   tag: string,
-  max = 40,
+  max = 40
 ): Promise<Listing[]> {
+  const limit = Math.min(max, BEAPI_MAX_LIMIT);
   try {
-    const data = await searchCardListingsCached({ tags: [tag], limit: max }, 300);
+    const data = await searchCardListingsCached({ tags: [tag], limit }, 300);
     const results = (data.results || []) as BeapiListingResult[];
+    if (results.length >= limit) {
+      // The page renders exactly what we return, so a silent truncation here
+      // means units with no inbound link anywhere — the crawl gap this whole
+      // change exists to close. Say so rather than quietly dropping them.
+      console.warn(
+        `[fetchUnitsForTag] "${tag}" filled the ${limit}-result limit; ` +
+          "there may be more units than are being linked."
+      );
+    }
     const units = results
       .filter((r) => !!(r.prices?.basePrice && r.prices.basePrice > 0))
       .map(mapBeapiToListing);
@@ -54,7 +72,9 @@ export interface UnitRatingSummary {
  * is stored on Guesty's 0–10 scale; we return it halved to the 0–5 scale.
  * Returns null when no unit has any reviews (so callers can skip the badge).
  */
-export function aggregateUnitRating(units: Listing[]): UnitRatingSummary | null {
+export function aggregateUnitRating(
+  units: Listing[]
+): UnitRatingSummary | null {
   let weighted = 0;
   let total = 0;
   let unitCount = 0;

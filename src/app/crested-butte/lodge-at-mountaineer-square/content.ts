@@ -126,7 +126,7 @@ export const pageContent = `
           <p>Beautiful condo at the Lodge at Mountaineer Square with stunning views. Steps to the lifts, full access to pool, hot tub, sauna, and all building amenities.</p>
           <div class="unit-footer">
             <span class="unit-price">$225 <small>/night</small></span>
-            <a href="/properties/6824162f731aab0012dc2a33" class="unit-link">Book →</a>
+            <a href="/properties/best-view-in-cb-ski-in-out-pool-hot-tub-sauna-6824162f731aab0012dc2a33" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -146,7 +146,7 @@ export const pageContent = `
           <p>One-bedroom condo with unobstructed ski resort views. Steps to the lifts, full kitchen, fireplace, and balcony. The highest-rated Traverse unit at Mountaineer Square.</p>
           <div class="unit-footer">
             <span class="unit-price"><small>Book direct</small></span>
-            <a href="/properties/68256c8c48e69c0010d11e2f" class="unit-link">Book →</a>
+            <a href="/properties/1br-ski-in-out-best-views-a-c-2-baths-68256c8c48e69c0010d11e2f" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -166,7 +166,7 @@ export const pageContent = `
           <p>Top-floor one-bedroom with dramatic vaulted ceilings and open floor plan. Bright, airy space with mountain views, full kitchen, and all the perks of the top level.</p>
           <div class="unit-footer">
             <span class="unit-price"><small>Book direct</small></span>
-            <a href="/properties/68670911cfda0a00137bac75" class="unit-link">Book →</a>
+            <a href="/properties/1-bedroom-top-floor-vaulted-open-space-base-area-luxury-68670911cfda0a00137bac75" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -186,7 +186,7 @@ export const pageContent = `
           <p>Spacious two-bedroom, three-bathroom condo perfect for families or groups. Full kitchen, gas fireplace, washer/dryer, and access to all building amenities.</p>
           <div class="unit-footer">
             <span class="unit-price"><small>Book direct</small></span>
-            <a href="/properties/68256d06b570d5001275d38a" class="unit-link">Book →</a>
+            <a href="/properties/2-bedroom-condo-at-the-lodge-at-mountaineer-square-hot-tub-a-68256d06b570d5001275d38a" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -205,7 +205,7 @@ export const pageContent = `
           <p>Top-level penthouse with premium finishes, elevated views, and the most spacious floor plan in our Mountaineer Square collection. Two bedrooms, three baths, full kitchen.</p>
           <div class="unit-footer">
             <span class="unit-price"><small>Book direct</small></span>
-            <a href="/properties/68670dfeac12220013082ac1" class="unit-link">Book →</a>
+            <a href="/properties/2-bedroom-penthouse-condo-at-the-lodge-at-mountaineer-square-68670dfeac12220013082ac1" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -225,7 +225,7 @@ export const pageContent = `
           <p>Hotel-style king room with private balcony and mountain views. Comfortable and affordable — perfect for couples or solo travelers who want the best location without a full condo.</p>
           <div class="unit-footer">
             <span class="unit-price"><small>Book direct</small></span>
-            <a href="/properties/68256cd5dde5f10013fb414d" class="unit-link">Book →</a>
+            <a href="/properties/king-room-balcony-view-ski-in-out-a-c-68256cd5dde5f10013fb414d" class="unit-link">Book →</a>
           </div>
         </div>
       </article>
@@ -353,4 +353,306 @@ export const pageContent = `
 
 `;
 
-export const schemaBlocks = [{"@context": "https://schema.org", "@type": "Organization", "@id": "https://www.booktraverse.com/#organization", "name": "Traverse Hospitality", "alternateName": ["Traverse Crested Butte", "Traverse Leadville", "High Rocky Homes", "Leadville Vacation Homes"], "disambiguatingDescription": "Traverse Hospitality (formerly High Rocky Homes, rebranded 2024) is a Colorado-based short-term vacation rental property management company founded in 2016. Traverse manages over 100 vacation rental listings with primary markets in Crested Butte, Colorado and Leadville, Colorado, and additional operations in Vail, Avon, Granby, and Twin Lakes.", "url": "https://booktraverse.com", "logo": {"@type": "ImageObject", "url": "https://www.booktraverse.com/book-traverse-wordmark-dark.png", "width": 1024, "height": 246}, "telephone": "+1-720-759-2013", "email": "bookings@traversehospitality.com", "foundingDate": "2016", "slogan": "Modern Property Management", "description": "Traverse Hospitality is a Colorado-based vacation rental property management company offering full-service short-term rental management, dynamic pricing, professional marketing, housekeeping, maintenance, and 24/7 guest support. Our two primary markets are Crested Butte and Leadville, Colorado.", "founder": [{"@type": "Person", "name": "Nadim Tannous", "jobTitle": "Co-Founder & Chief Technical Officer"}, {"@type": "Person", "name": "Alex Haler", "jobTitle": "Co-Founder & Chief Executive Officer"}], "address": {"@type": "PostalAddress", "addressLocality": "Leadville", "addressRegion": "CO", "postalCode": "80461", "addressCountry": "US"}, "areaServed": [{"@type": "City", "name": "Crested Butte", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Mt. Crested Butte", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Leadville", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Twin Lakes", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Vail", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Avon", "containedInPlace": {"@type": "State", "name": "Colorado"}}, {"@type": "City", "name": "Granby", "containedInPlace": {"@type": "State", "name": "Colorado"}}], "knowsAbout": ["Short-term rental property management", "Vacation rental management", "Airbnb management", "VRBO management", "Crested Butte Colorado vacation rentals", "Leadville Colorado vacation rentals", "Colorado mountain vacation rentals", "Grand Lodge Crested Butte", "Dynamic pricing for vacation rentals"], "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.9", "bestRating": "5", "ratingCount": "214", "reviewCount": "214"}, "sameAs": ["https://traversehospitality.com", "https://www.leadvillevacationhomes.com", "https://www.thegrandlodgeatcb.com", "https://www.crestedbutteskirentals.com", "https://www.governorsmansion.net", "https://www.mountainhideaway.com", "https://www.instagram.com/traversehospitality/", "https://www.facebook.com/traversehospitality/", "https://www.linkedin.com/company/traversehospitality", "https://www.tripadvisor.com/Hotel_Review-g33377-d483065-Reviews-The_Grand_Lodge_by_Traverse_Hospitality-Crested_Butte_Colorado.html"]}, {"@context": "https://schema.org", "@type": "LodgingBusiness", "@id": "https://www.booktraverse.com/crested-butte/mountaineer-square/#property", "name": "Lodge at Mountaineer Square", "alternateName": ["Mountaineer Square Crested Butte", "Mountaineer Square Condos"], "description": "Luxury condominium building at the base of Crested Butte Mountain Resort, steps from the Red Lady Express and Silver Queen lifts. Built 2006-2007 with approximately 133 units ranging from studios to 4-bedroom penthouses. Features front desk, concierge, indoor/outdoor pool, sauna, heated underground parking, and air conditioning.", "url": "https://www.booktraverse.com/crested-butte/mountaineer-square/", "telephone": "+1-970-438-2241", "priceRange": "$$-$$$", "checkinTime": "16:00", "checkoutTime": "10:00", "petsAllowed": false, "smokingAllowed": false, "numberOfRooms": "133", "address": {"@type": "PostalAddress", "streetAddress": "620 Gothic Road", "addressLocality": "Mount Crested Butte", "addressRegion": "CO", "postalCode": "81225", "addressCountry": "US"}, "geo": {"@type": "GeoCoordinates", "latitude": 38.8993, "longitude": -106.9663}, "amenityFeature": [{"@type": "LocationFeatureSpecification", "name": "Indoor/Outdoor Heated Pool", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Outdoor Hot Tub", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Sauna", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Fitness Center", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Front Desk & Concierge", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Air Conditioning", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Heated Underground Parking (paid)", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Free WiFi", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Coffee Shop / Grab & Go", "value": true}, {"@type": "LocationFeatureSpecification", "name": "Conference Center (9,000 sq ft)", "value": true}]}, {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.booktraverse.com/"}, {"@type": "ListItem", "position": 2, "name": "Crested Butte", "item": "https://www.booktraverse.com/crested-butte/"}, {"@type": "ListItem", "position": 3, "name": "Lodge at Mountaineer Square", "item": "https://www.booktraverse.com/crested-butte/mountaineer-square/"}]}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Where is the Lodge at Mountaineer Square?", "acceptedAnswer": {"@type": "Answer", "text": "620 Gothic Road, Mount Crested Butte, CO 81225 \u2014 at the heart of the Crested Butte Mountain Resort base area, steps from the Red Lady Express and Silver Queen lifts, the transit center, and base-area shops."}}, {"@type": "Question", "name": "How close is Mountaineer Square to the ski lifts?", "acceptedAnswer": {"@type": "Answer", "text": "Steps away. The Lodge at Mountaineer Square is adjacent to the lifts \u2014 the closest lodging to the Red Lady Express and Silver Queen at Crested Butte Mountain Resort."}}, {"@type": "Question", "name": "Does the Lodge at Mountaineer Square have a pool?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Heated indoor/outdoor pool, outdoor hot tub, sauna, and fitness center \u2014 all currently operational."}}, {"@type": "Question", "name": "Does the Lodge at Mountaineer Square have air conditioning?", "acceptedAnswer": {"@type": "Answer", "text": "Yes \u2014 one of the few buildings in Crested Butte that offers A/C. Most mountain properties at this elevation rely on fans and open windows, but Mountaineer Square has full air conditioning in guest units."}}, {"@type": "Question", "name": "Is the Lodge at Mountaineer Square pet friendly?", "acceptedAnswer": {"@type": "Answer", "text": "No. Pets are not allowed at the Lodge at Mountaineer Square. For pet-friendly options in Crested Butte, check our Grand Lodge listings."}}, {"@type": "Question", "name": "Is there a front desk at Mountaineer Square?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The Lodge at Mountaineer Square has an active front desk and concierge service \u2014 unlike some other condo buildings in Mt. Crested Butte."}}, {"@type": "Question", "name": "What kind of parking does Mountaineer Square have?", "acceptedAnswer": {"@type": "Answer", "text": "Heated underground parking is available for a fee. This is a significant perk in winter \u2014 no scraping ice or digging out your car."}}, {"@type": "Question", "name": "When was the Lodge at Mountaineer Square built?", "acceptedAnswer": {"@type": "Answer", "text": "Built in 2006-2007. It's the newest of the three main slope-side buildings at Crested Butte Mountain Resort."}}, {"@type": "Question", "name": "What unit types are available at Mountaineer Square?", "acceptedAnswer": {"@type": "Answer", "text": "King hotel rooms, studio deluxe suites, one-bedroom condos, two-bedroom condos, and two-bedroom penthouses. Most units feature full kitchens, gas fireplaces, balconies, and washer/dryers."}}, {"@type": "Question", "name": "How much do units cost per night?", "acceptedAnswer": {"@type": "Answer", "text": "Traverse-managed units at Mountaineer Square start from a live, no-fee rate for king rooms. One-bedroom condos and penthouses are priced higher. Rates vary by season \u2014 peak ski season and holidays are highest."}}]}];
+export const schemaBlocks = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": "https://www.booktraverse.com/#organization",
+    name: "Traverse Hospitality",
+    alternateName: [
+      "Traverse Crested Butte",
+      "Traverse Leadville",
+      "High Rocky Homes",
+      "Leadville Vacation Homes",
+    ],
+    disambiguatingDescription:
+      "Traverse Hospitality (formerly High Rocky Homes, rebranded 2024) is a Colorado-based short-term vacation rental property management company founded in 2016. Traverse manages over 100 vacation rental listings with primary markets in Crested Butte, Colorado and Leadville, Colorado, and additional operations in Vail, Avon, Granby, and Twin Lakes.",
+    url: "https://booktraverse.com",
+    logo: {
+      "@type": "ImageObject",
+      url: "https://www.booktraverse.com/book-traverse-wordmark-dark.png",
+      width: 1024,
+      height: 246,
+    },
+    telephone: "+1-720-759-2013",
+    email: "bookings@traversehospitality.com",
+    foundingDate: "2016",
+    slogan: "Modern Property Management",
+    description:
+      "Traverse Hospitality is a Colorado-based vacation rental property management company offering full-service short-term rental management, dynamic pricing, professional marketing, housekeeping, maintenance, and 24/7 guest support. Our two primary markets are Crested Butte and Leadville, Colorado.",
+    founder: [
+      {
+        "@type": "Person",
+        name: "Nadim Tannous",
+        jobTitle: "Co-Founder & Chief Technical Officer",
+      },
+      {
+        "@type": "Person",
+        name: "Alex Haler",
+        jobTitle: "Co-Founder & Chief Executive Officer",
+      },
+    ],
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Leadville",
+      addressRegion: "CO",
+      postalCode: "80461",
+      addressCountry: "US",
+    },
+    areaServed: [
+      {
+        "@type": "City",
+        name: "Crested Butte",
+        containedInPlace: { "@type": "State", name: "Colorado" },
+      },
+      {
+        "@type": "City",
+        name: "Mt. Crested Butte",
+        containedInPlace: { "@type": "State", name: "Colorado" },
+      },
+      {
+        "@type": "City",
+        name: "Leadville",
+        containedInPlace: { "@type": "State", name: "Colorado" },
+      },
+      {
+        "@type": "City",
+        name: "Twin Lakes",
+        containedInPlace: { "@type": "State", name: "Colorado" },
+      },
+      {
+        "@type": "City",
+        name: "Vail",
+        containedInPlace: { "@type": "State", name: "Colorado" },
+      },
+      {
+        "@type": "City",
+        name: "Avon",
+        containedInPlace: { "@type": "State", name: "Colorado" },
+      },
+      {
+        "@type": "City",
+        name: "Granby",
+        containedInPlace: { "@type": "State", name: "Colorado" },
+      },
+    ],
+    knowsAbout: [
+      "Short-term rental property management",
+      "Vacation rental management",
+      "Airbnb management",
+      "VRBO management",
+      "Crested Butte Colorado vacation rentals",
+      "Leadville Colorado vacation rentals",
+      "Colorado mountain vacation rentals",
+      "Grand Lodge Crested Butte",
+      "Dynamic pricing for vacation rentals",
+    ],
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "4.9",
+      bestRating: "5",
+      ratingCount: "214",
+      reviewCount: "214",
+    },
+    sameAs: [
+      "https://traversehospitality.com",
+      "https://www.leadvillevacationhomes.com",
+      "https://www.thegrandlodgeatcb.com",
+      "https://www.crestedbutteskirentals.com",
+      "https://www.governorsmansion.net",
+      "https://www.mountainhideaway.com",
+      "https://www.instagram.com/traversehospitality/",
+      "https://www.facebook.com/traversehospitality/",
+      "https://www.linkedin.com/company/traversehospitality",
+      "https://www.tripadvisor.com/Hotel_Review-g33377-d483065-Reviews-The_Grand_Lodge_by_Traverse_Hospitality-Crested_Butte_Colorado.html",
+    ],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "LodgingBusiness",
+    "@id":
+      "https://www.booktraverse.com/crested-butte/mountaineer-square/#property",
+    name: "Lodge at Mountaineer Square",
+    alternateName: [
+      "Mountaineer Square Crested Butte",
+      "Mountaineer Square Condos",
+    ],
+    description:
+      "Luxury condominium building at the base of Crested Butte Mountain Resort, steps from the Red Lady Express and Silver Queen lifts. Built 2006-2007 with approximately 133 units ranging from studios to 4-bedroom penthouses. Features front desk, concierge, indoor/outdoor pool, sauna, heated underground parking, and air conditioning.",
+    url: "https://www.booktraverse.com/crested-butte/mountaineer-square/",
+    telephone: "+1-970-438-2241",
+    priceRange: "$$-$$$",
+    checkinTime: "16:00",
+    checkoutTime: "10:00",
+    petsAllowed: false,
+    smokingAllowed: false,
+    numberOfRooms: "133",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "620 Gothic Road",
+      addressLocality: "Mount Crested Butte",
+      addressRegion: "CO",
+      postalCode: "81225",
+      addressCountry: "US",
+    },
+    geo: { "@type": "GeoCoordinates", latitude: 38.8993, longitude: -106.9663 },
+    amenityFeature: [
+      {
+        "@type": "LocationFeatureSpecification",
+        name: "Indoor/Outdoor Heated Pool",
+        value: true,
+      },
+      {
+        "@type": "LocationFeatureSpecification",
+        name: "Outdoor Hot Tub",
+        value: true,
+      },
+      { "@type": "LocationFeatureSpecification", name: "Sauna", value: true },
+      {
+        "@type": "LocationFeatureSpecification",
+        name: "Fitness Center",
+        value: true,
+      },
+      {
+        "@type": "LocationFeatureSpecification",
+        name: "Front Desk & Concierge",
+        value: true,
+      },
+      {
+        "@type": "LocationFeatureSpecification",
+        name: "Air Conditioning",
+        value: true,
+      },
+      {
+        "@type": "LocationFeatureSpecification",
+        name: "Heated Underground Parking (paid)",
+        value: true,
+      },
+      {
+        "@type": "LocationFeatureSpecification",
+        name: "Free WiFi",
+        value: true,
+      },
+      {
+        "@type": "LocationFeatureSpecification",
+        name: "Coffee Shop / Grab & Go",
+        value: true,
+      },
+      {
+        "@type": "LocationFeatureSpecification",
+        name: "Conference Center (9,000 sq ft)",
+        value: true,
+      },
+    ],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://www.booktraverse.com/",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Crested Butte",
+        item: "https://www.booktraverse.com/crested-butte/",
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: "Lodge at Mountaineer Square",
+        item: "https://www.booktraverse.com/crested-butte/mountaineer-square/",
+      },
+    ],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "Where is the Lodge at Mountaineer Square?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "620 Gothic Road, Mount Crested Butte, CO 81225 \u2014 at the heart of the Crested Butte Mountain Resort base area, steps from the Red Lady Express and Silver Queen lifts, the transit center, and base-area shops.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "How close is Mountaineer Square to the ski lifts?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Steps away. The Lodge at Mountaineer Square is adjacent to the lifts \u2014 the closest lodging to the Red Lady Express and Silver Queen at Crested Butte Mountain Resort.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Does the Lodge at Mountaineer Square have a pool?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Yes. Heated indoor/outdoor pool, outdoor hot tub, sauna, and fitness center \u2014 all currently operational.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Does the Lodge at Mountaineer Square have air conditioning?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Yes \u2014 one of the few buildings in Crested Butte that offers A/C. Most mountain properties at this elevation rely on fans and open windows, but Mountaineer Square has full air conditioning in guest units.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Is the Lodge at Mountaineer Square pet friendly?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "No. Pets are not allowed at the Lodge at Mountaineer Square. For pet-friendly options in Crested Butte, check our Grand Lodge listings.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Is there a front desk at Mountaineer Square?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Yes. The Lodge at Mountaineer Square has an active front desk and concierge service \u2014 unlike some other condo buildings in Mt. Crested Butte.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "What kind of parking does Mountaineer Square have?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Heated underground parking is available for a fee. This is a significant perk in winter \u2014 no scraping ice or digging out your car.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "When was the Lodge at Mountaineer Square built?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Built in 2006-2007. It's the newest of the three main slope-side buildings at Crested Butte Mountain Resort.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "What unit types are available at Mountaineer Square?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "King hotel rooms, studio deluxe suites, one-bedroom condos, two-bedroom condos, and two-bedroom penthouses. Most units feature full kitchens, gas fireplaces, balconies, and washer/dryers.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "How much do units cost per night?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Traverse-managed units at Mountaineer Square start from a live, no-fee rate for king rooms. One-bedroom condos and penthouses are priced higher. Rates vary by season \u2014 peak ski season and holidays are highest.",
+        },
+      },
+    ],
+  },
+];

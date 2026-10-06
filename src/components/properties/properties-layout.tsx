@@ -78,12 +78,16 @@ export function PropertiesLayout({
   checkOut,
   showCachedPricing,
   cityParam,
+  directoryLinks,
 }: {
   listings: Listing[];
   dateFiltered?: boolean;
   checkIn?: string;
   checkOut?: string;
   showCachedPricing?: boolean;
+  /** Server-rendered node appended below the desktop results column. Used to
+   *  emit canonical listing links that client-side pagination would hide. */
+  directoryLinks?: React.ReactNode;
   /** Pass-through of the `?city=` URL param so the map can hint-center
    *  on that market when listings is empty. */
   cityParam?: string;
@@ -504,6 +508,13 @@ export function PropertiesLayout({
               </button>
             </div>
           )}
+
+          {/* Server-rendered canonical listing links. Pagination above is
+              client state, so pages 2..N never exist as crawlable HTML — this
+              slot is how listings past the first PAGE_SIZE get discovered.
+              Also rendered in the mobile sheet below; see the note there on
+              why the duplication is the right trade. */}
+          {directoryLinks}
         </div>
 
         {/* Right: map */}
@@ -586,6 +597,15 @@ export function PropertiesLayout({
             />
 
             {hasMoreMobile && <div ref={sentinelRef} className="h-1" />}
+
+            {/* Same canonical listing links as the desktop column. This does
+                duplicate the hrefs in the HTML — both branches are in the same
+                DOM, only CSS-switched — but duplicate internal links are
+                ordinary (nav and footer do it) and crawlers dedupe per URL. The
+                alternative was leaving the links invisible to every mobile
+                visitor, which is worse: a block only crawlers can see is the
+                thing we were careful NOT to build. */}
+            {directoryLinks}
           </div>
 
           {/* Floating Map button */}

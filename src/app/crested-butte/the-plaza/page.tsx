@@ -3,6 +3,7 @@ import { pageContent, schemaBlocks } from "./content";
 import { NoFeesHeader } from "@/components/no-fees/no-fees-header";
 import { NoFeesHeroSection } from "@/components/no-fees/no-fees-hero-section";
 import { BookableUnitsGrid } from "@/components/no-fees/bookable-units-grid";
+import { ListingLinkList } from "@/components/seo/listing-link-list";
 import { MobileCallBar } from "@/components/no-fees/mobile-call-bar";
 import { fetchUnitsForTag, aggregateUnitRating } from "@/lib/building-units";
 import "../../no-fees/no-fees.css";
@@ -19,8 +20,11 @@ const CB_PHONE_DISPLAY = "(970) 438-2241";
 
 export const metadata: Metadata = {
   title: "The Plaza Condominiums Crested Butte | Spacious Ski-In Condos",
-  description: "The Plaza Condominiums — spacious 2 and 3-bedroom ski-in condos. Hot tubs, sauna, Iron Horse Tap, tennis & pickleball. Book direct, no fees.",
-  alternates: { canonical: "https://www.booktraverse.com/crested-butte/the-plaza" },
+  description:
+    "The Plaza Condominiums — spacious 2 and 3-bedroom ski-in condos. Hot tubs, sauna, Iron Horse Tap, tennis & pickleball. Book direct, no fees.",
+  alternates: {
+    canonical: "https://www.booktraverse.com/crested-butte/the-plaza",
+  },
 };
 
 export default async function Page() {
@@ -33,7 +37,7 @@ export default async function Page() {
   }).toString()}`;
 
   // Fetch once: drives both the hero aggregate rating and the units grid.
-  const units = await fetchUnitsForTag(PLAZA_TAG);
+  const units = await fetchUnitsForTag(PLAZA_TAG, 100);
   const ratingSummary = aggregateUnitRating(units);
 
   return (
@@ -76,6 +80,11 @@ export default async function Page() {
         units={units}
         limit={8}
         initialGuests={2}
+      />
+      <ListingLinkList
+        units={units}
+        heading="All units at The Plaza"
+        description="Every Traverse-managed unit in this building. Open any unit for photos, amenities and live availability."
       />
       <div
         className="traverse-page"
