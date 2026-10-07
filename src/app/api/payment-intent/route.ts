@@ -13,6 +13,10 @@ import {
 } from "@/lib/pending-checkouts";
 import { getListingWithBeapiFallback } from "@/lib/listing-utils";
 import {
+  isFullyRefunded,
+  searchSucceededPaymentIntentsForStay,
+} from "@/lib/stay-payments";
+import {
   getBookingStateForConfirmationCode,
   minutesSince,
   UNRESOLVED_CODED_PI_ACTIVE_WINDOW_MINUTES,
@@ -202,21 +206,10 @@ async function findSucceededPaymentIntentForStay(
   stripe: ReturnType<typeof getStripeServer>,
   stay: { listingId: string; checkIn: string; checkOut: string }
 ): Promise<Stripe.PaymentIntent | null> {
-  const { listingId, checkIn, checkOut } = stay;
-  if (!listingId || !checkIn || !checkOut) return null;
-  // Stay fields are listing ids / formatted dates — no single quotes — so they
-  // embed safely in the Search query string.
-  const query =
-    `status:'succeeded'` +
-    ` AND metadata['listingId']:'${listingId}'` +
-    ` AND metadata['checkIn']:'${checkIn}'` +
-    ` AND metadata['checkOut']:'${checkOut}'`;
-  const result = await stripe.paymentIntents.search({
-    query,
-    limit: 10,
-    expand: ["data.latest_charge"],
-  });
-  for (const pi of result.data) {
+  // Shared with detectDoubleCharge in the Stripe webhook so the two cannot
+  // build different queries for the same question.
+  const candidates = await searchSucceededPaymentIntentsForStay(stripe, stay);
+  for (const pi of candidates) {
     // An ORPHAN charge — succeeded with NO confirmation code — always blocks:
     // the money is taken and no reservation exists yet.
     //
@@ -246,14 +239,8 @@ async function findSucceededPaymentIntentForStay(
       }
       // Active, or too recent to be anything but an in-flight duplicate.
     }
-    const charge = pi.latest_charge;
     // A fully-refunded orphan frees the stay to be re-booked — skip it.
-    if (charge && typeof charge !== "string") {
-      const fullyRefunded =
-        charge.refunded ||
-        (charge.amount_refunded ?? 0) >= (charge.amount ?? 0);
-      if (fullyRefunded) continue;
-    }
+    if (isFullyRefunded(pi)) continue;
     return pi;
   }
   return null;

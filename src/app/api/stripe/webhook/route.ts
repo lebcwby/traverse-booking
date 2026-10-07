@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { sendAlert, OPS_ALERT_INBOX } from "@/lib/alerts";
 import {
+  isFullyRefunded,
+  searchSucceededPaymentIntentsForStay,
+} from "@/lib/stay-payments";
+import {
   finalizeReservation,
   ReservationPendingRecoveryError,
 } from "@/lib/checkout-finalizer";
@@ -44,29 +48,42 @@ function getPaymentErrorMessage(paymentIntent: Stripe.PaymentIntent) {
  * can be refunded.
  */
 async function detectDoubleCharge(paymentIntent: Stripe.PaymentIntent) {
+  const listingId = paymentIntent.metadata?.listingId;
+  const checkIn = paymentIntent.metadata?.checkIn;
+  const checkOut = paymentIntent.metadata?.checkOut;
+  // No stay metadata → not one of our booking charges; nothing to correlate.
+  if (!listingId || !checkIn || !checkOut) return;
+
+  const stripe = getStripeServer();
+  // Correlate on the STAY, not the Stripe customer. This used to list by
+  // `customer`, which misses the most common duplicate there is: a guest who
+  // retries and whose retry mints a NEW customer id. GY-Z6iXznfG was charged
+  // $793.58 twice on 2026-10-07 under two customer ids and this never fired.
+  const succeeded = await searchSucceededPaymentIntentsForStay(stripe, {
+    listingId,
+    checkIn,
+    checkOut,
+  });
+  // A refunded duplicate has already been dealt with — alerting on it again
+  // every time another webhook for the stay arrives is just noise.
+  const sameStaySucceeded = succeeded.filter((pi) => !isFullyRefunded(pi));
+  if (sameStaySucceeded.length < 2) return;
+
   const customerId =
     typeof paymentIntent.customer === "string"
       ? paymentIntent.customer
       : (paymentIntent.customer?.id ?? null);
-  const listingId = paymentIntent.metadata?.listingId;
-  const checkIn = paymentIntent.metadata?.checkIn;
-  const checkOut = paymentIntent.metadata?.checkOut;
-  // Without a customer + stay we can't correlate a duplicate reliably; skip.
-  if (!customerId || !listingId || !checkIn || !checkOut) return;
-
-  const stripe = getStripeServer();
-  const list = await stripe.paymentIntents.list({
-    customer: customerId,
-    limit: 50,
-  });
-  const sameStaySucceeded = list.data.filter(
-    (pi) =>
-      pi.status === "succeeded" &&
-      pi.metadata?.listingId === listingId &&
-      pi.metadata?.checkIn === checkIn &&
-      pi.metadata?.checkOut === checkOut
+  const customerIds = Array.from(
+    new Set(
+      sameStaySucceeded
+        .map((pi) =>
+          typeof pi.customer === "string"
+            ? pi.customer
+            : (pi.customer?.id ?? null)
+        )
+        .filter(Boolean)
+    )
   );
-  if (sameStaySucceeded.length < 2) return;
 
   const rows = sameStaySucceeded
     .map(
@@ -77,7 +94,11 @@ async function detectDoubleCharge(paymentIntent: Stripe.PaymentIntent) {
           timeZone: "America/Denver",
         })} MT — confirmation: ${
           pi.metadata?.confirmationCode || "(none — likely the orphan charge)"
-        }</li>`
+        } — customer: <code>${
+          typeof pi.customer === "string"
+            ? pi.customer
+            : (pi.customer?.id ?? "(none)")
+        }</code></li>`
     )
     .join("");
   const total =
@@ -85,9 +106,13 @@ async function detectDoubleCharge(paymentIntent: Stripe.PaymentIntent) {
 
   await sendAlert(
     "POSSIBLE DOUBLE CHARGE",
-    `Stripe customer <code>${customerId}</code> has <b>${sameStaySucceeded.length} succeeded payments</b> for the SAME stay (listing <code>${listingId}</code>, ${checkIn} → ${checkOut}), totaling <b>$${total.toFixed(
+    `<b>${sameStaySucceeded.length} succeeded, un-refunded payments</b> exist for the SAME stay — listing <code>${listingId}</code>, ${checkIn} → ${checkOut} — totaling <b>$${total.toFixed(
       2
-    )}</b>.<br><br><ul>${rows}</ul>One charge per stay is expected. Review in Stripe and <b>refund the duplicate</b> — the charge with no confirmation code is usually the orphan to refund.`,
+    )}</b>.<br><br><ul>${rows}</ul>${
+      customerIds.length > 1
+        ? `<p><b>These span ${customerIds.length} different Stripe customers</b>, so the guest almost certainly retried in a fresh session rather than being charged twice by one flow.</p>`
+        : ""
+    }<p>One charge per stay is expected. Review in Stripe and <b>refund the duplicate</b> — the charge with no confirmation code is usually the orphan to refund.</p><p style="color:#6b7280;font-size:12px;">Triggered by <code>${paymentIntent.id}</code>${customerId ? ` (customer <code>${customerId}</code>)` : ""}.</p>`,
     // Cooldown per STAY (not per PI) so both PIs' webhooks don't double-send.
     `double-charge-${listingId}-${checkIn}-${checkOut}`,
     // Double-charge alerts go to the ops inbox (added to ALERT_TO_EMAIL).
