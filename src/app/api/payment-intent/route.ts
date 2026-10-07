@@ -13,6 +13,15 @@ import {
 } from "@/lib/pending-checkouts";
 import { getListingWithBeapiFallback } from "@/lib/listing-utils";
 import {
+  isFullyRefunded,
+  searchSucceededPaymentIntentsForStay,
+} from "@/lib/stay-payments";
+import {
+  getBookingStateForConfirmationCode,
+  minutesSince,
+  UNRESOLVED_CODED_PI_ACTIVE_WINDOW_MINUTES,
+} from "@/lib/stay-booking-state";
+import {
   normalizeGuestEmail,
   normalizeGuestPhone,
 } from "@/lib/booking-identity";
@@ -197,38 +206,41 @@ async function findSucceededPaymentIntentForStay(
   stripe: ReturnType<typeof getStripeServer>,
   stay: { listingId: string; checkIn: string; checkOut: string }
 ): Promise<Stripe.PaymentIntent | null> {
-  const { listingId, checkIn, checkOut } = stay;
-  if (!listingId || !checkIn || !checkOut) return null;
-  // Stay fields are listing ids / formatted dates — no single quotes — so they
-  // embed safely in the Search query string.
-  const query =
-    `status:'succeeded'` +
-    ` AND metadata['listingId']:'${listingId}'` +
-    ` AND metadata['checkIn']:'${checkIn}'` +
-    ` AND metadata['checkOut']:'${checkOut}'`;
-  const result = await stripe.paymentIntents.search({
-    query,
-    limit: 10,
-    expand: ["data.latest_charge"],
-  });
-  for (const pi of result.data) {
-    // Only block on an ORPHAN charge — succeeded but with NO confirmation code,
-    // i.e. no reservation exists yet (charge orphaned, or mid-finalize). A PI
-    // that already has a confirmationCode is either (a) an active booking — in
-    // which case the dates are unavailable and the guest can't even quote them
-    // here — or (b) a CANCELLED booking, where the dates are freed and a new
-    // guest must be allowed to re-book (esp. non-refundable last-minute cancels,
-    // whose charge is succeeded + un-refunded). Skipping coded PIs avoids
-    // false-blocking those legitimate re-bookings.
-    if (pi.metadata?.confirmationCode) continue;
-    const charge = pi.latest_charge;
-    // A fully-refunded orphan frees the stay to be re-booked — skip it.
-    if (charge && typeof charge !== "string") {
-      const fullyRefunded =
-        charge.refunded ||
-        (charge.amount_refunded ?? 0) >= (charge.amount ?? 0);
-      if (fullyRefunded) continue;
+  // Shared with detectDoubleCharge in the Stripe webhook so the two cannot
+  // build different queries for the same question.
+  const candidates = await searchSucceededPaymentIntentsForStay(stripe, stay);
+  for (const pi of candidates) {
+    // An ORPHAN charge — succeeded with NO confirmation code — always blocks:
+    // the money is taken and no reservation exists yet.
+    //
+    // A PI that DOES carry a confirmationCode used to be skipped outright, on
+    // the reasoning that it is either an active booking (so the dates are
+    // unavailable and the guest could not have quoted them) or a cancelled one
+    // (so re-booking must be allowed). The first half of that is false during
+    // a race: a guest holding a quote minted moments earlier never re-quotes,
+    // so Guesty's availability never gets to stop him. That is how GY-Z6iXznfG
+    // was charged twice on 2026-10-07 — the retry landed fourteen seconds
+    // after the guest's own reservation appeared.
+    //
+    // So resolve the code rather than assuming. Only a genuinely cancelled
+    // booking frees the stay.
+    const code = pi.metadata?.confirmationCode;
+    if (code) {
+      const state = await getBookingStateForConfirmationCode(code);
+      if (state === "canceled") continue;
+      if (
+        state === "unknown" &&
+        minutesSince(pi.created) > UNRESOLVED_CODED_PI_ACTIVE_WINDOW_MINUTES
+      ) {
+        // Old and unresolvable — almost certainly a historic booking whose
+        // dates have since been freed. Allow, rather than block re-bookings
+        // forever on a row we cannot find.
+        continue;
+      }
+      // Active, or too recent to be anything but an in-flight duplicate.
     }
+    // A fully-refunded orphan frees the stay to be re-booked — skip it.
+    if (isFullyRefunded(pi)) continue;
     return pi;
   }
   return null;

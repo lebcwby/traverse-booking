@@ -8,6 +8,7 @@ const {
   mockMarkPendingCheckoutError,
   mockConstructEvent,
   mockGetPendingCartCheckout,
+  mockPaymentIntentsSearch,
 } = vi.hoisted(() => ({
   mockSendAlert: vi.fn(),
   mockFinalizeReservation: vi.fn(),
@@ -15,6 +16,7 @@ const {
   mockMarkPendingCheckoutError: vi.fn(),
   mockConstructEvent: vi.fn(),
   mockGetPendingCartCheckout: vi.fn(),
+  mockPaymentIntentsSearch: vi.fn(),
 }));
 
 vi.mock("@/lib/cart/pending-cart-checkouts", () => ({
@@ -47,6 +49,9 @@ vi.mock("@/lib/stripe", () => ({
   getStripeServer: () => ({
     webhooks: {
       constructEvent: mockConstructEvent,
+    },
+    paymentIntents: {
+      search: mockPaymentIntentsSearch,
     },
   }),
 }));
@@ -267,6 +272,128 @@ describe("POST /api/stripe/webhook", () => {
       "missing-pending-cart-pi_cart_orphan",
       { to: OPS_ALERT_INBOX }
     );
+  });
+
+  // ── Double-charge detection ──────────────────────────────────────────────
+  // This used to list PaymentIntents by Stripe CUSTOMER, so the commonest
+  // duplicate of all went unseen: a guest who retries in a fresh session and
+  // mints a new customer id. GY-Z6iXznfG was charged $793.58 twice on
+  // 2026-10-07 under two customer ids and no alert fired.
+
+  function succeededPi(
+    id: string,
+    customer: string | null,
+    extra: Record<string, unknown> = {}
+  ) {
+    return {
+      id,
+      amount: 79_358,
+      created: Math.floor(Date.now() / 1000),
+      customer,
+      status: "succeeded",
+      metadata: {
+        listingId: "listing_1",
+        checkIn: "2026-10-11",
+        checkOut: "2026-10-14",
+      },
+      ...extra,
+    };
+  }
+
+  function staySucceededEvent(id: string, customer: string) {
+    return {
+      id: `evt_${id}`,
+      type: "payment_intent.succeeded",
+      data: {
+        object: {
+          id,
+          amount: 79_358,
+          customer,
+          metadata: {
+            quoteId: "quote_dc",
+            listingId: "listing_1",
+            checkIn: "2026-10-11",
+            checkOut: "2026-10-14",
+          },
+        },
+      },
+    };
+  }
+
+  it("alerts on two charges for one stay even under different Stripe customers", async () => {
+    mockConstructEvent.mockReturnValue(
+      staySucceededEvent("pi_second", "cus_NEW")
+    );
+    mockPaymentIntentsSearch.mockResolvedValue({
+      data: [
+        succeededPi("pi_first", "cus_ORIGINAL", {
+          metadata: {
+            listingId: "listing_1",
+            checkIn: "2026-10-11",
+            checkOut: "2026-10-14",
+            confirmationCode: "GY-Z6iXznfG",
+          },
+        }),
+        succeededPi("pi_second", "cus_NEW"),
+      ],
+    });
+    mockGetPendingCheckout.mockResolvedValue(null);
+
+    await postWebhook();
+
+    const doubleCharge = mockSendAlert.mock.calls.find(
+      (c) => c[0] === "POSSIBLE DOUBLE CHARGE"
+    );
+    expect(doubleCharge).toBeDefined();
+    expect(doubleCharge?.[1]).toContain("pi_first");
+    expect(doubleCharge?.[1]).toContain("pi_second");
+    // Names the split explicitly — that's the tell that it was a retry.
+    expect(doubleCharge?.[1]).toContain("2 different Stripe customers");
+    // Cooldown is keyed per stay so both webhooks don't double-send.
+    expect(doubleCharge?.[2]).toBe(
+      "double-charge-listing_1-2026-10-11-2026-10-14"
+    );
+  });
+
+  it("does not alert when the duplicate has already been refunded", async () => {
+    mockConstructEvent.mockReturnValue(
+      staySucceededEvent("pi_second", "cus_NEW")
+    );
+    mockPaymentIntentsSearch.mockResolvedValue({
+      data: [
+        succeededPi("pi_first", "cus_ORIGINAL", {
+          latest_charge: {
+            refunded: true,
+            amount: 79_358,
+            amount_refunded: 79_358,
+          },
+        }),
+        succeededPi("pi_second", "cus_NEW"),
+      ],
+    });
+    mockGetPendingCheckout.mockResolvedValue(null);
+
+    await postWebhook();
+
+    expect(
+      mockSendAlert.mock.calls.find((c) => c[0] === "POSSIBLE DOUBLE CHARGE")
+    ).toBeUndefined();
+  });
+
+  it("does not alert on a single charge for the stay", async () => {
+    mockConstructEvent.mockReturnValue(
+      staySucceededEvent("pi_only", "cus_ORIGINAL")
+    );
+    mockPaymentIntentsSearch.mockResolvedValue({
+      data: [succeededPi("pi_only", "cus_ORIGINAL")],
+    });
+    mockGetPendingCheckout.mockResolvedValue(null);
+
+    await postWebhook();
+
+    expect(
+      mockSendAlert.mock.calls.find((c) => c[0] === "POSSIBLE DOUBLE CHARGE")
+    ).toBeUndefined();
   });
 
   it("marks failed payment intents without trying to finalize a reservation", async () => {
