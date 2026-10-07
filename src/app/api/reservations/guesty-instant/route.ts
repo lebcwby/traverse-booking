@@ -15,7 +15,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createReservationInstant, getQuote } from "@/lib/guesty-beapi";
 import { getOpenAPIReservation } from "@/lib/guesty-openapi";
 import { getPool, withAdvisoryLock } from "@/lib/db";
-import { trackBookingServerSide } from "@/lib/server-tracking";
+import {
+  parseGA4SessionId,
+  trackBookingServerSide,
+} from "@/lib/server-tracking";
+import { GA_SESSION_COOKIE, parseGaClientId } from "@/lib/ga4-config";
+import { getEffectiveServerConsent } from "@/lib/consent";
 import { sendAlert, OPS_ALERT_INBOX } from "@/lib/alerts";
 import { toE164US } from "@/lib/phone";
 
@@ -309,6 +314,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Purchase tracking (best-effort).
+    // This route finalizes inline (no Stripe webhook), so the browser's cookies
+    // are on this request — pass the GA client/session IDs and first-party
+    // attribution through. Without them the MP purchase got a random
+    // server-generated client_id and GA4 reported the booking as "(not set)".
+    let attribution: Record<string, string> | undefined;
+    try {
+      const raw = request.cookies.get("_sp_attribution")?.value;
+      attribution = raw ? JSON.parse(raw) : undefined;
+    } catch {
+      attribution = undefined;
+    }
+    const consent = getEffectiveServerConsent({
+      consentCookieValue: request.cookies.get("_sp_consent")?.value,
+      legacyOptOutValue: request.cookies.get("_sp_ccpa_optout")?.value,
+    });
     await trackBookingServerSide({
       reservationId,
       confirmationCode,
@@ -330,7 +350,22 @@ export async function POST(request: NextRequest) {
         firstName: guest.firstName as string,
         lastName: guest.lastName || "",
       },
-    }).catch((err) => console.error("[GuestyPay tracking] error:", err));
+      attribution,
+      gaClientId: parseGaClientId(request.cookies.get("_ga")?.value),
+      context: {
+        clientIp:
+          request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+          undefined,
+        clientUserAgent: request.headers.get("user-agent") || undefined,
+        fbp: request.cookies.get("_fbp")?.value,
+        fbc: request.cookies.get("_fbc")?.value,
+        gaSessionId: parseGA4SessionId(
+          request.cookies.get(GA_SESSION_COOKIE)?.value
+        ),
+      },
+    }, { consent: consent || undefined }).catch((err) =>
+      console.error("[GuestyPay tracking] error:", err)
+    );
 
     return NextResponse.json({ reservationId, confirmationCode });
   });

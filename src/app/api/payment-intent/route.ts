@@ -30,7 +30,7 @@ import {
   verifyPendingCheckoutLookupToken,
 } from "@/lib/pending-checkout-token";
 
-const GA_SESSION_COOKIE = "_ga_PPWFFFPC42";
+import { GA_SESSION_COOKIE } from "@/lib/ga4-config";
 
 // Snapshot the cookies + request context that Meta CAPI / Google Ads server
 // uploads need (fbp, fbc, attribution, IP, UA, etc.) into the pending_checkouts

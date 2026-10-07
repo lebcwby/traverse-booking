@@ -22,7 +22,7 @@ import {
 } from "@/lib/booking-identity";
 import type { TrackingContext } from "@/lib/pending-checkouts";
 
-const GA_SESSION_COOKIE = "_ga_PPWFFFPC42";
+import { GA_SESSION_COOKIE } from "@/lib/ga4-config";
 
 /** Hard cap from Phase 2 plan: sequential reservations risk the 60s
  * Vercel function limit beyond this. UI also enforces this. */

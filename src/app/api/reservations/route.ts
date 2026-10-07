@@ -6,7 +6,7 @@ import {
 import { getPendingCheckout } from "@/lib/pending-checkouts";
 import { subscribeToKlaviyoList } from "@/lib/server-tracking";
 
-const GA_SESSION_COOKIE = "_ga_PPWFFFPC42";
+import { GA_SESSION_COOKIE } from "@/lib/ga4-config";
 
 export async function POST(request: NextRequest) {
   try {
