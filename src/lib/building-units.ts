@@ -4,7 +4,11 @@ import {
   type BeapiListingResult,
 } from "@/lib/listing-utils";
 import { enrichListingsWithReviewAverages } from "@/lib/reviews";
-import { getListingPricingCache, type Listing } from "@/lib/supabase";
+import {
+  getListingPricingCache,
+  getListingsByTag,
+  type Listing,
+} from "@/lib/supabase";
 
 /**
  * Fetch the bookable units for a Guesty building tag from BEAPI (the live
@@ -53,8 +57,31 @@ export async function fetchUnitsForTag(
     await enrichListingsWithReviewAverages(units);
     units.sort((a, b) => (b.reviewAvg ?? 0) - (a.reviewAvg ?? 0));
     return units;
-  } catch {
-    return [];
+  } catch (err) {
+    // Returning [] here used to mean a BEAPI blip rendered the building page
+    // as a building with no inventory: no grid, and ListingLinkList bails on
+    // an empty list, so every unit link disappears for that crawl. Same shape
+    // as the /properties soft-404. Fall back to the Supabase mirror, which
+    // holds the same catalogue and is what the sitemap already trusts.
+    console.error(
+      `[fetchUnitsForTag] BEAPI failed for "${tag}", falling back to mirror:`,
+      err instanceof Error ? err.message : err
+    );
+    try {
+      const mirrored = await getListingsByTag(tag, limit);
+      if (mirrored.length === 0) {
+        console.error(
+          `[fetchUnitsForTag] mirror also has no units for "${tag}"`
+        );
+      }
+      return mirrored;
+    } catch (mirrorErr) {
+      console.error(
+        `[fetchUnitsForTag] mirror read failed for "${tag}":`,
+        mirrorErr instanceof Error ? mirrorErr.message : mirrorErr
+      );
+      return [];
+    }
   }
 }
 
