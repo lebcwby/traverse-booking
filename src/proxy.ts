@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { validateListingUrl } from "@/lib/listing-url-validator";
 import {
   rateLimit,
   type RateLimitConfig,
@@ -130,8 +131,15 @@ function buildRateLimitHeaders(
   };
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const host = request.headers.get("host") || "";
+
+  // Unknown listing URLs get a real 404 here, before the page can stream a
+  // 200. Runs first so a dead URL costs nothing else — no auth round-trip, no
+  // attribution cookies, no rate-limit bookkeeping. Fails open by design; see
+  // src/lib/listing-url-validator.ts.
+  const listingNotFound = await validateListingUrl(request);
+  if (listingNotFound) return listingNotFound;
 
   // Marketing subdomain redirects — fixed destinations, no path preservation needed
   const MARKETING_SUBDOMAIN_REDIRECTS: Record<string, string> = {
