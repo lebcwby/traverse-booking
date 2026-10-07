@@ -13,6 +13,17 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "leadville-colorado-vacation-rentals-booking-guide",
+    oldSlug: "leadville-colorado-vacation-rentals-booking-guide",
+    title: "Leadville Colorado Vacation Rentals: The Complete Booking Guide",
+    excerpt: "At 10,152 feet, Leadville is the highest incorporated city in North America — and one of Colorado's most underrated places to base a mountain trip. Here's everything you need to find and book the right vacation rental.",
+    date: "2026-05-24",
+    author: "Traverse Hospitality",
+    category: "Leadville",
+    market: "leadville",
+    image: "",
+  },
+  {
     slug: "airbnb-plus-checklist",
     oldSlug: "airbnb-plus-checklist",
     title: "The Airbnb Plus Checklist (And Why It Still Matters in 2026)",
