@@ -81,7 +81,7 @@ export const pageContent = `<main id="main">
         </div>
         <p>The largest home in our portfolio — hot tub, sauna, 1Gbps WiFi, and space for 20 guests. Perfect for reunions, corporate retreats, and multi-family ski trips.</p>
         <div class="prop-footer">
-          <a href="/properties/5bf09e709d2adc002667c5ec" class="prop-link">View & Book →</a>
+          <a href="/properties/mountain-hideaway-hot-tub-sauna-1gbps-wifi-9br-sleeps-18-pet-5bf09e709d2adc002667c5ec" class="prop-link">View & Book →</a>
         </div>
       </div>
     </article>
@@ -98,7 +98,7 @@ export const pageContent = `<main id="main">
         </div>
         <p>A grand Victorian home with character, space, and history. Sauna, pool table, and a walk to Main Street. One of Leadville's most iconic rental properties.</p>
         <div class="prop-footer">
-          <a href="/properties/5c38a3cb6d3f8b0076761b23" class="prop-link">View & Book →</a>
+          <a href="/properties/the-governor-s-mansion-leadville-6br-5c38a3cb6d3f8b0076761b23" class="prop-link">View & Book →</a>
         </div>
       </div>
     </article>
@@ -115,7 +115,7 @@ export const pageContent = `<main id="main">
         </div>
         <p>Stunning views of Mount Massive, pet-friendly, EV charger, and a quiet location above town. One of our most-reviewed properties — a guest favorite for couples and small families.</p>
         <div class="prop-footer">
-          <a href="/properties/5f2ee35e0a0b48002c8095b6" class="prop-link">View & Book →</a>
+          <a href="/properties/the-hilltop-suite-mt-massive-views-pet-ok-ev-charger-sleeps--5f2ee35e0a0b48002c8095b6" class="prop-link">View & Book →</a>
         </div>
       </div>
     </article>
@@ -132,7 +132,7 @@ export const pageContent = `<main id="main">
         </div>
         <p>A warm, well-equipped family home with views, a full kitchen, and enough space for everyone to have their own room. Close to town but away from the noise.</p>
         <div class="prop-footer">
-          <a href="/properties/6361acb0ceb7c600536ed901" class="prop-link">View & Book →</a>
+          <a href="/properties/the-hilltop-haven-6361acb0ceb7c600536ed901" class="prop-link">View & Book →</a>
         </div>
       </div>
     </article>
@@ -149,7 +149,7 @@ export const pageContent = `<main id="main">
         </div>
         <p>Private hot tub on the deck overlooking the mountains. The perfect couples or small-family retreat — cozy interior, expansive views, and total privacy.</p>
         <div class="prop-footer">
-          <a href="/properties/6227ac6b4d2cb00036c4f738" class="prop-link">View & Book →</a>
+          <a href="/properties/dairy-flat-pet-friendly-2br-with-hot-tub-walk-to-downtown-le-6227ac6b4d2cb00036c4f738" class="prop-link">View & Book →</a>
         </div>
       </div>
     </article>
@@ -166,7 +166,7 @@ export const pageContent = `<main id="main">
         </div>
         <p>An authentically restored 1880s Victorian home — original character with modern comforts. Walk to Harrison Avenue restaurants and shops from the front door.</p>
         <div class="prop-footer">
-          <a href="/properties/5edd46b2c4442a002d852113" class="prop-link">View & Book →</a>
+          <a href="/properties/sixth-street-victorian-downtown-leadville-5edd46b2c4442a002d852113" class="prop-link">View & Book →</a>
         </div>
       </div>
     </article>
@@ -295,4 +295,89 @@ export const pageContent = `<main id="main">
 
 </main>`;
 
-export const schemaBlocks = [{"@context": "https://schema.org", "@type": "TouristDestination", "@id": "https://www.booktraverse.com/leadville-colorado-vacation-rentals/#destination", "name": "Leadville, Colorado", "alternateName": ["Cloud City", "The Two-Mile-High City"], "description": "The highest incorporated city in the United States at 10,152 feet. A historic silver mining town in Lake County, Colorado, surrounded by Mount Elbert and Mount Massive \u2014 the two tallest peaks in the state. Known for the Leadville 100 ultramarathon, Ski Cooper, the Mineral Belt Trail, and authentic Old West character.", "url": "https://www.booktraverse.com/leadville-colorado-vacation-rentals/", "geo": {"@type": "GeoCoordinates", "latitude": 39.2508, "longitude": -106.2925}}, {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.booktraverse.com/"}, {"@type": "ListItem", "position": 2, "name": "Leadville Vacation Rentals", "item": "https://www.booktraverse.com/leadville-colorado-vacation-rentals/"}]}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is Leadville Colorado known for?", "acceptedAnswer": {"@type": "Answer", "text": "Leadville is the highest incorporated city in the United States at 10,152 feet. It's a former silver mining boomtown founded in 1859, known for its Victorian architecture, the Leadville 100 ultramarathon, Ski Joring, Boom Days festival, and proximity to Mount Elbert and Mount Massive \u2014 Colorado's two tallest peaks. It's also a popular base camp for skiing at Ski Cooper, Copper Mountain, and Vail."}}, {"@type": "Question", "name": "How far is Leadville from Denver?", "acceptedAnswer": {"@type": "Answer", "text": "Leadville is approximately 100 miles west of Denver, about a 2-hour drive via I-70 and Highway 91. It's centrally located in the Colorado Rockies, making it a convenient base for exploring multiple ski areas and mountain towns."}}, {"@type": "Question", "name": "What ski resorts are near Leadville?", "acceptedAnswer": {"@type": "Answer", "text": "Ski Cooper is 9 miles north of Leadville with affordable lift tickets and all-natural snow. Copper Mountain is about 35 miles away, and Vail is approximately 40 miles away. Leadville vacation rentals offer significant savings compared to lodging at the resort bases."}}, {"@type": "Question", "name": "Is Leadville a good base for skiing?", "acceptedAnswer": {"@type": "Answer", "text": "Yes \u2014 Leadville is one of Colorado's best-kept secrets for affordable ski trips. Lodging in Leadville is typically 40-60% less than staying at the base of Vail or Copper Mountain, and the drive to either is under an hour. Many families and groups use Leadville as their base camp and ski a different mountain each day."}}, {"@type": "Question", "name": "Are there pet-friendly vacation rentals in Leadville?", "acceptedAnswer": {"@type": "Answer", "text": "Yes \u2014 many Traverse-managed properties in Leadville are pet-friendly. Filter for pet-friendly rentals on our booking page or contact us for help finding the right fit for your group and your dog."}}, {"@type": "Question", "name": "What is the elevation of Leadville Colorado?", "acceptedAnswer": {"@type": "Answer", "text": "Leadville sits at 10,152 feet (3,094 meters) above sea level, making it the highest incorporated city in the United States. Visitors should be aware of altitude effects \u2014 drink plenty of water, take it easy on the first day, and give your body time to acclimate."}}]}];
+export const schemaBlocks = [
+  {
+    "@context": "https://schema.org",
+    "@type": "TouristDestination",
+    "@id":
+      "https://www.booktraverse.com/leadville-colorado-vacation-rentals/#destination",
+    name: "Leadville, Colorado",
+    alternateName: ["Cloud City", "The Two-Mile-High City"],
+    description:
+      "The highest incorporated city in the United States at 10,152 feet. A historic silver mining town in Lake County, Colorado, surrounded by Mount Elbert and Mount Massive \u2014 the two tallest peaks in the state. Known for the Leadville 100 ultramarathon, Ski Cooper, the Mineral Belt Trail, and authentic Old West character.",
+    url: "https://www.booktraverse.com/leadville-colorado-vacation-rentals/",
+    geo: { "@type": "GeoCoordinates", latitude: 39.2508, longitude: -106.2925 },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://www.booktraverse.com/",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Leadville Vacation Rentals",
+        item: "https://www.booktraverse.com/leadville-colorado-vacation-rentals/",
+      },
+    ],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "What is Leadville Colorado known for?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Leadville is the highest incorporated city in the United States at 10,152 feet. It's a former silver mining boomtown founded in 1859, known for its Victorian architecture, the Leadville 100 ultramarathon, Ski Joring, Boom Days festival, and proximity to Mount Elbert and Mount Massive \u2014 Colorado's two tallest peaks. It's also a popular base camp for skiing at Ski Cooper, Copper Mountain, and Vail.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "How far is Leadville from Denver?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Leadville is approximately 100 miles west of Denver, about a 2-hour drive via I-70 and Highway 91. It's centrally located in the Colorado Rockies, making it a convenient base for exploring multiple ski areas and mountain towns.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "What ski resorts are near Leadville?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Ski Cooper is 9 miles north of Leadville with affordable lift tickets and all-natural snow. Copper Mountain is about 35 miles away, and Vail is approximately 40 miles away. Leadville vacation rentals offer significant savings compared to lodging at the resort bases.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Is Leadville a good base for skiing?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Yes \u2014 Leadville is one of Colorado's best-kept secrets for affordable ski trips. Lodging in Leadville is typically 40-60% less than staying at the base of Vail or Copper Mountain, and the drive to either is under an hour. Many families and groups use Leadville as their base camp and ski a different mountain each day.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Are there pet-friendly vacation rentals in Leadville?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Yes \u2014 many Traverse-managed properties in Leadville are pet-friendly. Filter for pet-friendly rentals on our booking page or contact us for help finding the right fit for your group and your dog.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "What is the elevation of Leadville Colorado?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Leadville sits at 10,152 feet (3,094 meters) above sea level, making it the highest incorporated city in the United States. Visitors should be aware of altitude effects \u2014 drink plenty of water, take it easy on the first day, and give your body time to acclimate.",
+        },
+      },
+    ],
+  },
+];
