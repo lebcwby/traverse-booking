@@ -16,6 +16,11 @@ import {
 import { enrichListingsWithReviewAverages } from "@/lib/reviews";
 import { PropertiesLayout } from "@/components/properties/properties-layout";
 import { ListingLinkList } from "@/components/seo/listing-link-list";
+import { sendAlert, OPS_ALERT_INBOX } from "@/lib/alerts";
+import {
+  loadCatalogFallback,
+  type CatalogFilters,
+} from "@/lib/catalog-fallback";
 import { TrackPropertiesList } from "@/components/properties/track-properties-list";
 import { FloatingSearchBar } from "@/components/home/floating-search-bar";
 import { FiltersDialog } from "@/components/properties/filters-dialog";
@@ -179,6 +184,18 @@ export default async function PropertiesPage({
   };
 
   let listings: Listing[];
+  // Used only if BEAPI fails. Dates are deliberately absent: with the upstream
+  // down there is no availability to honour, and the mirror cannot supply it.
+  const fallbackFilters: CatalogFilters = {
+    city: searchParams.city,
+    q: searchParams.q,
+    minPrice: searchParams.minPrice ? Number(searchParams.minPrice) : undefined,
+    maxPrice: searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined,
+    bedrooms: searchParams.bedrooms ? Number(searchParams.bedrooms) : undefined,
+    guests: searchParams.guests ? Number(searchParams.guests) : undefined,
+    propertyType: searchParams.propertyType || undefined,
+  };
+  let usedFallback = false;
 
   if (hasDateFilter) {
     // Use BEAPI for real-time availability when dates are selected
@@ -244,8 +261,11 @@ export default async function PropertiesPage({
         );
       }
     } catch (err) {
-      console.error("BEAPI search failed:", err);
-      listings = [];
+      // Do NOT fall through to an empty 200 — that renders as "No properties
+      // found" and Google files the page as a Soft 404. Serve the mirror.
+      console.error("BEAPI search failed, falling back to mirror:", err);
+      listings = (await loadCatalogFallback(fallbackFilters, err)).listings;
+      usedFallback = true;
     }
   } else {
     // No dates — still use BEAPI so we only show bookable listings
@@ -292,8 +312,11 @@ export default async function PropertiesPage({
         });
       }
     } catch (err) {
-      console.error("BEAPI browse failed:", err);
-      listings = [];
+      // See the note in the dated branch — an outage must not look like an
+      // empty result set.
+      console.error("BEAPI browse failed, falling back to mirror:", err);
+      listings = (await loadCatalogFallback(fallbackFilters, err)).listings;
+      usedFallback = true;
     }
   }
 
@@ -361,6 +384,24 @@ export default async function PropertiesPage({
         return l;
       });
     }
+  }
+
+  if (usedFallback) {
+    // BEAPI being down used to be invisible here — the page just rendered
+    // empty and Google quietly filed it as a Soft 404. Now the page survives,
+    // which means nothing would surface the outage at all unless we say so.
+    // sendAlert's one-hour cooldown caps this at 1/hour however much traffic
+    // the page takes, and it must never block the render.
+    sendAlert(
+      "LISTING CATALOGUE SERVED FROM MIRROR",
+      "BEAPI failed on <code>/properties</code>, so the page is being served " +
+        "from the Supabase <code>listings</code> mirror instead of live " +
+        "inventory.<br><br>The page and its internal links are intact, but " +
+        "<b>availability and pricing are stale and booking is likely failing</b>. " +
+        "Check <code>/api/health/beapi</code>.",
+      "catalog-served-from-mirror",
+      { to: OPS_ALERT_INBOX }
+    ).catch(() => {});
   }
 
   const allPrices = await getAllListingPrices();
