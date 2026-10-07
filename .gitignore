@@ -55,3 +55,6 @@ cro-audit-*.html
 cro-audit-*.pdf
 email-templates/
 HANDOFF_EMAIL.md
+
+# Claude Code personal/local settings (keep out of git)
+.claude/settings.local.json

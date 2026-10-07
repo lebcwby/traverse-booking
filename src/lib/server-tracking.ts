@@ -3,6 +3,7 @@ import type { ConsentState } from "./consent";
 import { uploadGoogleAdsPurchaseConversion } from "./google-ads-server";
 import { upsertMetaVisitor } from "./meta-visitor-store";
 import { parseFbcTimestamp } from "./meta-cookies";
+import { GA4_MEASUREMENT_ID } from "./ga4-config";
 
 // ─── TYPES ───────────────────────────────────────────────────────
 
@@ -361,8 +362,7 @@ async function sendGA4Event(
   gaSessionId?: string,
   guestEmail?: string
 ) {
-  const measurementId =
-    process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID || "G-PPWFFFPC42";
+  const measurementId = GA4_MEASUREMENT_ID;
   const apiSecret = (process.env.GA4_MP_API_SECRET || "").trim();
   if (!apiSecret) return;
 
@@ -748,7 +748,8 @@ export async function trackAddToCartServerSide(
       content_type: "hotel",
       content_ids: [data.listingId],
       content_name: data.listingTitle,
-      ...(typeof data.total === "number" && data.total > 0 && { value: data.total }),
+      ...(typeof data.total === "number" &&
+        data.total > 0 && { value: data.total }),
       currency: data.currency || "USD",
       ...(data.checkIn && { checkin_date: data.checkIn }),
       ...(data.checkOut && { checkout_date: data.checkOut }),

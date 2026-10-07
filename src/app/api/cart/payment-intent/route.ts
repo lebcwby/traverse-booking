@@ -22,7 +22,7 @@ import {
 } from "@/lib/booking-identity";
 import type { TrackingContext } from "@/lib/pending-checkouts";
 
-const GA_SESSION_COOKIE = "_ga_PPWFFFPC42";
+import { GA_SESSION_COOKIE } from "@/lib/ga4-config";
 
 /** Hard cap from Phase 2 plan: sequential reservations risk the 60s
  * Vercel function limit beyond this. UI also enforces this. */
@@ -123,9 +123,7 @@ export async function POST(request: NextRequest) {
 
     const lineErrors = quoteResults
       .map((r, i) =>
-        r.error
-          ? { lineId: r.line.lineId, index: i, error: r.error }
-          : null
+        r.error ? { lineId: r.line.lineId, index: i, error: r.error } : null
       )
       .filter(Boolean);
     if (lineErrors.length > 0) {
@@ -162,16 +160,13 @@ export async function POST(request: NextRequest) {
         quoteId: (quote?._id as string) || line.quoteId,
         ratePlanId: (ratePlan?._id as string) || null,
         listingId,
-        listingTitle:
-          listing?.title || listing?.nickname || "Colorado rental",
-        listingPicture:
-          listing?.picture || listing?.pictures?.[0] || null,
+        listingTitle: listing?.title || listing?.nickname || "Colorado rental",
+        listingPicture: listing?.picture || listing?.pictures?.[0] || null,
         listingCity: listing?.address?.city || null,
         checkIn: (quote?.checkInDateLocalized as string) || "",
         checkOut: (quote?.checkOutDateLocalized as string) || "",
         guests: Number(quote?.guestsCount || 0),
-        pets:
-          typeof line.pets === "number" && line.pets > 0 ? line.pets : 0,
+        pets: typeof line.pets === "number" && line.pets > 0 ? line.pets : 0,
         hostPayout,
         status: "pending",
         reservationId: null,
@@ -217,7 +212,10 @@ export async function POST(request: NextRequest) {
       cartCheckout: "true",
       lineCount: String(cartLines.length),
       lineQuoteIds: sortedQuoteIds.join(","),
-      lineListingIds: cartLines.map((l) => l.listingId).sort().join(","),
+      lineListingIds: cartLines
+        .map((l) => l.listingId)
+        .sort()
+        .join(","),
       totalAmountCents: String(totalAmountCents),
     };
     if (guestEmail) metadata.guestEmail = guestEmail;
@@ -324,8 +322,10 @@ export async function PATCH(request: NextRequest) {
     // Mirror to the durable cart row so the coordinator picks up the latest
     // guest fields when finalizing.
     if (guest) {
-      const { getPendingCartCheckoutByPaymentIntent, upsertPendingCartCheckout } =
-        await import("@/lib/cart/pending-cart-checkouts");
+      const {
+        getPendingCartCheckoutByPaymentIntent,
+        upsertPendingCartCheckout,
+      } = await import("@/lib/cart/pending-cart-checkouts");
       const existing =
         await getPendingCartCheckoutByPaymentIntent(paymentIntentId);
       if (existing) {

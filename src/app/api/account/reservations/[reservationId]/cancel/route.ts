@@ -9,6 +9,7 @@ import {
   type CancellationEmailRefundStatus,
 } from "@/lib/emails/cancellation-email";
 import { getEffectiveServerConsent } from "@/lib/consent";
+import { GA_SESSION_COOKIE } from "@/lib/ga4-config";
 import {
   parseGA4SessionId,
   trackCancellationServerSide,
@@ -569,7 +570,7 @@ export async function POST(
       const gaCookie = request.cookies.get("_ga")?.value;
       const gaClientId = gaCookie?.split(".").slice(-2).join(".") || undefined;
       const gaSessionId = parseGA4SessionId(
-        request.cookies.get("_ga_PPWFFFPC42")?.value
+        request.cookies.get(GA_SESSION_COOKIE)?.value
       );
       const clientIp =
         request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
