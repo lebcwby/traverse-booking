@@ -16,6 +16,7 @@
 
 import { NextResponse } from "next/server";
 import { getListings } from "@/lib/supabase";
+import { getListingSlug } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -23,8 +24,17 @@ export async function GET() {
   try {
     const listings = await getListings({ limit: 1000 });
     const ids = listings.map((l) => l.guesty_id).filter(Boolean);
+    // id -> canonical slug, so the proxy can 308 a bare id (or a stale slug)
+    // to the one canonical URL without a second lookup. Built with the same
+    // getListingSlug the sitemap and every internal link use, so the three
+    // cannot disagree.
+    const slugs: Record<string, string> = {};
+    for (const l of listings) {
+      if (!l.guesty_id) continue;
+      slugs[l.guesty_id] = getListingSlug(l.title || l.nickname, l.guesty_id);
+    }
     return NextResponse.json(
-      { count: ids.length, ids },
+      { count: ids.length, ids, slugs },
       {
         headers: {
           // Cached hard: the validator fails open, so a slightly stale list

@@ -1,4 +1,27 @@
-# Traverse Hospitality
+// /llms.txt
+//
+// Was a static file in public/. It is a route now so the property list cannot
+// drift from reality: it is built from getListings() + getListingSlug(), the
+// exact pair src/app/sitemap.ts uses, so llms.txt, the sitemap and every
+// internal link describe the same catalogue by construction.
+//
+// Served like the static file it replaced — cached hard, no per-request work
+// in the common case. If the mirror read fails it still returns the
+// hand-written sections rather than 404ing; a shorter llms.txt is a far better
+// failure than no llms.txt.
+//
+// NOTE: the hand-written body below carries the public portfolio count
+// ("220+"), so this file is listed in MARKETING_AUDIT_FILES in
+// scripts/refresh-portfolio-data.ts. Keep it there.
+
+import { getListings } from "@/lib/supabase";
+import { getListingSlug } from "@/lib/utils";
+
+export const revalidate = 3600;
+
+const BASE = "https://www.booktraverse.com";
+
+const STATIC_BODY = `# Traverse Hospitality
 
 > Colorado's locally managed vacation rental company. Book direct — no fees, lowest price guaranteed.
 
@@ -73,7 +96,9 @@ Leadville / Twin Lakes:
 - https://www.booktraverse.com/properties/4bd-log-home-in-twin-lakes-amazing-views-pets-ok-6650c68508ec0400130d6bc0
 - https://www.booktraverse.com/properties/3br-cabin-escape-w-deck-twin-lakes-mountain-view-628c0ee644f6e10034a87cea
 
-Full list of all 200+ listings: https://www.booktraverse.com/sitemap/properties.xml
+Full list of all 200+ listings: https://www.booktraverse.com/sitemap/properties.xml`;
+
+const TAIL = `
 
 ## Contact
 
@@ -84,3 +109,52 @@ Full list of all 200+ listings: https://www.booktraverse.com/sitemap/properties.
 ## Extended Info
 
 For more detailed information, see: https://www.booktraverse.com/llms-full.txt
+`;
+
+/** "Name — Town · 3BR · sleeps 8" — only the parts we actually have. */
+function describe(l: {
+  title: string | null;
+  nickname: string | null;
+  address: { city?: string | null } | null;
+  bedrooms: number | null;
+  accommodates: number | null;
+}): string {
+  const name = (l.title || l.nickname || "Vacation rental").trim();
+  const bits: string[] = [];
+  const city = l.address?.city?.trim();
+  if (city) bits.push(city);
+  if (l.bedrooms && l.bedrooms > 0) bits.push(`${l.bedrooms}BR`);
+  else if (l.bedrooms === 0) bits.push("Studio");
+  if (l.accommodates && l.accommodates > 0)
+    bits.push(`sleeps ${l.accommodates}`);
+  return bits.length ? `${name} — ${bits.join(" · ")}` : name;
+}
+
+export async function GET() {
+  let section = "";
+  try {
+    const listings = await getListings({ limit: 1000 });
+    if (listings.length > 0) {
+      const lines = listings
+        .filter((l) => l.guesty_id)
+        .map((l) => {
+          const slug = getListingSlug(l.title || l.nickname, l.guesty_id);
+          return `- ${describe(l)}\n  ${BASE}/properties/${slug}`;
+        });
+      section =
+        `\n\n## All Properties\n\n` +
+        `Every bookable Traverse listing (${lines.length}), same set as the sitemap.\n\n` +
+        lines.join("\n");
+    }
+  } catch (err) {
+    // Degrade to the hand-written sections rather than failing the file.
+    console.error("[llms.txt] listing fetch failed:", err);
+  }
+
+  return new Response(STATIC_BODY + section + TAIL, {
+    headers: {
+      "content-type": "text/plain; charset=utf-8",
+      "cache-control": "public, s-maxage=3600, stale-while-revalidate=86400",
+    },
+  });
+}
