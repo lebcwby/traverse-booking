@@ -95,16 +95,26 @@ export async function GET(request: Request) {
     const toDate = format(addDays(today, 150), "yyyy-MM-dd");
 
     // Phase 2: Fetch calendars and find 5-night windows
-    // Guesty rate limits: 15 req/s burst, 120 req/min sustained
-    // 5 concurrent with 1500ms gap = ~3.3 req/s avg, well under limits
+    // Guesty rate limits: 15 req/s BURST, 120 req/min SUSTAINED.
+    //
+    // The previous pacing (5 per 1500ms) read as "~3.3 req/s, well under
+    // limits" — true of the burst ceiling, but 3.3 req/s is 198 req/min,
+    // which is 65% OVER the sustained one. It ran at that rate for ~63s every
+    // four hours, on top of live traffic, and the quote phase below then sat
+    // exactly AT 120/min with no headroom. Guesty answered with 429 bursts on
+    // 2026-10-07.
+    //
+    // 4 per 2500ms = 1.6 req/s = 96 req/min, leaving ~20% headroom for the
+    // guest traffic this cron shares the account with. Slower, and the whole
+    // point is that it is slower.
     const windows: {
       guesty_id: string;
       checkIn: string;
       checkOut: string;
       basePrice: number;
     }[] = [];
-    const CAL_BATCH = 5;
-    const CAL_DELAY = 1500;
+    const CAL_BATCH = 4;
+    const CAL_DELAY = 2500;
     let noBasePrice = 0;
     let calendarErrors = 0;
     let noWindow = 0;
@@ -158,8 +168,8 @@ export async function GET(request: Request) {
     // Phase 3: Get actual quotes for each window
     // 3 concurrent with 1500ms gap to stay under rate limits
     const cache: PricingCacheEntry[] = [];
-    const QUOTE_BATCH = 3;
-    const QUOTE_DELAY = 1500;
+    const QUOTE_BATCH = 3; // 3 per 2500ms = 72 req/min, headroom for live traffic
+    const QUOTE_DELAY = 2500;
     let quoteErrors = 0;
     let noMoney = 0;
 

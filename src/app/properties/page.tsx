@@ -1,4 +1,8 @@
 export const dynamic = "force-dynamic";
+// force-dynamic otherwise forces every fetch to no-store, which would silently
+// defeat the cached undated search below. default-cache restores "respect each
+// fetch's own cache option" without making the ROUTE static.
+export const fetchCache = "default-cache";
 
 import type { Metadata } from "next";
 import { Suspense } from "react";
@@ -7,7 +11,11 @@ import {
   getListingPricingCache,
   type Listing,
 } from "@/lib/supabase";
-import { searchListings, type SearchListingsParams } from "@/lib/guesty-beapi";
+import {
+  searchListings,
+  searchListingsCached,
+  type SearchListingsParams,
+} from "@/lib/guesty-beapi";
 import { rankListings, type SearchMode } from "@/lib/ranking";
 import {
   mapBeapiToListing,
@@ -96,14 +104,39 @@ const propertiesBreadcrumbLd = JSON.stringify({
 });
 
 // BEAPI paginated search — drains the cursor up to 500 results.
+/**
+ * Page size. Was 100, which quietly defeated caching: a 100-listing response
+ * is ~2.14MB and Next's data cache refuses anything over 2MB, so every page
+ * logged "items over 2MB can not be cached" and went to Guesty every time.
+ * At 50 an entry is ~1.07MB and actually caches.
+ */
+const BEAPI_PAGE_SIZE = 50;
+
+/**
+ * `cached` is only safe when the search carries no dates. An undated browse
+ * is a catalogue listing, where five-minute staleness is invisible; a dated
+ * search is an availability question and must stay live.
+ *
+ * Why this matters: /properties is force-dynamic and uncached, so EVERY view
+ * — every visitor, every filter change, every crawl — spent 3 uncached Guesty
+ * requests. At roughly 40 views/minute that alone saturates Guesty's ~120
+ * req/min sustained ceiling, which is how modest evening traffic produced the
+ * 429 bursts on 2026-10-07 while our own per-IP limiters never fired. Caching
+ * the undated branch turns the common case from 3 requests per view into ~5
+ * per five minutes.
+ */
 async function paginatedBeapiSearch(
-  opts: SearchListingsParams
+  opts: SearchListingsParams,
+  cached = false
 ): Promise<BeapiListingResult[]> {
-  const data = await searchListings({ ...opts, limit: 100 });
+  const search = (p: SearchListingsParams) =>
+    cached ? searchListingsCached(p, 300) : searchListings(p);
+
+  const data = await search({ ...opts, limit: BEAPI_PAGE_SIZE });
   let allResults = data.results || [];
   let cursor = data.pagination?.cursor?.next;
   while (cursor && allResults.length < 500) {
-    const more = await searchListings({ ...opts, limit: 100, cursor });
+    const more = await search({ ...opts, limit: BEAPI_PAGE_SIZE, cursor });
     allResults = allResults.concat(more.results || []);
     cursor = more.pagination?.cursor?.next;
   }
@@ -117,17 +150,21 @@ async function paginatedBeapiSearch(
 //       hasn't toggled the houseRules flag — common for legacy listings).
 // Two parallel BEAPI queries, merged + deduped by _id.
 async function searchListingsPetFriendlyOr(
-  opts: SearchListingsParams
+  opts: SearchListingsParams,
+  cached = false
 ): Promise<BeapiListingResult[]> {
-  if (!opts.petsAllowed) return paginatedBeapiSearch(opts);
+  if (!opts.petsAllowed) return paginatedBeapiSearch(opts, cached);
   const baseTags = opts.tags || [];
   const [byFlag, byTag] = await Promise.all([
-    paginatedBeapiSearch({ ...opts, petsAllowed: true }),
-    paginatedBeapiSearch({
-      ...opts,
-      petsAllowed: undefined,
-      tags: [...baseTags, "pet friendly"],
-    }),
+    paginatedBeapiSearch({ ...opts, petsAllowed: true }, cached),
+    paginatedBeapiSearch(
+      {
+        ...opts,
+        petsAllowed: undefined,
+        tags: [...baseTags, "pet friendly"],
+      },
+      cached
+    ),
   ]);
   const seen = new Set<string>();
   const out: BeapiListingResult[] = [];
@@ -270,7 +307,12 @@ export default async function PropertiesPage({
   } else {
     // No dates — still use BEAPI so we only show bookable listings
     try {
-      let allResults = await searchListingsPetFriendlyOr({ ...commonParams });
+      // Undated browse: cacheable. This is the path crawlers and most
+      // visitors take, and the one that cost 3 Guesty requests per view.
+      let allResults = await searchListingsPetFriendlyOr(
+        { ...commonParams },
+        true
+      );
       // Filter out listings with no base price (no valid rate plan)
       allResults = allResults.filter(
         (r) => !!(r.prices?.basePrice && r.prices.basePrice > 0)
