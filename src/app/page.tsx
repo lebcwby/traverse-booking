@@ -228,7 +228,7 @@ const MARKETS = [
 /* ────────── Featured properties ────────── */
 const FEATURED = [
   {
-    href: "/properties/68256c8c48e69c0010d11e2f",
+    href: "/properties/1br-ski-in-out-best-views-a-c-2-baths-68256c8c48e69c0010d11e2f",
     img: "https://assets.guesty.com/image/upload/h_600/v1756763963/production/55935b4b5d6bcf0e0084abd6/imrwi3xskefrorcofyqa.jpg",
     alt: "1BR Condo at Lodge at Mountaineer Square",
     badge: "Crested Butte",
@@ -241,7 +241,7 @@ const FEATURED = [
     price: "$95",
   },
   {
-    href: "/properties/5bf09e709d2adc002667c5ec",
+    href: "/properties/mountain-hideaway-hot-tub-sauna-1gbps-wifi-9br-sleeps-18-pet-5bf09e709d2adc002667c5ec",
     img: "/featured/mountain-hideaway.jpg",
     alt: "Mountain Hideaway sleeps 20 in Leadville",
     badge: "Leadville",
@@ -254,7 +254,7 @@ const FEATURED = [
     price: "$595",
   },
   {
-    href: "/properties/68772cc34b0b0000109cc6c5",
+    href: "/properties/4-min-walk-to-lifts-ski-condo-68772cc34b0b0000109cc6c5",
     img: "https://assets.guesty.com/image/upload/h_600/v1756514170/production/55935b4b5d6bcf0e0084abd6/cerpq3hoexjezuum0b4j.jpg",
     alt: "The Plaza 2BR with mountain views",
     badge: "Crested Butte",
@@ -267,7 +267,7 @@ const FEATURED = [
     price: "$95",
   },
   {
-    href: "/properties/5f2ee35e0a0b48002c8095b6",
+    href: "/properties/the-hilltop-suite-mt-massive-views-pet-ok-ev-charger-sleeps--5f2ee35e0a0b48002c8095b6",
     img: "/featured/hilltop-suite.jpg",
     alt: "Hilltop Suite Leadville with Mt Massive views",
     badge: "Leadville · Pet Friendly",

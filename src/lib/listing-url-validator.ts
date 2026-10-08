@@ -16,7 +16,7 @@ import { NextResponse } from "next/server";
  * Confirmed not to be a Suspense artefact: removing
  * src/app/properties/[id]/loading.tsx was measured and still returned 200.
  *
- * Two gates, cheapest first:
+ * Three gates, cheapest first:
  *
  *  1. SHAPE. A canonical listing URL always ends in a 24-character hex Guesty
  *     id — getListingSlug builds `${slugify(title)}-${guestyId}`, and
@@ -26,6 +26,11 @@ import { NextResponse } from "next/server";
  *  2. EXISTENCE. A well-formed id that no longer exists — a delisted
  *     property — is the case that actually matters for the index, and the one
  *     shape alone cannot catch. Checked against the live id set.
+ *
+ *  3. CANONICALISATION. A real listing reached by bare id, or by a stale
+ *     slug, is a duplicate URL for a page that already has a canonical one.
+ *     308 to the canonical slug, carrying the query string so dates, guests
+ *     and utm_* survive. The canonical URL itself never redirects.
  *
  * FAILS OPEN, always. If the id set cannot be loaded we let the request
  * through to the page, which behaves exactly as it does today. 404ing a real
@@ -41,7 +46,12 @@ const ID_CACHE_TTL_MS = 10 * 60 * 1000;
 /** Never let the lookup hold up a page render. */
 const ID_FETCH_TIMEOUT_MS = 1500;
 
-type IdCache = { ids: Set<string>; fetchedAt: number };
+type IdCache = {
+  ids: Set<string>;
+  /** guesty id -> canonical slug, for the 308. */
+  slugs: Map<string, string>;
+  fetchedAt: number;
+};
 let idCache: IdCache | null = null;
 let inFlight: Promise<IdCache | null> | null = null;
 
@@ -59,10 +69,20 @@ async function fetchIdSet(origin: string): Promise<IdCache | null> {
       headers: { "user-agent": "traverse-listing-validator/1.0" },
     });
     if (!res.ok) return null;
-    const body = (await res.json()) as { ids?: unknown };
+    const body = (await res.json()) as {
+      ids?: unknown;
+      slugs?: Record<string, string>;
+    };
     if (!Array.isArray(body.ids) || body.ids.length === 0) return null;
+    const slugs = new Map<string, string>();
+    if (body.slugs && typeof body.slugs === "object") {
+      for (const [id, slug] of Object.entries(body.slugs)) {
+        if (typeof slug === "string" && slug) slugs.set(id, slug);
+      }
+    }
     return {
       ids: new Set(body.ids.filter((x): x is string => typeof x === "string")),
+      slugs,
       fetchedAt: Date.now(),
     };
   } catch {
@@ -77,9 +97,9 @@ async function fetchIdSet(origin: string): Promise<IdCache | null> {
  * preferred over nothing: it can only let a dead URL through, never block a
  * live one.
  */
-async function getIdSet(origin: string): Promise<Set<string> | null> {
+async function getIdSet(origin: string): Promise<IdCache | null> {
   const fresh = idCache && Date.now() - idCache.fetchedAt < ID_CACHE_TTL_MS;
-  if (fresh) return idCache!.ids;
+  if (fresh) return idCache;
 
   // Collapse concurrent refreshes on the same instance into one fetch.
   if (!inFlight) {
@@ -90,10 +110,10 @@ async function getIdSet(origin: string): Promise<Set<string> | null> {
   const loaded = await inFlight;
   if (loaded) {
     idCache = loaded;
-    return loaded.ids;
+    return loaded;
   }
   // Refresh failed — keep serving the last good set rather than giving up.
-  return idCache?.ids ?? null;
+  return idCache ?? null;
 }
 
 /**
@@ -118,9 +138,26 @@ export async function validateListingUrl(
   if (!match) return notFoundResponse("shape");
 
   // Gate 2 — existence. Unknown set → fail open.
-  const ids = await getIdSet(origin);
-  if (!ids) return null;
-  if (!ids.has(match[1])) return notFoundResponse("unknown-id");
+  const cache = await getIdSet(origin);
+  if (!cache) return null;
+  const id = match[1];
+  if (!cache.ids.has(id)) return notFoundResponse("unknown-id");
+
+  // Gate 3 — canonicalisation. A bare id, or a stale/wrong slug, is a second
+  // URL for a page that already has one. The page's own permanentRedirect()
+  // cannot fix this: Next 16 commits the 200 before it runs, which is the same
+  // race that made unknown ids return 200. Doing it here emits a real 308.
+  //
+  // The canonical URL itself must never redirect — that would loop — so this
+  // only fires when the slug actually differs.
+  const canonical = cache.slugs.get(id);
+  if (canonical && canonical !== slug) {
+    const target = new URL(request.url);
+    target.pathname = `/properties/${canonical}`;
+    // Query string is carried: dates, guests and utm_* must survive the hop,
+    // or the redirect silently drops the guest's search and our attribution.
+    return NextResponse.redirect(target, 308);
+  }
 
   return null;
 }

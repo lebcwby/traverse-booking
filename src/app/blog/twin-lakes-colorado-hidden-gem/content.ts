@@ -54,10 +54,10 @@ export const pageContent = `<h2>Twin Lakes, Colorado: A Local's Favorite 15 Mile
 <p>Twin Lakes doesn't have large-scale lodging — that's part of its appeal. But you have two solid options: stay right in Twin Lakes village itself, or use Leadville as your base camp. At 10,152 feet, Leadville is the highest incorporated city in North America and sits squarely between Twin Lakes to the south and the Tennessee Pass corridor to the north.</p>
 <p>Traverse Hospitality manages vacation rentals in both areas. If you want to wake up with the lakes right outside your window, here are four Twin Lakes properties worth a look:</p>
 <ul>
-<li><a href="https://www.booktraverse.com/properties/6660cb33429ba6002f79b907"><strong>Peak View — 124 Peak View</strong></a> — 2BR, sleeps 6</li>
-<li><a href="https://www.booktraverse.com/properties/6650c68508ec0400130d6bc0"><strong>796 Spruce St</strong></a> — 4BR, sleeps 6</li>
-<li><a href="https://www.booktraverse.com/properties/628c0ee644f6e10034a87cea"><strong>Twin Peaks Dr</strong></a> — 3BR, sleeps 6</li>
-<li><a href="https://www.booktraverse.com/properties/697d006cf7fb0b0014b96ea6"><strong>853 Spruce St</strong></a> — 2BR, sleeps 4</li>
+<li><a href="/properties/2br-mountain-view-retreat-near-twin-lakes-6660cb33429ba6002f79b907"><strong>Peak View — 124 Peak View</strong></a> — 2BR, sleeps 6</li>
+<li><a href="/properties/4bd-log-home-in-twin-lakes-amazing-views-pets-ok-6650c68508ec0400130d6bc0"><strong>796 Spruce St</strong></a> — 4BR, sleeps 6</li>
+<li><a href="/properties/3br-cabin-escape-w-deck-twin-lakes-mountain-view-628c0ee644f6e10034a87cea"><strong>Twin Peaks Dr</strong></a> — 3BR, sleeps 6</li>
+<li><a href="/properties/2br-new-home-in-twin-lakes-views-pet-friendly-697d006cf7fb0b0014b96ea6"><strong>853 Spruce St</strong></a> — 2BR, sleeps 4</li>
 </ul>
 <p><a href="https://www.booktraverse.com/properties?city=Twin+Lakes&amp;guests=2">Browse all Twin Lakes rentals</a></p>
 <p>Prefer Leadville's historic main street as your anchor? Browse the full selection of <a href="https://booktraverse.com/leadville/">Leadville vacation rentals</a> and book directly at <a href="https://reservations.booktraverse.com">reservations.booktraverse.com</a> to save up to 15% versus third-party booking sites.</p>

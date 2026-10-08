@@ -101,7 +101,8 @@ async function getBeapiToken(): Promise<string> {
     .select("access_token, expires_at")
     .eq("token_type", "beapi")
     .single();
-  if (error || !data) throw new Error(`Failed to load BEAPI token: ${error?.message}`);
+  if (error || !data)
+    throw new Error(`Failed to load BEAPI token: ${error?.message}`);
   if (data.expires_at < Date.now()) {
     throw new Error(
       "BEAPI token in Supabase is expired. Trigger /api/cron/refresh-tokens first."
@@ -126,7 +127,9 @@ async function beapiFetch(
   let lastBody = "";
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const r = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     if (r.ok) return r;
 
     lastStatus = r.status;
@@ -136,9 +139,10 @@ async function beapiFetch(
     if (!retryable || attempt === MAX_ATTEMPTS) break;
 
     const retryAfter = Number(r.headers.get("retry-after"));
-    const waitMs = Number.isFinite(retryAfter) && retryAfter > 0
-      ? retryAfter * 1000
-      : 1000 * 2 ** (attempt - 1); // 1s, 2s, 4s, 8s
+    const waitMs =
+      Number.isFinite(retryAfter) && retryAfter > 0
+        ? retryAfter * 1000
+        : 1000 * 2 ** (attempt - 1); // 1s, 2s, 4s, 8s
     console.log(
       `    ⏳ ${label} ${r.status} — retrying in ${Math.round(waitMs / 1000)}s (attempt ${attempt}/${MAX_ATTEMPTS - 1})`
     );
@@ -261,7 +265,7 @@ const MARKETING_AUDIT_FILES = [
   "src/app/plan/[id]/opengraph-image.tsx",
   "src/components/plan/portland-animation.tsx",
   "src/components/plan/static-plan-page.tsx",
-  "public/llms.txt",
+  "src/app/llms.txt/route.ts",
   "public/llms-full.txt",
 ].map((p) => path.resolve(process.cwd(), p));
 
@@ -382,7 +386,9 @@ async function auditMarketingCount(actualTotal: number): Promise<void> {
 
   const distinct = [...found.keys()].sort((a, b) => Number(a) - Number(b));
   for (const { rel, claims } of fileHits) {
-    console.log(`  ${rel}: ${claims.length} claim(s) — ${[...new Set(claims)].join(", ")}`);
+    console.log(
+      `  ${rel}: ${claims.length} claim(s) — ${[...new Set(claims)].join(", ")}`
+    );
   }
 
   if (distinct.length > 1) {
@@ -424,9 +430,10 @@ async function rewriteMarketingCopyFile(
   return { path: file, before, after };
 }
 
-async function rewriteStatsFile(
-  totals: { totalListings: number; perMarket: Record<string, string> }
-): Promise<{ before: string; after: string }> {
+async function rewriteStatsFile(totals: {
+  totalListings: number;
+  perMarket: Record<string, string>;
+}): Promise<{ before: string; after: string }> {
   const before = await fs.readFile(STATS_FILE, "utf8");
   let after = before;
   // Update totalListings
@@ -441,7 +448,10 @@ async function rewriteStatsFile(
   }
   // Update Last refreshed comment
   const today = new Date().toISOString().slice(0, 10);
-  after = after.replace(/Last refreshed:\s*\d{4}-\d{2}-\d{2}/, `Last refreshed: ${today}`);
+  after = after.replace(
+    /Last refreshed:\s*\d{4}-\d{2}-\d{2}/,
+    `Last refreshed: ${today}`
+  );
   return { before, after };
 }
 
@@ -549,7 +559,11 @@ async function setMarketingCount(
       if (targets.includes(full)) continue;
       // This file documents the swap using a literal example, so it always
       // "contains" the old token. Skip it rather than report itself forever.
-      if (full === path.resolve(process.cwd(), "scripts/refresh-portfolio-data.ts")) continue;
+      if (
+        full ===
+        path.resolve(process.cwd(), "scripts/refresh-portfolio-data.ts")
+      )
+        continue;
       const text = await fs.readFile(full, "utf8").catch(() => "");
       if (text.includes(oldToken)) {
         strays.push(path.relative(process.cwd(), full));
@@ -561,7 +575,9 @@ async function setMarketingCount(
   }
 
   if (strays.length) {
-    console.log(`  ⚠️  "${oldToken}" still appears in ${strays.length} file(s) NOT on the`);
+    console.log(
+      `  ⚠️  "${oldToken}" still appears in ${strays.length} file(s) NOT on the`
+    );
     console.log("     marketing list. Check them, then add them to");
     console.log("     MARKETING_AUDIT_FILES so the next run catches them:");
     for (const s of strays) console.log(`       ${s}`);
@@ -642,10 +658,14 @@ async function main() {
     }
     const dest = path.join(PUBLIC_MARKETS_DIR, `${citySlug(city)}.jpg`);
     if (dryRun) {
-      console.log(`  📷 ${city}: would download ${pickedFrom} → ${path.relative(process.cwd(), dest)}`);
+      console.log(
+        `  📷 ${city}: would download ${pickedFrom} → ${path.relative(process.cwd(), dest)}`
+      );
     } else {
       await downloadImage(pickedUrl, dest);
-      console.log(`  📷 ${city}: ${pickedFrom} → ${path.relative(process.cwd(), dest)}`);
+      console.log(
+        `  📷 ${city}: ${pickedFrom} → ${path.relative(process.cwd(), dest)}`
+      );
     }
   }
 
@@ -664,7 +684,9 @@ async function main() {
   console.log("");
 
   if (dryRun) {
-    console.log("Dry run — no files changed. Re-run without --dry-run to apply.");
+    console.log(
+      "Dry run — no files changed. Re-run without --dry-run to apply."
+    );
   } else if (before === after) {
     console.log("✓ portfolio-stats.ts already up to date.");
   } else {
@@ -713,7 +735,9 @@ async function main() {
   for (const sweep of BUILDING_SWEEPS) {
     const buildingListings = await fetchListingsForTag(token, sweep.tag);
     const count = buildingListings.length;
-    console.log(`  ${sweep.name.padEnd(28)} ${count} units (tag "${sweep.tag}")`);
+    console.log(
+      `  ${sweep.name.padEnd(28)} ${count} units (tag "${sweep.tag}")`
+    );
     const result = await rewriteBuildingContentFile(sweep, count);
     const rel = path.relative(process.cwd(), result.path);
     if (result.before === result.after) {
