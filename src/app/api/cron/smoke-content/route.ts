@@ -15,10 +15,9 @@ export const dynamic = "force-dynamic";
 // email via sendAlert (1h dedup) so a stale/wrong deploy is caught in hours,
 // not whenever a human happens to notice.
 //
-// We fetch the deployment's OWN origin (derived from the incoming request),
-// not a hardcoded domain. That makes the check correct regardless of the
-// booktraverse.com DNS-cutover state — it always validates the code that is
-// actually live behind this cron.
+// We fetch the PUBLIC site (NEXT_PUBLIC_SITE_URL), not the origin that
+// invoked us — see the note at the `origin` assignment below for why the
+// earlier request-derived approach silently failed every run.
 
 // Phrases that must NEVER appear on any public page post-rebrand. Kept
 // specific (not the bare word "Portland") to avoid false positives from
@@ -83,8 +82,25 @@ export async function GET(request: Request) {
   }
 
   // Validate the deployment that is serving THIS request.
-  const origin = new URL(request.url).origin;
-  console.log(`[smoke-content] start trigger=${triggerSource} origin=${origin}`);
+  // The PUBLIC site, not the origin that invoked us.
+  //
+  // This used to be `new URL(request.url).origin`, on the reasoning that it
+  // validates whatever deployment is actually serving — robust regardless of
+  // the DNS-cutover state. That cutover is long done, and the cleverness
+  // became the bug: Vercel Cron invokes this at the per-deployment
+  // *.vercel.app URL, which sits behind Vercel SSO. Fetching it externally
+  // lands on "Login – Vercel", a 200 page containing neither "Traverse" nor
+  // "Colorado", so all three checks failed on every run while the live site
+  // was perfectly healthy. The 2026-10-09 00:00 alert names the deployment
+  // URL outright.
+  //
+  // A smoke test should assert what the public gets.
+  const origin = (
+    process.env.NEXT_PUBLIC_SITE_URL || "https://www.booktraverse.com"
+  ).replace(/\/$/, "");
+  console.log(
+    `[smoke-content] start trigger=${triggerSource} origin=${origin}`
+  );
 
   const failures: string[] = [];
   const results: Record<string, unknown> = {};
