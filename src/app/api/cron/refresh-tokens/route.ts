@@ -8,9 +8,21 @@ const BEAPI_TOKEN_URL = "https://booking.guesty.com/oauth2/token";
 const OPENAPI_TOKEN_URL = "https://open-api.guesty.com/oauth2/token";
 
 // Refresh when the existing token has less than this much life left.
-// Guesty caps OAuth at 5 tokens per 24h per client. Tokens last 24h, so a 2h
-// buffer means we refresh ~once per ~22h — well under the cap.
-const REFRESH_BUFFER_MS = 2 * 60 * 60 * 1000;
+// Guesty caps OAuth at 5 tokens per 24h per client. Tokens last 24h, so even
+// a 6h buffer refreshes about once a day — well under the cap.
+//
+// This was 2h, which is exactly this cron's own interval, and that left a
+// 16-SECOND margin: a token expiring at 00:10:16 still had 2h 0m 16s at the
+// 22:10 run, so it was skipped, and only the 00:10 run would refresh it. One
+// late or dropped fire — Vercel crons are best-effort — and nothing held a
+// valid token until 02:10. The BEAPI outages on 2026-10-08 and 2026-10-09
+// both landed in that window, at 01:26 and 01:27.
+//
+// At 6h this cron gets three attempts before expiry instead of one. Keep it
+// in step with TOKEN_BUFFER_MS in src/lib/guesty-beapi.ts, which decides when
+// a token is "fresh" — if the two disagree the app can consider a token stale
+// that this cron is not yet refreshing.
+const REFRESH_BUFFER_MS = 6 * 60 * 60 * 1000;
 
 interface RefreshTarget {
   tokenType: "beapi" | "openapi";

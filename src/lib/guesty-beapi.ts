@@ -19,7 +19,18 @@ const CARD_SEARCH_LISTING_FIELDS =
 //   4. Token refresh is handled EXCLUSIVELY by refresh-tokens edge function (pg_cron)
 //   5. No OAuth calls, no token persistence, no token expiration writes
 
-const TOKEN_BUFFER_MS = 2 * 60 * 60 * 1000; // 2 hours — token is "fresh" if > 2h remaining
+// A token is "fresh" if it has more than this left; below it, the cron
+// refreshes. This was 2 hours, which is exactly the cron's own interval, so
+// the margin was 16 SECONDS: a token expiring at 00:10:16 still showed 2h 0m
+// 16s at the 22:10 run (not < 2h, skipped) and was only refreshed by the
+// 00:10 run. One late or dropped fire — Vercel crons are best-effort — and
+// there was no valid token until 02:10. Both BEAPI outages on 2026-10-08 and
+// 2026-10-09 landed inside that window, at 01:26 and 01:27.
+//
+// At 6h the every-2h cron gets three chances before expiry instead of one,
+// and a 24h token still mints about once a day, well inside Guesty's ~5/24h
+// OAuth cap.
+const TOKEN_BUFFER_MS = 6 * 60 * 60 * 1000;
 
 // In-memory cache — survives within same Vercel serverless instance.
 let memoryToken: { token: string; expiresAt: number } | null = null;
@@ -51,7 +62,8 @@ async function attemptTokenSelfHeal(reason: string): Promise<boolean> {
   lastSelfHealAttemptAt = now;
 
   const cronSecret = process.env.CRON_SECRET;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.booktraverse.com";
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || "https://www.booktraverse.com";
   if (!cronSecret) {
     console.warn(
       "[BEAPI self-heal] CRON_SECRET not set — can't trigger refresh"
@@ -91,8 +103,19 @@ function isTokenFresh(expiresAt: number): boolean {
   return expiresAt > Date.now() + TOKEN_BUFFER_MS;
 }
 
+/**
+ * A token with two seconds left satisfied `expiresAt > Date.now()` and was
+ * handed out, then died mid-request. Require enough runway to finish the work
+ * that is about to start.
+ */
+const TOKEN_USABLE_MARGIN_MS = 5 * 60 * 1000;
+
+/** Reading the cached token is worth retrying; see getSupabaseCachedToken. */
+const TOKEN_READ_ATTEMPTS = 3;
+const TOKEN_READ_BACKOFF_MS = 150;
+
 function isTokenUsable(expiresAt: number): boolean {
-  return expiresAt > Date.now();
+  return expiresAt > Date.now() + TOKEN_USABLE_MARGIN_MS;
 }
 
 /**
@@ -106,14 +129,39 @@ async function getSupabaseCachedToken(): Promise<{
 } | null> {
   try {
     const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase
-      .from("guesty_tokens")
-      .select("access_token, expires_at")
-      .eq("token_type", "beapi")
-      .single();
+    // Retry the READ. A single transient Supabase error used to be
+    // indistinguishable from "no token exists": this returned null, the
+    // caller fell through to a throttled self-heal, and the request died
+    // with "BEAPI token expired" while a perfectly valid token sat in the
+    // table. That is what took /properties to the mirror at 01:27:50 on
+    // 2026-10-09 — the token had been refreshed 77 minutes earlier and had
+    // 22.7h of life left.
+    type TokenRow = { access_token: string; expires_at: number };
+    let data: TokenRow | null = null;
+    let lastError: string | null = null;
+    for (let attempt = 1; attempt <= TOKEN_READ_ATTEMPTS; attempt++) {
+      const res = await supabase
+        .from("guesty_tokens")
+        .select("access_token, expires_at")
+        .eq("token_type", "beapi")
+        .single();
+      if (!res.error) {
+        data = res.data as unknown as TokenRow;
+        lastError = null;
+        break;
+      }
+      lastError = res.error.message;
+      if (attempt < TOKEN_READ_ATTEMPTS) {
+        await new Promise((r) =>
+          setTimeout(r, TOKEN_READ_BACKOFF_MS * attempt)
+        );
+      }
+    }
 
-    if (error) {
-      console.warn("BEAPI token cache lookup failed:", error.message);
+    if (lastError) {
+      console.warn(
+        `BEAPI token cache lookup failed after ${TOKEN_READ_ATTEMPTS} attempts: ${lastError}`
+      );
       return null;
     }
 
@@ -167,7 +215,9 @@ export async function getBEAPIToken(): Promise<string> {
   // (throttled), wait for it, then re-poll Supabase. If still expired
   // after that, alert and fail. The throttle keeps a stampede of expired-
   // token requests from burning through Guesty's 5 OAuth tokens / 24h.
-  const healed = await attemptTokenSelfHeal("getBEAPIToken found no usable token");
+  const healed = await attemptTokenSelfHeal(
+    "getBEAPIToken found no usable token"
+  );
   if (healed) {
     // After the cron route returns, the new token row is in Supabase.
     // Re-poll once.
@@ -184,8 +234,21 @@ export async function getBEAPIToken(): Promise<string> {
 
   // Either self-heal was throttled (already attempted recently) or the
   // refresh route itself failed. Alert and surface the error.
-  const msg = "BEAPI token expired — self-heal exhausted, manual refresh needed";
-  await sendAlert("CRITICAL: BEAPI Token Expired", msg, "beapi-token-expired");
+  // Say what actually happened. This used to read "BEAPI token expired", but
+  // this branch is reached whenever a token could not be OBTAINED — expired,
+  // missing, or simply unreadable because Supabase errored. On 2026-10-09 it
+  // reported an expiry for a token with 22.7 hours left, and the wrong
+  // diagnosis cost real time.
+  const msg =
+    "Could not obtain a BEAPI token. The cached token was expired, missing, " +
+    "or unreadable (Supabase error), and the self-heal refresh was throttled " +
+    "or failed. Check /api/health/beapi for the token's real expiry before " +
+    "assuming it lapsed — and the refresh-tokens cron's recent runs.";
+  await sendAlert(
+    "CRITICAL: BEAPI token unavailable",
+    msg,
+    "beapi-token-expired"
+  );
   throw new Error(msg);
 }
 
