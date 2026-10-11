@@ -465,19 +465,25 @@ the actual bet, and nothing before phase 6 commits us to it.
 
 ---
 
-## Decisions needed
+## Decisions — answered 2026-10-11 (Nadim)
 
-1. **Training crawlers — allow or block `GPTBot`, `ClaudeBot`, `Google-Extended`,
-   `Applebot-Extended`, `CCBot`?** My recommendation is allow; obscurity is a bigger
-   problem for us than content absorption, and it is reversible. Retrieval bots
-   (OAI-SearchBot, Claude-User, PerplexityBot) should be allowed either way.
-2. **Do we ask Guesty about re-publishing availability and pricing via a public API?**
-   I think we must, before phase 6. Needs someone with the account relationship.
-3. **How far to go.** Phases 1–5 (discoverability + the availability cache) are
-   low-risk and independently valuable. Phases 6–8 are a genuine product commitment.
-   Approve 1–5 now and decide 6–8 after seeing the Search Console movement?
-4. **Pricing exposure.** Comfortable publishing "from" nightly rates and day-level
-   availability for all 208 listings in a machine-readable form? That is the part a
-   competitor would most value.
-5. **Partner API keys** — anyone specific asking, or is anonymous + rate limits enough
-   for now?
+1. **Training crawlers → ALLOW.** `GPTBot`, `ClaudeBot`, `Google-Extended`,
+   `Applebot-Extended` and `CCBot` all get `Allow: /`, alongside the retrieval bots.
+   Build B1.1 exactly as written.
+2. **Guesty terms → confirmed allowed.** Re-publishing availability and pricing through
+   our own public API is permitted. Phase 6 is unblocked.
+3. **Scope → all eight phases approved**, built in order, each as its own PR.
+4. **Pricing exposure → approved.** "From" nightly rates and day-level availability may
+   be published machine-readably for the full catalogue. All-in quotes stay
+   rate-limited; occupancy stats, financials and owner data stay private regardless.
+5. **Partner API keys → not now.** Nobody is asking. Ship anonymous + per-IP rate
+   limits; revisit only when a named partner needs more than the anonymous ceiling.
+
+Still genuinely open, to settle during the build rather than guess:
+
+- **BEAPI quote TTL.** Our code does not track one and no expiry field was found on the
+  quote object. Establish the real lifetime before publishing `expiresAt`; omit the
+  field rather than publish a guess.
+- **Agentic payments.** Unchanged from B4 — gated on the inert advisory lock
+  (`SHARED_DATABASE_URL_DIRECT`) and the Guesty auto-payment-rule double-capture, not on
+  the protocols.
