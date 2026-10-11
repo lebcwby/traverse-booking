@@ -110,6 +110,24 @@ function isTokenFresh(expiresAt: number): boolean {
  */
 const TOKEN_USABLE_MARGIN_MS = 5 * 60 * 1000;
 
+/**
+ * Best-effort listing id from a BEAPI request body, so a 403 can name the
+ * listing it was about. Returns null for bodies that carry no listing (and
+ * for anything unparseable — this only ever decorates an error message, so it
+ * must never throw on the failure path).
+ */
+function extractListingId(body: BodyInit | null | undefined): string | null {
+  if (typeof body !== "string") return null;
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (!parsed || typeof parsed !== "object") return null;
+    const id = (parsed as Record<string, unknown>).listingId;
+    return typeof id === "string" && id ? id : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Reading the cached token is worth retrying; see getSupabaseCachedToken. */
 const TOKEN_READ_ATTEMPTS = 3;
 const TOKEN_READ_BACKOFF_MS = 150;
@@ -277,13 +295,26 @@ async function beapiFetch(
     // 403 Forbidden: listing not accessible via BEAPI (not in booking engine).
     if (response.status === 403) {
       const text = await response.text();
+      // Name the listing. The alert used to report only `path`, and for a
+      // quote the listing id lives in the POST body — so every one of these
+      // emails said "this listing is likely not enabled" without ever saying
+      // WHICH listing, and the dedup key was a constant, so several different
+      // listings failing in one hour collapsed into a single unactionable
+      // message. The 2026-10-11 06:17 alert cost an investigation that ended
+      // with "we cannot tell from this".
+      const listingId = extractListingId(restOptions.body);
       console.error(
-        `BEAPI 403 (forbidden) on ${path} — listing may not be in booking engine`
+        `BEAPI 403 (forbidden) on ${path} listing=${listingId ?? "unknown"} — not in booking engine?`
       );
       await sendAlert(
         "BEAPI 403 Forbidden",
-        `Guesty BEAPI returned 403 on <code>${path}</code>. This listing is likely not enabled in the Guesty Booking Engine.`,
-        "beapi-403-forbidden"
+        `Guesty BEAPI returned 403 on <code>${path}</code>.` +
+          (listingId
+            ? `<br><br>Listing: <code>${listingId}</code> — check whether it is enabled in the Guesty Booking Engine, or whether it has been delisted (a stale link or crawler quoting a removed listing produces exactly this).`
+            : `<br><br>No listing id was present on the request, so this is not a per-listing failure — check BEAPI credentials and scope.`),
+        // Per-listing key: two different listings now produce two alerts
+        // instead of silently sharing one hourly slot.
+        `beapi-403-forbidden-${listingId ?? "nolisting"}`
       );
       throw new Error(`BEAPI ${path} forbidden: 403 ${text}`);
     }
