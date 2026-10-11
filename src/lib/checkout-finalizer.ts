@@ -170,9 +170,7 @@ export async function recordPaymentWithIndexingRetry(
                     `$${resolution.delta.toFixed(2)}`,
                   ],
                 ]),
-                renderAlertLinks([
-                  { label: "Stripe payment", url: stripeUrl },
-                ]),
+                renderAlertLinks([{ label: "Stripe payment", url: stripeUrl }]),
               ].join(""),
               `amount-mismatch-${reservationId}`
             );
@@ -426,41 +424,77 @@ async function finalizeReservationLocked(
     const message =
       "Your payment was received, but your reservation is still being finalized. Please do not retry. Our team has been notified.";
     const stripePaymentUrl = buildStripeDashboardPaymentUrl(paymentIntentId);
-    await markPendingCheckoutError(
-      paymentIntentId,
-      `${message} Guesty error: ${guestyError instanceof Error ? guestyError.message : "Unknown"}`,
-      "paid_pending_reservation"
-    ).catch(() => {});
-    await sendAlert(
-      "PAID BOOKING NEEDS MANUAL RECOVERY",
-      [
-        "<p>A Stripe payment succeeded, but Guesty reservation creation still failed after the in-request retries.</p>",
-        renderAlertDetails([
-          ["PaymentIntent", paymentIntentId],
-          ["Quote ID", quoteContext.quoteId],
-          ["Guest email", guest.email],
-          [
-            "Guest name",
-            [guest.firstName, guest.lastName].filter(Boolean).join(" "),
-          ],
-          ["Listing", tracking.listingTitle],
-          ["Check-in", tracking.checkIn],
-          ["Check-out", tracking.checkOut],
-          ["Guests", tracking.guests],
-          ["Charged amount", `$${(paymentIntent.amount / 100).toFixed(2)}`],
-          [
-            "Guesty error",
-            guestyError instanceof Error ? guestyError.message : "Unknown",
-          ],
-          [
-            "Next action",
-            "Recovery cron will keep retrying. Do not ask the guest to repay.",
-          ],
-        ]),
-        renderAlertLinks([{ label: "Stripe payment", url: stripePaymentUrl }]),
-      ].join(""),
-      `paid-booking-manual-recovery-${paymentIntentId}`
-    );
+    // Hand the payment to the recovery net BEFORE deciding whether to shout.
+    // If this write lands, /api/cron/recover-checkouts owns the booking: it
+    // retries every 10 minutes and raises "Checkout Recovery Still Failing"
+    // once the row is 15 minutes old and still stuck.
+    let handedToRecovery = true;
+    try {
+      await markPendingCheckoutError(
+        paymentIntentId,
+        `${message} Guesty error: ${guestyError instanceof Error ? guestyError.message : "Unknown"}`,
+        "paid_pending_reservation"
+      );
+    } catch {
+      handedToRecovery = false;
+    }
+
+    // Only alert from here when the recovery net is GONE.
+    //
+    // This alert used to fire immediately on every failed finalize, and it was
+    // a false alarm 52 times out of 54 over the 30 days to 2026-10-09: the
+    // client-side finalize or the recovery cron created the reservation
+    // seconds later. Tiffany Sekunnq's booking on 2026-10-09 alerted at
+    // 03:10:20 and completed at 03:10:30 — ten seconds.
+    //
+    // That noise had a cost. Nathan Smith's genuinely stranded $217.63 on
+    // 2026-09-19 produced the same subject line as the 52 that healed
+    // themselves, and went unrefunded for weeks.
+    //
+    // So: if the row was marked, stay quiet and let the age-gated cron alert
+    // speak — it has the pending age and the real history. If the mark FAILED,
+    // nothing else will ever look at this payment, and it must be shouted
+    // about right now.
+    if (!handedToRecovery) {
+      await sendAlert(
+        "PAID BOOKING NEEDS MANUAL RECOVERY",
+        [
+          "<p><strong>A Stripe payment succeeded, Guesty reservation creation failed, and the pending-checkout row could not be written.</strong></p>",
+          "<p>The recovery cron will NOT pick this up, because there is no row for it to find. This one needs a human.</p>",
+          renderAlertDetails([
+            ["PaymentIntent", paymentIntentId],
+            ["Quote ID", quoteContext.quoteId],
+            ["Guest email", guest.email],
+            [
+              "Guest name",
+              [guest.firstName, guest.lastName].filter(Boolean).join(" "),
+            ],
+            ["Listing", tracking.listingTitle],
+            ["Check-in", tracking.checkIn],
+            ["Check-out", tracking.checkOut],
+            ["Guests", tracking.guests],
+            ["Charged amount", `$${(paymentIntent.amount / 100).toFixed(2)}`],
+            [
+              "Guesty error",
+              guestyError instanceof Error ? guestyError.message : "Unknown",
+            ],
+            [
+              "Next action",
+              "Create the reservation in Guesty manually and record the Stripe payment against it. Do NOT ask the guest to repay — they have already been charged.",
+            ],
+          ]),
+          renderAlertLinks([
+            { label: "Stripe payment", url: stripePaymentUrl },
+          ]),
+        ].join(""),
+        `paid-booking-manual-recovery-${paymentIntentId}`
+      );
+    } else {
+      console.warn(
+        `[finalizeReservation] Guesty creation failed for ${paymentIntentId}; handed to recover-checkouts. ` +
+          `No alert yet — recover-checkouts raises one if it is still stuck after 15 minutes.`
+      );
+    }
     throw new ReservationPendingRecoveryError(
       message,
       guestyError instanceof Error ? guestyError.message : String(guestyError)
@@ -828,9 +862,7 @@ async function finalizeReservationLocked(
     await trackBookingServerSide(
       {
         reservationId,
-        confirmationCode: confirmationCode
-          ? String(confirmationCode)
-          : null,
+        confirmationCode: confirmationCode ? String(confirmationCode) : null,
         listingId: tracking.listingId,
         listingTitle: tracking.listingTitle,
         listingNickname: tracking.listingNickname,
