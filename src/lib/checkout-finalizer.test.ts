@@ -269,15 +269,56 @@ describe("finalizeReservation", () => {
       expect.stringContaining("Guesty outage"),
       "paid_pending_reservation"
     );
-    expect(mockSendAlert).toHaveBeenCalledWith(
+    // No alert from here. The row was marked, so recover-checkouts owns this
+    // payment and raises an age-gated alert if it is STILL stuck after 15
+    // minutes. Alerting immediately was a false alarm 52 times out of 54 in
+    // the 30 days to 2026-10-09, which is how a genuinely stranded $217.63
+    // went unnoticed for weeks.
+    expect(mockSendAlert).not.toHaveBeenCalledWith(
       "PAID BOOKING NEEDS MANUAL RECOVERY",
-      expect.stringContaining(
-        "Guesty reservation creation still failed after the in-request retries."
-      ),
-      "paid-booking-manual-recovery-pi_test"
+      expect.anything(),
+      expect.anything()
     );
     expect(mockRecordPayment).not.toHaveBeenCalled();
     expect(mockMarkPendingCheckoutCompleted).not.toHaveBeenCalled();
+  });
+
+  it("DOES alert immediately when the pending row could not be written", async () => {
+    // The one case with no safety net: nothing recorded the payment, so
+    // recover-checkouts will never see it and a human has to act now.
+    mockPoolQuery.mockResolvedValue({ rows: [] });
+    mockCreateReservationInstant.mockRejectedValue(new Error("Guesty outage"));
+    mockMarkPendingCheckoutError.mockRejectedValue(new Error("db down"));
+
+    const promise = finalizeReservation({
+      paymentIntentId: "pi_orphan",
+      quoteId: "quote_123",
+      guest: {
+        firstName: "Test",
+        lastName: "Guest",
+        email: "guest@example.com",
+        phone: "5035551212",
+      },
+      tracking: {
+        listingId: "listing_1",
+        listingTitle: "Test Home",
+        checkIn: "2026-04-20",
+        checkOut: "2026-04-23",
+        guests: 2,
+      },
+    });
+
+    const rejection = expect(promise).rejects.toBeInstanceOf(
+      ReservationPendingRecoveryError
+    );
+    await vi.runAllTimersAsync();
+    await rejection;
+
+    expect(mockSendAlert).toHaveBeenCalledWith(
+      "PAID BOOKING NEEDS MANUAL RECOVERY",
+      expect.stringContaining("recovery cron will NOT pick this up"),
+      "paid-booking-manual-recovery-pi_orphan"
+    );
   });
 
   it("creates, records, and completes a successful reservation", async () => {
