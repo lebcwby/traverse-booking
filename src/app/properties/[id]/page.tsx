@@ -26,6 +26,11 @@ import {
 } from "@/lib/supabase";
 import { getListingDetail } from "@/lib/guesty-beapi";
 import {
+  normalizeListingName,
+  normalizeStateCode,
+  resolveLocality,
+} from "@/lib/listing-address";
+import {
   extractIdFromSlug,
   getListingSlug,
   getPhotoUrl,
@@ -304,7 +309,14 @@ function buildMetaDescription(
     amenities: string[] | null;
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  beapiListing: any
+  beapiListing: any,
+  /**
+   * Real cached nightly rate, when we have one. Passed in rather than read
+   * from `listing.prices.basePrice`, which is the $95 placeholder — this
+   * string is the Google search snippet, so it was advertising the wrong
+   * price in the one place most people actually read.
+   */
+  nightlyFrom?: number | null
 ): string {
   const neighborhood = getNeighborhoodFromTags(listing.tags);
   const amenities = (beapiListing?.amenities || listing.amenities || []).map(
@@ -351,9 +363,10 @@ function buildMetaDescription(
     parts.push(`Sleeps ${listing.accommodates}.`);
   }
 
-  // Price
-  if (listing.prices?.basePrice) {
-    parts.push(`From $${Math.round(listing.prices.basePrice)}/night.`);
+  // Price — only when it is a real quoted rate. Omitting the sentence is
+  // better than quoting the placeholder.
+  if (typeof nightlyFrom === "number" && nightlyFrom > 0) {
+    parts.push(`From $${Math.round(nightlyFrom)}/night.`);
   }
 
   // CTA
@@ -384,32 +397,52 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   ]);
 
   const b = beapiListing as Record<string, unknown> | null;
-const fallbackListing = b ? {
-  guesty_id: (b._id || b.id || id.split("-").pop()) as string,
-  title: (b.title as string) || null,
-  nickname: (b.nickname as string) || null,
-  picture: ((b.pictures as Array<{original: string}>)?.[0]?.original) || null,
-  bedrooms: (b.bedrooms as number) ?? null,
-  accommodates: (b.accommodates as number) ?? null,
-  prices: b.prices
-    ? { basePrice: ((b.prices as Record<string, unknown>).basePrice as number) ?? 0 }
-    : null,
-  tags: (b.tags as string[]) ?? null,
-  amenities: (b.amenities as string[]) ?? null,
-} : null;
+  const fallbackListing = b
+    ? {
+        guesty_id: (b._id || b.id || id.split("-").pop()) as string,
+        title: (b.title as string) || null,
+        nickname: (b.nickname as string) || null,
+        picture:
+          (b.pictures as Array<{ original: string }>)?.[0]?.original || null,
+        bedrooms: (b.bedrooms as number) ?? null,
+        accommodates: (b.accommodates as number) ?? null,
+        prices: b.prices
+          ? {
+              basePrice:
+                ((b.prices as Record<string, unknown>).basePrice as number) ??
+                0,
+            }
+          : null,
+        tags: (b.tags as string[]) ?? null,
+        amenities: (b.amenities as string[]) ?? null,
+      }
+    : null;
   const resolvedListing = listing ?? fallbackListing;
   if (!resolvedListing) return {};
 
-  const listingName = resolvedListing.title || resolvedListing.nickname || "Vacation Rental";
+  const listingName =
+    normalizeListingName(resolvedListing.title || resolvedListing.nickname) ||
+    "Vacation Rental";
   const title = `${listingName} — Colorado Vacation Rental`;
-  const description = buildMetaDescription(resolvedListing, beapiListing);
+
+  // Same cached rate the page and the JSON-LD use, so the snippet, the visible
+  // page and the structured data all quote one number.
+  const metaNightlyFrom = await getListingPricingCache()
+    .then((m) => m.get(resolvedListing.guesty_id)?.nightlyFrom ?? null)
+    .catch(() => null);
+  const description = buildMetaDescription(
+    resolvedListing,
+    beapiListing,
+    metaNightlyFrom
+  );
   const slug = getListingSlug(
     resolvedListing.title || resolvedListing.nickname,
     resolvedListing.guesty_id
   );
   const url = `https://www.booktraverse.com/properties/${slug}`;
 
-  const firstPhoto = beapiListing?.pictures?.[0]?.original || resolvedListing.picture;
+  const firstPhoto =
+    beapiListing?.pictures?.[0]?.original || resolvedListing.picture;
   const ogImage = firstPhoto ? getPhotoUrl(firstPhoto, 1200) : undefined;
 
   return {
@@ -474,28 +507,33 @@ export default async function PropertyDetailPage({
       beds: (b.beds as number) || null,
       accommodates: (b.accommodates as number) || null,
       area_square_feet: null,
-      address: addr ? {
-        lat: (addr.lat as number) || 0,
-        lng: (addr.lng as number) || 0,
-        city: (addr.city as string) || "",
-        full: (addr.full as string) || "",
-        state: (addr.state as string) || "",
-        street: (addr.street as string) || "",
-        country: (addr.country as string) || "",
-        zipcode: (addr.zipcode as string) || "",
-      } : null,
-      prices: prices ? {
-        currency: (prices.currency as string) || "USD",
-        basePrice: (prices.basePrice as number) || 0,
-        cleaningFee: (prices.cleaningFee as number) || null,
-        extraPersonFee: (prices.extraPersonFee as number) || null,
-        weeklyPriceFactor: (prices.weeklyPriceFactor as number) || null,
-        monthlyPriceFactor: (prices.monthlyPriceFactor as number) || null,
-        securityDepositFee: (prices.securityDepositFee as number) || null,
-      } : null,
+      address: addr
+        ? {
+            lat: (addr.lat as number) || 0,
+            lng: (addr.lng as number) || 0,
+            city: (addr.city as string) || "",
+            full: (addr.full as string) || "",
+            state: (addr.state as string) || "",
+            street: (addr.street as string) || "",
+            country: (addr.country as string) || "",
+            zipcode: (addr.zipcode as string) || "",
+          }
+        : null,
+      prices: prices
+        ? {
+            currency: (prices.currency as string) || "USD",
+            basePrice: (prices.basePrice as number) || 0,
+            cleaningFee: (prices.cleaningFee as number) || null,
+            extraPersonFee: (prices.extraPersonFee as number) || null,
+            weeklyPriceFactor: (prices.weeklyPriceFactor as number) || null,
+            monthlyPriceFactor: (prices.monthlyPriceFactor as number) || null,
+            securityDepositFee: (prices.securityDepositFee as number) || null,
+          }
+        : null,
       active: true,
       is_listed: true,
-      picture: ((b.pictures as Array<{original: string}>)?.[0]?.original) || null,
+      picture:
+        (b.pictures as Array<{ original: string }>)?.[0]?.original || null,
       picture_count: (b.pictures as unknown[])?.length || null,
       amenities: (b.amenities as string[]) || null,
       tags: (b.tags as string[]) || null,
@@ -543,6 +581,24 @@ export default async function PropertyDetailPage({
     .catch(() => undefined);
   const startingPrice =
     cachedPricing?.nightlyFrom ?? listing.prices?.basePrice ?? 0;
+
+  // What the JSON-LD is allowed to publish as a price. Deliberately NOT
+  // `startingPrice`: that falls back to the basePrice placeholder so the UI
+  // always has something to render, which is fine for a page a human reads
+  // alongside "Add dates for prices", but not for a machine-readable Offer.
+  // Null here means "we don't have a real rate", and the Offer is dropped.
+  const structuredNightlyFrom =
+    typeof cachedPricing?.nightlyFrom === "number" &&
+    cachedPricing.nightlyFrom > 0
+      ? cachedPricing.nightlyFrom
+      : null;
+
+  // The town the structured data should name, postcode-corrected once so the
+  // address block and containedInPlace cannot disagree.
+  const structuredLocality = resolveLocality(
+    listing.address?.city,
+    listing.address?.zipcode
+  );
 
   // Photos from BEAPI or Supabase fallback
   let photos: { original: string; thumbnail: string; caption?: string }[] = [];
@@ -693,7 +749,7 @@ export default async function PropertyDetailPage({
     ),
     "@id": `${propertyUrl}#rental`,
     identifier: listing.guesty_id || slug,
-    name: listing.title || listing.nickname,
+    name: normalizeListingName(listing.title || listing.nickname),
     url: propertyUrl,
     description: structuredDataDescription,
     image: imageUrls,
@@ -702,8 +758,16 @@ export default async function PropertyDetailPage({
       ? {
           "@type": "PostalAddress",
           streetAddress: listing.address.street,
-          addressLocality: listing.address.city,
-          addressRegion: listing.address.state,
+          // Guesty's city field says "Crested Butte" on all 78 of our 81225
+          // listings, which is Mount Crested Butte — a different town, and
+          // where the slope-side buildings actually are. The postcode is the
+          // more reliable field, so it wins. See lib/listing-address.ts.
+          addressLocality: resolveLocality(
+            listing.address.city,
+            listing.address.zipcode
+          ),
+          // "Colorado" → "CO". Google wants the code.
+          addressRegion: normalizeStateCode(listing.address.state),
           postalCode: listing.address.zipcode,
           addressCountry: toIsoCountryCode(listing.address.country),
         }
@@ -718,7 +782,16 @@ export default async function PropertyDetailPage({
             longitude,
           }
         : undefined,
-    containedInPlace: { "@type": "City", name: "Colorado" },
+    // Was hardcoded to {"@type":"City","name":"Colorado"} — Colorado is a
+    // state, so that asserted a city called Colorado contains the property,
+    // and wasted the field that should anchor the listing to its real town.
+    containedInPlace: structuredLocality
+      ? {
+          "@type": "City",
+          name: structuredLocality,
+          containedInPlace: { "@type": "State", name: "Colorado" },
+        }
+      : undefined,
     // Google requires containsPlace with an Accommodation for VacationRental rich results
     containsPlace: {
       "@type": "Accommodation",
@@ -759,16 +832,39 @@ export default async function PropertyDetailPage({
     petsAllowed,
     checkinTime: normalizedCheckInTime,
     checkoutTime: normalizedCheckOutTime,
-    offers: listing.prices?.basePrice
-      ? {
-          "@type": "Offer",
-          price: listing.prices.basePrice,
-          priceCurrency: listing.prices.currency || "USD",
-          unitCode: "DAY",
-          availability: "https://schema.org/InStock",
-          url: propertyUrl,
-        }
-      : undefined,
+    // Price. This published `listing.prices.basePrice`, which is a static
+    // Guesty field and a **$95 placeholder on roughly 40% of listings** — so
+    // we were advertising $95/night for slope-side 2-bedroom condos to Google
+    // and to every AI assistant, and on at least one listing the JSON-LD said
+    // $110 while the visible page said "From $76". A structured price that
+    // contradicts the visible one is a rich-results violation on top of being
+    // wrong.
+    //
+    // `structuredNightlyFrom` is the real quoted rate cached by the
+    // pricing-cache cron — the same number the page renders, so the two can no
+    // longer disagree. When the cache has no entry we omit `offers` entirely
+    // rather than fall back to the placeholder: saying nothing about price is
+    // recoverable, publishing a wrong one is not.
+    offers:
+      structuredNightlyFrom != null
+        ? {
+            "@type": "Offer",
+            price: structuredNightlyFrom,
+            priceCurrency: listing.prices?.currency || "USD",
+            unitCode: "DAY",
+            availability: "https://schema.org/InStock",
+            url: propertyUrl,
+            // Say explicitly that this is a nightly "from" rate for a stay,
+            // not a fixed total — the page labels it "starting from" and the
+            // structured data should carry the same caveat.
+            priceSpecification: {
+              "@type": "UnitPriceSpecification",
+              minPrice: structuredNightlyFrom,
+              priceCurrency: listing.prices?.currency || "USD",
+              unitCode: "DAY",
+            },
+          }
+        : undefined,
     ...(cancellationPolicy
       ? { cancellationPolicy: getCancellationText(cancellationPolicy) }
       : {}),
@@ -1690,7 +1786,9 @@ export default async function PropertyDetailPage({
               </div>
               {licenseNumber && (
                 <p className="mt-4 text-sm text-foreground">
-                  <span className="font-medium">Short-term rental license #:</span>{" "}
+                  <span className="font-medium">
+                    Short-term rental license #:
+                  </span>{" "}
                   <span className="font-mono">{licenseNumber}</span>
                 </p>
               )}
