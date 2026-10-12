@@ -30,6 +30,7 @@ import {
   normalizeStateCode,
   resolveLocality,
 } from "@/lib/listing-address";
+import { buildIsPartOf } from "@/lib/listing-jsonld";
 import {
   extractIdFromSlug,
   getListingSlug,
@@ -818,6 +819,17 @@ export default async function PropertyDetailPage({
     },
     numberOfBedrooms: listing.bedrooms || undefined,
     numberOfBathroomsTotal: listing.bathrooms || undefined,
+    // Total rooms = bedrooms plus the living space every unit has. Google uses
+    // numberOfRooms for VacationRental and it was simply absent.
+    numberOfRooms: listing.bedrooms ? listing.bedrooms + 1 : undefined,
+    // Which building this unit sits in, for the ~90 units across the three
+    // Crested Butte buildings we have pages for. Expresses the "50 units in
+    // one building" relationship that was previously only a Guesty tag.
+    isPartOf: buildIsPartOf(listing.tags),
+    // The schema.org field that literally means "book here". Points at the
+    // listing's own page today; when the agent API lands this is where a
+    // deep link with dates would go.
+    tourBookingPage: propertyUrl,
     occupancy: {
       "@type": "QuantitativeValue",
       value: listing.accommodates || 2,
