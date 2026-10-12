@@ -24,6 +24,8 @@ import {
 import { enrichListingsWithReviewAverages } from "@/lib/reviews";
 import { PropertiesLayout } from "@/components/properties/properties-layout";
 import { ListingLinkList } from "@/components/seo/listing-link-list";
+import { getListingSlug } from "@/lib/utils";
+import { buildListingItemList, SITE_ORIGIN } from "@/lib/listing-jsonld";
 import { sendAlert, OPS_ALERT_INBOX } from "@/lib/alerts";
 import {
   loadCatalogFallback,
@@ -396,10 +398,14 @@ export default async function PropertiesPage({
       : undefined,
   });
 
+  // Fetched once and reused: the card prices below need it, and so does the
+  // ItemList JSON-LD, which must publish only real cached rates (a listing
+  // missing from the cache gets no price rather than the $95 placeholder).
+  const pricingCache = await getListingPricingCache();
+
   // Merge cached pricing for non-dated browsing
   let showCachedPricing = false;
   if (!hasDateFilter) {
-    const pricingCache = await getListingPricingCache();
     if (pricingCache.size > 0) {
       showCachedPricing = true;
       listings = listings.map((l) => {
@@ -448,6 +454,26 @@ export default async function PropertiesPage({
 
   const allPrices = await getAllListingPrices();
 
+  // An ItemList of what this page is actually showing. Without it the
+  // catalogue page told a crawler that a collection existed but not one thing
+  // in it — the `CollectionPage` block names and describes the collection and
+  // stops there. Built from listings already in hand, so it costs no fetch.
+  const itemListLd = JSON.stringify(
+    buildListingItemList({
+      listings,
+      nightlyFromById: new Map(
+        listings.map((l) => [
+          l.guesty_id,
+          pricingCache.get(l.guesty_id)?.nightlyFrom,
+        ])
+      ),
+      getUrl: (l) =>
+        `${SITE_ORIGIN}/properties/${getListingSlug(l.title || l.nickname, l.guesty_id)}`,
+      name: "Colorado Vacation Rentals",
+      url: `${SITE_ORIGIN}/properties`,
+    })
+  );
+
   return (
     <div className="flex h-[calc(100vh-56px)] lg:h-[calc(100vh-64px)] relative overflow-hidden bg-white">
       <script
@@ -457,6 +483,10 @@ export default async function PropertiesPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: propertiesBreadcrumbLd }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: itemListLd }}
       />
       <h1 className="sr-only">Colorado Vacation Rentals</h1>
       <p className="sr-only">

@@ -9,6 +9,7 @@ import { UnitLink } from "@/components/properties/unit-link";
 import { getListingPricingCache } from "@/lib/supabase";
 import { NoFeesEmailSignup } from "@/components/no-fees/no-fees-email-signup";
 import { GoogleReviewsCarousel } from "@/components/google-reviews-carousel";
+import { buildWebSiteJsonLd } from "@/lib/listing-jsonld";
 import "./no-fees/no-fees.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -301,6 +302,15 @@ export default async function HomePage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
+      />
+      {/* WebSite + SearchAction, alongside Organization rather than replacing
+          it: tells search engines and assistants that the site has its own
+          property search and how to call it. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(buildWebSiteJsonLd()),
+        }}
       />
 
       {/* Header */}
