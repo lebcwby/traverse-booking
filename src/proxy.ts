@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { validateListingUrl } from "@/lib/listing-url-validator";
+import { CRAWLER_CACHE_CONTROL, isCrawler } from "@/lib/crawler";
 import {
   rateLimit,
   type RateLimitConfig,
@@ -263,9 +264,36 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Known crawler? Then skip everything below that exists to track or
+  // personalise for a human. See src/lib/crawler.ts for why: setting any
+  // cookie makes the response un-shared-cacheable, so the attribution
+  // machinery was silently forcing a full origin render plus a live Guesty
+  // call for every bot hit on an otherwise ISR-cached page.
+  //
+  // A crawler has no session, so the auth lookup is also a wasted round trip
+  // on every request. The /account and /login branches below are the only
+  // consumers of `user`, and both are disallowed in robots.txt — a crawler
+  // that ignores that still gets the redirect, just computed from a null user,
+  // which is the correct answer for a request carrying no session cookie.
+  const crawler = isCrawler(request.headers.get("user-agent"));
+
+  // ⚠️ But still resolve the session on the two paths that gate on it.
+  //
+  // UA matching has false positives, and the cost of one is asymmetric. A
+  // misclassified human loses attribution cookies — annoying, invisible,
+  // recoverable. A misclassified human on /account would be treated as logged
+  // OUT and bounced to /login mid-session, which is a visible breakage of
+  // someone's booking. Paying for one auth lookup on these two paths removes
+  // that failure mode entirely, and costs nothing in practice: both are
+  // disallowed in robots.txt, so real crawlers are not here.
+  const pathNeedsSession =
+    request.nextUrl.pathname.startsWith("/account") ||
+    request.nextUrl.pathname === "/login";
+
+  const user =
+    crawler && !pathNeedsSession
+      ? null
+      : (await supabase.auth.getUser()).data.user;
 
   if (request.nextUrl.pathname.startsWith("/account") && !user) {
     const loginUrl = request.nextUrl.clone();
@@ -288,6 +316,34 @@ export async function proxy(request: NextRequest) {
 
   const url = request.nextUrl;
   const params = url.searchParams;
+
+  // Everything from here to the end of the cookie minting is per-visitor
+  // tracking. A crawler gets none of it, which is what keeps the response
+  // free of Set-Cookie and therefore shared-cacheable.
+  if (crawler) {
+    // Mirror the tail of this function exactly, minus the cookies. The
+    // listing-URL validator already ran above (line ~141), so a crawler still
+    // gets real 404s and 308s — that logic exists for crawlers in the first
+    // place and must not be short-circuited here.
+    if (nonce && sensitiveCsp) {
+      response.headers.set("Content-Security-Policy", sensitiveCsp);
+    }
+    if (rateLimitRule && rateLimitResult) {
+      for (const [header, value] of Object.entries(
+        buildRateLimitHeaders(rateLimitResult, rateLimitRule)
+      )) {
+        response.headers.set(header, value);
+      }
+    }
+    // Let the CDN keep the rendered page. `s-maxage` is shared-cache only, so
+    // nothing about a human's browser cache changes. Safe methods only — a
+    // POST response must never be stored.
+    if (request.method === "GET" || request.method === "HEAD") {
+      response.headers.set("cache-control", CRAWLER_CACHE_CONTROL);
+    }
+    response.headers.set("x-traverse-crawler", "1");
+    return response;
+  }
 
   const attribution: Record<string, string> = {};
   let hasAttribution = false;

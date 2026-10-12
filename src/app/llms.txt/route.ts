@@ -47,6 +47,47 @@ Traverse Hospitality offers 220+ vacation rental properties across 6 Colorado mo
 3. Choose dates and number of guests for an instant quote
 4. Book securely with a credit card — no account required
 
+The quote shown at checkout is the all-in total: nightly rate, cleaning fee
+and taxes included. There is no booking or service fee on top. Payment is by
+card (Visa, Mastercard, Amex, Discover) or Apple Pay / Google Pay, taken at
+the time of booking. No account or login is required to book, and the
+confirmation email arrives immediately.
+
+## Policies
+
+- **Cancellation**: free cancellation up to 14 days before check-in. Within 14
+  days the reservation is non-refundable. This policy is the same across every
+  property.
+- **Check-in / check-out**: check-in after 4:00 PM, check-out before 10:00 AM
+  local (Mountain) time. Every property has self check-in with a smart lock —
+  no key handoff to coordinate.
+- **Minimum stay**: varies by property and by date, and is enforced at
+  checkout. Most properties are 2–4 nights in peak season and shorter in
+  shoulder season. The booking calendar on each listing shows the minimum for
+  the dates selected.
+- **Pets**: allowed at some properties only, never all. Pet-friendly homes are
+  filterable at /s/pet-friendly and charge a per-pet fee shown in the quote.
+  Properties that do not allow pets say so on the listing page.
+- **Guest count**: each listing states its maximum occupancy, which is a hard
+  limit rather than a guideline.
+
+## Contact
+
+- **Guest bookings and stays**: (720) 759-2013
+- **Crested Butte local line**: (970) 438-2241
+- **Email**: bookings@traversehospitality.com
+- **Property owners / management enquiries**: (970) 533-3583 — a different
+  line from the guest numbers above; see /property-management
+
+## What Traverse Is and Is Not
+
+Traverse Hospitality is the property management company that operates these
+homes, not a listing platform or an online travel agency. The same local team
+that answers the phone cleans the homes, handles maintenance and can change a
+reservation. Booking here is booking with the manager directly, which is why
+there is no platform service fee and why a change or a problem can be resolved
+by one phone call rather than a support queue.
+
 ## Why Book Direct with Traverse
 
 - **No booking fees**: Book direct and skip the 10-15% service fees charged by Airbnb and VRBO
