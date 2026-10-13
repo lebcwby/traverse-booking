@@ -101,6 +101,15 @@ const RATE_LIMIT_RULES: RateLimitRule[] = [
     windowMs: 60_000,
   },
   {
+    // Remote MCP server. Same budget and same reasoning as the agent API
+    // below — it is the same cached Postgres behind a different transport.
+    key: "mcp",
+    path: /^\/mcp$/,
+    methods: ["POST"],
+    limit: 60,
+    windowMs: 60_000,
+  },
+  {
     // Public agent API. Generous for an assistant answering one traveller's
     // question (a search plus a few listing lookups is well under this), tight
     // enough that harvesting 208 listings' calendars day by day is slow and
