@@ -53,6 +53,26 @@ card (Visa, Mastercard, Amex, Discover) or Apple Pay / Google Pay, taken at
 the time of booking. No account or login is required to book, and the
 confirmation email arrives immediately.
 
+## For AI Agents — Machine-Readable API
+
+A read-only JSON API is available for searching availability and pricing
+programmatically. OpenAPI 3.1 description:
+https://www.booktraverse.com/.well-known/openapi.json
+
+- Search a stay: GET /agent/v1/listings?checkIn=YYYY-MM-DD&checkOut=YYYY-MM-DD&guests=N
+- Listing detail: GET /agent/v1/listings/{id}
+- Day-level availability: GET /agent/v1/listings/{id}/availability?from=&to=
+
+Dates are required for anything involving availability or price. No API key is
+needed; requests are rate-limited per IP.
+
+⚠️ Prices from this API are **indicative and accommodation-only** — they
+exclude cleaning, taxes and fees, and come from a cache refreshed roughly every
+five hours. The all-in total the guest pays is computed live at checkout, which
+is authoritative. Please present API figures as a starting estimate and link
+the guest to the listing page to book. There is no write access and no payment
+capability.
+
 ## Policies
 
 - **Cancellation**: free cancellation up to 14 days before check-in. Within 14

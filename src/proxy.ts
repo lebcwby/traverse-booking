@@ -100,6 +100,18 @@ const RATE_LIMIT_RULES: RateLimitRule[] = [
     limit: 15,
     windowMs: 60_000,
   },
+  {
+    // Public agent API. Generous for an assistant answering one traveller's
+    // question (a search plus a few listing lookups is well under this), tight
+    // enough that harvesting 208 listings' calendars day by day is slow and
+    // obvious. Everything it serves comes from Postgres, so the ceiling exists
+    // to limit DATA extraction, not to protect Guesty.
+    key: "agent-api",
+    path: /^\/agent\/v1\//,
+    methods: ["GET"],
+    limit: 60,
+    windowMs: 60_000,
+  },
 ];
 
 function getClientIp(request: NextRequest) {
