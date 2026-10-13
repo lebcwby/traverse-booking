@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { format, addMonths, addDays, parse, isValid } from "date-fns";
 import {
   Loader2,
@@ -121,7 +121,6 @@ export function BookingSidebar({
   listingId,
   listingTitle,
   basePrice,
-  pointofsale,
   picture,
   isRareFind,
   cancellationPolicy,
@@ -137,7 +136,6 @@ export function BookingSidebar({
   listingId: string;
   listingTitle: string;
   basePrice: number;
-  pointofsale?: string;
   picture?: string | null;
   isRareFind?: boolean;
   cancellationPolicy?: string;
@@ -151,6 +149,10 @@ export function BookingSidebar({
   city?: string;
 }) {
   const router = useRouter();
+  // `pointofsale` is read here rather than passed from the page: the page had
+  // to await searchParams to supply it, which made /properties/[id] dynamic
+  // and uncacheable (issue #82). It only ever flows into the quote request.
+  const pointofsale = useSearchParams().get("pointofsale") ?? undefined;
   const { dateRange, setDateRange, guests, setQuotePricing } = useDateRange();
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -1300,7 +1302,9 @@ export function BookingSidebar({
           bedrooms={bedrooms ?? null}
           accommodates={accommodates ?? null}
           city={city ?? null}
-          checkIn={dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : null}
+          checkIn={
+            dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : null
+          }
           checkOut={dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : null}
           guests={Math.max(1, guests)}
           nightlyPriceSnapshot={basePrice ?? null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 import { type DateRange } from "react-day-picker";
 
 export interface QuotePricing {
@@ -29,19 +30,46 @@ interface DateRangeContextValue {
 
 const DateRangeContext = createContext<DateRangeContextValue | null>(null);
 
-export function DateRangeProvider({
-  children,
-  initialDateRange,
-  initialGuests,
-}: {
-  children: ReactNode;
-  initialDateRange?: DateRange;
-  initialGuests?: number;
-}) {
+/**
+ * Read ?checkIn/?checkOut/?guests here rather than taking them as props.
+ *
+ * The listing page used to await `searchParams` and pass them down, which
+ * made the whole route dynamic and meant /properties/[id] could never be
+ * cached despite declaring `revalidate = 300` (issue #82). Reading them in
+ * this already-client component keeps the prefill working while letting the
+ * page be prerendered.
+ *
+ * ⚠️ `useSearchParams` requires a <Suspense> boundary in a prerendered route.
+ * The page wraps this provider in one.
+ */
+function readInitialStay(params: URLSearchParams) {
+  const checkIn = params.get("checkIn");
+  const checkOut = params.get("checkOut");
+  let dateRange: DateRange | undefined;
+  if (checkIn && checkOut) {
+    // Noon avoids the stay sliding a day either way across a timezone or DST
+    // boundary, which is what the server-side version did too.
+    const from = new Date(`${checkIn}T12:00:00`);
+    const to = new Date(`${checkOut}T12:00:00`);
+    if (!Number.isNaN(from.getTime()) && !Number.isNaN(to.getTime())) {
+      dateRange = { from, to };
+    }
+  }
+  const rawGuests = Number.parseInt(params.get("guests") ?? "", 10);
+  const guests =
+    Number.isFinite(rawGuests) && rawGuests > 0 ? rawGuests : undefined;
+  return { dateRange, guests };
+}
+
+export function DateRangeProvider({ children }: { children: ReactNode }) {
+  const searchParams = useSearchParams();
+  // Computed once for the initial state only. Later navigation that changes
+  // the query should not stomp a selection the guest has made since.
+  const [initial] = useState(() => readInitialStay(searchParams));
   const [dateRange, setDateRange] = useState<DateRange | undefined>(
-    initialDateRange
+    initial.dateRange
   );
-  const [guests, setGuests] = useState(initialGuests || 2);
+  const [guests, setGuests] = useState(initial.guests || 2);
   const [quotePricing, setQuotePricing] = useState<QuotePricing | null>(null);
   const [sharedQuoteMoney, setSharedQuoteMoney] =
     useState<SharedQuoteMoney | null>(null);
