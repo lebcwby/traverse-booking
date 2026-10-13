@@ -5,7 +5,7 @@
 // The wildflower post is "done" because it was seeded by hand from the original
 // .md file (see src/app/blog/crested-butte-wildflower-season-guide-2026/).
 
-import type { BlogPost } from "@/app/blog/posts";
+import type { BlogPost } from "@/app/(public)/blog/posts";
 
 export type Pillar =
   | "destination"
@@ -94,8 +94,7 @@ export const CONTENT_CALENDAR: CalendarEntry[] = [
   {
     slug: "leadville-colorado-vacation-rentals-booking-guide",
     publishDate: "2026-05-24",
-    title:
-      "Leadville Colorado Vacation Rentals: The Complete Booking Guide",
+    title: "Leadville Colorado Vacation Rentals: The Complete Booking Guide",
     primaryKeyword: "Leadville Colorado vacation rentals",
     pillar: "seo-anchor",
     market: "leadville",
@@ -119,8 +118,7 @@ export const CONTENT_CALENDAR: CalendarEntry[] = [
   {
     slug: "leadville-100-race-weekend-where-to-stay",
     publishDate: "2026-05-30",
-    title:
-      "Leadville 100 Race Weekend: Where to Stay and What to Expect",
+    title: "Leadville 100 Race Weekend: Where to Stay and What to Expect",
     primaryKeyword: "Leadville 100 race weekend where to stay",
     pillar: "destination",
     market: "leadville",
@@ -199,7 +197,8 @@ export const CONTENT_CALENDAR: CalendarEntry[] = [
   {
     slug: "avon-colorado-vacation-rentals",
     publishDate: "2026-07-18",
-    title: "Avon Colorado Vacation Rentals: Base Camp for Beaver Creek and Vail",
+    title:
+      "Avon Colorado Vacation Rentals: Base Camp for Beaver Creek and Vail",
     primaryKeyword: "Avon Colorado vacation rentals",
     secondaryKeywords: [
       "Beaver Creek lodging",
@@ -250,7 +249,8 @@ export const CONTENT_CALENDAR: CalendarEntry[] = [
   {
     slug: "mountain-hideaway-lodge-large-groups-leadville",
     publishDate: "2026-07-27",
-    title: "Mountain Hideaway Lodge: The 10-Bedroom Leadville Rental for Big Groups",
+    title:
+      "Mountain Hideaway Lodge: The 10-Bedroom Leadville Rental for Big Groups",
     primaryKeyword: "Leadville large group vacation rental",
     secondaryKeywords: [
       "Mountain Hideaway Lodge Leadville",
@@ -359,7 +359,8 @@ export const CONTENT_CALENDAR: CalendarEntry[] = [
   {
     slug: "property-management-contract-red-flags",
     publishDate: "2026-08-25",
-    title: "Read Before You Sign: Property Management Contract Clauses That Can Trap You",
+    title:
+      "Read Before You Sign: Property Management Contract Clauses That Can Trap You",
     primaryKeyword: "property management contract",
     secondaryKeywords: [
       "vacation rental management agreement",
@@ -384,7 +385,7 @@ export const CONTENT_CALENDAR: CalendarEntry[] = [
 export function pickNextDue(today: Date = new Date()): CalendarEntry | null {
   const todayStr = today.toISOString().slice(0, 10);
   const due = CONTENT_CALENDAR.filter(
-    (e) => e.status === "pending" && e.publishDate <= todayStr,
+    (e) => e.status === "pending" && e.publishDate <= todayStr
   ).sort((a, b) => a.publishDate.localeCompare(b.publishDate));
   return due[0] ?? null;
 }

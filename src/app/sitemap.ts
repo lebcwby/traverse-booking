@@ -12,8 +12,8 @@ import {
   getAllEventSlugs,
 } from "@/lib/seo-content";
 import { shouldSkipCiSupabaseFetches } from "@/lib/build-environment";
-import { BLOG_POSTS } from "./blog/posts";
-import { PRESS_RELEASES } from "./press/releases";
+import { BLOG_POSTS } from "@/app/(public)/blog/posts";
+import { PRESS_RELEASES } from "@/app/(public)/press/releases";
 
 const BASE = "https://www.booktraverse.com";
 
@@ -39,84 +39,110 @@ export async function generateSitemaps() {
 // robots:{index:false}, so advertising them in the sitemap sends a mixed
 // signal. NOTE: URLs are canonical no-trailing-slash (the trailing-slash
 // variant 308-redirects to these).
-const CORE_PAGES: { path: string; changeFrequency: ChangeFreq; priority: number }[] =
-  [
-    { path: "", changeFrequency: "weekly", priority: 1 },
-    { path: "/properties", changeFrequency: "daily", priority: 0.9 },
-    { path: "/reviews", changeFrequency: "weekly", priority: 0.8 },
-    { path: "/plan", changeFrequency: "weekly", priority: 0.8 },
-    { path: "/property-management", changeFrequency: "monthly", priority: 0.8 },
-    { path: "/contact", changeFrequency: "monthly", priority: 0.5 },
-    { path: "/blog", changeFrequency: "weekly", priority: 0.7 },
-    { path: "/press", changeFrequency: "monthly", priority: 0.6 },
-  ];
+const CORE_PAGES: {
+  path: string;
+  changeFrequency: ChangeFreq;
+  priority: number;
+}[] = [
+  { path: "", changeFrequency: "weekly", priority: 1 },
+  { path: "/properties", changeFrequency: "daily", priority: 0.9 },
+  { path: "/reviews", changeFrequency: "weekly", priority: 0.8 },
+  { path: "/plan", changeFrequency: "weekly", priority: 0.8 },
+  { path: "/property-management", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/contact", changeFrequency: "monthly", priority: 0.5 },
+  { path: "/blog", changeFrequency: "weekly", priority: 0.7 },
+  { path: "/press", changeFrequency: "monthly", priority: 0.6 },
+];
 
 // Statically-rendered, indexable content pages — market hubs, building pages,
 // and guides. These are real app-router routes that were previously in NO
 // sitemap segment, so Google could only discover them via internal links.
-const CONTENT_PAGES: { path: string; changeFrequency: ChangeFreq; priority: number }[] =
-  [
-    // Market hubs
-    { path: "/crested-butte", changeFrequency: "weekly", priority: 0.85 },
-    { path: "/leadville", changeFrequency: "weekly", priority: 0.85 },
-    { path: "/vail", changeFrequency: "weekly", priority: 0.8 },
-    { path: "/avon", changeFrequency: "weekly", priority: 0.8 },
-    { path: "/granby", changeFrequency: "weekly", priority: 0.8 },
-    { path: "/twin-lakes", changeFrequency: "weekly", priority: 0.8 },
-    // Buildings (Crested Butte base area)
-    { path: "/crested-butte/grand-lodge", changeFrequency: "weekly", priority: 0.8 },
-    { path: "/crested-butte/the-plaza", changeFrequency: "weekly", priority: 0.8 },
-    {
-      path: "/crested-butte/lodge-at-mountaineer-square",
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    // Guides
-    {
-      path: "/crested-butte/property-management",
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    // Reports (see src/app/summer-2026-market-snapshot)
-    { path: "/summer-2026-market-snapshot", changeFrequency: "yearly", priority: 0.7 },
-    {
-      path: "/crested-butte/guides/where-to-stay",
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    { path: "/crested-butte/things-to-do", changeFrequency: "monthly", priority: 0.7 },
-    {
-      path: "/crested-butte/things-to-do/winter-activities",
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
-      path: "/crested-butte/things-to-do/summer-activities",
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
-      path: "/crested-butte/things-to-do/all-year-round-activities",
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    { path: "/leadville/things-to-do", changeFrequency: "monthly", priority: 0.7 },
-    {
-      path: "/leadville/things-to-do/winter-activities",
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
-      path: "/leadville/things-to-do/summer-activities",
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
-      path: "/leadville/things-to-do/all-year-round-activities",
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-  ];
+const CONTENT_PAGES: {
+  path: string;
+  changeFrequency: ChangeFreq;
+  priority: number;
+}[] = [
+  // Market hubs
+  { path: "/crested-butte", changeFrequency: "weekly", priority: 0.85 },
+  { path: "/leadville", changeFrequency: "weekly", priority: 0.85 },
+  { path: "/vail", changeFrequency: "weekly", priority: 0.8 },
+  { path: "/avon", changeFrequency: "weekly", priority: 0.8 },
+  { path: "/granby", changeFrequency: "weekly", priority: 0.8 },
+  { path: "/twin-lakes", changeFrequency: "weekly", priority: 0.8 },
+  // Buildings (Crested Butte base area)
+  {
+    path: "/crested-butte/grand-lodge",
+    changeFrequency: "weekly",
+    priority: 0.8,
+  },
+  {
+    path: "/crested-butte/the-plaza",
+    changeFrequency: "weekly",
+    priority: 0.8,
+  },
+  {
+    path: "/crested-butte/lodge-at-mountaineer-square",
+    changeFrequency: "weekly",
+    priority: 0.8,
+  },
+  // Guides
+  {
+    path: "/crested-butte/property-management",
+    changeFrequency: "monthly",
+    priority: 0.8,
+  },
+  // Reports (see src/app/summer-2026-market-snapshot)
+  {
+    path: "/summer-2026-market-snapshot",
+    changeFrequency: "yearly",
+    priority: 0.7,
+  },
+  {
+    path: "/crested-butte/guides/where-to-stay",
+    changeFrequency: "monthly",
+    priority: 0.7,
+  },
+  {
+    path: "/crested-butte/things-to-do",
+    changeFrequency: "monthly",
+    priority: 0.7,
+  },
+  {
+    path: "/crested-butte/things-to-do/winter-activities",
+    changeFrequency: "monthly",
+    priority: 0.6,
+  },
+  {
+    path: "/crested-butte/things-to-do/summer-activities",
+    changeFrequency: "monthly",
+    priority: 0.6,
+  },
+  {
+    path: "/crested-butte/things-to-do/all-year-round-activities",
+    changeFrequency: "monthly",
+    priority: 0.6,
+  },
+  {
+    path: "/leadville/things-to-do",
+    changeFrequency: "monthly",
+    priority: 0.7,
+  },
+  {
+    path: "/leadville/things-to-do/winter-activities",
+    changeFrequency: "monthly",
+    priority: 0.6,
+  },
+  {
+    path: "/leadville/things-to-do/summer-activities",
+    changeFrequency: "monthly",
+    priority: 0.6,
+  },
+  {
+    path: "/leadville/things-to-do/all-year-round-activities",
+    changeFrequency: "monthly",
+    priority: 0.6,
+  },
+];
 
 export default async function sitemap(props: {
   id: Promise<string>;

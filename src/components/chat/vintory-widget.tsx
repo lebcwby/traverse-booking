@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { isOwnerSurface } from "@/lib/owner-surfaces";
 
 const LOADER_SRC = "https://widgets.leadconnectorhq.com/loader.js";
-const RESOURCES_URL = "https://widgets.leadconnectorhq.com/chat-widget/loader.js";
+const RESOURCES_URL =
+  "https://widgets.leadconnectorhq.com/chat-widget/loader.js";
 const WIDGET_ID = "6a94dee3d45d62178f396363";
 const SCRIPT_ID = "vintory-chat-widget";
 
@@ -27,8 +28,11 @@ const SCRIPT_ID = "vintory-chat-widget";
  * font — the bare widgets host is not enough, because the loader goes on to
  * pull chat-widget.esm.js and libphonenumber from stcdn once it boots.
  */
-export function VintoryWidget({ host = "" }: { host?: string }) {
+export function VintoryWidget() {
   const pathname = usePathname();
+  // See the note in conduit-widget.tsx: host comes from the browser now, not
+  // from a root-layout headers() read.
+  const host = typeof window !== "undefined" ? window.location.host : "";
   const owner = isOwnerSurface(pathname, host);
 
   useEffect(() => {
@@ -38,7 +42,9 @@ export function VintoryWidget({ host = "" }: { host?: string }) {
       // our tree, so un-rendering a component would not have cleaned them up.
       document.getElementById(SCRIPT_ID)?.remove();
       document
-        .querySelectorAll("chat-widget, [id^='lc_text-widget'], #lc_text-widget")
+        .querySelectorAll(
+          "chat-widget, [id^='lc_text-widget'], #lc_text-widget"
+        )
         .forEach((el) => el.remove());
       return;
     }
