@@ -40,6 +40,53 @@ function readCookie(name: string): string | undefined {
   return undefined;
 }
 
+/**
+ * Edge geo for the pixel's advanced matching, fetched instead of server-rendered.
+ *
+ * This used to arrive as an inline `window.__sp_anon_match` script written by
+ * the root layout. That cost the whole site static rendering (issue #82), so
+ * it is fetched once per session and cached.
+ *
+ * `external_id` is unaffected and still available synchronously — it comes
+ * from the visitor's own cookie, which `getAnonymousMatching` reads directly.
+ * Only ct/st/zp/country need the server, and only the FIRST page view of a
+ * session waits for them; `onReady` re-inits the pixel when they land, using
+ * the same re-init path the known-guest listener below already relies on.
+ */
+const ANON_MATCH_SESSION_KEY = "sp_anon_match";
+
+function primeAnonymousMatching(onReady: () => void) {
+  if (typeof window === "undefined") return;
+  if (window.__sp_anon_match) return; // already primed this page
+
+  try {
+    const cached = sessionStorage.getItem(ANON_MATCH_SESSION_KEY);
+    if (cached) {
+      window.__sp_anon_match = JSON.parse(cached);
+      onReady();
+      return;
+    }
+  } catch {
+    // Private mode / blocked storage — fall through and fetch.
+  }
+
+  fetch("/api/anon-match", { credentials: "same-origin" })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((data) => {
+      if (!data || typeof data !== "object") return;
+      window.__sp_anon_match = data;
+      try {
+        sessionStorage.setItem(ANON_MATCH_SESSION_KEY, JSON.stringify(data));
+      } catch {
+        // Not fatal — we just refetch next page view.
+      }
+      onReady();
+    })
+    .catch(() => {
+      // Geo is an enhancement. The pixel still fires with external_id.
+    });
+}
+
 function getAnonymousMatching(): Record<string, string> {
   if (typeof window === "undefined") return {};
   const out: Record<string, string> = {};
@@ -193,6 +240,19 @@ export function ConsentManager() {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  // Pull the edge geo that used to be inlined by the root layout, then re-init
+  // the pixel so subsequent events carry ct/st/zp. Runs once on mount; after
+  // the first page view of a session it resolves synchronously from
+  // sessionStorage and the re-init is a no-op refresh.
+  useEffect(() => {
+    primeAnonymousMatching(() => {
+      const matching = getAnonymousMatching();
+      if (META_PIXEL_ID && window.fbq && Object.keys(matching).length > 0) {
+        window.fbq("init", META_PIXEL_ID, matching);
+      }
+    });
   }, []);
 
   // Whenever known-guest updates (auth login, checkout form fill, inquiry form),

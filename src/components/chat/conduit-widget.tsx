@@ -11,14 +11,18 @@ import { isOwnerSurface } from "@/lib/owner-surfaces";
  * been throwing 403s there on top of that. So it loads everywhere except the
  * owner surfaces, which are where the Vintory widget takes over instead.
  */
-export function ConduitWidget({
-  nonce,
-  host = "",
-}: {
-  nonce?: string;
-  host?: string;
-}) {
+export function ConduitWidget({ nonce }: { nonce?: string }) {
   const pathname = usePathname();
+  // Host is read here rather than passed down from the root layout: that prop
+  // came from `headers()`, which forced dynamic rendering for the entire site
+  // (issue #82). It only discriminates the landing subdomains, where
+  // usePathname() returns "/" because the rewrite is server-side.
+  //
+  // ⚠️ Tradeoff: on audit.booktraverse.com the suppression now happens at
+  // hydration rather than during SSR, so the loader can briefly start. That
+  // page is a low-traffic lead magnet where this widget already 403s (noted in
+  // CLAUDE.md), so it is not a regression — but it is a real narrowing.
+  const host = typeof window !== "undefined" ? window.location.host : "";
   // Computed during render rather than in state: on a direct load of an owner
   // page this has to be right on the FIRST render, or the 3MB widget bundle
   // starts downloading before an effect could stop it.

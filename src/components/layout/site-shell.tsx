@@ -1,0 +1,294 @@
+import { Suspense } from "react";
+import Script from "next/script";
+import { SiteHeaderSwitch } from "@/components/layout/site-header-switch";
+import { Footer } from "@/components/layout/footer";
+import { CartProvider } from "@/lib/cart/cart-store";
+import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
+import { ConduitWidget } from "@/components/chat/conduit-widget";
+import { VintoryWidget } from "@/components/chat/vintory-widget";
+import { ConsentManager } from "@/components/analytics/consent-manager";
+import { MetaPageViewTracker } from "@/components/layout/meta-page-view-tracker";
+import { QualifiedEngagementTracker } from "@/components/layout/qualified-engagement-tracker";
+import { getGoogleAdsId } from "@/lib/google-ads-public";
+
+const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-KN2S5WQV";
+const GA_MEASUREMENT_ID =
+  process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID || "G-PPWFFFPC42";
+const GOOGLE_ADS_ID = getGoogleAdsId();
+const GOOGLE_LINKER_DOMAINS = ["booktraverse.com", "www.booktraverse.com"];
+
+/**
+ * Everything that used to live inside the root layout's <body>: analytics,
+ * chrome, widgets, trackers.
+ *
+ * It lives here so the two route-group layouts can share it without
+ * duplicating a single script tag. The ONLY difference between them is the
+ * nonce:
+ *
+ *   - app/(public)/layout.tsx renders it with no nonce and stays STATIC. Those
+ *     pages are served the base CSP, which allows 'unsafe-inline', so the
+ *     inline scripts run without one.
+ *   - app/(secure)/layout.tsx reads headers() for the nonce and is dynamic,
+ *     which is correct for /book, /login, /contact, /account and
+ *     /auth/reset-password — they get the strict nonce-based CSP with no
+ *     'unsafe-inline', so an un-nonced inline script there would be BLOCKED,
+ *     taking GTM and Google Ads enhanced conversions on checkout with it.
+ *
+ * This split exists because a root layout that reads headers() or cookies()
+ * forces dynamic rendering for every route beneath it — which is why
+ * revalidate = 300 on the listing pages had never once taken effect. See
+ * issue #82 and docs/static-listing-pages.md.
+ */
+export function SiteShell({
+  nonce,
+  children,
+}: {
+  nonce?: string;
+  children: React.ReactNode;
+}) {
+  const metaPixelId = (process.env.NEXT_PUBLIC_META_PIXEL_ID || "").trim();
+  return (
+    <>
+      {/* Meta Pixel advanced matching used to be inlined here from
+            readAnonymousMatching(), which read headers() + cookies() and so
+            forced dynamic rendering on every route in the app (issue #82).
+            consent-manager now fetches /api/anon-match once per session and
+            re-inits the pixel when it lands; external_id still resolves
+            synchronously from the visitor's own cookie. */}
+      <Script
+        src="/scripts/consent-default.js"
+        strategy="beforeInteractive"
+        nonce={nonce}
+      />
+      {/*
+          GA4 config — placed as a synchronous inline script so it queues in
+          dataLayer BEFORE React hydration. If this runs afterInteractive, the
+          config command arrives AFTER useEffect fires view_item/add_to_cart,
+          and gtag.js drops those events because no GA4 property is configured
+          yet when it replays the queue. By queuing config early (before any
+          useEffect), gtag.js sees: consent → js → config → view_item → …
+          and all custom events are correctly attributed to G-C5098JP52V.
+          gtag.js itself still loads afterInteractive to avoid blocking LCP.
+        */}
+      <script
+        id="google-tag-config"
+        nonce={nonce}
+        dangerouslySetInnerHTML={{
+          __html: `
+              window.dataLayer = window.dataLayer || [];
+              window.gtag = window.gtag || function () {
+                window.dataLayer.push(arguments);
+              };
+
+              var ignoreReferrer = [
+                "checkout.stripe.com",
+                "buy.stripe.com",
+                "hooks.stripe.com",
+                "booking.guesty.com",
+              ].some(function (domain) {
+                return document.referrer.indexOf(domain) !== -1;
+              });
+
+              window.gtag("js", new Date());
+              window.gtag("config", "${GA_MEASUREMENT_ID}", {
+                send_page_view: true,
+                cookie_domain: "booktraverse.com",
+                linker: { domains: ${JSON.stringify(GOOGLE_LINKER_DOMAINS)} },
+                ignore_referrer: ignoreReferrer,
+              });
+              window.gtag("config", "${GOOGLE_ADS_ID}", {
+                allow_enhanced_conversions: true,
+              });
+            `,
+        }}
+      />
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:text-primary-foreground focus:shadow-lg"
+      >
+        Skip to content
+      </a>
+      {/* Google Tag Manager (noscript) */}
+      <noscript>
+        <iframe
+          src={`https://www.googletagmanager.com/ns.html?id=${encodeURIComponent(GTM_ID)}`}
+          height="0"
+          width="0"
+          style={{ display: "none", visibility: "hidden" }}
+        />
+      </noscript>
+      {/* Meta Pixel (noscript fallback).
+            The id was hardcoded to 1449075326140271 — a LEGACY pixel, not the
+            one the browser pixel and server-side CAPI both use. Anything that
+            reads the HTML without running JS (crawlers, and a partner viewing
+            page source, which is how Travel Crested Butte spotted it) was
+            hitting the wrong dataset. Driven by the env var now, and omitted
+            entirely when it is unset. */}
+      {metaPixelId ? (
+        <noscript>
+          <img
+            height="1"
+            width="1"
+            style={{ display: "none" }}
+            src={`https://www.facebook.com/tr?id=${metaPixelId}&ev=PageView&noscript=1`}
+            alt=""
+          />
+        </noscript>
+      ) : null}
+
+      {/* CartProvider wraps Header (so the cart icon + drawer can read state)
+            and {children} (so AddToCartButton on property pages can write).
+            Footer + MobileBottomNav don't read cart state, so leaving them
+            outside is fine and keeps the provider tree narrow. */}
+      <CartProvider>
+        <SiteHeaderSwitch />
+        <main id="main-content" className="min-h-screen pb-16 lg:pb-0">
+          {children}
+        </main>
+      </CartProvider>
+      <Footer />
+      <Suspense>
+        <MobileBottomNav />
+      </Suspense>
+
+      {/* Conduit AI guest chat. Allowed in CSP via *.conduit.ai
+            (script/style/img/frame + connect/wss); nonce lets it load under the
+            strict nonce-based policy on /book, /login, /account, etc.
+            The component decides which pages get it — guest surfaces only, not
+            the owner-acquisition pages. Suspense because it reads usePathname. */}
+      <Suspense>
+        <ConduitWidget nonce={nonce} />
+      </Suspense>
+
+      {/* Vintory (LeadConnector) — the mirror image: owner-acquisition pages
+            only, where Conduit is suppressed. Both key off the same
+            isOwnerSurface() so a page can never get both bubbles or neither. */}
+      <Suspense>
+        <VintoryWidget />
+      </Suspense>
+
+      {/* Microsoft Ads UET — loaded directly (not via GTM) to avoid CSP nonce
+            blocking on /book pages and deferred GTM timing gaps */}
+      <Script
+        id="uet-init"
+        strategy="afterInteractive"
+        nonce={nonce}
+        dangerouslySetInnerHTML={{
+          __html: `
+              (function(w,d,t,r,u){var f,n,i;w[u]=w[u]||[],f=function(){var o={ti:"187242635"};o.q=w[u],w[u]=new UET(o),w[u].push("pageLoad")},n=d.createElement(t),n.src=r,n.async=1,n.onload=n.onreadystatechange=function(){var s=this.readyState;s&&s!=="loaded"&&s!=="complete"||(f(),n.onload=n.onreadystatechange=null)},i=d.getElementsByTagName(t)[0],i.parentNode.insertBefore(n,i)})(window,document,"script","//bat.bing.com/bat.js","uetq");
+            `,
+        }}
+      />
+
+      {/* Google Tag Manager */}
+      <Script
+        id="gtm-init"
+        strategy="afterInteractive"
+        nonce={nonce}
+        dangerouslySetInnerHTML={{
+          __html: `
+              (function() {
+                function initGTM() {
+                  if (window.__gtmLoaded) return;
+                  window.__gtmLoaded = true;
+                  window.dataLayer = window.dataLayer || [];
+                  window.dataLayer.push({
+                    "gtm.start": new Date().getTime(),
+                    event: "gtm.js",
+                  });
+                  var firstScript = document.getElementsByTagName("script")[0];
+                  var script = document.createElement("script");
+                  script.async = true;
+                  script.src = "https://www.googletagmanager.com/gtm.js?id=${GTM_ID}";
+                  if (firstScript && firstScript.parentNode) {
+                    firstScript.parentNode.insertBefore(script, firstScript);
+                  } else {
+                    document.head.appendChild(script);
+                  }
+                }
+                function scheduleGTM() {
+                  if ('requestIdleCallback' in window) {
+                    requestIdleCallback(initGTM, { timeout: 3500 });
+                  } else {
+                    setTimeout(initGTM, 2000);
+                  }
+                }
+                if (document.visibilityState === "visible") {
+                  scheduleGTM();
+                } else {
+                  document.addEventListener("visibilitychange", function h() {
+                    if (document.visibilityState === "visible") {
+                      scheduleGTM();
+                      document.removeEventListener("visibilitychange", h);
+                    }
+                  });
+                }
+              })();
+            `,
+        }}
+      />
+
+      {/*
+          Standalone gtag.js — required to process custom gtag() events
+          (view_item, begin_checkout, search, etc.) from the dataLayer.
+          GTM loads its own gtag.js internally but does NOT process
+          arguments-style dataLayer entries from window.gtag() calls.
+          Without this script, all custom GA4 events are silently dropped.
+
+          Loaded afterInteractive to avoid blocking LCP. The config command
+          (send_page_view, linker, etc.) is issued in the synchronous
+          google-tag-config inline script above, so by the time gtag.js
+          replays the dataLayer, config is already queued before any
+          view_item / add_to_cart events fired by React useEffect hooks.
+        */}
+      <Script
+        src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+        strategy="afterInteractive"
+        nonce={nonce}
+      />
+
+      {/* LeadConnector (GoHighLevel / Vintory) chat widget.
+            Required as part of the A2P 10DLC registration, and loaded here so
+            it is present on every page — carriers review the whole site.
+
+            beforeInteractive, NOT afterInteractive — and this is the whole
+            point. afterInteractive injects the tag client-side once React
+            hydrates, so the served HTML contains no <script> tag at all: the
+            only trace is a JS string inside the RSC flight payload. The widget
+            worked perfectly in a browser and LeadConnector's compliance check
+            still reported "chat widget is not integrated on your website",
+            because that check fetches the HTML and looks for the tag.
+            beforeInteractive is emitted into the initial HTML by the server,
+            which is what makes it findable. Do not "optimise" this back.
+
+            CSP: needs https://*.leadconnectorhq.com in script/style/connect/
+            frame/img/font. The bare widgets host is not enough — the loader
+            fetches from the backend and services subdomains once it boots, and
+            without the wildcard it loads and then silently dies. Origins live
+            in src/lib/csp.ts, never in next.config.ts.
+
+            ⚠️ A2P: this widget can collect a phone number, and the compliance
+            guide counts chat bubbles as forms. Its consent wording is
+            configured inside LeadConnector, not here — check it there. */}
+      {/* No LeadConnector chat widget, deliberately.
+            It was only ever here to satisfy the automated A2P compliance
+            check. Vintory registered the campaign manually instead
+            (Erick Luzada, 2026-08-31), so the widget is not needed at all —
+            and its own checklist forbids it sharing a page with any
+            phone-collecting form, which /audit, /projection, /book and the
+            HubSpot form on /property-management all are. Removing it also
+            takes a third-party script off every page and closes six CSP
+            origins.
+
+            If it is ever reinstated: it must be a literal <script defer>, not
+            next/script (which emits no tag in the App Router, so their scraper
+            reports it missing), and it must be kept off every page carrying a
+            phone field. See git history for the middleware exclusion. */}
+      <ConsentManager />
+      <Suspense fallback={null}>
+        <MetaPageViewTracker />
+      </Suspense>
+      <QualifiedEngagementTracker />
+    </>
+  );
+}
