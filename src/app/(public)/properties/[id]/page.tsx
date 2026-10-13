@@ -1,5 +1,24 @@
 export const revalidate = 300; // cache pages for 5 minutes
 
+/**
+ * Declared, but deliberately returns nothing.
+ *
+ * Its presence is what tells Next this route is statically renderable, so each
+ * listing is rendered on first request and then served from the ISR cache for
+ * `revalidate` seconds. Without it the segment is treated as fully dynamic and
+ * every single view is an origin render — which is what happened for months,
+ * because the root layout also forced dynamic rendering (issue #82).
+ *
+ * Returning the real 208 ids would prebuild them at deploy, but that means 208
+ * BEAPI + Supabase + reviews round trips inside the build: slow, and it spends
+ * Guesty quota against a 120 req/min ceiling for no benefit the first request
+ * does not already provide. `dynamicParams` stays at its default of true, so
+ * any id still renders on demand.
+ */
+export async function generateStaticParams() {
+  return [];
+}
+
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound, permanentRedirect } from "next/navigation";
@@ -71,12 +90,6 @@ import { RareFindBadge } from "@/components/properties/property-detail/rare-find
 
 interface Props {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{
-    checkIn?: string;
-    checkOut?: string;
-    guests?: string;
-    pointofsale?: string;
-  }>;
 }
 
 function formatTime(time: string | null | undefined): string {
@@ -466,11 +479,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function PropertyDetailPage({
-  params,
-  searchParams,
-}: Props) {
-  const [{ id }, sp] = await Promise.all([params, searchParams]);
+export default async function PropertyDetailPage({ params }: Props) {
+  const { id } = await params;
   const listingId = extractIdFromSlug(id);
   const [initialListing, beapiListing, reviewsData] = await Promise.all([
     getListing(listingId).catch(() => null),
@@ -563,15 +573,20 @@ export default async function PropertyDetailPage({
     listing.guesty_id
   );
   if (id !== canonicalSlug) {
-    const qs = new URLSearchParams();
-    if (sp.checkIn) qs.set("checkIn", sp.checkIn);
-    if (sp.checkOut) qs.set("checkOut", sp.checkOut);
-    if (sp.guests) qs.set("guests", sp.guests);
-    if (sp.pointofsale) qs.set("pointofsale", sp.pointofsale);
-    const qsStr = qs.toString();
-    permanentRedirect(
-      `/properties/${canonicalSlug}${qsStr ? `?${qsStr}` : ""}`
-    );
+    // Query string is deliberately NOT carried here any more. Building it
+    // required awaiting searchParams, which made this route dynamic and
+    // uncacheable (issue #82).
+    //
+    // In practice this redirect almost never fires: validateListingUrl 308s
+    // non-canonical slugs AT THE EDGE and does carry the query, so a guest
+    // with ?checkIn=... is redirected before the page is reached. This path
+    // is the fallback for when that validator fails open (it cannot load the
+    // id set), where redirecting without the dates still beats serving a
+    // duplicate URL. The page also emits alternates.canonical regardless.
+    //
+    // The title-slug branch above has always redirected without a query, so
+    // this is consistent with existing behaviour rather than new.
+    permanentRedirect(`/properties/${canonicalSlug}`);
   }
 
   // "Starting from" nightly price — prefer the real quoted rate cached by the
@@ -676,15 +691,6 @@ export default async function PropertyDetailPage({
   const beapiRating = reviewAvg ? reviewAvg / 2 : null;
   const displayRating = computedAvg ?? beapiRating;
   const isRareFind = listing.occupancy_stats?.is_rare_find === true;
-
-  const initialDateRange =
-    sp.checkIn && sp.checkOut
-      ? {
-          from: new Date(sp.checkIn + "T12:00:00"),
-          to: new Date(sp.checkOut + "T12:00:00"),
-        }
-      : undefined;
-  const initialGuests = sp.guests ? Number(sp.guests) : undefined;
 
   // Neighborhood + similar listings
   const neighborhood = getNeighborhoodFromTags(listing.tags);
@@ -1066,10 +1072,7 @@ export default async function PropertyDetailPage({
     .slice(0, 6);
 
   return (
-    <DateRangeProvider
-      initialDateRange={initialDateRange}
-      initialGuests={initialGuests}
-    >
+    <DateRangeProvider>
       {/* JSON-LD — content from our own database, not user input */}
       <script
         type="application/ld+json"
@@ -1274,7 +1277,6 @@ export default async function PropertyDetailPage({
               listingId={listing.guesty_id}
               listingTitle={listing.title || listing.nickname || ""}
               basePrice={startingPrice}
-              pointofsale={sp.pointofsale}
               picture={listing.picture}
               isRareFind={isRareFind}
               cancellationPolicy={cancellationPolicy}
@@ -1876,7 +1878,6 @@ export default async function PropertyDetailPage({
         listingTitle={listing.title || listing.nickname || ""}
         listingNickname={listing.nickname ?? null}
         basePrice={startingPrice}
-        pointofsale={sp.pointofsale}
         picture={listing.picture}
         bedrooms={listing.bedrooms ?? null}
         maxGuests={listing.accommodates || undefined}

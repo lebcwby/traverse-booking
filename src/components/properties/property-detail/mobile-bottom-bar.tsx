@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { format, addDays } from "date-fns";
 import { Loader2, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useDateRange } from "./date-range-context";
 import { MobileCalendarModal } from "./mobile-calendar-modal";
 import { Button } from "@/components/ui/button";
@@ -60,7 +60,6 @@ export function MobileBottomBar({
   listingTitle,
   listingNickname,
   basePrice,
-  pointofsale,
   picture,
   bedrooms,
   maxGuests,
@@ -73,7 +72,6 @@ export function MobileBottomBar({
   listingTitle: string;
   listingNickname?: string | null;
   basePrice: number;
-  pointofsale?: string;
   picture?: string | null;
   bedrooms?: number | null;
   maxGuests?: number;
@@ -83,6 +81,10 @@ export function MobileBottomBar({
   reviewCount?: number;
 }) {
   const router = useRouter();
+  // `pointofsale` is read here rather than passed from the page: the page had
+  // to await searchParams to supply it, which made /properties/[id] dynamic
+  // and uncacheable (issue #82). It only ever flows into the quote request.
+  const pointofsale = useSearchParams().get("pointofsale") ?? undefined;
   const { dateRange, guests, setSharedQuoteMoney } = useDateRange();
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [quote, setQuoteRaw] = useState<QuoteResponse | null>(null);
