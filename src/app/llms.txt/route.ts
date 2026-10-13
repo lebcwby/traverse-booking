@@ -63,6 +63,10 @@ https://www.booktraverse.com/.well-known/openapi.json
 - Listing detail: GET /agent/v1/listings/{id}
 - Day-level availability: GET /agent/v1/listings/{id}/availability?from=&to=
 
+There is also a remote MCP server at https://www.booktraverse.com/mcp
+(JSON-RPC 2.0 over POST, Streamable HTTP). Tools: search_listings,
+get_listing, check_availability. Same data, same caveats, no API key.
+
 Dates are required for anything involving availability or price. No API key is
 needed; requests are rate-limited per IP.
 
