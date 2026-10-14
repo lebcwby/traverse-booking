@@ -159,36 +159,56 @@ _confirmed_ via BE-API after collecting payment, so Guesty's **per-listing auto-
 ("charge 100% at confirmation using guest card") fires a second charge. The rules
 **can't simply be disabled** — VRBO/Expedia are hotel-collect and rely on them.
 
-🚨 **CORRECTED 2026-09-09 — "Stripe bookings are safe (no card vaulted in Guesty → the
-rule can't execute)" was WRONG, and it is the sentence that hid three real double
-charges.** `checkout-finalizer.ts` sets `ccToken` to the Stripe **payment-method id** and
-passes it to `createReservationInstant`, so Guesty holds a chargeable card on **every**
-direct booking. On listings where the auto-payment rule is enabled it uses that card and
-captures again **through GuestyPay** — a different processor, so the second capture never
-appears in our Stripe. Confirmed cases (all BE-API, all refunded on the Stripe leg only
-after the guest complained — 38, 6 and 28 days later):
+🚨 **The double-capture is real. Two successive explanations of WHY were both wrong.**
+Full evidence in `docs/guestypay-duplicate-payments.md`; the short version:
 
-| Reservation | Guest         | Amount    | Booked     |
-| ----------- | ------------- | --------- | ---------- |
-| GY-hNBNy23v | Richard Welch | $592.90   | 2026-08-01 |
-| GY-5RAz3apL | Autumn Lance  | $357.19   | 2026-07-20 |
-| GY-SHHhdMpj | Stewart Taub  | $1,738.41 | 2026-07-14 |
+- ❌ _"Stripe bookings are safe — no card is vaulted in Guesty, so the rule can't
+  execute."_ Wrong. Three real guests were double-charged.
+- ❌ _"`checkout-finalizer.ts` passes the Stripe payment-method id as `ccToken`, so Guesty
+  holds a chargeable card on every direct booking and the rule uses it."_ **Also wrong**,
+  and this one sat in CLAUDE.md as settled fact. A MongoDB ObjectId embeds its creation
+  time, so the card actually charged can be dated: it was vaulted **+51 min**, **+943 min**
+  and **+5,703 min** (4 days) after the respective bookings. Our `ccToken` exists at t=0.
+  **The card that was charged did not exist yet.** Removing `ccToken` would have fixed
+  nothing.
+- ✅ **What the records show (2026-10-14).** The rule creates a note-less row at booking.
+  It starts **PENDING** because the Stripe `pm_...` we hand Guesty is not chargeable by
+  GuestyPay. It sits dormant, then fires for the **full original amount** once a real card
+  is vaulted — in all four cases the capture used the **same `paymentMethodId` as a later
+  manual charge** (a pet fee, an added night). ⚠️ That trigger fits all four but is not
+  proven to be the only one.
+
+**Scope across 319 direct reservations:** 4 fired (**$3,289.15**, all four confirmed
+refunded), 109 dormant (**$102,875.15**). `GY-cZNjjLNX` is a fourth case that was missing
+from the old list of three (GY-hNBNy23v $592.90, GY-5RAz3apL $357.19, GY-SHHhdMpj
+$1,738.41).
+
+✅ **FIX SHIPPED (#90): `/api/cron/void-duplicate-payments`.** Cancels the dormant row
+before it can fire. Proven on GY-BQH77T7H 2026-10-14 — row CANCELLED, guest's payment
+intact, `balanceDue` held at **0**, so Guesty's "cancelled amount is added back to balance
+due" does **not** apply to a row that never captured. Deliberately a sweeper, not a
+finalizer hook: a Guesty write inside checkout would add a failure mode to the money path.
+
+⚠️ **The matching rule is strict, and must stay that way.** A PENDING auto-rule row is NOT
+automatically a duplicate — where the amount is _complementary_, the rule is collecting a
+genuine remaining balance (`GY-reaVneZq`: Stripe $8,567.65 + auto $1,261.56 = $9,829.21 =
+hostPayout). A first pass at this analysis counted **14** double-charges by treating every
+SUCCEEDED auto-rule row as a duplicate; most were balance collections. A duplicate has the
+**same amount** as a payment already collected.
 
 ⚠️ **When one appears: refund the STRIPE leg, never the GuestyPay one** — GuestyPay is
 what the reservation is actually paid with, so reversing it leaves the stay unpaid. And
-**check Stripe for an existing refund first**; all three were already refunded by the
-time anyone looked.
+**check Stripe for an existing refund first**; all four were already refunded by the time
+anyone looked.
 
-`/api/cron/audit-payment-records` now flags this as `guestypay_shadow_charge` (a
-GuestyPay capture, proven by an `AuthNumber` in `attempts[]`, matching a Stripe-noted row
-for the same amount at any status). Nothing detected it before, because the ledger looks
-_correct_: our Stripe row gets CANCELLED in Guesty, leaving `totalPaid == hostPayout` and
-`balanceDue` 0 over a card that was hit twice. **This is unfixed at the source** — the
-open question is whether to stop passing `ccToken`, or disable the rule per listing.
+`/api/cron/audit-payment-records` flags a fired one as `guestypay_shadow_charge`. Nothing
+detected it before, because the ledger looks _correct_: our Stripe row gets CANCELLED in
+Guesty, leaving `totalPaid == hostPayout` and `balanceDue` 0 over a card hit twice.
 
-**The fix when resumed** (Guesty support's documented flow): create as **Inquiry** →
-**record the external payment** (Open API) → **update status to Confirmed**. ~half a day plus
-careful testing. Full detail in memory `project_traverse_guesty_pay_reactivation`.
+**Separately, for re-enabling the GuestyPay hybrid** (Guesty support's documented flow):
+create as **Inquiry** → **record the external payment** (Open API) → **update status to
+Confirmed**. ~half a day plus careful testing. Memory
+`project_traverse_guesty_pay_reactivation`.
 
 ### Historical — shipped in the May 2026 launch sessions
 
@@ -358,16 +378,29 @@ page is worth removing properly.
 
 ### Immediate / highest value
 
-1. 🚨 **GuestyPay double-capture — detected but UNFIXED AT SOURCE.** Still the
-   biggest live money risk. `checkout-finalizer.ts` sets `ccToken` to the Stripe
-   payment-method id on **every** direct booking, so Guesty holds a chargeable
-   card; on listings with the auto-payment rule enabled it captures a second time
-   **through GuestyPay** — a different processor, invisible in our Stripe. Three
-   confirmed real guests (GY-hNBNy23v, GY-5RAz3apL, GY-SHHhdMpj), each refunded
-   only after complaining, 38/6/28 days later. `/api/cron/audit-payment-records`
-   flags it as `guestypay_shadow_charge` but nothing prevents it. The open
-   decision is **stop passing `ccToken`** vs **disable the rule per listing** —
-   needs Nadim's call, not just code. Full detail in the Payments section above.
+1. 🟡 **GuestyPay double-capture — fix shipped, BACKLOG IN PROGRESS.** The tool is
+   `/api/cron/void-duplicate-payments` (#90), proven on one reservation
+   2026-10-14. ~100 dormant duplicate rows (~$82k notional) still need voiding in
+   capped batches:
+
+   ```bash
+   # dry run (default) — always look first
+   curl -H "Authorization: Bearer $CRON_SECRET" \
+     "https://www.booktraverse.com/api/cron/void-duplicate-payments"
+   # apply, 10 at a time, checking balanceChanged on every batch
+   curl -H "Authorization: Bearer $CRON_SECRET" \
+     "https://www.booktraverse.com/api/cron/void-duplicate-payments?apply=1&max=10"
+   ```
+
+   ⚠️ **Stop immediately if any result shows `balanceChanged: true`.** That means
+   a cancel moved the balance, which would put a guest back into collections for
+   money they already paid. It did not happen on the proving run.
+
+   Once the backlog is clear, add it to `vercel.json` crons so new bookings on
+   rule-enabled listings never accumulate again. **Still unknown:** whether the
+   rule RE-CREATES a row we cancelled — the first scheduled runs will show this,
+   and if it does, the rule itself needs addressing per listing. Evidence and
+   mechanism in `docs/guestypay-duplicate-payments.md`.
 
 2. **Recurring Guesty 429 bursts → catalog served from mirror.** `guesty-429-burst`
    and `catalog-served-from-mirror` both fired 2026-10-14 (10:09Z / 11:04Z) and
@@ -809,8 +842,9 @@ second reservation being created in Guesty. Only the lock does that.
    **GuestyPay parked** note.
 2. Check `~/.claude/projects/-Users-Nadim/memory/MEMORY.md` for deferred items.
 3. Pick from **Open work → Immediate**. The site is healthy and Stripe checkout is live
-   and working, but two things are genuinely unresolved: the **GuestyPay double-capture**
-   (real money, real guests) and the **recurring Guesty 429 bursts**.
+   and working. Two things are mid-flight: the **GuestyPay duplicate-row backlog**
+   (tool shipped and proven, ~100 rows left to void) and the **recurring Guesty 429
+   bursts** (now instrumented, awaiting data).
 4. **Don't** start Klaviyo/campaign work here — that's the marketing thread (`docs/marketing/`).
 
 ### ⚠️ Verify before trusting this file
