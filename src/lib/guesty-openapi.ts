@@ -378,9 +378,9 @@ export async function resolveAmountVsBalance(
       delta: number;
     }
 > {
-  const reservation = (await getOpenAPIReservation(reservationId)) as
-    | { money?: { balanceDue?: number; totalPaid?: number } }
-    | null;
+  const reservation = (await getOpenAPIReservation(reservationId)) as {
+    money?: { balanceDue?: number; totalPaid?: number };
+  } | null;
   const balanceDue = Number(reservation?.money?.balanceDue ?? 0);
 
   // Case (a): balance is 0 — payment was already recorded by a prior call.
@@ -486,6 +486,36 @@ export async function recordRefund(
   );
 }
 
+/**
+ * Cancel a PENDING payment row.
+ *
+ * Used only to void Guesty's auto-payment-rule duplicate — see
+ * `src/lib/duplicate-payment-rows.ts` for what qualifies and why.
+ *
+ * ⚠️ Guesty's docs note the cancelled amount is "typically added back to the
+ * reservation's balance due". For a PENDING row that never captured there is
+ * nothing to add back, but VERIFY THAT ON ONE RESERVATION before running this
+ * in bulk. A balance that reappears would put the guest back in collections
+ * for money they already paid.
+ *
+ * ⚠️ Never call this on a SUCCEEDED row. Cancelling a real capture leaves the
+ * stay unpaid. Use `recordRefund` for money that actually moved.
+ */
+export async function cancelReservationPayment(
+  reservationId: string,
+  paymentId: string
+) {
+  if (!reservationId || !paymentId) {
+    throw new Error(
+      "cancelReservationPayment: reservationId and paymentId required"
+    );
+  }
+  return openapiFetch(
+    `/v1/reservations/${reservationId}/payments/${paymentId}/cancel`,
+    { method: "PATCH" }
+  );
+}
+
 export async function createReservationFromQuote(params: {
   quoteId: string;
   ratePlanId: string;
@@ -555,13 +585,16 @@ export async function setListingCalendarAvailability(params: {
   status: "available" | "unavailable";
   note?: string;
 }) {
-  return openapiFetch(`/v1/availability-pricing/api/calendar/listings/${params.listingId}`, {
-    method: "PUT",
-    body: JSON.stringify({
-      startDate: params.startDate,
-      endDate: params.endDate,
-      status: params.status,
-      ...(params.note ? { note: params.note } : {}),
-    }),
-  });
+  return openapiFetch(
+    `/v1/availability-pricing/api/calendar/listings/${params.listingId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify({
+        startDate: params.startDate,
+        endDate: params.endDate,
+        status: params.status,
+        ...(params.note ? { note: params.note } : {}),
+      }),
+    }
+  );
 }
