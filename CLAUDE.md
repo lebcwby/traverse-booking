@@ -13,7 +13,7 @@ This file gives Claude Code everything it needs to continue work on this project
 - **Repo:** https://github.com/lebcwby/traverse-booking (branch: `main`)
 - **Local path:** `~/guesty direct booking website/guesty-direct-booking-template-main`
 - **Production:** https://www.booktraverse.com (aliased; also `https://traverse-booking.vercel.app`)
-- **Portfolio:** 186 active listings across 6 Colorado markets (marketing copy says "190+" — 5 mid-onboarding as of 2026-08-03) — Crested Butte, Leadville, Vail, Avon, Granby, Twin Lakes
+- **Portfolio:** **208 active, listed and bookable listings** across 6 Colorado markets — Crested Butte, Leadville, Vail, Avon, Granby, Twin Lakes. Marketing copy says **"220+"** (`portfolio-stats.marketingCount`). Counted from the `listings` mirror 2026-10-14; the old "186 / 190+" figures were from 2026-08-03.
 - **Leadership:** Alex Haler (CEO), Nadim Tannous (CTO), Sabrina Colella (COO)
 
 ---
@@ -27,10 +27,11 @@ Details in `docs/incidents/2026-05-20-customfields-wipe.md`; affected list in
 `docs/incidents/affected-listings.csv`.
 
 **Both unblock conditions verified 2026-08-19:**
+
 1. **Data is back.** Sampled 14 of the 185 affected listings evenly across the
    list — every one has 3–10 populated customFields. None empty.
 2. **The code is fixed.** `patchListingCustomField` now does read-modify-write
-   (GET current array → swap our entry → PUT the merged whole) and *aborts*
+   (GET current array → swap our entry → PUT the merged whole) and _aborts_
    rather than writing if any existing entry lacks a `fieldId`/`_id`, so an
    unexpected shape can't silently drop fields again.
 
@@ -40,14 +41,16 @@ URLs: 233 updated, 142 already correct, **0 errors**, and a before/after diff of
 375/375 correct.
 
 ### Still true, and the reason this happened
+
 ⚠️ **Guesty's `PUT /v1/listings/{id}` REPLACES `customFields` wholesale.** Any
 future writer must read-modify-write. Same trap bit `publicDescription.notes`
 separately — see memory `feedback_guesty_notes_push_wipes_other_things_to_note`.
 
 **Procedure for any customFields write** (all three steps, in order):
+
 1. Dry run (default) — confirm the target field and counts.
 2. Real write limited to ONE listing, then diff that listing's other fields.
-   ⚠️ `limit=N` truncates the listing list *before* filtering, so `limit=1` will
+   ⚠️ `limit=N` truncates the listing list _before_ filtering, so `limit=1` will
    usually hit an already-correct listing and write nothing. Find the index of
    the first listing needing an update and set `limit` to index+1.
 3. Full run, then re-run the dry run to confirm 0 remaining.
@@ -73,21 +76,63 @@ The site itself was never affected — this was always Guesty-internal data.
 
 Work on this project is split across **two conversation threads**:
 
-| Thread | Scope |
-|---|---|
+| Thread                     | Scope                                                                                  |
+| -------------------------- | -------------------------------------------------------------------------------------- |
 | **Marketing / newsletter** | Klaviyo, email campaigns, flows, guest-email sync, seasonality + booking-pace analysis |
-| **Website** (this one) | Everything else: the Next.js app, checkout/payments, SEO, performance, infra |
+| **Website** (this one)     | Everything else: the Next.js app, checkout/payments, SEO, performance, infra           |
 
 **Marketing work lives in `docs/marketing/`** — don't re-derive it here:
+
 - `klaviyo-annual-plan.md` — strategy, list state, corrected booking lead times
 - `klaviyo-flow-setup.md` — flows + template IDs + segment recipes
 - `klaviyo-campaign-calendar.md` — campaign calendar, event anchors, pacing methodology
 
 ---
 
-## Current State (as of 2026-08-01)
+## Current State (as of 2026-10-14)
+
+### 🤖 Phase 2 — AI discoverability + agent booking: ALL 8 PHASES SHIPPED (2026-10-12 → 10-14)
+
+Design `docs/phase2-ai-agent-booking.md` (#76). Built: JSON-LD defects #78 ·
+JSON-LD extensions #80 · robots/llms.txt + cacheable crawler responses #81 ·
+`calendar_days` populated #79 · `/agent/v1` + OpenAPI #83 · root layout split
+#85 · listing pages ISR #86 · remote MCP server #87 · **agent quote + checkout
+link #88**.
+
+**The one architectural fact to keep.** `/api/cron/sync-calendar` (`25 * * * *`)
+mirrors Guesty's calendar into `calendar_days` at 40 listings/hour, ~2 req/s —
+full catalogue every ~5h. 76.5k rows, 208/208 listings. `/agent/v1` reads and
+`/mcp` serve **entirely from Postgres, so Guesty is never called**. Without it a
+single agent search would be 208 Guesty calls against a 120/min ceiling and
+would rate-limit the booking site for ~2 minutes.
+
+⚠️ **`POST /agent/v1/quote` is the sole exception — it DOES call Guesty.** Hence
+10/min per IP and **fail-closed** (reads get 60/min). If you add another
+Guesty-calling agent endpoint, gate it the same way.
+
+⚠️ **Two kinds of price, never merge them.** Cached search/availability figures
+carry `AGENT_DISCLOSURE` (accommodation-only, indicative, `authoritative:false`).
+A live quote carries `QUOTE_TERMS` (all-in, `authoritative:true` until
+`expiresAt`). An agent reads these to decide whether to quote a number to a
+guest.
+
+⚠️ **BEAPI `days[].price` is the published nightly rate, NOT a breakdown of the
+accommodation fare.** Verified: nights summed to $284 while the fare was $337.20
+before a promotion. Never present them as parts of one total.
+
+**BEAPI quote TTL = 24h exactly**, via a top-level `expiresAt`.
+`buildNormalizedQuoteResponse` drops the field; `readQuoteExpiry` in
+`src/lib/agent-quote.ts` reads it.
+
+**Agent attribution needs no new column** — the checkout URL carries `utm_*`,
+which `proxy.ts` already captures into `_sp_attribution` → `pending_checkouts
+.tracking` → GA4 + `reservations`. Segment on `utm_medium=ai_agent`.
+
+Success bar: **one real agent-originated booking.** Everything else is a
+leading indicator.
 
 ### Recently shipped (2026-07-14 → 08-01)
+
 - **Blog SEO** — legacy `/blog/<old-wp-slug>` 301s (host-gated map only covered the old
   domain); `/blog/[slug]` made SSG so unknown slugs return a real 404 instead of a
   200 soft-404. Filled all 5 `/plan/<slug>` SEO bodies + FAQs. (`364f5ae`, `3b6cc67`)
@@ -104,12 +149,13 @@ Work on this project is split across **two conversation threads**:
   name was being dropped. Fixed + verified against the live API. (`079fcd7`)
 
 ### 💳 Payments — GuestyPay hybrid is BUILT but PARKED
+
 Hybrid checkout (cards → GuestyPay, Apple/Google Pay → Stripe) works end-to-end and is in
 the repo behind `NEXT_PUBLIC_CHECKOUT_MODE`. **It is switched OFF in production** and must
 stay off until the issue below is fixed.
 
 **Why parked:** a real guest was **double-charged**. We create reservations directly as
-*confirmed* via BE-API after collecting payment, so Guesty's **per-listing auto-payment rule**
+_confirmed_ via BE-API after collecting payment, so Guesty's **per-listing auto-payment rule**
 ("charge 100% at confirmation using guest card") fires a second charge. The rules
 **can't simply be disabled** — VRBO/Expedia are hotel-collect and rely on them.
 
@@ -122,11 +168,11 @@ captures again **through GuestyPay** — a different processor, so the second ca
 appears in our Stripe. Confirmed cases (all BE-API, all refunded on the Stripe leg only
 after the guest complained — 38, 6 and 28 days later):
 
-| Reservation | Guest | Amount | Booked |
-|---|---|---|---|
-| GY-hNBNy23v | Richard Welch | $592.90 | 2026-08-01 |
-| GY-5RAz3apL | Autumn Lance | $357.19 | 2026-07-20 |
-| GY-SHHhdMpj | Stewart Taub | $1,738.41 | 2026-07-14 |
+| Reservation | Guest         | Amount    | Booked     |
+| ----------- | ------------- | --------- | ---------- |
+| GY-hNBNy23v | Richard Welch | $592.90   | 2026-08-01 |
+| GY-5RAz3apL | Autumn Lance  | $357.19   | 2026-07-20 |
+| GY-SHHhdMpj | Stewart Taub  | $1,738.41 | 2026-07-14 |
 
 ⚠️ **When one appears: refund the STRIPE leg, never the GuestyPay one** — GuestyPay is
 what the reservation is actually paid with, so reversing it leaves the stay unpaid. And
@@ -136,7 +182,7 @@ time anyone looked.
 `/api/cron/audit-payment-records` now flags this as `guestypay_shadow_charge` (a
 GuestyPay capture, proven by an `AuthNumber` in `attempts[]`, matching a Stripe-noted row
 for the same amount at any status). Nothing detected it before, because the ledger looks
-*correct*: our Stripe row gets CANCELLED in Guesty, leaving `totalPaid == hostPayout` and
+_correct_: our Stripe row gets CANCELLED in Guesty, leaving `totalPaid == hostPayout` and
 `balanceDue` 0 over a card that was hit twice. **This is unfixed at the source** — the
 open question is whether to stop passing `ccToken`, or disable the rule per listing.
 
@@ -176,7 +222,7 @@ Stripe before charging or refunding anyone. Three separate incidents now:
    `feedback_guesty_auto_payment_rule_duplicate_records`).
 2. **`balanceDue` positive ≠ money owed.** `recordPayment` hits Guesty's
    "amount > balance" error, `resolveAmountVsBalance` re-records at the balance
-   Guesty held *at that instant*, and a fee (usually the **$50 pet fee**) lands
+   Guesty held _at that instant_, and a fee (usually the **$50 pet fee**) lands
    on the invoice afterwards. The guest paid in full; only the ledger is short.
    GY-z9ai4HsW and GY-XfNL7u3G were both in this state — collecting would have
    charged them twice. GY-cZNjjLNX looked identical but was **genuinely** $50
@@ -194,7 +240,7 @@ balance splits into `unpaid_balance` (Stripe really did receive less) vs
 
 `/api/account/reservations/[id]/extend` calls `updateReservationDates()` in its
 **quote** step, because Guesty has no dry-run pricing for a date change: moving
-the dates *is* how you get the new price. **This is not a bug to "fix" by
+the dates _is_ how you get the new price. **This is not a bug to "fix" by
 reordering** — there is no pricing call to reorder it against.
 
 The bug was that undoing it lived only in a client-side rollback. Closing the
@@ -202,7 +248,7 @@ tab left Guesty extended and unpaid, our row on the old stay, and the extra
 night blocked (GY-fYaHGbj5, three days, found only when the guest phoned).
 
 Now: `pending_date_changes` is written **before** the Guesty write and closed on
-every terminal path; `/api/cron/sweep-abandoned-date-changes` (*/10) handles
+every terminal path; `/api/cron/sweep-abandoned-date-changes` (\*/10) handles
 what's left past a 30-min TTL. It **refuses to roll back** when Guesty no longer
 matches the dates we set (a human edited it), when the PI shows the guest paid,
 or when the balance was settled elsewhere (staff collecting via GuestyPay —
@@ -221,9 +267,9 @@ back for the cases it handles; nothing else does.
 Two owner-acquisition landing pages, each on its own host, both served by
 host-scoped rewrites in `next.config.ts`:
 
-| Host | Route | Intake | Robots |
-|---|---|---|---|
-| `audit.booktraverse.com` | `/audit` | `/api/audit-request` | `public/audit-robots.txt` |
+| Host                          | Route         | Intake                    | Robots                         |
+| ----------------------------- | ------------- | ------------------------- | ------------------------------ |
+| `audit.booktraverse.com`      | `/audit`      | `/api/audit-request`      | `public/audit-robots.txt`      |
 | `projection.booktraverse.com` | `/projection` | `/api/projection-request` | `public/projection-robots.txt` |
 
 `/projection` targets Mt. Crested Butte condo owners in a **resort rental
@@ -273,13 +319,13 @@ page is worth removing properly.
    **Fix**: Go to [Supabase Dashboard](https://supabase.com) → Authentication → URL Configuration:
    - **Site URL** → `https://www.booktraverse.com`
    - **Redirect URLs** → add `https://www.booktraverse.com/**`  
-   This unblocks: magic link login, Google OAuth, and wishlist sign-in dialog.
+     This unblocks: magic link login, Google OAuth, and wishlist sign-in dialog.
 
 2. **OG meta "Stay Portland" in link previews** — This is social platform caching from when booktraverse.com pointed to WordPress. The actual og:image, og:title, og:description served by the Next.js site are all correct. Social caches expire automatically (Facebook: use https://developers.facebook.com/tools/debug/ to force re-scrape).
 
 3. **GA4 Ecommerce purchases report — 48h lag** — item_variant data was just deployed. Check 2026-05-12 at 11:00 AM Mountain (scheduled routine will fire then).
 
-4. **Klaviyo — moved to the marketing thread.** See `docs/marketing/`. Only the *code-side*
+4. **Klaviyo — moved to the marketing thread.** See `docs/marketing/`. Only the _code-side_
    touchpoints matter here: `subscribeToKlaviyoList` + the event helpers in
    `src/lib/tracking.ts` / `server-tracking.ts`, and the nightly
    `/api/cron/sync-klaviyo-guests` (Guesty → Klaviyo guest-email sync,
@@ -289,20 +335,20 @@ page is worth removing properly.
    entire request. Rich attributes need a separate `profile-bulk-import-jobs` call. This bug
    silently killed signups until 2026-07-30 — don't reintroduce it.
 
-8. **Soft-404 on unbounded dynamic routes — ACCEPTED, not a bug to re-fix.**
+5. **Soft-404 on unbounded dynamic routes — ACCEPTED, not a bug to re-fix.**
    `/properties/[id]` and `/plan/[id]` return **HTTP 200 with a noindex meta** for unknown
-   params. This is documented Next 16 behaviour: a *streamed* response commits its status
+   params. This is documented Next 16 behaviour: a _streamed_ response commits its status
    before `notFound()` runs. Routes with a finite param set (`/blog/[slug]`, `/s/[slug]`)
    were fixed with `dynamic = "force-static"` + `dynamicParams = false`; these two can't be
    (they read `searchParams` / handle runtime UUIDs). A true 404 would need a `proxy.ts`
    edge validator — deferred as low value (params are live IDs never linked externally, and
    the sitemap lists only real URLs). Memory: `feedback_traverse_dynamic_route_soft_404`.
 
-5. **Stripe is LIVE (corrected 2026-06-24).** Prod is processing real charges — confirmed `livemode: true` on real PaymentIntents (e.g. GY-CvXxRDxw, two $361.63 charges 2026-05-31). Prod `STRIPE_SECRET_KEY` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` are **live keys** (`.env.local` still holds `sk_test`/`pk_test` — local is test, prod is live; don't assume local == prod). The earlier "still in test mode" note was stale. `project_traverse_stripe_live_mode.md` is now history, not a TODO.
+6. **Stripe is LIVE (corrected 2026-06-24).** Prod is processing real charges — confirmed `livemode: true` on real PaymentIntents (e.g. GY-CvXxRDxw, two $361.63 charges 2026-05-31). Prod `STRIPE_SECRET_KEY` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` are **live keys** (`.env.local` still holds `sk_test`/`pk_test` — local is test, prod is live; don't assume local == prod). The earlier "still in test mode" note was stale. `project_traverse_stripe_live_mode.md` is now history, not a TODO.
 
-6. **GA4 historical property preserved** — G-C5098JP52V (formerly assumed canonical) is kept untouched as a read-only archive of WordPress-era purchase data. Do **not** retry routing events to it — its gtag.js CDN returns 404 and we don't know why. New tracking flows to G-8NK72KVMJJ. See memory `project_traverse_ga4_duplicate_property.md` for the full history.
+7. **GA4 historical property preserved** — G-C5098JP52V (formerly assumed canonical) is kept untouched as a read-only archive of WordPress-era purchase data. Do **not** retry routing events to it — its gtag.js CDN returns 404 and we don't know why. New tracking flows to G-8NK72KVMJJ. See memory `project_traverse_ga4_duplicate_property.md` for the full history.
 
-7. **GA4 server-side `purchase` tracking — VERIFIED HEALTHY 2026-05-30; report-lag is the usual culprit.** Symptom: a confirmed+paid BE-API booking (e.g. GY-XaH3sK9M) doesn't show in the G-8NK72KVMJJ *Ecommerce purchases* report same-day. **Tracking infra is fine** — `/api/admin/inspect-ga4?fire=true` returned measurementId G-8NK72KVMJJ + secret fingerprint `zY…_Q` (len 22, this is the PROD secret; the `mK…qA` in `.env.local` is a stale LOCAL value tied to the old property — ignore it) + liveFireStatus 204, and the `TEST-GA4-INSPECT` purchase **landed in G-8NK72KVMJJ Realtime**. So the MP secret↔property pairing is valid and server purchases deliver. The earlier "secret minted under old property" theory is DISPROVEN. Likely reasons a given booking looks missing: (a) GA4 *standard* Ecommerce report lags 24–48h — verify by searching the next-day report for `transaction_id = <confirmation code>`, not by glancing at "today"; (b) the guest declined **analytics** consent (server GA4 `purchase` is gated on `consent.analytics !== false` in server-tracking.ts ~L858) — a structural gap for the decline subset, not a config bug. NOTE: single-listing `pending_checkouts` rows are **deleted on completion** (cart rows in `pending_cart_checkouts` are retained), and the finalizer rebuilds `tracking` from `quoteContext.trackingDefaults`, so a missing pending row does NOT block the purchase event. The prior GY-zBMnaYA8/GY-dmwm6uVF misses (2026-05-23) were the fire-and-forget lambda-freeze bug, since fixed (finalizer now `await`s `trackBookingServerSide`). Runbook: `docs/runbooks/ga4-server-purchase-fix.md`.
+8. **GA4 server-side `purchase` tracking — VERIFIED HEALTHY 2026-05-30; report-lag is the usual culprit.** Symptom: a confirmed+paid BE-API booking (e.g. GY-XaH3sK9M) doesn't show in the G-8NK72KVMJJ _Ecommerce purchases_ report same-day. **Tracking infra is fine** — `/api/admin/inspect-ga4?fire=true` returned measurementId G-8NK72KVMJJ + secret fingerprint `zY…_Q` (len 22, this is the PROD secret; the `mK…qA` in `.env.local` is a stale LOCAL value tied to the old property — ignore it) + liveFireStatus 204, and the `TEST-GA4-INSPECT` purchase **landed in G-8NK72KVMJJ Realtime**. So the MP secret↔property pairing is valid and server purchases deliver. The earlier "secret minted under old property" theory is DISPROVEN. Likely reasons a given booking looks missing: (a) GA4 _standard_ Ecommerce report lags 24–48h — verify by searching the next-day report for `transaction_id = <confirmation code>`, not by glancing at "today"; (b) the guest declined **analytics** consent (server GA4 `purchase` is gated on `consent.analytics !== false` in server-tracking.ts ~L858) — a structural gap for the decline subset, not a config bug. NOTE: single-listing `pending_checkouts` rows are **deleted on completion** (cart rows in `pending_cart_checkouts` are retained), and the finalizer rebuilds `tracking` from `quoteContext.trackingDefaults`, so a missing pending row does NOT block the purchase event. The prior GY-zBMnaYA8/GY-dmwm6uVF misses (2026-05-23) were the fire-and-forget lambda-freeze bug, since fixed (finalizer now `await`s `trackBookingServerSide`). Runbook: `docs/runbooks/ga4-server-purchase-fix.md`.
 
 ---
 
@@ -312,18 +358,39 @@ page is worth removing properly.
 
 ### Immediate / highest value
 
-1. **Vercel Edge Requests spike (unresolved).** A Medium-severity alert fired 2026-07-17
+1. 🚨 **GuestyPay double-capture — detected but UNFIXED AT SOURCE.** Still the
+   biggest live money risk. `checkout-finalizer.ts` sets `ccToken` to the Stripe
+   payment-method id on **every** direct booking, so Guesty holds a chargeable
+   card; on listings with the auto-payment rule enabled it captures a second time
+   **through GuestyPay** — a different processor, invisible in our Stripe. Three
+   confirmed real guests (GY-hNBNy23v, GY-5RAz3apL, GY-SHHhdMpj), each refunded
+   only after complaining, 38/6/28 days later. `/api/cron/audit-payment-records`
+   flags it as `guestypay_shadow_charge` but nothing prevents it. The open
+   decision is **stop passing `ccToken`** vs **disable the rule per listing** —
+   needs Nadim's call, not just code. Full detail in the Payments section above.
+
+2. **Recurring Guesty 429 bursts → catalog served from mirror.** `guesty-429-burst`
+   and `catalog-served-from-mirror` both fired 2026-10-14 (10:09Z / 11:04Z) and
+   recur. The mirror fallback absorbs them so guests see nothing, but **the source
+   of the bursts has never been identified**, and BEAPI exhaustion is the failure
+   mode that empties `/properties` for real guests. ⚠️ Clearing a poisoned Next
+   fetch-cache entry on 2026-10-13 took mirror-read failures 6→0 and looked like a
+   fix — it recurred the next day, so that was a symptom. Diagnosis is blocked by
+   the same Vercel MCP 403 as item 3.
+
+3. **Vercel Edge Requests spike (unresolved).** A Medium-severity alert fired 2026-07-17
    18:15 UTC. Not caused by our deploys (last push was ~23h earlier) and no redirect loop —
    so it's external traffic (this site has a history of Singapore bot traffic + a
    residential-proxy scraper). **We never identified the source**: the Vercel MCP token 403s
    on this team scope, and the Firewall UI has no custom date range to reach back to Jul 17.
    Firewall is active with 1 custom rule; **Bot Protection is OFF** — that's the fastest
    mitigation if it recurs. Next time: Observability → **Edge Requests → Paths tab**, or
-   Firewall → Traffic → group by Path/IP/User-Agent, *while it's happening*.
-2. **Quarterly portfolio refresh — was due 2026-08-01.** Run
+   Firewall → Traffic → group by Path/IP/User-Agent, _while it's happening_.
+4. **Quarterly portfolio refresh — overdue.** Marketing says **220+**; the
+   `listings` mirror has **208** active/listed/bookable (counted 2026-10-14). Run
    `npx tsx --env-file=.env.local scripts/refresh-portfolio-data.ts`.
    Memory: `project_traverse_quarterly_refresh`.
-3. **Google Ads ↔ GA4 relink + GTM re-point.** Ads (`AW-16519101211`) still points at the
+5. **Google Ads ↔ GA4 relink + GTM re-point.** Ads (`AW-16519101211`) still points at the
    old `G-MLNYK6YLXK`; GTM `GTM-WMD2QJS6` likely still on `G-C5098JP52V`. Both should target
    **G-8NK72KVMJJ**, or conversions/audiences from booktraverse traffic land nowhere useful.
    Needs Nadim's Google logins — prep the exact steps, don't attempt blind.
@@ -331,7 +398,7 @@ page is worth removing properly.
 ### P2 polish
 
 - **Owner testimonials** — Real quotes pending from Nadim. Placeholder cards on `/property-management` `reviews` array. Memory: `project_traverse_owner_reviews_pending.md`.
-- **Booking confirmation emails** — `RESEND_API_KEY` **is set in Vercel prod** (confirmed via `vercel env ls`, added ~2026-05; corrects the old "needed" note). `sendAlert` ops emails deliver. If confirmation emails still don't arrive, check key *validity*, not presence. See memory `reference_resend_setup.md`.
+- **Booking confirmation emails** — `RESEND_API_KEY` **is set in Vercel prod** (confirmed via `vercel env ls`, added ~2026-05; corrects the old "needed" note). `sendAlert` ops emails deliver. If confirmation emails still don't arrive, check key _validity_, not presence. See memory `reference_resend_setup.md`.
 - **Re-seed `sp_plans` cache** — Run `npx tsx --env-file=.env.local scripts/seed-popular-ideas.ts`. `ANTHROPIC_API_KEY` **is present in `.env.local`** (corrected 2026-08-03 — the old "not yet added" note was stale), so this is unblocked. ⚠️ `unset ANTHROPIC_API_KEY ANTHROPIC_BASE_URL` in the shell first — an empty shell var shadows `.env.local` and breaks `@ai-sdk`. Without this seed, "Instant" popular-trip cards fall through to live agent (~15s) instead of cached templates (~200ms).
 - ~~**`src/lib/plan/slug-content.ts`**~~ — **DONE (2026-07-14).** All 5 routed `/plan/<slug>` bodies now have Colorado long-form copy + 5 FAQs each (render visibly + as FAQPage JSON-LD). Was an empty map post-rebrand. Venue names should get a periodic open/closed spot-check (see `project_traverse_crested_butte_businesses_status`).
 - **`src/lib/plan/favorites.ts`** — Intentionally **empty** (`FAVORITES = []`) since the Portland POIs were stripped 2026-05-26; plan works fine without favorite-anchoring. Not a cleanup task — optionally add Colorado local-pick entries later if we want favorite-anchored recs.
@@ -346,6 +413,7 @@ page is worth removing properly.
 - **Sentry source maps** — `SENTRY_AUTH_TOKEN` **is present in `.env.local`** (corrected 2026-08-03). Still needs adding to **Vercel prod** for CI builds to upload maps — that's the actual remaining step, not the local key.
 
 ### Traverse CRM (separate repo)
+
 - Session left off at Phase 1.4.2 merged + PR #8 (Phase 1.4.4) + PR #9 (status fix) open.
 - Continuation brief: `/Users/Nadim/traverse-CRM/SESSION_CONTINUATION.md`
 - UX followups flagged: locked-task gating explanation + inline task complete affordance.
@@ -403,15 +471,15 @@ src/
 
 ### GA4 Tracking Map
 
-| Event | When | item_variant |
-|---|---|---|
-| `view_item_list` | Properties list page load | listing.nickname |
-| `view_item` | Property detail page load | listing.nickname |
-| `add_to_cart` | "Book Now" / add-to-cart click | listingNickname |
-| `begin_checkout` | /book/[quoteId] page load | listingNickname |
-| `add_payment_info` | Stripe card field entered | listingNickname |
-| `purchase` (client) | trackBookingCompleted | listingNickname |
-| `purchase` (server) | trackBookingServerSide | listingNickname |
+| Event               | When                           | item_variant     |
+| ------------------- | ------------------------------ | ---------------- |
+| `view_item_list`    | Properties list page load      | listing.nickname |
+| `view_item`         | Property detail page load      | listing.nickname |
+| `add_to_cart`       | "Book Now" / add-to-cart click | listingNickname  |
+| `begin_checkout`    | /book/[quoteId] page load      | listingNickname  |
+| `add_payment_info`  | Stripe card field entered      | listingNickname  |
+| `purchase` (client) | trackBookingCompleted          | listingNickname  |
+| `purchase` (server) | trackBookingServerSide         | listingNickname  |
 
 GA4 property: **G-8NK72KVMJJ** (canonical as of 2026-05-13; receives all client-side gtag events).
 G-C5098JP52V: read-only archive — has historical WordPress purchase data, but its gtag.js CDN returns 404 so events never reached it client-side. Preserve, do not route new events here.
@@ -433,14 +501,14 @@ G-MLNYK6YLXK: old highrockyhomes.com property — still linked to Google Ads; ne
 
 ### Guesty BEAPI Tags (CORRECT VALUES)
 
-| Building / Category | Real BEAPI tag |
-|---|---|
-| Grand Lodge Crested Butte | `The Grand Lodge Crested Butte` |
-| The Plaza Condominiums | `The Plaza Crested Butte` |
-| Lodge at Mountaineer Square | `The Lodge at Mountaineer Square` |
-| Grand West Village (Leadville) | `Grand West Village Resort` |
-| Old St Vincent's (Leadville) | `OSV` |
-| Cabin Rentals | `cabin` |
+| Building / Category            | Real BEAPI tag                    |
+| ------------------------------ | --------------------------------- |
+| Grand Lodge Crested Butte      | `The Grand Lodge Crested Butte`   |
+| The Plaza Condominiums         | `The Plaza Crested Butte`         |
+| Lodge at Mountaineer Square    | `The Lodge at Mountaineer Square` |
+| Grand West Village (Leadville) | `Grand West Village Resort`       |
+| Old St Vincent's (Leadville)   | `OSV`                             |
+| Cabin Rentals                  | `cabin`                           |
 
 Cities require BOTH params: `city=Crested Butte&country=United States`
 
@@ -459,11 +527,12 @@ catalog**, populated nightly by `/api/cron/sync-listings` (`0 9 * * *` UTC).
 As of 2026-06-08 it holds ~186 rows.
 
 ⚠️ **Correcting prior docs/comments:** older code comments said the table was
-"empty by design." That was the *symptom of a missing populator*, NOT an
+"empty by design." That was the _symptom of a missing populator_, NOT an
 intentional choice — nothing was syncing it, so it sat at 0 rows and silently
 emptied the SEO/feed surfaces that read it. The sync (PR #25) fixed that.
 
 Two distinct data paths — don't conflate them:
+
 - **Live booking / availability / pricing** → always reads **BEAPI on the fly**
   (`/properties`, `/properties/[id]`, `/plan`, quotes, checkout). This is the
   source of truth and is unchanged.
@@ -473,6 +542,7 @@ Two distinct data paths — don't conflate them:
   was empty.
 
 Sync details (`src/lib/guesty-listings-sync.ts`):
+
 - Source: BEAPI search (cursor pagination), mapped via `mapBeapiToListing`,
   **upsert on `guesty_id`**. Reuses the cached BEAPI token (no OAuth mint).
 - Writes only BEAPI-derived columns; Open-API-only columns (`owners`,
@@ -526,11 +596,13 @@ https://www.booktraverse.com/api/cron/sync-listings`
 ## Working Conventions
 
 ### Vercel CLI
+
 - Use `npx vercel@53.1.0` (pinned version — avoids missing `@vercel/python@6.38.0` upgrade issue).
 - After adding/changing `NEXT_PUBLIC_*` env vars, always deploy with `--force` to bust build cache.
 - `npx vercel@53.1.0 deploy --prod --yes` is the standard deploy command.
 
 ### Build Caveats
+
 - Strict TypeScript — `tsc --noEmit` runs in CI. Always run locally before deploying if you've changed types.
 - ESLint strict — `<img>` vs `<Image />` warnings exist (non-blocking) but adding new ones will generate noise.
 - Build preflights all API routes — lazy init patterns (`getSupabaseAdmin()`) are required for routes that need env vars.
@@ -557,11 +629,12 @@ This has bitten production at least three times historically. As of
    Throttled to 1×/5min/serverless instance against token-burn.
 
 4. **Manual escape hatch**: `curl -H "Authorization: Bearer $CRON_SECRET"
-   https://www.booktraverse.com/api/cron/refresh-tokens` always works.
+https://www.booktraverse.com/api/cron/refresh-tokens` always works.
    Should be rare now — if you find yourself running it, file an issue
    noting which of the above layers didn't fire and why.
 
 Health-check endpoints:
+
 - `https://www.booktraverse.com/api/health/beapi` — current BEAPI status
 - `https://www.booktraverse.com/api/health/openapi` — OpenAPI status (still
   failing because `GUESTY_CLIENT_ID`/`SECRET` aren't set in Vercel, but
@@ -581,14 +654,17 @@ prod silently breaks — it's almost always the same root cause:
 files depend on.** Your working tree is self-consistent, so local tsc
 passes. Vercel does a fresh `git checkout`, the receiver-side update
 isn't there, and either:
+
 - The build fails (TS prop missing on a component) — caught at deploy
 - The build succeeds, runtime breaks (JSON response field missing,
   hook return shape changed, etc.) — caught only when users complain
 
 To reproduce what Vercel sees, run from the repo root:
+
 ```
 git stash push -u --keep-index -m probe && npx tsc --noEmit ; git stash pop
 ```
+
 Or simply: `bash scripts/check-deployable.sh` — the pre-push hook now
 includes this dance automatically (added 2026-05-28 after the third
 incident). Skip with `DEPLOY_CHECK_SKIP_CLEAN_TSC=1` only for genuine
@@ -599,6 +675,7 @@ addition without also committing the receiver-side declaration AND
 runtime handling. Stage them together.
 
 ### Git
+
 - Pushing to `main` triggers Vercel deployment.
 - `vercel deploy --prod --yes` also works without git push.
 - Never use TextEdit on config files (corrupts URLs with mailto: links).
@@ -615,17 +692,18 @@ undiscoverable by crawlers via the sitemap. This bit us pre-2026-06-09 (the
 
 What is auto-included vs. manual:
 
-| New thing | Sitemap segment | Manual sitemap edit? |
-|---|---|---|
-| Static `page.tsx` (market/building/guide/content) | `static` | **YES — edit sitemap.ts** |
-| Listing | `properties` | No — nightly BEAPI sync |
-| Blog post (added to `BLOG_POSTS` in `src/app/blog/posts.ts`) | `blog` | No — sourced from that array |
-| Press release (added to `PRESS_RELEASES` in `src/app/press/releases.ts`) | `press` | No — sourced from that array |
-| Landing page `/s/*` (added to landing-pages config) | `landing-pages` | No |
-| Neighborhood / stay / event (Supabase `sp_*`) | those segments | No |
+| New thing                                                                | Sitemap segment | Manual sitemap edit?         |
+| ------------------------------------------------------------------------ | --------------- | ---------------------------- |
+| Static `page.tsx` (market/building/guide/content)                        | `static`        | **YES — edit sitemap.ts**    |
+| Listing                                                                  | `properties`    | No — nightly BEAPI sync      |
+| Blog post (added to `BLOG_POSTS` in `src/app/blog/posts.ts`)             | `blog`          | No — sourced from that array |
+| Press release (added to `PRESS_RELEASES` in `src/app/press/releases.ts`) | `press`         | No — sourced from that array |
+| Landing page `/s/*` (added to landing-pages config)                      | `landing-pages` | No                           |
+| Neighborhood / stay / event (Supabase `sp_*`)                            | those segments  | No                           |
 
 **Two more rules when adding any indexable page** (both were sitewide bugs
 fixed 2026-06-09):
+
 1. **Canonical = the no-trailing-slash URL.** Pages serve at the no-slash path;
    the trailing-slash variant 308-redirects to it. Set
    `alternates: { canonical: "https://www.booktraverse.com/your-path" }` with
@@ -668,35 +746,47 @@ you to add any new file to `MARKETING_AUDIT_FILES`. No API calls; ~1 second.
 ⚠️ Do NOT use `--sweep-copy` to change the public number. That flag forces the
 copy down to the raw BEAPI total and would undo it.
 
-### ⚠️ Advisory locks are a NO-OP in production (unfixed — needs an env var)
+### ✅ Advisory locks — FIXED (verified 2026-10-14). Don't re-investigate.
 
 `withAdvisoryLock()` (src/lib/db.ts) is what stops the Stripe webhook and the
-frontend `POST /api/reservations` from finalizing the same payment twice. It
-needs a **session-mode** connection. Production has only `DATABASE_URL`, which
-points at Supabase's **transaction pooler on :6543**, where `pg_advisory_lock`
-provides no session-scoped exclusion — so every call has silently done nothing.
+frontend `POST /api/reservations` from finalizing the same payment twice.
 
-That is how **GY-ty5Dgqzs / GY-8RHBqLsm** happened (2026-10-02): one payment,
-two confirmed reservations for the same listing and dates, created 117ms apart,
-double-blocking a Leadville house over the December peak and recording the
-same $1,558.34 against both. The guest was charged only once.
+**This section used to say the lock was an inert no-op needing an env var. It
+is no longer true.** `SHARED_DATABASE_URL_DIRECT` has been set, and
+`GET /api/health/db` returns **200** in production, meaning `probeAdvisoryLock()`
+actually acquired a session-scoped lock. A degraded connection returns 503.
 
-**The fix only you can apply:** set `SHARED_DATABASE_URL_DIRECT` in Vercel to
-the session-mode URL (same credentials, **port 5432**). Until then the lock
-stays inert and `finalizeCartCheckout` is unprotected too — it uses the same
-helper.
+Check it in one command before assuming anything about this:
 
-Partially mitigated: `reservations_one_active_per_stay_idx` (migration
-20261003130000) makes it impossible for our table to hold two ACTIVE rows for
-the same (payment intent, listing, stay). It is deliberately NOT keyed on the
-payment intent alone — multi-unit **cart** checkouts legitimately share one
-intent across listings. The index protects our data; it does NOT stop a second
-reservation being created in Guesty. Only a working lock does that.
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' https://www.booktraverse.com/api/health/db
+```
 
-`withAdvisoryLock` now logs loudly when it detects :6543, and
-`advisoryLocksEffective()` exposes the state for a health check.
+**Why it mattered.** The lock needs a **session-mode** connection. Production
+had only `DATABASE_URL`, pointing at Supabase's **transaction pooler on :6543**,
+where `pg_advisory_lock` gives no session-scoped exclusion — so every call
+silently did nothing. That is how **GY-ty5Dgqzs / GY-8RHBqLsm** happened
+(2026-10-02): one payment, two confirmed reservations for the same listing and
+dates, created 117ms apart, double-blocking a Leadville house over the December
+peak and recording the same $1,558.34 against both. The guest was charged once.
+
+⚠️ **If `/api/health/db` ever returns 503 again, the lock is inert again** and
+`finalizeCartCheckout` is unprotected too — it uses the same helper. The cause
+is almost certainly `SHARED_DATABASE_URL_DIRECT` being unset or pointed at
+:6543 instead of :5432.
+
+Still true and still load-bearing: `reservations_one_active_per_stay_idx`
+(migration 20261003130000) makes it impossible for our table to hold two ACTIVE
+rows for the same (payment intent, listing, stay). It is deliberately NOT keyed
+on the payment intent alone — multi-unit **cart** checkouts legitimately share
+one intent across listings. The index protects our data; it does NOT stop a
+second reservation being created in Guesty. Only the lock does that.
+
+`withAdvisoryLock` logs loudly when it detects :6543, and
+`advisoryLocksEffective()` exposes the state.
 
 ### Phone numbers
+
 - **B2C (guests)**: `(720) 759-2013` — in header, footer, property pages
 - **B2C (Crested Butte)**: `(970) 438-2241`
 - **B2B (owners)**: `(970) 533-3583` — only on `/property-management` via `phoneOverride` prop
@@ -705,34 +795,54 @@ reservation being created in Guesty. Only a working lock does that.
 
 ## Production deploy history (sessions 1-4, most recent first)
 
-| Deploy ID | What |
-|---|---|
-| `ERrswdot4q3AFBUZf1tAbCKptT4n` (current) | llms.txt rewrite + CSP places.googleapis.com + transparent logo |
-| Previous deploys | listingNickname GA4 ecommerce · Conduit removal · DNS cutover · per-listing pet fee · sitemap fix · schema.org org · /plan Colorado polish · transparent logo |
-| `b36hjlomu` | Start of session 4 baseline |
+| Deploy ID                                | What                                                                                                                                                          |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ERrswdot4q3AFBUZf1tAbCKptT4n` (current) | llms.txt rewrite + CSP places.googleapis.com + transparent logo                                                                                               |
+| Previous deploys                         | listingNickname GA4 ecommerce · Conduit removal · DNS cutover · per-listing pet fee · sitemap fix · schema.org org · /plan Colorado polish · transparent logo |
+| `b36hjlomu`                              | Start of session 4 baseline                                                                                                                                   |
 
 ---
 
-## How to pick up (website thread, 2026-08-01+)
+## How to pick up (website thread, 2026-10-14+)
 
 1. Read this file end-to-end — especially **Thread split**, **Current State**, and the
    **GuestyPay parked** note.
 2. Check `~/.claude/projects/-Users-Nadim/memory/MEMORY.md` for deferred items.
-3. Pick from **Open work → Immediate**. Nothing is currently on fire: the site is healthy,
-   Stripe checkout is live and working, and the blog/SEO/building-page fixes all shipped.
+3. Pick from **Open work → Immediate**. The site is healthy and Stripe checkout is live
+   and working, but two things are genuinely unresolved: the **GuestyPay double-capture**
+   (real money, real guests) and the **recurring Guesty 429 bursts**.
 4. **Don't** start Klaviyo/campaign work here — that's the marketing thread (`docs/marketing/`).
 
+### ⚠️ Verify before trusting this file
+
+Items here go stale, and acting on a stale claim has cost real time. Three that
+were wrong as written, all caught 2026-10-14:
+
+- "Advisory locks are a no-op" — **fixed**. `curl -s -o /dev/null -w '%{http_code}'
+https://www.booktraverse.com/api/health/db` → 200.
+- "186 listings / 190+ marketing" — actually **208 / 220+**.
+- The Phase 2 design doc claimed BEAPI quotes had **no expiry field**. They have
+  a top-level `expiresAt`, 24h. That claim came from grepping _our own code_,
+  which only proved our normalizer drops it. **Ask the upstream API, not our
+  wrapper.**
+
+A one-command check beats a confident paragraph. Health endpoints:
+`/api/health/db` (advisory locks), `/api/health/beapi`, `/api/health/email`,
+`/api/health/openapi`.
+
 ### Ground rules learned the hard way (2026-07)
+
 - **Verify before asserting.** Several bugs this cycle were the opposite of the obvious
   theory. Check occupancy/pace/live status with a query or a real request first.
-- **`reservations.booked_at` is the real booking date** — `created_at` is the CRM *sync*
+- **`reservations.booked_at` is the real booking date** — `created_at` is the CRM _sync_
   date for backfilled rows and will produce nonsense lead times.
 - **Guesty caps OAuth token mints (~5/24h).** Never mint per-script; use the repo's cached
   helpers (`getBEAPIToken`, `openapiFetch`) or run through a deployed endpoint.
 - **Money paths need real end-to-end tests**, not code review. Two orphaned test charges and
-  one real double-charge came from shipping payment code that only *looked* right.
+  one real double-charge came from shipping payment code that only _looked_ right.
 
 ### Key memories to review
+
 - `project_traverse_guesty_pay_reactivation` — ⭐ why GuestyPay is parked + the fix
 - `feedback_traverse_dynamic_route_soft_404` — Next 16 soft-404 behaviour + what's accepted
 - `project_traverse_klaviyo_guest_sync` — the sync (code lives in this repo)
@@ -740,4 +850,4 @@ reservation being created in Guesty. Only a working lock does that.
 - `project_traverse_quarterly_refresh` — was due 2026-08-01
 - `project_traverse_scraper_defense` — prior bot/scraper mitigation, relevant to the
   unresolved Edge Requests spike
-- `feedback_vercel_deploy_force.md` — --force rule for NEXT_PUBLIC_* env changes
+- `feedback_vercel_deploy_force.md` — --force rule for NEXT*PUBLIC*\* env changes
