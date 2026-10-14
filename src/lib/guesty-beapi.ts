@@ -1,6 +1,10 @@
 import { getSupabaseAdmin } from "./supabase-admin";
 import { sendAlert } from "./alerts";
 import { rateLimit } from "./rate-limit";
+import {
+  recordRateLimitEvent,
+  summarizeRecentRateLimitEvents,
+} from "./guesty-rate-limit-events";
 
 const BEAPI_BASE_URL = "https://booking.guesty.com";
 const FULL_SEARCH_LISTING_FIELDS =
@@ -343,12 +347,11 @@ async function beapiFetch(
         await new Promise((r) => setTimeout(r, backoff));
         continue;
       }
-      // Retries exhausted on a 429 — Guesty is actively rejecting us. A few
-      // of these are normal under load; a burst is the signature of a
-      // scraper/traffic spike eating our API quota (and breaking calendar
-      // loads for real guests). Use the shared limiter purely as a
-      // cross-instance counter: the 6th terminal 429 inside 5 min flips
-      // allowed→false, which is our trigger. sendAlert dedups to 1/hour.
+      // Retries exhausted on a 429 — Guesty is actively rejecting us. Use the
+      // shared limiter purely as a cross-instance counter: the 6th terminal
+      // 429 inside 5 min flips allowed→false, which is our trigger. sendAlert
+      // dedups to 1/hour.
+      //
       // Awaited (not fire-and-forget) because this is an error path that's
       // about to throw — a detached promise can be dropped when the lambda
       // freezes after the response. The extra latency only hits failing
@@ -358,16 +361,32 @@ async function beapiFetch(
           limit: 5,
           windowMs: 5 * 60 * 1000,
         });
-        if (!burst.allowed) {
+        const alerted = !burst.allowed;
+
+        // Record EVERY terminal 429, alerted or not. The cooldown row keeps
+        // only the most recent send, which left no history to correlate
+        // against — see recordRateLimitEvent.
+        await recordRateLimitEvent(path, alerted);
+
+        if (alerted) {
+          const context = await summarizeRecentRateLimitEvents();
           await sendAlert(
             "Guesty API rate-limiting spike",
             `Guesty returned <strong>6+ rate-limit (429) errors within 5 minutes</strong> ` +
               `on BEAPI calls (most recent path: <code>${path}</code>).<br/><br/>` +
-              `This usually means a traffic spike or scraper is exhausting our Guesty ` +
-              `API quota — availability/calendar loads can start failing for real guests.<br/><br/>` +
-              `<strong>Check:</strong> Vercel Firewall (traffic by IP / user-agent) and ` +
-              `<a href="https://www.booktraverse.com/api/health/beapi">/api/health/beapi</a> token status. ` +
-              `If it's an active flood, toggle Attack Challenge Mode in the Vercel Firewall.`,
+              context +
+              `<strong>⚠️ Do not assume this site caused it.</strong> Guesty rate-limits per ` +
+              `<strong>account</strong>, and that quota is shared with every other integration — ` +
+              `the CRM's hourly reservations/guests/messages sweep, PriceLabs, Conduit. On ` +
+              `2026-10-14 this alert fired while the site had served ~42 requests that hour, ` +
+              `against a ceiling of 120 per <em>minute</em>. It was not us.<br/><br/>` +
+              `<strong>Check, in this order:</strong><br/>` +
+              `1. Does the timing cluster near :00 or :15? Those are CRM cron starts — ` +
+              `compare the minute-of-hour column above.<br/>` +
+              `2. <a href="https://www.booktraverse.com/api/health/beapi">/api/health/beapi</a> token status.<br/>` +
+              `3. Only if this site's own traffic is genuinely elevated: Vercel Firewall ` +
+              `(traffic by IP / user-agent), and Attack Challenge Mode if it's an active flood.<br/><br/>` +
+              `Full history: <code>select * from guesty_rate_limit_events order by occurred_at desc</code>`,
             "guesty-429-burst"
           );
         }
