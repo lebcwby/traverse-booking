@@ -101,6 +101,22 @@ const RATE_LIMIT_RULES: RateLimitRule[] = [
     windowMs: 60_000,
   },
   {
+    // Agent quote. Must come BEFORE the agent-api rule: this is the one
+    // /agent/v1 endpoint that calls GUESTY rather than our Postgres cache, so
+    // it gets a far tighter budget than the 60/min reads.
+    //
+    // Fail-closed, like payment-intent. Guesty's ~120 req/min ceiling is
+    // shared with the whole booking site — exhausting it makes /properties
+    // return nothing for real guests, which is exactly the outage this
+    // project has had before. An agent seeing a 503 is strictly less bad.
+    key: "agent-quote",
+    path: /^\/agent\/v1\/quote$/,
+    methods: ["POST"],
+    limit: 10,
+    windowMs: 60_000,
+    failClosed: true,
+  },
+  {
     // Remote MCP server. Same budget and same reasoning as the agent API
     // below — it is the same cached Postgres behind a different transport.
     key: "mcp",
