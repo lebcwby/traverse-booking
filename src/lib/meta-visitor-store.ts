@@ -27,18 +27,40 @@ export async function upsertMetaVisitor(ids: VisitorMetaIds): Promise<void> {
 
   try {
     const supabase = getSupabaseAdmin();
-    const { error } = await supabase.from("sp_meta_visitors").upsert(
-      {
-        visitor_id: ids.visitorId,
-        fbp: ids.fbp ?? null,
-        fbc: ids.fbc ?? null,
-        fbclid: ids.fbclid ?? null,
-        fbclid_ts: ids.fbclidTs ?? null,
-        email_hash: ids.emailHash ?? null,
-        last_seen_at: new Date().toISOString(),
-      },
-      { onConflict: "visitor_id" }
-    );
+
+    // Send ONLY the fields we actually have on this event.
+    //
+    // PostgREST derives both the INSERT column list and the
+    // `ON CONFLICT DO UPDATE SET` clause from the keys present in the payload,
+    // so an omitted key leaves the stored value untouched while an explicit
+    // `null` overwrites it. This used to send every column with `?? null`,
+    // which quietly erased identifiers on each later event:
+    //
+    //   - `email_hash` arrives only on the one event where the guest supplied
+    //     an email. It is the join key Meta's graph uses for cross-device
+    //     stitching — the reason this table exists — and the visitor's very
+    //     next anonymous PageView wiped it.
+    //   - `fbc` carries the ad-click attribution and is absent from most
+    //     later events, so ad-originated visits lost their click id.
+    //
+    // Same class of bug as the Guesty `customFields` and
+    // `publicDescription.notes` wipes: a field-selective write that replaces
+    // wholesale. Keep this additive — never reintroduce `?? null` here.
+    const row: Record<string, unknown> = {
+      visitor_id: ids.visitorId,
+      last_seen_at: new Date().toISOString(),
+    };
+    if (ids.fbp) row.fbp = ids.fbp;
+    if (ids.fbc) row.fbc = ids.fbc;
+    if (ids.fbclid) row.fbclid = ids.fbclid;
+    if (typeof ids.fbclidTs === "number" && Number.isFinite(ids.fbclidTs)) {
+      row.fbclid_ts = ids.fbclidTs;
+    }
+    if (ids.emailHash) row.email_hash = ids.emailHash;
+
+    const { error } = await supabase
+      .from("sp_meta_visitors")
+      .upsert(row, { onConflict: "visitor_id" });
     if (error) {
       console.error("[Meta Visitor Store] upsert error:", error.message);
     }
