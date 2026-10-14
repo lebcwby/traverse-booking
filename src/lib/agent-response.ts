@@ -19,6 +19,11 @@ export type AgentErrorCode =
   | "MISSING_PARAMETER"
   | "NOT_FOUND"
   | "RANGE_TOO_LARGE"
+  // The request was well-formed but the stay cannot be booked — unavailable,
+  // under the property's minimum stay, or occupancy refused. Distinct from
+  // NOT_FOUND (no such listing) and from INTERNAL (our problem, worth a
+  // retry): this is a real answer, and retrying it unchanged will not help.
+  | "NOT_AVAILABLE"
   | "INTERNAL";
 
 export function agentError(

@@ -362,11 +362,20 @@ So: **both, in that order**, and the OpenAPI phase is what to commit to now.
 The agent never takes payment. It gets a price, then hands the guest a link.
 
 ```
-agent → POST /agent/v1/quote {listingId, checkIn, checkOut, guests}
-      ← {quoteId, nightly, fees, taxes, total, currency, expiresAt,
-         checkoutUrl: "https://www.booktraverse.com/book/<quoteId>?src=agent&agent=<slug>"}
+agent → POST /agent/v1/quote {listingId, checkIn, checkOut, guests, agent?}
+      ← {quoteId, price{accommodation,cleaning,taxes,total,nightly[]}, currency,
+         expiresAt, expiresInSeconds, terms,
+         checkoutUrl: "https://www.booktraverse.com/book/<quoteId>
+                       ?utm_source=<slug>&utm_medium=ai_agent&utm_campaign=agent_api"}
 guest → opens checkoutUrl → existing Stripe checkout → existing finalizer
 ```
+
+**Built 2026-10-14 with `utm_*` rather than the `?src=agent&agent=<slug>` sketched above.**
+Nothing in the app reads `src`, whereas `proxy.ts` already captures `utm_*` into the
+`_sp_attribution` cookie, which already flows into `pending_checkouts.tracking`, GA4 and
+the `reservations` row. So attribution works end to end with **no new column** — which
+also sidesteps the `feedback_guesty_webhook_drops_source_column` trap below entirely,
+since there is no new column for that hand-enumerated upsert to drop.
 
 **This reuses the current code almost entirely.** `/book/[quoteId]` already re-fetches
 `/api/quotes/[quoteId]` server-side and already accepts `checkIn` and `guests` query
@@ -378,10 +387,24 @@ money-path history.
 
 Four things to get right:
 
-- **Quote expiry.** Our code does not currently track or surface a quote TTL, and I could
-  not find an expiry field on the BEAPI quote. We must establish what Guesty's actual
-  quote lifetime is before publishing `expiresAt` — publishing a guess would be worse
-  than omitting it. **Open question for the build phase; do not assume.**
+- **Quote expiry — SETTLED 2026-10-14. The TTL is exactly 24 hours.** BEAPI returns a
+  top-level `expiresAt` on the quote object, set to `createdAt` + 24h. Measured against
+  the live API by minting one quote and dumping every field:
+
+  ```
+  createdAt = 2026-10-13T21:58:48.892Z
+  expiresAt = 2026-10-14T21:58:48.892Z
+  ```
+
+  ⚠️ **The earlier claim in this doc that "no expiry field was found" was wrong**, and the
+  mistake is worth recording. It came from grepping our own code for `expire|ttl` and
+  finding nothing — which only proved that `buildNormalizedQuoteResponse` drops the field
+  before it reaches any client, not that the API omits it. One API call settled what was
+  scoped as a timing experiment. Don't infer an upstream API's behaviour from our wrapper.
+
+  `readQuoteExpiry` in `src/lib/agent-quote.ts` still parses defensively and omits the
+  field if Guesty ever stops sending it, rather than publishing a computed guess.
+
 - **Price drift.** Between the agent quoting and the guest paying, rates can move. The
   checkout page already re-fetches the quote, so the guest always pays the re-fetched
   price. The agent-facing contract must therefore say the quote is **indicative, and the
@@ -391,11 +414,14 @@ Four things to get right:
   PaymentIntent for a stay that has a succeeded, un-refunded charge — verified working in
   production on 2026-10-09 (it blocked a retry 18 seconds after a reservation was
   created). Nothing agent-specific needed.
-- **Attribution.** Tag the agent source through the existing tracking context so it lands
-  in `pending_checkouts.tracking` and flows to GA4 and the `reservations` row. ⚠️ Note
-  `feedback_guesty_webhook_drops_source_column` — the Guesty webhook upsert enumerates
-  columns by hand and silently dropped `source` for 402 rows. Any new attribution column
-  must be added to **both** branches of that upsert, with a test.
+- **Attribution — DONE, via `utm_*`, no new column.** Tagged through the existing
+  tracking context so it lands in `pending_checkouts.tracking` and flows to GA4 and the
+  `reservations` row. ⚠️ `feedback_guesty_webhook_drops_source_column` warned that the
+  Guesty webhook upsert enumerates columns by hand and silently dropped `source` for 402
+  rows, so **any new attribution column** would have needed adding to both branches of
+  that upsert. Reusing the `utm_*` pipeline means there is no new column at all, so that
+  trap is avoided rather than navigated. Agent traffic is separable in GA4 on
+  `utm_medium=ai_agent`.
 
 ### B4. Agentic payments — readiness note only
 
@@ -481,9 +507,8 @@ the actual bet, and nothing before phase 6 commits us to it.
 
 Still genuinely open, to settle during the build rather than guess:
 
-- **BEAPI quote TTL.** Our code does not track one and no expiry field was found on the
-  quote object. Establish the real lifetime before publishing `expiresAt`; omit the
-  field rather than publish a guess.
+- ~~**BEAPI quote TTL.**~~ **RESOLVED 2026-10-14: 24 hours exactly**, via a top-level
+  `expiresAt` on the quote. See B3 above — the "no expiry field" claim was wrong.
 - **Agentic payments.** Unchanged from B4 — gated on the inert advisory lock
   (`SHARED_DATABASE_URL_DIRECT`) and the Guesty auto-payment-rule double-capture, not on
   the protocols.
