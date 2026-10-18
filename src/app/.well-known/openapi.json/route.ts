@@ -321,6 +321,7 @@ const spec = {
           excludes: { type: "array", items: { type: "string" } },
           authoritative: { type: "boolean", const: true },
           authoritativeUntil: { type: "string", const: "expiresAt" },
+          petPolicy: { type: "string" },
           note: { type: "string" },
         },
       },
@@ -385,6 +386,11 @@ const spec = {
         properties: {
           id: { type: "string" },
           name: { type: "string" },
+          petsAllowed: {
+            type: "boolean",
+            description:
+              "Whether the home accepts pets. NO PET FEE is charged by this API or at checkout — the guest discloses the pet and pays any fee through their guest portal after booking. Never add a pet charge to a total you quote.",
+          },
           url: {
             type: "string",
             format: "uri",

@@ -11,7 +11,6 @@ const {
   mockGetQuote,
   mockGetListingDetail,
   mockGetUpsellTotal,
-  mockResolvePetFeePerPet,
   mockFindBlockingPendingCheckout,
   mockFindLatestReusablePendingCheckout,
   mockGetPendingCheckout,
@@ -27,7 +26,6 @@ const {
   mockGetQuote: vi.fn(),
   mockGetListingDetail: vi.fn(),
   mockGetUpsellTotal: vi.fn(),
-  mockResolvePetFeePerPet: vi.fn(),
   mockFindBlockingPendingCheckout: vi.fn(),
   mockFindLatestReusablePendingCheckout: vi.fn(),
   mockGetPendingCheckout: vi.fn(),
@@ -57,7 +55,6 @@ vi.mock("@/lib/guesty-beapi", () => ({
 
 vi.mock("@/lib/upsells", () => ({
   getUpsellTotal: mockGetUpsellTotal,
-  resolvePetFeePerPet: mockResolvePetFeePerPet,
 }));
 
 vi.mock("@/lib/pending-checkouts", () => ({
@@ -144,9 +141,6 @@ describe("POST /api/payment-intent", () => {
     });
     mockGetListingDetail.mockResolvedValue({ prices: { petFee: null } });
     mockGetUpsellTotal.mockReturnValue(25);
-    mockResolvePetFeePerPet.mockImplementation((value) =>
-      typeof value === "number" && value > 0 ? value : 99
-    );
     mockFindBlockingPendingCheckout.mockResolvedValue(null);
     mockFindLatestReusablePendingCheckout.mockResolvedValue(null);
     mockGetPendingCheckout.mockResolvedValue({
@@ -262,8 +256,11 @@ describe("POST /api/payment-intent", () => {
 
     expect(response.status).toBe(200);
     expect(mockPaymentIntentRetrieve).toHaveBeenCalledWith("pi_existing");
+    // 2026-10-17: pets are never charged. $57.93 base + $25 late-checkout,
+    // and NOT the $198 (2 x $99) this used to add. `pet-fee` is stripped from
+    // upsellIds and every pet metadata field is zeroed.
     expect(mockPaymentIntentUpdate).toHaveBeenCalledWith("pi_existing", {
-      amount: 28093,
+      amount: 8293,
       customer: "cus_existing",
       metadata: {
         quoteId: "quote_123",
@@ -272,10 +269,10 @@ describe("POST /api/payment-intent", () => {
         checkIn: "2026-04-20",
         checkOut: "2026-04-23",
         baseAmountCents: "5793",
-        upsellIds: "late-checkout,pet-fee",
-        pets: "2",
-        petFeeAmountCents: "19800",
-        petFeePerPet: "99",
+        upsellIds: "late-checkout",
+        pets: "0",
+        petFeeAmountCents: "0",
+        petFeePerPet: "0",
       },
     });
     expect(mockUpsertPendingCheckout).toHaveBeenCalledWith({
@@ -300,10 +297,10 @@ describe("POST /api/payment-intent", () => {
         guests: 2,
         listingNickname: "Test Home",
         stayTotal: 57.93,
-        totalPaid: 280.93,
+        totalPaid: 82.93,
       },
       upsells: ["late-checkout"],
-      pets: 2,
+      pets: 0,
       quoteSnapshot: {
         quoteId: "quote_123",
         ratePlanId: "rate_plan_1",
@@ -312,7 +309,7 @@ describe("POST /api/payment-intent", () => {
         checkOut: "2026-04-23",
         guests: 2,
         stayTotal: 57.93,
-        totalPaid: 280.93,
+        totalPaid: 82.93,
       },
       trackingContext: EMPTY_TRACKING_CONTEXT,
     });
@@ -352,14 +349,14 @@ describe("POST /api/payment-intent", () => {
         listingId: "listing_1",
         checkIn: "2026-04-20",
         checkOut: "2026-04-23",
-        totalAmountCents: 18193,
+        totalAmountCents: 8293,
         upsellIds: ["late-checkout"],
-        pets: 1,
+        pets: 0,
       }
     );
     expect(mockPaymentIntentCreate).toHaveBeenCalledWith(
       {
-        amount: 18193,
+        amount: 8293,
         currency: "usd",
         automatic_payment_methods: { enabled: true },
         metadata: {
@@ -368,10 +365,10 @@ describe("POST /api/payment-intent", () => {
           checkIn: "2026-04-20",
           checkOut: "2026-04-23",
           baseAmountCents: "5793",
-          upsellIds: "late-checkout,pet-fee",
-          pets: "1",
-          petFeeAmountCents: "9900",
-          petFeePerPet: "99",
+          upsellIds: "late-checkout",
+          pets: "0",
+          petFeeAmountCents: "0",
+          petFeePerPet: "0",
         },
       },
       {
@@ -400,10 +397,10 @@ describe("POST /api/payment-intent", () => {
         guests: 2,
         listingNickname: "Test Home",
         stayTotal: 57.93,
-        totalPaid: 181.93,
+        totalPaid: 82.93,
       },
       upsells: ["late-checkout"],
-      pets: 1,
+      pets: 0,
       quoteSnapshot: {
         quoteId: "quote_123",
         ratePlanId: "rate_plan_1",
@@ -412,7 +409,7 @@ describe("POST /api/payment-intent", () => {
         checkOut: "2026-04-23",
         guests: 2,
         stayTotal: 57.93,
-        totalPaid: 181.93,
+        totalPaid: 82.93,
       },
       trackingContext: EMPTY_TRACKING_CONTEXT,
     });
@@ -429,9 +426,6 @@ describe("PATCH /api/payment-intent", () => {
   beforeEach(() => {
     process.env.CRON_SECRET = "test_cron_secret";
     mockGetUpsellTotal.mockReturnValue(25);
-    mockResolvePetFeePerPet.mockImplementation((value) =>
-      typeof value === "number" && value > 0 ? value : 99
-    );
     mockGetPendingCheckout.mockResolvedValue({
       paymentIntentId: "pi_existing",
       quoteId: "quote_123",
@@ -528,7 +522,7 @@ describe("PATCH /api/payment-intent", () => {
     });
   });
 
-  it("updates the Stripe amount and pending checkout snapshot for upsell and pet changes", async () => {
+  it("ignores a pet count on update and re-prices without any pet fee", async () => {
     const request = new NextRequest("http://localhost/api/payment-intent", {
       method: "PATCH",
       body: JSON.stringify({
@@ -546,13 +540,17 @@ describe("PATCH /api/payment-intent", () => {
 
     expect(response.status).toBe(200);
     expect(mockPaymentIntentRetrieve).toHaveBeenCalledWith("pi_existing");
+    // An outdated client still posting pets:2 and a pet-fee upsell must not
+    // move the amount: $57.93 base + $25 late-checkout only. Pet metadata is
+    // zeroed rather than left stale, so a pre-2026-10-17 PaymentIntent that
+    // gets re-priced loses its pet fee instead of carrying it to the invoice.
     expect(mockPaymentIntentUpdate).toHaveBeenCalledWith("pi_existing", {
-      amount: 28093,
+      amount: 8293,
       metadata: {
-        upsellIds: "late-checkout,pet-fee",
-        pets: "2",
-        petFeeAmountCents: "19800",
-        petFeePerPet: "99",
+        upsellIds: "late-checkout",
+        pets: "0",
+        petFeeAmountCents: "0",
+        petFeePerPet: "0",
       },
     });
     expect(mockGetPendingCheckout).toHaveBeenCalledWith("pi_existing");
@@ -577,14 +575,14 @@ describe("PATCH /api/payment-intent", () => {
         checkOut: "2026-04-23",
         guests: 2,
         stayTotal: 57.93,
-        totalPaid: 280.93,
+        totalPaid: 82.93,
       },
       upsells: ["late-checkout"],
-      pets: 2,
+      pets: 0,
       trackingContext: EMPTY_TRACKING_CONTEXT,
     });
     await expect(response.json()).resolves.toEqual({
-      amount: 280.93,
+      amount: 82.93,
       stripeCustomerId: "cus_existing",
     });
   });

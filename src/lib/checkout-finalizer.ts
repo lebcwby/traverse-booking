@@ -24,11 +24,7 @@ import {
 } from "@/lib/server-tracking";
 import { createServerSupabaseClient } from "@/lib/supabase-auth-server";
 import { getPool, withAdvisoryLock } from "@/lib/db";
-import {
-  getSelectedUpsells,
-  getUpsellTotal,
-  resolvePetFeePerPet,
-} from "@/lib/upsells";
+import { getSelectedUpsells, getUpsellTotal } from "@/lib/upsells";
 import { getEffectiveServerConsent } from "@/lib/consent";
 import {
   markPendingCheckoutCompleted,
@@ -226,14 +222,10 @@ function isLikelyTestBooking(email: string, checkIn?: string): boolean {
   return false;
 }
 
-function getRequestedExtrasAmountCents(
-  upsells: string[],
-  petCount: number,
-  petFeePerPet: number
-) {
-  const upsellAmount = getUpsellTotal(upsells.filter((id) => id !== "pet-fee"));
-  const petFeeAmount = petCount > 0 ? petCount * petFeePerPet : 0;
-  return Math.round((upsellAmount + petFeeAmount) * 100);
+function getRequestedExtrasAmountCents(upsells: string[]) {
+  // No pet component. `pet-fee` is filtered by the caller and is never
+  // chargeable — see src/lib/upsells.ts.
+  return Math.round(getUpsellTotal(upsells) * 100);
 }
 
 async function getAuthoritativeQuoteContext(quoteId: string) {
@@ -559,29 +551,32 @@ async function finalizeReservationLocked(
     );
   }
 
-  const upsells = Array.isArray(input.upsells) ? input.upsells : [];
-  const petCount =
-    typeof input.pets === "number" && input.pets > 0 ? input.pets : 0;
-  const hasExtras = upsells.length > 0 || petCount > 0;
+  // `pet-fee` can never be a chargeable upsell. 2026-10-17: the website
+  // charges nothing for pets; guests pay any fee through the guest portal.
+  const upsells = (Array.isArray(input.upsells) ? input.upsells : []).filter(
+    (id) => id !== "pet-fee"
+  );
+  // Deliberately NOT derived from input.pets or from PI metadata. An in-flight
+  // checkout created before this change can still carry a pet count, and
+  // honouring it would put a Pet Fee on a Guesty invoice for money Stripe
+  // never collected.
+  const petCount = 0;
+  if (typeof input.pets === "number" && input.pets > 0) {
+    console.warn(
+      `[checkout-finalizer] ignoring pets=${input.pets} on PI ${paymentIntentId} — ` +
+        `no pet fee is charged or invoiced; pets are handled in the guest portal.`
+    );
+  }
+  const hasExtras = upsells.length > 0;
   let upsellStatus: { charged?: number; errors?: string[] } | undefined;
   let appliedUpsells = upsells;
-  let appliedPets = petCount;
+  const appliedPets = 0;
   if (hasExtras) {
     const baseAmountCents = Number.parseInt(
       paymentIntent.metadata.baseAmountCents || "0",
       10
     );
-    // Per-listing per-pet rate is captured at PI creation; fall back to the
-    // account-fee default if the PI was created before this metadata field
-    // existed (mid-deploy in-flight checkouts).
-    const petFeePerPet = resolvePetFeePerPet(
-      Number.parseFloat(paymentIntent.metadata.petFeePerPet || "") || null
-    );
-    const requestedExtrasAmountCents = getRequestedExtrasAmountCents(
-      upsells,
-      petCount,
-      petFeePerPet
-    );
+    const requestedExtrasAmountCents = getRequestedExtrasAmountCents(upsells);
     const expectedChargedAmountCents =
       baseAmountCents > 0 ? baseAmountCents + requestedExtrasAmountCents : null;
 
@@ -595,7 +590,7 @@ async function finalizeReservationLocked(
       const mismatchMessage = `Skipping extras because Stripe charged $${(paymentIntent.amount / 100).toFixed(2)} but the requested booking total was ${expectedAmountText}.`;
       upsellStatus = { charged: 0, errors: [mismatchMessage] };
       appliedUpsells = [];
-      appliedPets = 0;
+      // appliedPets is already 0 and immutable — pets are never charged.
 
       await sendAlert(
         "UNPAID EXTRAS BLOCKED FROM GUESTY",
@@ -627,9 +622,7 @@ async function finalizeReservationLocked(
       let charged = 0;
 
       if (upsells.length > 0) {
-        const selectedItems = getSelectedUpsells(upsells).filter(
-          (u) => u.id !== "pet-fee"
-        );
+        const selectedItems = getSelectedUpsells(upsells);
         for (const item of selectedItems) {
           try {
             await addInvoiceItem(reservationId, {
@@ -648,25 +641,9 @@ async function finalizeReservationLocked(
         }
       }
 
-      if (petCount > 0) {
-        const petFeeAmount = petCount * petFeePerPet;
-        const petTitle =
-          petCount > 1 ? `Pet Fee (${petCount} pets)` : "Pet Fee";
-        try {
-          await addInvoiceItem(reservationId, {
-            title: petTitle,
-            amount: petFeeAmount,
-            normalType: "AFE",
-            secondIdentifier: "PET",
-            accountFeeId: "67fc4907f2cc23000e67992c",
-          });
-          charged++;
-        } catch (err) {
-          errors.push(
-            `Failed to add pet fee: ${err instanceof Error ? err.message : String(err)}`
-          );
-        }
-      }
+      // 🐾 The Pet Fee AFE block that stood here was removed 2026-10-17.
+      // Nothing in this finalizer may add a pet charge to a Guesty invoice.
+      // Guests disclose pets and pay any fee through the guest portal.
 
       upsellStatus = {
         charged,

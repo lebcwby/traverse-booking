@@ -136,6 +136,19 @@ export const CONNECT_SOURCES = [
   // Conduit AI chat widget — REST API + chat websocket.
   "https://*.conduit.ai",
   "wss://*.conduit.ai",
+  // Conduit streams agent replies over Server-Sent Events from its Modal
+  // backend, and reads message history from Convex. Neither host is under
+  // *.conduit.ai, so without these two entries the browser blocks the reply
+  // stream and NO agent or human reply ever renders in the widget — the
+  // symptom reported 2026-10-16 (Hunter Hatcher's test: two agent replies and
+  // one from Erin, all logged in Conduit's inbox, none shown on the site).
+  //
+  // ⚠️ Exact host, not *.modal.run. Modal is shared infrastructure; a
+  // wildcard would let any Modal tenant's app be a connect target.
+  "https://conduit-ai--conduit-agents-stream-app.modal.run",
+  // https:// here is separate from the wss:// entry further down — Convex
+  // uses both, and only the websocket was allowed.
+  "https://*.convex.cloud",
   "https://booking.guesty.com",
   "https://open-api.guesty.com",
   "https://www.google-analytics.com",

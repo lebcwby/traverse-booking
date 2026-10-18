@@ -26,6 +26,7 @@ import {
   searchAvailableListings,
 } from "./agent-api";
 import { AGENT_DISCLOSURE } from "./agent-response";
+import { PET_POLICY } from "./agent-api";
 
 export const MCP_SERVER_INFO = {
   name: "traverse-hospitality",
@@ -56,6 +57,10 @@ export function negotiateProtocolVersion(requested: unknown): string {
 const GUESTY_ID = /^[a-f0-9]{24}$/;
 
 /** Prose an assistant reads before deciding whether to quote a number. */
+/** Stated on every tool that could prompt a question about pets. */
+const PET_NOTE =
+  "No pet fee is charged here or at checkout. A guest discloses a pet and pays any pet fee through their guest portal after booking, and pets are only allowed at pet-friendly homes — see `petsAllowed` on the listing.";
+
 const PRICE_WARNING =
   "Prices are INDICATIVE and accommodation-only: they exclude cleaning, taxes and fees, and come from a cache refreshed roughly every 5 hours. The all-in total is calculated live at checkout, which is authoritative. Present these as a starting estimate and link the traveller to the listing url to book.";
 
@@ -65,7 +70,9 @@ export const MCP_TOOLS = [
     title: "Search available stays",
     description:
       "Find Traverse Hospitality vacation rentals available for a specific stay across six Colorado mountain markets (Crested Butte, Mount Crested Butte, Leadville, Vail, Avon, Granby, Twin Lakes). Returns only listings where every night is available and the stay meets the property's minimum. Dates are required. " +
-      PRICE_WARNING,
+      PRICE_WARNING +
+      " " +
+      PET_NOTE,
     inputSchema: {
       type: "object",
       properties: {
@@ -99,7 +106,8 @@ export const MCP_TOOLS = [
     name: "get_listing",
     title: "Get listing details",
     description:
-      "Durable facts about one listing: size, location, amenities, building and check-in times. Contains no availability or pricing — those depend on dates, so use search_listings or check_availability for those.",
+      "Durable facts about one listing: size, location, amenities, building, check-in times and whether it accepts pets (`petsAllowed`). Contains no availability or pricing — those depend on dates, so use search_listings or check_availability for those. " +
+      PET_NOTE,
     inputSchema: {
       type: "object",
       properties: {
@@ -202,6 +210,7 @@ export async function callMcpTool(
       },
       resultCount: results.length,
       pricing: AGENT_DISCLOSURE,
+      petPolicy: PET_POLICY,
       results,
     });
   }
@@ -217,7 +226,7 @@ export async function callMcpTool(
         "No active listing with that id. It may have been removed from the portfolio."
       );
     }
-    return ok({ listing });
+    return ok({ listing, petPolicy: PET_POLICY });
   }
 
   if (name === "check_availability") {

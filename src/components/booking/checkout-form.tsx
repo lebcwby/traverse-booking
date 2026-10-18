@@ -38,11 +38,8 @@ import {
 import { PriceBreakdown } from "./price-breakdown";
 import { CouponInput } from "./coupon-input";
 import { UpsellSelector } from "./upsell-selector";
-import {
-  getSelectedUpsells,
-  resolveUpsellsForListing,
-  resolvePetFeePerPet,
-} from "@/lib/upsells";
+import { getSelectedUpsells, resolveUpsellsForListing } from "@/lib/upsells";
+import { petPolicyNoteFor } from "@/lib/pet-policy";
 import { extractQuotePricing, getQuoteIdentifiers } from "@/lib/quote-response";
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -158,15 +155,15 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
   // Held in a ref so the PaymentIntent effect can start recovery without
   // taking the function as a dependency — it's re-created every render, and
   // listing it would re-run that effect (and re-create the PI) constantly.
-  const awaitRecoveryRef =
-    useRef<(piId: string, token: string | null | undefined) => Promise<boolean>>(
-      null as unknown as (
-        piId: string,
-        token: string | null | undefined
-      ) => Promise<boolean>
-    );
+  const awaitRecoveryRef = useRef<
+    (piId: string, token: string | null | undefined) => Promise<boolean>
+  >(
+    null as unknown as (
+      piId: string,
+      token: string | null | undefined
+    ) => Promise<boolean>
+  );
   const [selectedUpsells, setSelectedUpsells] = useState<string[]>([]);
-  const [pets, setPets] = useState(0);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [checkoutToken, setCheckoutToken] = useState<string | null>(null);
@@ -319,10 +316,10 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
     () => selectedUpsells.filter((id) => id !== "pet-fee"),
     [selectedUpsells]
   );
-  const effectivePets = useMemo(
-    () => (pets > 0 ? pets : selectedUpsells.includes("pet-fee") ? 1 : 0),
-    [pets, selectedUpsells]
-  );
+  // Always 0. The website charges nothing for pets (2026-10-17) and the
+  // server ignores this field; it is still sent so the request shape and the
+  // pending-checkout record stay unchanged for in-flight clients.
+  const effectivePets = 0;
 
   const syncPaymentIntentGuestDetails = useCallback(
     async ({
@@ -559,7 +556,6 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
   >(undefined);
   const [pendingAdults, setPendingAdults] = useState(1);
   const [pendingChildren, setPendingChildren] = useState(0);
-  const [pendingPets, setPendingPets] = useState(0);
   const [calendarDays, setCalendarDays] = useState<
     Array<{
       date: string;
@@ -1022,21 +1018,11 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
   // T&C acceptance is now passive — "By booking, you agree to..."
   const policiesAccepted = true;
 
-  const PET_FEE_PER_PET = useMemo(
-    () => resolvePetFeePerPet(quote.petFeePerPet),
-    [quote.petFeePerPet]
-  );
+  // Display only — decides which pet note to show. Never gates a charge:
+  // the website charges nothing for pets as of 2026-10-17.
+  const petsAllowed = quote.petsAllowed === true;
 
-  const petsAllowed = quote.petsAllowed !== false;
-
-  const applicableUpsells = useMemo(
-    () =>
-      resolveUpsellsForListing({
-        petsAllowed,
-        petFeePerPet: quote.petFeePerPet,
-      }),
-    [petsAllowed, quote.petFeePerPet]
-  );
+  const applicableUpsells = useMemo(() => resolveUpsellsForListing(), []);
 
   const handleUpsellToggle = useCallback((id: string) => {
     setSelectedUpsells((prev) =>
@@ -1044,30 +1030,24 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
     );
   }, []);
 
-  const petFeeTotal = useMemo(() => {
-    if (!petsAllowed) return 0;
-    if (pets > 0) return pets * PET_FEE_PER_PET;
-    if (selectedUpsells.includes("pet-fee")) return PET_FEE_PER_PET;
-    return 0;
-  }, [pets, selectedUpsells, petsAllowed, PET_FEE_PER_PET]);
+  // 🐾 petFeeTotal removed 2026-10-17. It used to return 0 when
+  // `!petsAllowed` while `effectivePets` still sent the count to the server,
+  // so guests on no-pet listings were charged a fee the page never displayed.
+  // There is no pet line and no pet amount anywhere in checkout now.
+  const upsellItems = useMemo(
+    () =>
+      getSelectedUpsells(selectedUpsells).map((u) => ({
+        title: u.title,
+        amount: u.amount,
+      })),
+    [selectedUpsells]
+  );
 
-  const upsellItems = useMemo(() => {
-    const items = getSelectedUpsells(selectedUpsells)
-      .filter((u) => u.id !== "pet-fee")
-      .map((u) => ({ title: u.title, amount: u.amount }));
-    if (petFeeTotal > 0) {
-      const label = pets > 1 ? `Pet Fee (${pets} pets)` : "Pet Fee";
-      items.push({ title: label, amount: petFeeTotal });
-    }
-    return items;
-  }, [selectedUpsells, petFeeTotal, pets]);
-
-  const upsellTotal = useMemo(() => {
-    const nonPetTotal = getSelectedUpsells(selectedUpsells)
-      .filter((u) => u.id !== "pet-fee")
-      .reduce((sum, u) => sum + u.amount, 0);
-    return nonPetTotal + petFeeTotal;
-  }, [selectedUpsells, petFeeTotal]);
+  const upsellTotal = useMemo(
+    () =>
+      getSelectedUpsells(selectedUpsells).reduce((sum, u) => sum + u.amount, 0),
+    [selectedUpsells]
+  );
 
   function buildPendingPayload(piId: string, eventId: string) {
     const consent = getEffectiveClientConsent();
@@ -1759,7 +1739,6 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
   const openGuestsDialog = () => {
     setPendingAdults(quote.guests);
     setPendingChildren(0);
-    setPendingPets(pets);
     setRequoteError(null);
     setGuestsDialogOpen(true);
   };
@@ -2060,7 +2039,6 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {quote.guests} {quote.guests === 1 ? "guest" : "guests"}
-                    {pets > 0 && `, ${pets} ${pets === 1 ? "pet" : "pets"}`}
                   </p>
                 </div>
               )}
@@ -2079,6 +2057,11 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
                 promotion={quote.promotion}
                 upsells={upsellItems.length > 0 ? upsellItems : undefined}
               />
+              {/* Pet policy, shown on every listing so a guest arriving with a
+                  dog is never surprised at the property. */}
+              <p className="text-xs text-muted-foreground">
+                {petPolicyNoteFor(petsAllowed)}
+              </p>
               <Separator />
               <CouponInput
                 quoteId={quote.quoteId}
@@ -2128,10 +2111,8 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
               <p className="truncate font-semibold">{quote.listingTitle}</p>
               <p className="mt-0.5 text-sm text-muted-foreground">
                 {formattedCheckIn} &ndash; {formattedCheckOut} · {quote.guests}{" "}
-                {quote.guests === 1 ? "guest" : "guests"}
-                {pets > 0
-                  ? `, ${pets} ${pets === 1 ? "pet" : "pets"}`
-                  : ""} · {quote.pricing.nights}{" "}
+                {quote.guests === 1 ? "guest" : "guests"} ·{" "}
+                {quote.pricing.nights}{" "}
                 {quote.pricing.nights === 1 ? "night" : "nights"}
               </p>
               {getCheckoutCancellationText(
@@ -2194,7 +2175,6 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {quote.guests} {quote.guests === 1 ? "guest" : "guests"}
-                    {pets > 0 && `, ${pets} ${pets === 1 ? "pet" : "pets"}`}
                   </p>
                 </div>
                 <Button
@@ -2219,6 +2199,11 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
                 promotion={quote.promotion}
                 upsells={upsellItems.length > 0 ? upsellItems : undefined}
               />
+              {/* Pet policy, shown on every listing so a guest arriving with a
+                  dog is never surprised at the property. */}
+              <p className="text-xs text-muted-foreground">
+                {petPolicyNoteFor(petsAllowed)}
+              </p>
               <CouponInput
                 quoteId={quote.quoteId}
                 onCouponApplied={handleCouponApplied}
@@ -3074,31 +3059,16 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
                 </button>
               </div>
             </div>
+            {/* 🐾 The Pets stepper was removed 2026-10-17. It was ungated,
+                so a guest could add pets on a no-pet listing; the page then
+                showed $0 while the server still charged pets × fee. Pets are
+                now disclosed and paid for in the guest portal. */}
             <div className="border-t border-border" />
-            <div className="flex items-center justify-between py-4">
-              <div>
-                <div className="text-sm font-medium text-foreground">Pets</div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setPendingPets((v) => Math.max(0, v - 1))}
-                  disabled={pendingPets <= 0}
-                  className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-foreground/70 transition-colors hover:bg-muted disabled:opacity-30"
-                >
-                  <Minus className="h-3.5 w-3.5" />
-                </button>
-                <span className="w-6 text-center text-sm font-medium text-foreground">
-                  {pendingPets}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setPendingPets((v) => v + 1)}
-                  className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-foreground/70 transition-colors hover:bg-muted"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
-              </div>
+            <div className="py-4">
+              <div className="text-sm font-medium text-foreground">Pets</div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {petPolicyNoteFor(petsAllowed)}
+              </p>
             </div>
           </div>
           {requoteError && (
@@ -3115,9 +3085,7 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
             </Button>
             <Button
               disabled={
-                (pendingAdults + pendingChildren === quote.guests &&
-                  pendingPets === pets) ||
-                requoting
+                pendingAdults + pendingChildren === quote.guests || requoting
               }
               onClick={async () => {
                 const newGuests = pendingAdults + pendingChildren;
@@ -3125,12 +3093,6 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
                   newGuests === quote.guests ||
                   (await requote(quote.checkIn, quote.checkOut, newGuests));
                 if (ok) {
-                  setPets(pendingPets);
-                  if (pendingPets > 0) {
-                    setSelectedUpsells((prev) =>
-                      prev.filter((id) => id !== "pet-fee")
-                    );
-                  }
                   setGuestsDialogOpen(false);
                 }
               }}

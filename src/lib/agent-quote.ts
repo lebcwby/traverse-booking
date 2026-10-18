@@ -58,9 +58,14 @@ export const MAX_QUOTE_GUESTS = 50;
 export const QUOTE_TERMS = {
   priceBasis: "all-in",
   includes: ["accommodation", "cleaning fee", "taxes"],
-  excludes: ["optional extras selected at checkout", "pet fee if applicable"],
+  // No pet fee. The website charges nothing for pets as of 2026-10-17 —
+  // guests disclose and pay any fee through the guest portal after booking,
+  // so an agent quote is complete without one.
+  excludes: ["optional extras selected at checkout"],
   authoritative: true,
   authoritativeUntil: "expiresAt",
+  petPolicy:
+    "No pet fee is charged by this API or at checkout. Bringing a pet? The guest discloses it and pays any pet fee through their guest portal after booking, and pets are only allowed at pet-friendly homes (see petsAllowed on the listing).",
   note: "This is a live quote from the property management system, including cleaning and taxes, and is the amount payable if the guest checks out before it expires. The checkout page re-fetches the quote and is the final authority: if rates moved in between, the guest pays the re-fetched price. Send the guest to checkoutUrl — this API cannot take payment.",
 } as const;
 

@@ -11,6 +11,7 @@
  */
 import type { NextRequest } from "next/server";
 import {
+  PET_POLICY,
   isValidDate,
   MAX_SEARCH_RESULTS,
   MAX_STAY_NIGHTS,
@@ -99,6 +100,7 @@ export async function GET(request: NextRequest) {
         city: sp.get("city") || null,
       },
       resultCount: results.length,
+      petPolicy: PET_POLICY,
       maxResults: Math.min(limit ?? 20, MAX_SEARCH_RESULTS),
       pricing: AGENT_DISCLOSURE,
       results,

@@ -216,7 +216,16 @@ Confirmed**. ~half a day plus careful testing. Memory
 - **GA4 tracking fully wired** — All funnel events (view_item, begin_checkout, add_to_cart, purchase, view_item_list) route to G-8NK72KVMJJ (the "Book Traverse" property). G-C5098JP52V (formerly assumed canonical) turned out to be broken on Google's gtag CDN — `googletagmanager.com/gtag/js?id=G-C5098JP52V` returns **404**, so client-side `gtag('event', …)` calls were silently dropped the whole time even though the GA4 admin shows the stream as "active". Switched canonical to G-8NK72KVMJJ on 2026-05-13.
 - **listingNickname in GA4 ecommerce** — `item_variant` field on all 6 GA4 ecommerce events + server-side purchase. Threaded through: tracking.ts, server-tracking.ts, pending-checkouts.ts, quote-response.ts, checkout-form.tsx, book/[quoteId]/page.tsx, confirmation session, track-confirmation.tsx, add-to-cart-button.tsx, track-properties-list.tsx, payment-intent/route.ts, checkout-finalizer.ts. GA4 Ecommerce purchases report will show listing nicknames in "Item variant" column ~48h after events fire.
 - **Conduit chat widget removed** — 6 component files deleted, all CSP entries removed from both next.config.ts and csp.ts. Mobile "Help" tab replaced with "Call" tel: link. Checkout "Need help?" buttons replaced with tel: links.
-- **Per-listing pet fee from BEAPI** — `resolveUpsellsForListing()` fetches `prices.petFee` and `unitTypeHouseRules.houseRules.petsAllowed.enabled` from BEAPI per listing. Pet Fee upsell hidden on no-pet listings. `petFeePerPet` stored in Stripe PI metadata so checkout-finalizer doesn't need extra API call.
+- ~~**Per-listing pet fee from BEAPI**~~ — **REMOVED 2026-10-17. The website charges NOTHING for pets, on any listing.** Guests disclose a pet and pay any pet fee through the **guest portal after booking**. This reverses the 2026-05-20 "guests can bring pets if they pay the fee" call.
+
+  ⚠️ **There was a live bug, not just a policy change.** The Pets stepper in the guests dialog was never gated on `petsAllowed`, while the page's `petFeeTotal` returned 0 when `!petsAllowed` — so on a no-pet listing a guest could add pets, see **$0**, and still be charged `pets × fee` by the server. The finalizer then added a matching "Pet Fee" AFE to the Guesty invoice.
+
+  Pet charging is gone from: `upsells.ts` (the `pet-fee` item), both payment-intent paths (create AND update), the cart, pending-checkout, the finalizer's AFE, and the checkout UI. An outdated client sending `pets > 0` or a `pet-fee` upsell id is **ignored and charged $0 with a warning** — deliberately not a 400, so a stale bundle can't fail a booking.
+
+  **Display only** lives in `src/lib/pet-policy.ts` → `isPetFriendly()`, used for the checkout note, the JSON-LD `petsAllowed` and the agent API. It matches the house-rules flag, the exact tag "pet friendly" or the exact amenity "Pets allowed" — **no substring matching**. The JSON-LD previously used `a.includes("pet")`, which matches **"carpet"**, so carpeted homes were published to Google and to every AI assistant as pet-friendly.
+
+  Guarded by `src/lib/no-pet-charges.test.ts` and `src/lib/pet-policy.test.ts`. Guesty constants, should the policy ever reverse: accountFeeId `67fc4907f2cc23000e67992c`, secondIdentifier `PET`, default $50/pet.
+
 - **Stripe webhook** — `booktraverse.com — production` webhook wired. API version updated to `2026-04-22.dahlia`. Signing secret: `STRIPE_WEBHOOK_SECRET=whsec_UJYKJk2eMXLtgBmV8nv5Ygu4q5cXOvIZ` (in Vercel prod).
 - **Apple Pay** — already enabled on Stripe account. `www.booktraverse.com` auto-verified as Apple Pay domain.
 - **Transparent white logo** — `public/no-fees/logo-white.png` + `logo-white.webp` regenerated using Sharp pixel-level manipulation: all non-transparent pixels set to white (255,255,255), alpha channel preserved. Output: 2048×492 RGBA PNG.
@@ -472,7 +481,7 @@ src/
 │   ├── plan/[id]/page.tsx                # Trip plan page: "Your Colorado Trip"
 │   ├── property-management/page.tsx      # Owner landing page; HubSpot form; B2B phone; testimonials
 │   └── api/
-│       ├── payment-intent/route.ts       # Per-listing pet fee via BEAPI; petFeePerPet in PI metadata
+│       ├── payment-intent/route.ts       # No pet charge (2026-10-17); pet input ignored + warned
 │       ├── stripe/webhook/route.ts       # HMAC-SHA256 validation; routes to checkout-finalizer
 │       └── cron/refresh-tokens/route.ts  # Every 2h — refreshes BEAPI + OpenAPI tokens
 │                                          # Also callable from getBEAPIToken() as
@@ -483,7 +492,8 @@ src/
 │   │   └── no-fees-hero-section.tsx      # JSX hero with embedded search + Get Directions
 │   ├── booking/
 │   │   ├── checkout-form.tsx             # trackBookingCompleted with listingNickname
-│   │   ├── upsells.ts                    # resolveUpsellsForListing(); resolvePetFeePerPet()
+│   │   ├── upsells.ts                    # UPSELLS is EMPTY — no pet fee (2026-10-17)
+│   │   ├── pet-policy.ts                 # isPetFriendly() — DISPLAY ONLY, never gates a charge
 │   │   └── upsell-selector.tsx           # Accepts upsells?: UpsellItem[] prop
 │   ├── cart/add-to-cart-button.tsx       # Passes listingNickname to trackAddToCart
 │   ├── properties/track-properties-list.tsx  # Passes nickname to trackViewedListingList
@@ -492,7 +502,7 @@ src/
     ├── tracking.ts                       # All GA4/Meta/Klaviyo events; item_variant = listingNickname
     ├── server-tracking.ts                # Server-side GA4 purchase event; item_variant = listingNickname
     ├── pending-checkouts.ts              # PendingTracking includes listingNickname; DB try-catch wrapped
-    ├── checkout-finalizer.ts             # Reads petFeePerPet from PI metadata; listingNickname tracking
+    ├── checkout-finalizer.ts             # Never adds a Pet Fee AFE (2026-10-17); listingNickname tracking
     ├── booking-identity.ts               # buildStayKey, buildGuestIdentityKey, buildBookingFingerprint
     ├── quote-response.ts                 # buildNormalizedQuoteResponse: listingNickname from BEAPI
     ├── csp.ts                            # IMG_SOURCES includes places.googleapis.com
