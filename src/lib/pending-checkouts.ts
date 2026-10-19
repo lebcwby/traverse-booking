@@ -41,6 +41,8 @@ export interface TrackingContext {
     legacyCcpaOptOut?: string;
     fbp?: string;
     fbc?: string;
+    /** Serialized `_sp_path` breadcrumb — see src/lib/click-path.ts. */
+    clickPath?: string;
   };
   requestContext?: {
     clientIp?: string;

@@ -11,6 +11,7 @@ import {
   buildSensitiveContentSecurityPolicy,
   isSensitiveCspPath,
 } from "@/lib/csp";
+import { buildUntaggedFirstTouch } from "@/lib/first-touch";
 import {
   META_COOKIE_MAX_AGE_SECONDS,
   META_COOKIE_NAMES,
@@ -393,6 +394,15 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  const attributionCookieOptions = {
+    maxAge: COOKIE_MAX_AGE,
+    httpOnly: false,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  };
+  const needsFirstTouch = !request.cookies.get(FIRST_TOUCH_COOKIE)?.value;
+
   if (hasAttribution) {
     // fbclid_ts is the click time in epoch ms — server-tracking.ts uses it
     // when reconstructing _fbc from attribution, so the attribution window
@@ -406,22 +416,44 @@ export async function proxy(request: NextRequest) {
       capturedAt: new Date().toISOString(),
     };
 
-    response.cookies.set(COOKIE_NAME, JSON.stringify(payload), {
-      maxAge: COOKIE_MAX_AGE,
-      httpOnly: false,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-    });
+    response.cookies.set(
+      COOKIE_NAME,
+      JSON.stringify(payload),
+      attributionCookieOptions
+    );
 
-    if (!request.cookies.get(FIRST_TOUCH_COOKIE)?.value) {
-      response.cookies.set(FIRST_TOUCH_COOKIE, JSON.stringify(payload), {
-        maxAge: COOKIE_MAX_AGE,
-        httpOnly: false,
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-      });
+    if (needsFirstTouch) {
+      response.cookies.set(
+        FIRST_TOUCH_COOKIE,
+        JSON.stringify(payload),
+        attributionCookieOptions
+      );
+    }
+  } else if (needsFirstTouch) {
+    // An UNTAGGED arrival — no utm, no click id. Until 2026-10-19 we wrote
+    // nothing at all here, so organic and direct visitors (8 of the last 10
+    // bookings) reached checkout with no landing page and no referrer, and
+    // "where did this booking come from" was unanswerable for most of them.
+    //
+    // `_sp_attribution` is deliberately NOT written: it is last *campaign*
+    // touch, and an untagged visit must not overwrite the ad click that
+    // brought someone here last week. This only fills the first-touch slot,
+    // and only when it is empty, so it stays a first-visit-only Set-Cookie —
+    // the same shape as the visitor-id write below, which already puts a
+    // Set-Cookie on this exact response. No additional response becomes
+    // uncacheable because of it (see PR #94).
+    const untagged = buildUntaggedFirstTouch({
+      pathname: url.pathname,
+      search: url.search,
+      referer: request.headers.get("referer"),
+      selfHost: url.host,
+    });
+    if (untagged) {
+      response.cookies.set(
+        FIRST_TOUCH_COOKIE,
+        JSON.stringify(untagged),
+        attributionCookieOptions
+      );
     }
   }
 

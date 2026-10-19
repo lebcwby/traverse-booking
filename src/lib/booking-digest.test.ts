@@ -7,10 +7,15 @@ import {
   shortGuestName,
 } from "./booking-digest";
 
-const cookies = (attribution?: object, firstTouch?: object) => ({
+const cookies = (
+  attribution?: object,
+  firstTouch?: object,
+  clickPath?: string
+) => ({
   cookies: {
     ...(attribution ? { attribution: JSON.stringify(attribution) } : {}),
     ...(firstTouch ? { firstTouch: JSON.stringify(firstTouch) } : {}),
+    ...(clickPath ? { clickPath } : {}),
   },
 });
 
@@ -54,6 +59,32 @@ describe("formatChannel", () => {
   it("says direct when there is genuinely nothing", () => {
     expect(formatChannel(null)).toBe("(direct) / (none)");
     expect(formatChannel({})).toBe("(direct) / (none)");
+  });
+
+  // An untagged visit carries no utm and no click id. Before 2026-10-19 we
+  // recorded nothing for these and called every one of them "(direct)",
+  // which for an organic Google visitor is simply wrong.
+  it("uses the referring site when the visit carried no tagging at all", () => {
+    expect(formatChannel({ referrer: "https://www.google.com" })).toBe(
+      "google.com / referral"
+    );
+    expect(
+      formatChannel({ referrer: "https://www.tripadvisor.com/Hotel_Review" })
+    ).toBe("tripadvisor.com / referral");
+  });
+
+  it("prefers real campaign tagging over the referrer", () => {
+    expect(
+      formatChannel({
+        utm_source: "newsletter",
+        utm_medium: "email",
+        referrer: "https://mail.google.com",
+      })
+    ).toBe("newsletter / email");
+  });
+
+  it("falls back to direct on a referrer it cannot parse", () => {
+    expect(formatChannel({ referrer: "not a url" })).toBe("(direct) / (none)");
   });
 
   it("marks a half-tagged link rather than guessing the missing half", () => {
@@ -105,6 +136,49 @@ describe("rowToBooking", () => {
     expect(differs.firstTouchSource).toBe("travelcrestedbutte / referral");
     // 7 days from first touch to booked.
     expect(differs.minutesFromFirstTouch).toBe(7 * 24 * 60 + 72);
+  });
+
+  // The whole point of the 2026-10-19 proxy change: an untagged booking now
+  // has a landing page and a referrer, and both must reach the digest.
+  it("reads the landing page and channel from first touch when there was no campaign", () => {
+    const b = rowToBooking(
+      row({
+        tracking_context: cookies(undefined, {
+          landingPage: "/crested-butte/grand-lodge",
+          referrer: "https://www.google.com",
+          capturedAt: "2026-10-18T09:30:00.000Z",
+        }),
+      })
+    );
+    expect(b.source).toBe("google.com / referral");
+    expect(b.landingPage).toBe("/crested-butte/grand-lodge");
+    expect(b.referrer).toBe("https://www.google.com");
+    // First touch IS the last touch here — don't render it twice.
+    expect(b.firstTouchSource).toBeNull();
+  });
+
+  it("derives a landing page from the click path when no cookie carried one", () => {
+    const b = rowToBooking(
+      row({
+        tracking_context: cookies(
+          undefined,
+          undefined,
+          "v1~1760776800~0~/leadville:0~/book/q1:300"
+        ),
+      })
+    );
+    expect(b.landingPage).toBe("/leadville");
+    expect(b.clickPath).toBe("/leadville → /book/q1");
+    expect(b.pagesViewed).toBe(2);
+    expect(b.minutesOnSite).toBe(5);
+  });
+
+  it("leaves the path fields null when nothing was recorded", () => {
+    const b = rowToBooking(row());
+    expect(b.clickPath).toBeNull();
+    expect(b.pagesViewed).toBeNull();
+    expect(b.minutesOnSite).toBeNull();
+    expect(b.referrer).toBeNull();
   });
 
   it("survives missing or malformed attribution without throwing", () => {
@@ -193,12 +267,14 @@ describe("renderSlackBlocks", () => {
     expect(json).toContain("google / cpc");
   });
 
-  // The digest must not imply it knows a click path, because it does not.
-  it("states the limitation rather than implying a funnel it cannot see", () => {
+  // The click path has real edges — session-scoped, consent-gated, capped —
+  // and a reader acting on it needs to know them.
+  it("states the limits of the click path rather than implying it is complete", () => {
     const json = JSON.stringify(
       renderSlackBlocks(buildDigest([row()], "2026-10-18"))
     );
-    expect(json).toMatch(/No page-by-page path is stored/);
+    expect(json).toMatch(/browser session only/);
+    expect(json).toMatch(/analytics consent/);
   });
 
   it("includes the entry page and the timing signals", () => {
@@ -207,5 +283,33 @@ describe("renderSlackBlocks", () => {
     );
     expect(json).toContain("entered on");
     expect(json).toContain("in checkout");
+  });
+
+  it("renders the click path when one was recorded", () => {
+    const json = JSON.stringify(
+      renderSlackBlocks(
+        buildDigest(
+          [
+            row({
+              tracking_context: cookies(
+                { utm_source: "google", utm_medium: "cpc" },
+                undefined,
+                "v1~1760776800~0~/:0~/crested-butte:120~/book/q1:540"
+              ),
+            }),
+          ],
+          "2026-10-18"
+        )
+      )
+    );
+    expect(json).toContain("/ → /crested-butte → /book/q1");
+    expect(json).toContain("3 pages");
+  });
+
+  it("omits the path line entirely when nothing was recorded", () => {
+    const json = JSON.stringify(
+      renderSlackBlocks(buildDigest([row()], "2026-10-18"))
+    );
+    expect(json).not.toContain("path:");
   });
 });

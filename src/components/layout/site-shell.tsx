@@ -9,6 +9,7 @@ import { VintoryWidget } from "@/components/chat/vintory-widget";
 import { ConsentManager } from "@/components/analytics/consent-manager";
 import { MetaPageViewTracker } from "@/components/layout/meta-page-view-tracker";
 import { QualifiedEngagementTracker } from "@/components/layout/qualified-engagement-tracker";
+import { ClickPathTracker } from "@/components/layout/click-path-tracker";
 import { getGoogleAdsId } from "@/lib/google-ads-public";
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-KN2S5WQV";
@@ -289,6 +290,7 @@ export function SiteShell({
         <MetaPageViewTracker />
       </Suspense>
       <QualifiedEngagementTracker />
+      <ClickPathTracker />
     </>
   );
 }

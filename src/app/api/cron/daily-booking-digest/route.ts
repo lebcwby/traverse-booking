@@ -3,10 +3,12 @@
  *
  * Shows, per booking: listing, dates, guests, value, guest, the channel that
  * converted them, the channel that FIRST found them when it differs, the page
- * they entered on, and how long from first touch to booked.
+ * they entered on, the pages they walked through to get to checkout, and how
+ * long from first touch to booked.
  *
- * ⚠️ No page-by-page funnel path — we do not store a visit trail. See the
- * header of src/lib/booking-digest.ts for what that would take.
+ * ⚠️ The click path is session-scoped, client-written and consent-gated, so
+ * some bookings legitimately have none — every booking before 2026-10-19
+ * does. See the header of src/lib/booking-digest.ts for the exact edges.
  *
  * GET /api/cron/daily-booking-digest     (Bearer CRON_SECRET)
  *     ?date=YYYY-MM-DD   report on a specific day instead of yesterday
