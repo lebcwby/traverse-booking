@@ -43,13 +43,13 @@ npm run dev
 
 Search and replace the following across the repo:
 
-| Find                  | Replace with                |
-| --------------------- | --------------------------- |
-| `stayportland.com`    | your domain                 |
-| `Stay Portland`       | your brand name             |
-| `stay-portland`       | your-brand-slug             |
-| `Portland, OR`        | your default search city    |
-| `portland`            | your city slug              |
+| Find               | Replace with             |
+| ------------------ | ------------------------ |
+| `stayportland.com` | your domain              |
+| `Stay Portland`    | your brand name          |
+| `stay-portland`    | your-brand-slug          |
+| `Portland, OR`     | your default search city |
+| `portland`         | your city slug           |
 
 Files with the most brand references:
 
@@ -94,8 +94,10 @@ expects:
 
 - A row in `guesty_tokens` table with `token_type='beapi'` and the OAuth
   access token
-- Tokens are refreshed by the edge function in
-  `supabase/functions/refresh-tokens/` (deploy this and schedule it via pg_cron)
+- Tokens are refreshed by the **Vercel cron** `/api/cron/refresh-tokens`
+  (`vercel.json`, every 2h). There is no Supabase edge function for this — an
+  undeployed one lived in the repo until 2026-10-19 and was removed because it
+  implied a second token owner that never existed.
 
 ⚠️ **Guesty rate limits** are hard:
 

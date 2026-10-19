@@ -20,7 +20,8 @@ const CARD_SEARCH_LISTING_FIELDS =
 //   1. Reads tokens from Supabase + in-memory cache
 //   2. NEVER writes, updates, or expires tokens in Supabase
 //   3. On 401, clears in-memory cache only — does NOT touch Supabase
-//   4. Token refresh is handled EXCLUSIVELY by refresh-tokens edge function (pg_cron)
+//   4. Token refresh is handled EXCLUSIVELY by the Vercel cron
+//      /api/cron/refresh-tokens (vercel.json, "10 */2 * * *")
 //   5. No OAuth calls, no token persistence, no token expiration writes
 
 // A token is "fresh" if it has more than this left; below it, the cron
@@ -212,9 +213,14 @@ async function getSupabaseCachedToken(): Promise<{
   return null;
 }
 
-// Token writes removed — refresh-tokens edge function is the SOLE owner of
+// Token writes removed — /api/cron/refresh-tokens is the SOLE owner of
 // guesty_tokens rows. The app is strictly read-only to prevent token-burn
 // cycles (401 → expire → cron refresh → 401 → burn all 5 tokens).
+//
+// ⚠️ This used to name a Supabase edge function "via pg_cron". There was no
+// such pg_cron job and the function was never deployed; the Vercel cron has
+// always been the only refresher. Corrected 2026-10-19 and the dead source
+// removed. `select jobname from cron.job` settles it in one query.
 
 // ─── Main Token Retrieval ────────────────────────────────────────
 // Strictly read-only. No writes to guesty_tokens. No OAuth calls.
@@ -325,7 +331,7 @@ async function beapiFetch(
 
     // 401 Unauthorized: token may be revoked or temporarily invalid.
     // Clear in-memory cache only — NEVER write to guesty_tokens.
-    // The refresh-tokens edge function (pg_cron) owns all token lifecycle.
+    // The /api/cron/refresh-tokens Vercel cron owns all token lifecycle.
     if (response.status === 401) {
       console.error(
         `BEAPI auth failure (401) on ${path} — attempt ${attempt}/${retries}`
@@ -335,7 +341,7 @@ async function beapiFetch(
 
       await sendAlert(
         "BEAPI Auth Failure — Retries Exhausted",
-        `Guesty BEAPI returned 401 on <code>${path}</code> after ${retries} attempts. Memory cache cleared — refresh-tokens pg_cron will handle token renewal.`,
+        `Guesty BEAPI returned 401 on <code>${path}</code> after ${retries} attempts. Memory cache cleared — the /api/cron/refresh-tokens Vercel cron (every 2h) will handle renewal.`,
         "beapi-auth-exhausted"
       );
     }
