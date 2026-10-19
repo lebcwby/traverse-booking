@@ -81,6 +81,10 @@
     {
       "schedule": "50 3 * * *",
       "path": "/api/cron/void-duplicate-payments?apply=1&max=10"
+    },
+    {
+      "schedule": "35 8 * * *",
+      "path": "/api/cron/daily-booking-digest"
     }
   ]
 }
