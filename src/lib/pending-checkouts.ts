@@ -74,32 +74,37 @@ export interface PendingCheckoutRecord extends PendingCheckoutInput {
   completedAt?: string | null;
 }
 
-function normalizePets(pets?: number) {
-  return typeof pets === "number" && pets > 0 ? pets : 0;
+/**
+ * Always 0. The website charges nothing for pets as of 2026-10-17; the
+ * column is retained so historical rows keep their meaning and so an older
+ * client posting a count does not break the insert.
+ */
+function normalizePets(_pets?: number) {
+  return 0;
 }
 
 export async function upsertPendingCheckout(input: PendingCheckoutInput) {
   try {
     const pool = getPool();
-  const stayKey = buildStayKey({
-    listingId: input.tracking.listingId,
-    checkIn: input.tracking.checkIn,
-    checkOut: input.tracking.checkOut,
-  });
-  const guestIdentityKey = buildGuestIdentityKey({
-    guestEmail: input.guest.email,
-    guestPhone: input.guest.phone,
-  });
-  const bookingFingerprint = buildBookingFingerprint({
-    listingId: input.tracking.listingId,
-    checkIn: input.tracking.checkIn,
-    checkOut: input.tracking.checkOut,
-    guestEmail: input.guest.email,
-    guestPhone: input.guest.phone,
-  });
+    const stayKey = buildStayKey({
+      listingId: input.tracking.listingId,
+      checkIn: input.tracking.checkIn,
+      checkOut: input.tracking.checkOut,
+    });
+    const guestIdentityKey = buildGuestIdentityKey({
+      guestEmail: input.guest.email,
+      guestPhone: input.guest.phone,
+    });
+    const bookingFingerprint = buildBookingFingerprint({
+      listingId: input.tracking.listingId,
+      checkIn: input.tracking.checkIn,
+      checkOut: input.tracking.checkOut,
+      guestEmail: input.guest.email,
+      guestPhone: input.guest.phone,
+    });
 
-  await pool.query(
-    `INSERT INTO pending_checkouts (
+    await pool.query(
+      `INSERT INTO pending_checkouts (
       payment_intent_id, quote_id, rate_plan_id, stripe_customer_id, guest, tracking, upsells, pets, status, quote_snapshot, stay_key, guest_identity_key, booking_fingerprint, tracking_context, updated_at
      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, $12, $13, now())
      ON CONFLICT (payment_intent_id) DO UPDATE SET
@@ -120,24 +125,27 @@ export async function upsertPendingCheckout(input: PendingCheckoutInput) {
          ELSE 'pending'
        END,
        updated_at = now()`,
-    [
-      input.paymentIntentId,
-      input.quoteId,
-      input.ratePlanId || null,
-      input.stripeCustomerId || null,
-      JSON.stringify(input.guest),
-      JSON.stringify(input.tracking),
-      JSON.stringify(Array.isArray(input.upsells) ? input.upsells : []),
-      normalizePets(input.pets),
-      input.quoteSnapshot ? JSON.stringify(input.quoteSnapshot) : null,
-      stayKey,
-      guestIdentityKey,
-      bookingFingerprint,
-      input.trackingContext ? JSON.stringify(input.trackingContext) : null,
-    ]
-  );
+      [
+        input.paymentIntentId,
+        input.quoteId,
+        input.ratePlanId || null,
+        input.stripeCustomerId || null,
+        JSON.stringify(input.guest),
+        JSON.stringify(input.tracking),
+        JSON.stringify(Array.isArray(input.upsells) ? input.upsells : []),
+        normalizePets(input.pets),
+        input.quoteSnapshot ? JSON.stringify(input.quoteSnapshot) : null,
+        stayKey,
+        guestIdentityKey,
+        bookingFingerprint,
+        input.trackingContext ? JSON.stringify(input.trackingContext) : null,
+      ]
+    );
   } catch (err) {
-    console.warn("[PendingCheckout] DB write failed (non-critical):", (err as Error).message);
+    console.warn(
+      "[PendingCheckout] DB write failed (non-critical):",
+      (err as Error).message
+    );
   }
 }
 
@@ -192,7 +200,10 @@ export async function getPendingCheckout(paymentIntentId: string) {
     );
     return result.rows[0] ? mapRow(result.rows[0]) : null;
   } catch (err) {
-    console.warn("[PendingCheckout] DB read failed (non-critical):", (err as Error).message);
+    console.warn(
+      "[PendingCheckout] DB read failed (non-critical):",
+      (err as Error).message
+    );
     return null;
   }
 }

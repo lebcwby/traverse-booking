@@ -166,7 +166,8 @@ export async function POST(request: NextRequest) {
         checkIn: (quote?.checkInDateLocalized as string) || "",
         checkOut: (quote?.checkOutDateLocalized as string) || "",
         guests: Number(quote?.guestsCount || 0),
-        pets: typeof line.pets === "number" && line.pets > 0 ? line.pets : 0,
+        // Always 0 — the website charges nothing for pets (2026-10-17).
+        pets: 0,
         hostPayout,
         status: "pending",
         reservationId: null,

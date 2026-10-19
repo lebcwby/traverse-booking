@@ -5,7 +5,11 @@
  * search and availability endpoints. This is the stable description an agent
  * needs to tell a guest what the place is.
  */
-import { getPublicListing, MAX_AVAILABILITY_DAYS } from "@/lib/agent-api";
+import {
+  getPublicListing,
+  MAX_AVAILABILITY_DAYS,
+  PET_POLICY,
+} from "@/lib/agent-api";
 import { AGENT_CACHE_LONG, agentError, agentJson } from "@/lib/agent-response";
 
 export const runtime = "nodejs";
@@ -42,6 +46,7 @@ export async function GET(
     return agentJson(
       {
         listing,
+        petPolicy: PET_POLICY,
         availability: {
           endpoint: `/agent/v1/listings/${id}/availability`,
           note: `Requires from and to, at most ${MAX_AVAILABILITY_DAYS} days apart.`,

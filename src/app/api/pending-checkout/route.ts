@@ -70,10 +70,14 @@ export async function POST(request: NextRequest) {
       guest,
       tracking,
       upsells: Array.isArray(body.upsells) ? body.upsells : [],
-      pets: typeof body.pets === "number" ? body.pets : 0,
+      // Always 0 — no pet charge is recorded against a checkout.
+      pets: 0,
       quoteSnapshot: body.quoteSnapshot || null,
     }).catch((err) => {
-      console.warn("[Pending Checkout] DB write failed (non-critical):", err.message);
+      console.warn(
+        "[Pending Checkout] DB write failed (non-critical):",
+        err.message
+      );
     });
 
     return NextResponse.json({

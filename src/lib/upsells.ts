@@ -20,20 +20,25 @@ export interface UpsellItem {
 // comments below for easy re-add if we ever surface them again.
 //   early-checkin: accountFeeId "67fdc056e74723000f56bf8a", secondIdentifier "EARLY_CHECK_IN", $50
 //   late-checkout: accountFeeId "69aa99b902095a1abf37713a", secondIdentifier "LATE_CHECKOUT", $50
+//
+// 🐾 Pet Fee removed from the website 2026-10-17 (Nadim). The website now
+// charges NOTHING for pets on any listing — guests disclose pets and pay any
+// fee through the guest portal after booking. This reverses the 2026-05-20
+// "guests can bring pets if they pay the fee" call.
+//
+// Two reasons it had to go beyond the product decision:
+//   - The amount was charged from a `pets` count, NOT from this list, and the
+//     server never checked `petsAllowed`. The checkout page zeroed the
+//     displayed pet total on no-pet listings while still sending the count,
+//     so guests were charged a fee the page did not show.
+//   - The Guesty constants for re-adding it, should the policy reverse again:
+//     pet-fee: accountFeeId "67fc4907f2cc23000e67992c", secondIdentifier
+//     "PET", default $50/pet (was $99 before 2026-05-20).
+//
+// ⚠️ Nothing in this file may reintroduce a pet charge. Display-only pet
+// logic belongs in src/lib/pet-policy.ts.
 
-export const UPSELLS: UpsellItem[] = [
-  {
-    id: "pet-fee",
-    title: "Pet Fee",
-    description: "Bring your furry friend along for the stay.",
-    amount: 99,
-    currency: "USD",
-    icon: "paw",
-    normalType: "AFE",
-    secondIdentifier: "PET",
-    accountFeeId: "67fc4907f2cc23000e67992c",
-  },
-];
+export const UPSELLS: UpsellItem[] = [];
 
 export function getSelectedUpsells(selectedIds: string[]): UpsellItem[] {
   return UPSELLS.filter((u) => selectedIds.includes(u.id));
@@ -44,44 +49,11 @@ export function getUpsellTotal(selectedIds: string[]): number {
 }
 
 /**
- * Default fallback when Guesty hasn't configured a per-listing pet fee.
- * Lowered from $99 to $50 on 2026-05-20 per Nadim — the previous default
- * was inflating fees on listings where BEAPI doesn't expose `prices.petFee`
- * (e.g. Grand Lodge configures pet fee as a Guesty "Additional Fee" that
- * isn't surfaced in the listing-detail `prices` field).
- */
-export const DEFAULT_PET_FEE_PER_PET = 50;
-
-/**
  * Resolves the per-listing list of selectable upsells.
- * - Pet Fee is now always offered as an opt-in extra regardless of the
- *   listing's `petsAllowed` flag (per 2026-05-20 product call — guests
- *   are allowed to bring pets if they pay the fee; the `petsAllowed`
- *   field in BEAPI was unreliable across listings).
- * - Substitutes the listing-specific pet fee amount when Guesty has one
- *   configured (`prices.petFee` from BEAPI). Falls back to
- *   `DEFAULT_PET_FEE_PER_PET` ($50) when Guesty's value is missing or zero.
  *
- * Early/late checkout were removed from the website 2026-05-20 — those
- * requests are now handled post-booking via SuiteOp.
+ * No longer takes a pet argument: there is no per-listing variation left to
+ * express, and accepting one would invite a caller to reintroduce pet pricing.
  */
-export function resolveUpsellsForListing(opts: {
-  petsAllowed?: boolean;
-  petFeePerPet?: number | null;
-}): UpsellItem[] {
-  return UPSELLS.flatMap((u) => {
-    if (u.id !== "pet-fee") return [u];
-    const amount =
-      opts.petFeePerPet && opts.petFeePerPet > 0
-        ? opts.petFeePerPet
-        : DEFAULT_PET_FEE_PER_PET;
-    return [{ ...u, amount }];
-  });
-}
-
-/** Returns the listing's effective per-pet fee (used by payment-intent). */
-export function resolvePetFeePerPet(petFeeFromBeapi?: number | null): number {
-  return petFeeFromBeapi && petFeeFromBeapi > 0
-    ? petFeeFromBeapi
-    : DEFAULT_PET_FEE_PER_PET;
+export function resolveUpsellsForListing(): UpsellItem[] {
+  return UPSELLS;
 }

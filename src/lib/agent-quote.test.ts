@@ -31,6 +31,7 @@ const LISTING: PublicListing = {
   checkInTime: "16:00",
   checkOutTime: "10:00",
   photo: null,
+  petsAllowed: false,
 };
 
 /**

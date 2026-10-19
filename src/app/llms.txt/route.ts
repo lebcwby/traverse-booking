@@ -90,8 +90,10 @@ capability.
   shoulder season. The booking calendar on each listing shows the minimum for
   the dates selected.
 - **Pets**: allowed at some properties only, never all. Pet-friendly homes are
-  filterable at /s/pet-friendly and charge a per-pet fee shown in the quote.
-  Properties that do not allow pets say so on the listing page.
+  filterable at /s/pet-friendly. **No pet fee is charged on the website or at
+  checkout.** A guest discloses the pet and pays any pet fee through their
+  guest portal after booking. Properties that do not allow pets say so on the
+  listing page, and the agent API exposes a petsAllowed flag per listing.
 - **Guest count**: each listing states its maximum occupancy, which is a hard
   limit rather than a guideline.
 

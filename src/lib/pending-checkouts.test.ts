@@ -108,10 +108,13 @@ describe("upsertPendingCheckout — DB-failure tolerance", () => {
     expect(mockQuery.mock.calls[0][1][7]).toBe(0);
   });
 
-  it("preserves a positive pets value", async () => {
+  // 2026-10-17: the website charges nothing for pets. This used to assert the
+  // opposite — that a positive count was preserved — which is precisely the
+  // path that let a pet fee reach checkout.
+  it("forces a positive pets value to 0 — the website never charges for pets", async () => {
     mockQuery.mockResolvedValue({ rows: [] });
     await upsertPendingCheckout({ ...BASE_INPUT, pets: 2 });
-    expect(mockQuery.mock.calls[0][1][7]).toBe(2);
+    expect(mockQuery.mock.calls[0][1][7]).toBe(0);
   });
 
   it("stringifies trackingContext as JSON when present", async () => {

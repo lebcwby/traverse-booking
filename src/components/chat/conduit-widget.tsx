@@ -11,6 +11,18 @@ import { isOwnerSurface } from "@/lib/owner-surfaces";
  * been throwing 403s there on top of that. So it loads everywhere except the
  * owner surfaces, which are where the Vintory widget takes over instead.
  */
+/**
+ * Kill switch. Set NEXT_PUBLIC_CONDUIT_WIDGET=off to remove the widget
+ * sitewide without editing code.
+ *
+ * ⚠️ This still needs a redeploy. NEXT_PUBLIC_* values are inlined at BUILD
+ * time, so flipping it in Vercel does nothing until the next deploy — and per
+ * CLAUDE.md that deploy must use `--force`, or the cached build keeps the old
+ * value. It saves a code change and a review, not a deploy.
+ */
+const WIDGET_DISABLED =
+  (process.env.NEXT_PUBLIC_CONDUIT_WIDGET || "").trim().toLowerCase() === "off";
+
 export function ConduitWidget({ nonce }: { nonce?: string }) {
   const pathname = usePathname();
   // Host is read here rather than passed down from the root layout: that prop
@@ -33,14 +45,16 @@ export function ConduitWidget({ nonce }: { nonce?: string }) {
   // leave the bubble on screen. audit.css handles /audit and /projection via
   // `.audit-page`; /property-management has no such marker class, so the
   // container is hidden directly here — and restored on the way back out.
+  const hidden = owner || WIDGET_DISABLED;
+
   useEffect(() => {
     const el = document.getElementById("conduit-widget-container");
     if (!el) return;
-    if (owner) el.style.display = "none";
+    if (hidden) el.style.display = "none";
     else el.style.removeProperty("display");
-  }, [owner, pathname]);
+  }, [hidden, pathname]);
 
-  if (owner) return null;
+  if (hidden) return null;
 
   return (
     <Script

@@ -44,6 +44,7 @@ import {
   getSimilarListings,
 } from "@/lib/supabase";
 import { getListingDetail } from "@/lib/guesty-beapi";
+import { isPetFriendly } from "@/lib/pet-policy";
 import {
   normalizeListingName,
   normalizeStateCode,
@@ -712,9 +713,16 @@ export default async function PropertyDetailPage({ params }: Props) {
     listing.guesty_id
   );
   const amenityNames = amenities.map((a: string) => a.toLowerCase());
-  const petsAllowed = amenityNames.some(
-    (a: string) => a.includes("pet") || a.includes("dog")
-  );
+  // ⚠️ This was `amenityNames.some(a => a.includes("pet") || a.includes("dog"))`,
+  // which matches **"carpet"** — any listing with carpeted floors was published
+  // to Google and to every AI assistant as pet-friendly. isPetFriendly does
+  // exact, normalized matching across the house-rules flag, the tag and the
+  // amenity. See src/lib/pet-policy.ts.
+  const petsAllowed = isPetFriendly({
+    houseRulesPetsAllowed: houseRules?.petsAllowed?.enabled ?? null,
+    tags: listing.tags,
+    amenities,
+  });
   const propertyUrl = `https://www.booktraverse.com/properties/${slug}`;
   const normalizedCheckInTime = normalizeStructuredDataTime(checkInTime);
   const normalizedCheckOutTime = normalizeStructuredDataTime(checkOutTime);

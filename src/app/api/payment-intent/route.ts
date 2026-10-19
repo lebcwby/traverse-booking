@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { buildStripeIdempotencyKey, getStripeServer } from "@/lib/stripe";
 import { sendAlert, OPS_ALERT_INBOX } from "@/lib/alerts";
-import { getQuote, getListingDetail } from "@/lib/guesty-beapi";
-import { getUpsellTotal, resolvePetFeePerPet } from "@/lib/upsells";
+import { getQuote } from "@/lib/guesty-beapi";
+import { getUpsellTotal } from "@/lib/upsells";
 import {
   findBlockingPendingCheckout,
   findLatestReusablePendingCheckout,
@@ -144,8 +144,39 @@ async function resolveStripeCustomerId(args: {
   return customer.id;
 }
 
-function normalizePetsValue(pets: unknown) {
-  return typeof pets === "number" && pets > 0 ? pets : 0;
+/**
+ * The website charges NOTHING for pets as of 2026-10-17 — guests disclose and
+ * pay any pet fee through the guest portal after booking.
+ *
+ * An older cached client may still post `pets` or a `pet-fee` upsell id. We
+ * ignore it and charge $0 rather than 400, because failing a booking over a
+ * stale bundle would be worse than the charge we are removing. Logged so a
+ * lingering old client is visible rather than silent.
+ */
+function ignorePetInput(
+  pets: unknown,
+  upsellIds: unknown,
+  where: string
+): void {
+  const petCount = typeof pets === "number" && pets > 0 ? pets : 0;
+  const petUpsell =
+    Array.isArray(upsellIds) && upsellIds.includes("pet-fee") ? 1 : 0;
+  if (petCount || petUpsell) {
+    console.warn(
+      `[payment-intent] ${where}: ignoring pet input from an outdated client ` +
+        `(pets=${petCount}, petFeeUpsell=${Boolean(petUpsell)}). ` +
+        `Charging $0 — pets are handled in the guest portal.`
+    );
+  }
+}
+
+/** Upsell ids that may be charged. `pet-fee` can never be one. */
+function chargeableUpsells(upsellIds: unknown): string[] {
+  return Array.isArray(upsellIds)
+    ? upsellIds.filter(
+        (id): id is string => typeof id === "string" && id !== "pet-fee"
+      )
+    : [];
 }
 
 function isValidCheckoutToken(paymentIntentId: string, token: unknown) {
@@ -158,39 +189,22 @@ function isValidCheckoutToken(paymentIntentId: string, token: unknown) {
 function getNextAmountCents(args: {
   baseAmountCents: number;
   upsellIds: string[];
-  pets: number;
-  petFeePerPet: number;
 }) {
-  const upsellAmount = getUpsellTotal(
-    args.upsellIds.filter((id) => id !== "pet-fee")
-  );
-  const petFeeAmount = args.pets > 0 ? args.pets * args.petFeePerPet : 0;
+  const chargeable = chargeableUpsells(args.upsellIds);
+  const upsellAmount = getUpsellTotal(chargeable);
   return {
-    amountCents:
-      args.baseAmountCents + Math.round((upsellAmount + petFeeAmount) * 100),
-    chargeableUpsellIds: args.upsellIds.filter((id) => id !== "pet-fee"),
-    petFeeAmountCents: Math.round(petFeeAmount * 100),
+    amountCents: args.baseAmountCents + Math.round(upsellAmount * 100),
+    chargeableUpsellIds: chargeable,
+    // Always zero. Kept in the shape so the metadata contract is unchanged
+    // for anything still reading it, including in-flight PaymentIntents.
+    petFeeAmountCents: 0,
   };
 }
 
-/**
- * Pulls the listing's per-pet fee from Guesty BEAPI so checkout amounts
- * match each listing's configured `prices.petFee`. Falls back to the
- * account-fee default when Guesty hasn't set one (or returns zero).
- */
-async function resolvePetFeePerPetForListing(
-  listingId: string | undefined | null
-): Promise<number> {
-  if (!listingId) return resolvePetFeePerPet(null);
-  try {
-    const detail = (await getListingDetail(listingId)) as {
-      prices?: { petFee?: number | null } | null;
-    };
-    return resolvePetFeePerPet(detail?.prices?.petFee ?? null);
-  } catch {
-    return resolvePetFeePerPet(null);
-  }
-}
+// `resolvePetFeePerPetForListing` removed 2026-10-17 along with pet charging.
+// Worth noting for the BEAPI 429 investigation: it called getListingDetail on
+// EVERY payment-intent create and update, so removing it also removes two
+// BEAPI calls per checkout.
 
 /**
  * Stripe-source-of-truth double-charge guard. Returns an existing SUCCEEDED,
@@ -316,13 +330,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const petFeePerPet = await resolvePetFeePerPetForListing(listingId);
-    const upsellAmount = Array.isArray(upsellIds)
-      ? getUpsellTotal(upsellIds.filter((id: string) => id !== "pet-fee"))
-      : 0;
-    const petFeeAmount =
-      typeof pets === "number" && pets > 0 ? pets * petFeePerPet : 0;
-    const totalAmount = hostPayout + upsellAmount + petFeeAmount;
+    ignorePetInput(pets, upsellIds, "create");
+    const upsellAmount = getUpsellTotal(chargeableUpsells(upsellIds));
+    // No pet component. See ignorePetInput.
+    const totalAmount = hostPayout + upsellAmount;
     const totalAmountCents = Math.round(totalAmount * 100);
 
     const stripe = getStripeServer();
@@ -375,10 +386,10 @@ export async function POST(request: NextRequest) {
       checkIn,
       checkOut,
       baseAmountCents: Math.round(hostPayout * 100),
-      upsellIds: Array.isArray(upsellIds) ? upsellIds : [],
-      pets: normalizePetsValue(pets),
-      petFeeAmountCents: Math.round(petFeeAmount * 100),
-      petFeePerPet,
+      upsellIds: chargeableUpsells(upsellIds),
+      pets: 0,
+      petFeeAmountCents: 0,
+      petFeePerPet: 0,
     });
 
     if (existingPending?.paymentIntentId) {
@@ -447,10 +458,8 @@ export async function POST(request: NextRequest) {
               stayTotal: hostPayout,
               totalPaid: totalAmount,
             },
-            upsells: Array.isArray(upsellIds)
-              ? upsellIds.filter((id: string) => id !== "pet-fee")
-              : [],
-            pets: typeof pets === "number" ? pets : 0,
+            upsells: chargeableUpsells(upsellIds),
+            pets: 0,
             quoteSnapshot: {
               quoteId,
               ratePlanId: ratePlan?._id || null,
@@ -498,10 +507,8 @@ export async function POST(request: NextRequest) {
           checkIn,
           checkOut,
           totalAmountCents,
-          upsellIds: Array.isArray(upsellIds)
-            ? upsellIds.filter((id: string) => id !== "pet-fee")
-            : [],
-          pets: normalizePetsValue(pets),
+          upsellIds: chargeableUpsells(upsellIds),
+          pets: 0,
         }),
       }
     );
@@ -530,10 +537,8 @@ export async function POST(request: NextRequest) {
         stayTotal: hostPayout,
         totalPaid: totalAmount,
       },
-      upsells: Array.isArray(upsellIds)
-        ? upsellIds.filter((id: string) => id !== "pet-fee")
-        : [],
-      pets: typeof pets === "number" ? pets : 0,
+      upsells: chargeableUpsells(upsellIds),
+      pets: 0,
       quoteSnapshot: {
         quoteId,
         ratePlanId: ratePlan?._id || null,
@@ -625,19 +630,14 @@ export async function PATCH(request: NextRequest) {
     const nextUpsellIds = Array.isArray(upsellIds)
       ? upsellIds
       : getMetadataUpsellIds(paymentIntent.metadata.upsellIds);
-    const nextPets = Object.prototype.hasOwnProperty.call(body, "pets")
-      ? normalizePetsValue(pets)
-      : normalizePetsValue(
-          Number.parseInt(paymentIntent.metadata.pets || "0", 10)
-        );
-    const nextPetFeePerPet = await resolvePetFeePerPetForListing(
-      paymentIntent.metadata.listingId
-    );
+    ignorePetInput(pets, upsellIds, "update");
+    // Always zero on the update path too — including for a PaymentIntent
+    // created BEFORE this change whose metadata still carries a pet count.
+    // Re-pricing such a PI now removes the pet fee rather than preserving it.
+    const nextPets = 0;
     const nextAmount = getNextAmountCents({
       baseAmountCents,
       upsellIds: nextUpsellIds,
-      pets: nextPets,
-      petFeePerPet: nextPetFeePerPet,
     });
     const stripeCustomerId = await resolveStripeCustomerId({
       existingCustomerId:
@@ -656,10 +656,13 @@ export async function PATCH(request: NextRequest) {
 
     if (shouldUpdateAmount) {
       paymentIntentUpdates.amount = nextAmount.amountCents;
-      metadataUpdates.upsellIds = nextUpsellIds.join(",");
+      metadataUpdates.upsellIds = nextAmount.chargeableUpsellIds.join(",");
+      // Zeroed, not omitted: a PaymentIntent created before 2026-10-17 may
+      // carry a non-zero pet count, and leaving stale metadata behind would
+      // let the finalizer re-derive a fee from it.
       metadataUpdates.pets = String(nextPets);
-      metadataUpdates.petFeeAmountCents = String(nextAmount.petFeeAmountCents);
-      metadataUpdates.petFeePerPet = String(nextPetFeePerPet);
+      metadataUpdates.petFeeAmountCents = "0";
+      metadataUpdates.petFeePerPet = "0";
     }
 
     if (normalizedGuestEmail) {

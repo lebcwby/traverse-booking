@@ -44,6 +44,7 @@ import { getPool } from "./db";
 import { findBuildingForTags, SITE_ORIGIN } from "./listing-jsonld";
 import { getListingSlug } from "./utils";
 import { normalizeStateCode, resolveLocality } from "./listing-address";
+import { isPetFriendly, PET_POLICY_NOTE } from "./pet-policy";
 
 /** Hard cap on an availability window, in days. See the header. */
 export const MAX_AVAILABILITY_DAYS = 90;
@@ -101,7 +102,24 @@ export interface PublicListing {
   checkInTime: string | null;
   checkOutTime: string | null;
   photo: string | null;
+  /**
+   * Whether the home accepts pets at all. The website charges NOTHING for
+   * pets — a guest discloses the pet and pays any fee through the guest
+   * portal after booking — so this never affects a price. See PET_POLICY.
+   *
+   * ⚠️ Derived from the mirror's tags and amenities only; the BEAPI
+   * house-rules flag is not mirrored. isPetFriendly treats any positive
+   * signal as pet-friendly, so a listing whose only signal is the house-rules
+   * flag will read false here.
+   */
+  petsAllowed: boolean;
 }
+
+/** Published alongside every listing so an agent states the policy correctly. */
+export const PET_POLICY = {
+  chargedAtBooking: false,
+  note: PET_POLICY_NOTE,
+} as const;
 
 interface ListingRow {
   guesty_id: string;
@@ -150,6 +168,7 @@ export function toPublicListing(row: ListingRow): PublicListing {
       longitude: num(a.lng),
     },
     building: findBuildingForTags(row.tags),
+    petsAllowed: isPetFriendly({ tags: row.tags, amenities: row.amenities }),
     amenities: Array.isArray(row.amenities) ? row.amenities : [],
     checkInTime: row.default_check_in_time,
     checkOutTime: row.default_check_out_time,
