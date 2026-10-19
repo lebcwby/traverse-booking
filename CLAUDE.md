@@ -657,9 +657,38 @@ properties found" — the first thing to check is BEAPI token health.
 This has bitten production at least three times historically. As of
 2026-05-28 there are four overlapping safeguards:
 
-1. **Cron at `10 */2 * * *`** (every 2h, was 4h). `/api/cron/refresh-tokens`
-   refreshes when token has < 2h life. With tokens lasting 24h that's
-   ~once per 22h = under Guesty's 5/24h OAuth cap.
+1. **Cron at `10 */2 * * *`** (every 2h). `/api/cron/refresh-tokens` refreshes
+   when the token has **< 6h** life (raised from 2h — at 2h the buffer equalled
+   the cron interval, leaving a 16-second margin). Tokens last 24h, so this
+   mints ~once a day.
+
+   ⚠️ **CORRECTED 2026-10-19 — this route is the ONLY scheduled refresher.**
+   This file used to say the Supabase edge function `supabase/functions/
+refresh-tokens` was the sole owner "via pg_cron", and `guesty-beapi.ts`
+   still carries a comment saying the same. **There is no pg_cron job for it**
+   — `select * from cron.job` returns exactly one row, `monthly-owner-report`.
+   The edge function is deployed but **dormant**. It is still a latent risk:
+   it mints from the same client id and is invocable over HTTP, so it bypasses
+   the budget in 1a. Verify before trusting either claim:
+
+   ```sql
+   select jobname, schedule, active from cron.job;
+   ```
+
+1a. **Global mint budget** (added 2026-10-19). Guesty caps OAuth at **5 tokens
+per 24h per client, and burning all 5 is a 24-HOUR LOCKOUT with no
+recovery.** The expiry-buffer check in (1) stops redundant refreshes but is
+**not a lock**: when the token is genuinely stale, every concurrent caller
+passes it and every one mints. Concurrency is exactly what happens then —
+the self-heal in (3) is throttled per _serverless instance_, so a burst of
+cold starts is a burst of mints. The "CRITICAL: BEAPI token unavailable"
+alert arriving **4× in the same second** on 2026-10-16 is what that looks
+like from outside.
+
+`refreshOne` now claims a cross-instance budget of **4 mints per 24h per
+token type** before calling OAuth, deliberately holding the 5th back for
+manual recovery. Being blocked is serious — the token will expire — but it
+is recoverable in minutes, whereas a lockout is not recoverable at all.
 
 2. **Low-warning alert** in `/api/health/beapi`. When hoursRemaining
    drops below 1, a Resend email goes out (1h dedup so it's not spammy).
@@ -669,7 +698,9 @@ This has bitten production at least three times historically. As of
    If both caches (in-memory + Supabase) are empty AND the cron has
    dropped, the next /properties request calls `/api/cron/refresh-tokens`
    inline via HTTPS+CRON_SECRET, re-polls Supabase, and proceeds.
-   Throttled to 1×/5min/serverless instance against token-burn.
+   Throttled to 1×/5min **per serverless instance** — which is why it needed
+   the global budget in 1a. A per-instance throttle does not bound anything
+   when the instance count is what spikes.
 
 4. **Manual escape hatch**: `curl -H "Authorization: Bearer $CRON_SECRET"
 https://www.booktraverse.com/api/cron/refresh-tokens` always works.

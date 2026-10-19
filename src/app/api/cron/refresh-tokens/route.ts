@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { sendAlert } from "@/lib/alerts";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -165,6 +166,49 @@ async function refreshOne(
     const hoursLeft =
       Math.round(((existing.expires_at - Date.now()) / 3600000) * 10) / 10;
     return { refreshed: false, hoursRemaining: hoursLeft };
+  }
+
+  // ─── Global mint budget ──────────────────────────────────────────────
+  //
+  // Guesty caps OAuth at 5 tokens per 24h per client. Burning all 5 is a
+  // 24-HOUR LOCKOUT with no way to recover — catastrophic for the site.
+  //
+  // The expiry-buffer check above stops *redundant* refreshes, but it is not
+  // a lock: when the token is genuinely stale every concurrent caller passes
+  // it and every one of them mints. And concurrency is exactly what happens
+  // then — `attemptTokenSelfHeal` in guesty-beapi.ts fires this route from
+  // request handlers and is throttled only PER SERVERLESS INSTANCE, so a
+  // burst of cold starts means a burst of mints. The "CRITICAL: BEAPI token
+  // unavailable" alert arriving 4x in the same second on 2026-10-16 is what
+  // that concurrency looks like from the outside.
+  //
+  // So cap mints globally, across every instance, at 4 per 24h per token
+  // type. Normal operation needs ~1 (24h tokens, refreshed once below the
+  // 6h buffer), so 4 is generous — and it deliberately leaves the 5th for a
+  // human to use by hand after an incident.
+  //
+  // ⚠️ Being blocked here is serious: the token will expire. That is still
+  // strictly better than a lockout, because it is recoverable in minutes and
+  // it alerts, whereas a lockout is not recoverable at all.
+  const budget = await rateLimit(`guesty-token-mint:${target.tokenType}`, {
+    limit: 4,
+    windowMs: 24 * 60 * 60 * 1000,
+  });
+  if (!budget.allowed) {
+    const msg =
+      `Refused to mint a ${target.label} token: 4 mints already used in the ` +
+      `last 24h and Guesty allows only 5. Something is calling this route in ` +
+      `a loop — check the self-heal path in guesty-beapi.ts and Vercel logs. ` +
+      `One mint is deliberately held back for manual recovery.`;
+    console.error(`[refresh-tokens] ${msg}`);
+    await sendAlert(
+      `CRITICAL: ${target.label} token mint budget exhausted`,
+      `<p>${msg}</p><p>The token will expire and API calls will start failing. ` +
+        `Fix the caller before minting by hand, or the 5th mint is spent too ` +
+        `and the client is locked out for 24 hours.</p>`,
+      `token-mint-budget-${target.tokenType}`
+    );
+    throw new Error(`Mint budget exhausted for ${target.tokenType}`);
   }
 
   const resp = await fetch(target.tokenUrl, {
