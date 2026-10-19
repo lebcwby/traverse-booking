@@ -4,6 +4,7 @@ import { uploadGoogleAdsPurchaseConversion } from "./google-ads-server";
 import { upsertMetaVisitor } from "./meta-visitor-store";
 import { parseFbcTimestamp } from "./meta-cookies";
 import { GA4_MEASUREMENT_ID } from "./ga4-config";
+import { claimGa4Purchase } from "./ga4-purchase-dedup";
 
 // ─── TYPES ───────────────────────────────────────────────────────
 
@@ -826,6 +827,17 @@ export async function trackCheckoutServerSide(
   ]);
 }
 
+/**
+ * Which surface produced this booking. `ai_agent` comes from the utm_medium
+ * our own agent checkout links carry, so it only fires for a link we minted.
+ */
+export function resolveBookingChannel(attribution?: Attribution): string {
+  const medium = (attribution?.utm_medium || "").trim().toLowerCase();
+  if (medium === "ai_agent" || medium === "ai-agent") return "ai_agent";
+  if (medium) return "web_marketing";
+  return "web_direct";
+}
+
 export async function trackBookingServerSide(
   data: BookingEventData,
   options?: TrackingOptions
@@ -903,32 +915,42 @@ export async function trackBookingServerSide(
 
   if (options?.consent?.analytics !== false) {
     jobs.push(
-      sendGA4Event(
-        "purchase",
-        {
-          transaction_id: transactionId,
-          value: data.total,
-          currency: data.currency || "USD",
-          items: [
-            {
-              item_id: data.listingId,
-              item_name: data.listingTitle,
-              ...(data.listingNickname && {
-                item_variant: data.listingNickname,
-              }),
-              price: data.total,
-              quantity: 1,
-            },
-          ],
-          check_in: data.checkIn,
-          check_out: data.checkOut,
-          guests: data.guests,
-        },
-        data.attribution,
-        data.gaClientId,
-        data.context?.gaSessionId,
-        data.guest.email
-      )
+      (async () => {
+        // Exactly one purchase per booking. Every server finalize path is
+        // retryable, and GA4 does NOT dedupe the purchase EVENT count by
+        // transaction_id — only the Ecommerce transactions metric.
+        if (!(await claimGa4Purchase(transactionId))) return;
+        return sendGA4Event(
+          "purchase",
+          {
+            transaction_id: transactionId,
+            value: data.total,
+            currency: data.currency || "USD",
+            items: [
+              {
+                item_id: data.listingId,
+                item_name: data.listingTitle,
+                ...(data.listingNickname && {
+                  item_variant: data.listingNickname,
+                }),
+                price: data.total,
+                quantity: 1,
+              },
+            ],
+            check_in: data.checkIn,
+            check_out: data.checkOut,
+            guests: data.guests,
+            // Lets AI-assistant bookings be counted without reading the utm
+            // dimensions. Agent checkout links carry utm_medium=ai_agent (see
+            // src/lib/agent-quote.ts buildCheckoutUrl).
+            booking_channel: resolveBookingChannel(data.attribution),
+          },
+          data.attribution,
+          data.gaClientId,
+          data.context?.gaSessionId,
+          data.guest.email
+        );
+      })()
     );
   }
 

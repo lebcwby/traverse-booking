@@ -54,16 +54,29 @@ export async function GET(request: Request) {
   // Build a representative purchase payload mirroring what
   // trackBookingServerSide actually sends, so a validation pass here means
   // production events of the same shape would also pass.
+  // A unique id per run, so a live fire can be found and excluded in GA4
+  // rather than being indistinguishable from the last one.
+  const testTransactionId = `TEST-GA4-INSPECT-${Date.now()}`;
   const samplePayload = {
     client_id: "ga4-inspect.test.1",
     events: [
       {
         name: "purchase",
         params: {
-          transaction_id: "TEST-GA4-INSPECT",
-          value: 100,
+          transaction_id: testTransactionId,
+          // ⚠️ Zero, not 100. A live fire posts REAL revenue to the property.
+          // This endpoint existed to diagnose attribution and was quietly
+          // adding $100 of phantom revenue — attributed to "(not set)",
+          // because client_id is synthetic and carries no session. It was
+          // polluting the exact metric it is used to investigate.
+          value: 0,
           currency: "USD",
           engagement_time_msec: 1,
+          // Mirror the real shape so a validation pass here means a
+          // production purchase of the same shape also passes. Added
+          // 2026-10-19 with session_id + booking_channel.
+          session_id: "1700000000",
+          booking_channel: "web_direct",
           items: [
             {
               item_id: "test-listing",
@@ -111,6 +124,10 @@ export async function GET(request: Request) {
         }
       );
       liveFireStatus = res.status;
+      console.warn(
+        `[inspect-ga4] LIVE purchase fired to ${measurementId} as ` +
+          `${testTransactionId} (value 0). It will appear in reports.`
+      );
     } catch (err) {
       liveFireStatus = err instanceof Error ? err.message : String(err);
     }
@@ -118,6 +135,9 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     measurementId,
+    testTransactionId,
+    liveFireWarning:
+      "?fire=1 posts a REAL purchase event to the live property. Value is 0 so it cannot inflate revenue, but it still counts as a purchase event and lands under (not set). Exclude it by transaction_id.",
     // Don't echo the secret — only its first/last 2 chars + length so we can
     // visually compare against the one stored in GA4 Admin without exposure.
     apiSecretFingerprint:
