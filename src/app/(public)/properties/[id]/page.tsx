@@ -1,4 +1,18 @@
-export const revalidate = 300; // cache pages for 5 minutes
+// 3600, raised from 300 on 2026-10-19 to stop this route exhausting the
+// Guesty BEAPI quota.
+//
+// 97% of terminal BEAPI 429s came from getListingDetail, and this page is its
+// main caller: every revalidation spent TWO calls (generateMetadata + the page
+// body), and at 300s a crawled listing revalidated 12x an hour. We invited the
+// AI crawlers in #81, so crawl volume drives that directly.
+//
+// Safe to lengthen because everything this page takes from the BEAPI detail is
+// DURABLE — photos, publicDescription, amenities, check-in/out times,
+// cancellation terms, house rules, bedArrangements, review averages. The
+// displayed price does NOT come from here; `nightlyFrom` is read from the
+// pricing cache, and `prices.basePrice` is the known $95 placeholder. Nothing
+// a guest pays goes stale by waiting an hour.
+export const revalidate = 3600;
 
 /**
  * Declared, but deliberately returns nothing.
@@ -44,7 +58,18 @@ import {
   getSimilarListings,
 } from "@/lib/supabase";
 import { getListingDetail } from "@/lib/guesty-beapi";
+import { cache } from "react";
 import { isPetFriendly } from "@/lib/pet-policy";
+
+/**
+ * Per-request memo. generateMetadata and the page body each fetched the same
+ * listing detail, so every render cost TWO BEAPI calls for one page. React
+ * cache() collapses them to one for the duration of a single request.
+ *
+ * ⚠️ Both call sites must use THIS, not getListingDetail directly, or the
+ * duplicate comes straight back.
+ */
+const getListingDetailOnce = cache(getListingDetail);
 import {
   normalizeListingName,
   normalizeStateCode,
@@ -408,7 +433,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const listingId = extractIdFromSlug(id);
   const [listing, beapiListing] = await Promise.all([
     getListing(listingId).catch(() => null),
-    getListingDetail(listingId).catch(() => null),
+    getListingDetailOnce(listingId).catch(() => null),
   ]);
 
   const b = beapiListing as Record<string, unknown> | null;
@@ -485,7 +510,7 @@ export default async function PropertyDetailPage({ params }: Props) {
   const listingId = extractIdFromSlug(id);
   const [initialListing, beapiListing, reviewsData] = await Promise.all([
     getListing(listingId).catch(() => null),
-    getListingDetail(listingId).catch(() => null),
+    getListingDetailOnce(listingId).catch(() => null),
     getListingReviews(listingId).catch(() => ({
       reviews: [],
       categoryAverages: {
