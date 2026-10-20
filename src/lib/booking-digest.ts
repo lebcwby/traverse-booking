@@ -304,7 +304,10 @@ export function renderSlackBlocks(d: Digest): Record<string, unknown> {
         elements: [
           {
             type: "mrkdwn",
-            text: "Channel is the attribution cookie captured on site, not GA4. The click path covers this browser session only and needs analytics consent — bookings before 2026-10-19 have none. See src/lib/booking-digest.ts.",
+            // "Mountain" is spelled out rather than imported so the footer
+            // reads naturally; the day bounds come from REPORT_TIMEZONE in
+            // src/lib/report-day.ts. Change both together.
+            text: "Day runs midnight to midnight Mountain time. Channel is the attribution cookie captured on site, not GA4. The click path covers this browser session only and needs analytics consent — bookings before 2026-10-19 have none. See src/lib/booking-digest.ts.",
           },
         ],
       },
