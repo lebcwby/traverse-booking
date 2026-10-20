@@ -10,8 +10,13 @@
  * some bookings legitimately have none — every booking before 2026-10-19
  * does. See the header of src/lib/booking-digest.ts for the exact edges.
  *
+ * Days run midnight to midnight **Mountain time**, not UTC. Bucketing on UTC
+ * moved every evening booking to the next day: Sunday 2026-10-18 had three
+ * website bookings in Mountain time and UTC would have reported one. See
+ * src/lib/report-day.ts.
+ *
  * GET /api/cron/daily-booking-digest     (Bearer CRON_SECRET)
- *     ?date=YYYY-MM-DD   report on a specific day instead of yesterday
+ *     ?date=YYYY-MM-DD   report on a specific Mountain day instead of yesterday
  *     ?dryRun=1          return the payload as JSON, post nothing
  *
  * Posting needs SLACK_WEBHOOK_URL. Without it the route still returns the
@@ -24,22 +29,10 @@ import {
   fetchCompletedCheckouts,
   renderSlackBlocks,
 } from "@/lib/booking-digest";
+import { REPORT_TIMEZONE, yesterdayIn, zonedDayBounds } from "@/lib/report-day";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-/** UTC day bounds. Guests book from every timezone; UTC is at least honest. */
-function dayBounds(date: string) {
-  return {
-    start: `${date}T00:00:00.000Z`,
-    end: `${date}T23:59:59.999Z`,
-  };
-}
-
-function yesterdayUtc(): string {
-  const d = new Date(Date.now() - 86_400_000);
-  return d.toISOString().slice(0, 10);
-}
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -54,11 +47,11 @@ export async function GET(request: Request) {
   const day =
     dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
       ? dateParam
-      : yesterdayUtc();
+      : yesterdayIn();
 
   let digest;
   try {
-    const { start, end } = dayBounds(day);
+    const { start, end } = zonedDayBounds(day);
     const rows = await fetchCompletedCheckouts(start, end);
     digest = buildDigest(rows, day);
   } catch (err) {
@@ -111,6 +104,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     slack: "posted",
     day,
+    timezone: REPORT_TIMEZONE,
     bookings: digest.bookings.length,
     totalValue: digest.totalValue,
   });
