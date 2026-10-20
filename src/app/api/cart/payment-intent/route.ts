@@ -23,6 +23,7 @@ import {
 import type { TrackingContext } from "@/lib/pending-checkouts";
 
 import { GA_SESSION_COOKIE } from "@/lib/ga4-config";
+import { CLICK_PATH_COOKIE } from "@/lib/click-path";
 
 /** Hard cap from Phase 2 plan: sequential reservations risk the 60s
  * Vercel function limit beyond this. UI also enforces this. */
@@ -57,6 +58,7 @@ function extractTrackingContext(request: NextRequest): TrackingContext {
       legacyCcpaOptOut: request.cookies.get("_sp_ccpa_optout")?.value,
       fbp: request.cookies.get("_fbp")?.value,
       fbc: request.cookies.get("_fbc")?.value,
+      clickPath: request.cookies.get(CLICK_PATH_COOKIE)?.value,
     },
     requestContext: {
       clientIp:

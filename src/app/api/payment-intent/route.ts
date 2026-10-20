@@ -31,6 +31,7 @@ import {
 } from "@/lib/pending-checkout-token";
 
 import { GA_SESSION_COOKIE } from "@/lib/ga4-config";
+import { CLICK_PATH_COOKIE } from "@/lib/click-path";
 
 // Snapshot the cookies + request context that Meta CAPI / Google Ads server
 // uploads need (fbp, fbc, attribution, IP, UA, etc.) into the pending_checkouts
@@ -47,6 +48,7 @@ function extractTrackingContext(request: NextRequest): TrackingContext {
       legacyCcpaOptOut: request.cookies.get("_sp_ccpa_optout")?.value,
       fbp: request.cookies.get("_fbp")?.value,
       fbc: request.cookies.get("_fbc")?.value,
+      clickPath: request.cookies.get(CLICK_PATH_COOKIE)?.value,
     },
     requestContext: {
       clientIp:

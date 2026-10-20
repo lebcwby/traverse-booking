@@ -10,23 +10,32 @@
  *
  * Each row carries, in `tracking_context.cookies`:
  *   - `attribution`  — LAST touch: utm_*, gclid/fbclid/msclkid, and the
- *                      `landingPage` the visitor entered on
- *   - `firstTouch`   — FIRST touch, same shape. When the two differ, the
- *                      channel that *found* the guest is not the one that
- *                      closed them, which is the single most useful thing
- *                      here and is invisible in GA4's default reports.
+ *                      `landingPage` the visitor entered on. Written only
+ *                      when the visit carried a campaign tag.
+ *   - `firstTouch`   — FIRST touch. Since 2026-10-19 this is written on
+ *                      every first visit, tagged or not, so an organic or
+ *                      direct arrival now has a landing page and (when the
+ *                      browser sent one) a referrer. Before that date it
+ *                      existed only for tagged visits, which is why 8 of the
+ *                      last 10 bookings show neither.
+ *   - `clickPath`    — the pages seen this session, from the `_sp_path`
+ *                      cookie. Also 2026-10-19 onward, and only when the
+ *                      visitor has not declined analytics consent.
  *
- * ⚠️ **There is no page-by-page funnel path.** We do not store a visit
- * trail anywhere — `sp_events` is local attractions data for /plan, not
- * analytics. What this digest can show is the *shape* of the journey:
- * entry page, first touch vs last touch, how long from first touch to
- * booking, and how long spent in checkout. A real click path would need
- * either the GA4 Data API (service-account credentials we do not have) or
- * storing a breadcrumb trail ourselves.
+ * ⚠️ Three honest edges remain. The click path is **session-scoped**: a guest
+ * who browses on Monday and books on Thursday shows only Thursday's pages.
+ * It is **client-written**, so a visitor with JS blocked has none. And it is
+ * **capped** — long trails elide the middle and say how many steps are
+ * missing rather than quietly looking shorter.
  *
  * Not inferring what we cannot measure is the point: a digest that invents
  * a funnel is worse than one that is honest about its edges.
  */
+import {
+  clickPathMinutes,
+  formatClickPath,
+  parseClickPath,
+} from "./click-path";
 import { getPool } from "./db";
 
 export interface DigestBooking {
@@ -43,6 +52,14 @@ export interface DigestBooking {
   firstTouchSource: string | null;
   /** Page the visitor entered the site on. */
   landingPage: string | null;
+  /** External site that sent them, when no campaign tag was present. */
+  referrer: string | null;
+  /** Rendered click path for this session, e.g. "/ → /crested-butte". */
+  clickPath: string | null;
+  /** Pages recorded in the click path, elided ones included. */
+  pagesViewed: number | null;
+  /** Minutes from the first page of this session to the last one recorded. */
+  minutesOnSite: number | null;
   /** Minutes from first recorded touch to the completed booking. */
   minutesFromFirstTouch: number | null;
   /** Minutes spent in checkout (checkout row created → completed). */
@@ -87,7 +104,23 @@ export function formatChannel(
   }
   if (attribution?.fbclid) return "facebook / paid (fbclid)";
   if (attribution?.msclkid) return "bing / cpc (msclkid)";
+
+  // Untagged arrival: the referring site is the only acquisition signal, and
+  // for organic search it is the right one. "(direct)" here would be a claim,
+  // not an observation.
+  const host = referrerHost(attribution?.referrer);
+  if (host) return `${host} / referral`;
+
   return "(direct) / (none)";
+}
+
+function referrerHost(referrer: unknown): string | null {
+  if (typeof referrer !== "string" || !referrer) return null;
+  try {
+    return new URL(referrer).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
 }
 
 /** First name plus last initial — enough to recognise, less than is needed. */
@@ -121,8 +154,15 @@ export function rowToBooking(row: Row): DigestBooking {
 
   const attribution = parseJson(cookies?.attribution);
   const firstTouch = parseJson(cookies?.firstTouch);
+  const clickPath = parseClickPath(
+    typeof cookies?.clickPath === "string" ? cookies.clickPath : null
+  );
 
-  const source = formatChannel(attribution);
+  // `_sp_attribution` is written only for tagged visits, so for an untagged
+  // booking the first-touch cookie is the ONLY record of where they came
+  // from — and for those two it is also the last touch, since there was no
+  // campaign in between.
+  const source = formatChannel(attribution ?? firstTouch);
   // Only when a first-touch cookie actually exists. Absent, we do not know
   // the first touch — and reporting "(direct)" for it would be a claim the
   // data does not support, on the one line a reader is most likely to act on.
@@ -143,7 +183,14 @@ export function rowToBooking(row: Row): DigestBooking {
     landingPage:
       (firstTouch?.landingPage as string) ||
       (attribution?.landingPage as string) ||
+      clickPath?.steps[0]?.path ||
       null,
+    referrer:
+      (typeof firstTouch?.referrer === "string" ? firstTouch.referrer : null) ||
+      null,
+    clickPath: formatClickPath(clickPath),
+    pagesViewed: clickPath ? clickPath.steps.length + clickPath.dropped : null,
+    minutesOnSite: clickPathMinutes(clickPath),
     minutesFromFirstTouch: minutesBetween(
       firstTouch?.capturedAt ?? attribution?.capturedAt,
       row.completed_at
@@ -189,6 +236,14 @@ function duration(mins: number | null): string {
   return `${Math.round(h / 24)}d`;
 }
 
+/** " _(5 pages, 12m)_" — the trailer on a rendered click path. */
+function pageCount(b: DigestBooking): string {
+  if (!b.pagesViewed) return "";
+  const pages = `${b.pagesViewed} page${b.pagesViewed === 1 ? "" : "s"}`;
+  const time = b.minutesOnSite !== null ? `, ${duration(b.minutesOnSite)}` : "";
+  return `  _(${pages}${time})_`;
+}
+
 /** Slack Block Kit payload. Rendered from a Digest so it is unit-testable. */
 export function renderSlackBlocks(d: Digest): Record<string, unknown> {
   if (d.bookings.length === 0) {
@@ -219,7 +274,12 @@ export function renderSlackBlocks(d: Digest): Record<string, unknown> {
       `${b.checkIn} → ${b.checkOut}${b.guests ? ` · ${b.guests} guest${b.guests === 1 ? "" : "s"}` : ""} · ${b.guestName}${b.reservationId ? ` · \`${b.reservationId}\`` : ""}`,
       `converted from \`${b.source}\`${b.firstTouchSource ? `  _(first touch: \`${b.firstTouchSource}\`)_` : ""}`,
     ];
-    if (b.landingPage) lines.push(`entered on \`${b.landingPage}\``);
+    if (b.landingPage) {
+      lines.push(
+        `entered on \`${b.landingPage}\`${b.referrer ? ` _(from ${b.referrer})_` : ""}`
+      );
+    }
+    if (b.clickPath) lines.push(`path: ${b.clickPath}${pageCount(b)}`);
     lines.push(
       `first touch → booked: ${duration(b.minutesFromFirstTouch)} · in checkout: ${duration(b.minutesInCheckout)}`
     );
@@ -244,7 +304,7 @@ export function renderSlackBlocks(d: Digest): Record<string, unknown> {
         elements: [
           {
             type: "mrkdwn",
-            text: "Channel is the attribution cookie captured on site, not GA4. No page-by-page path is stored — see src/lib/booking-digest.ts.",
+            text: "Channel is the attribution cookie captured on site, not GA4. The click path covers this browser session only and needs analytics consent — bookings before 2026-10-19 have none. See src/lib/booking-digest.ts.",
           },
         ],
       },

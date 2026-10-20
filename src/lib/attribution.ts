@@ -90,10 +90,13 @@ export function getEmailCaptureAttribution(
  *
  *  1. **First touch as well as last touch.** Owners research for weeks before
  *     enquiring. The visit that converts is rarely the visit that found us.
- *  2. **`document.referrer`.** Middleware only writes `_sp_attribution` when a
+ *  2. **`document.referrer`.** Middleware writes `_sp_attribution` only when a
  *     UTM/click param is present, so an ORGANIC search visitor — the most
- *     likely way an owner finds a property manager — leaves no cookie at all.
- *     The referrer is the only signal available in that case.
+ *     likely way an owner finds a property manager — has no last-touch cookie
+ *     at all. Since 2026-10-19 `_sp_first_touch` IS written for those visits
+ *     (landing page, and the referrer when the browser sent one), but only on
+ *     their very first page view; the live `document.referrer` still covers
+ *     the visit they actually submit on.
  */
 export interface LeadAttribution {
   /** Last-touch campaign params, if the visit carried any. */
@@ -138,7 +141,8 @@ export function getLeadAttribution(): LeadAttribution {
   if (typeof document !== "undefined" && document.referrer) {
     try {
       const ref = new URL(document.referrer);
-      if (ref.hostname !== window.location.hostname) referrer = document.referrer;
+      if (ref.hostname !== window.location.hostname)
+        referrer = document.referrer;
     } catch {
       /* malformed referrer — ignore */
     }
