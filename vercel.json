@@ -83,8 +83,12 @@
       "path": "/api/cron/void-duplicate-payments?apply=1&max=10"
     },
     {
-      "schedule": "35 14 * * *",
+      "schedule": "30 7 * * *",
       "path": "/api/cron/daily-booking-digest"
+    },
+    {
+      "schedule": "45 7 * * 1",
+      "path": "/api/cron/weekly-booking-digest"
     }
   ]
 }
