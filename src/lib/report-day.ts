@@ -134,3 +134,43 @@ export function yesterdayIn(
 ): string {
   return shiftCivilDate(civilDate(now, timeZone), -1);
 }
+
+/**
+ * The last COMPLETE Monday–Sunday week in `timeZone`, as civil dates.
+ *
+ * Anchored to the current day's own week rather than counting back 7 days, so
+ * it returns the same week whichever day you run it on — a Monday cron, a
+ * Thursday backfill and a manual re-run all report Mon–Sun of the week before.
+ *
+ * Day-of-week is read via UTC on a midnight-UTC instant, which is safe because
+ * `date` is already a civil date string: no zone conversion happens, we are
+ * only asking what weekday that calendar date was.
+ */
+export function previousWeekIn(
+  timeZone = REPORT_TIMEZONE,
+  now: Date = new Date()
+): { start: string; end: string } {
+  const today = civilDate(now, timeZone);
+  const dow = new Date(`${today}T00:00:00.000Z`).getUTCDay(); // 0 = Sunday
+  const daysSinceMonday = (dow + 6) % 7; // Monday = 0 … Sunday = 6
+  const thisMonday = shiftCivilDate(today, -daysSinceMonday);
+  const start = shiftCivilDate(thisMonday, -7);
+  return { start, end: shiftCivilDate(start, 6) };
+}
+
+/**
+ * Half-open bounds [start, end) spanning `startDate`..`endDate` inclusive,
+ * as ISO instants. DST-correct at both ends because each edge resolves through
+ * zonedDayStart independently — a week containing a transition is 167 or 169
+ * hours, not 168.
+ */
+export function zonedRangeBounds(
+  startDate: string,
+  endDate: string,
+  timeZone = REPORT_TIMEZONE
+): { start: string; end: string } {
+  return {
+    start: zonedDayStart(startDate, timeZone).toISOString(),
+    end: zonedDayStart(shiftCivilDate(endDate, 1), timeZone).toISOString(),
+  };
+}

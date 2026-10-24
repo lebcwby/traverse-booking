@@ -138,7 +138,9 @@ function minutesBetween(from: unknown, to: unknown): number | null {
   return Math.round((b - a) / 60000);
 }
 
-interface Row {
+// Exported so the weekly roll-up in ./weekly-digest.ts can type the rows it
+// buckets by completed_at without redeclaring the shape.
+export interface Row {
   reservation_id: string | null;
   guest: Record<string, unknown> | null;
   tracking: Record<string, unknown> | null;
