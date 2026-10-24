@@ -3,7 +3,8 @@ import { sendAlert } from "./alerts";
 
 const OPENAPI_BASE_URL = "https://open-api.guesty.com";
 
-// Read-only token management. Refresh handled by refresh-tokens pg_cron.
+// Read-only token management. Refresh handled by the Vercel cron
+// /api/cron/refresh-tokens — NOT by a Supabase edge function (see below).
 const TOKEN_BUFFER_MS = 8 * 60 * 60 * 1000; // Token is "fresh" if > 8h remaining
 
 let memoryToken: { token: string; expiresAt: number } | null = null;
@@ -47,7 +48,8 @@ async function getSupabaseCachedToken(): Promise<{
 
 async function getOpenAPIToken(): Promise<string> {
   // Read-only — NEVER refresh tokens here. Token refresh is handled
-  // exclusively by the refresh-tokens Supabase edge function via pg_cron.
+  // exclusively by the Vercel cron /api/cron/refresh-tokens, which also
+  // enforces the global 4-mints-per-24h budget against Guesty's cap of 5.
 
   // Layer 1: In-memory
   if (memoryToken && isTokenFresh(memoryToken.expiresAt)) {
@@ -67,7 +69,7 @@ async function getOpenAPIToken(): Promise<string> {
   }
 
   throw new Error(
-    "OpenAPI token expired — refresh-tokens pg_cron must refresh it"
+    "OpenAPI token expired — /api/cron/refresh-tokens must refresh it"
   );
 }
 
