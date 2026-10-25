@@ -52,13 +52,17 @@
  * src/lib/balance-exemptions.ts, which also explains why Expedia and VRBO are
  * deliberately NOT on that list.
  *
- * ⚠️ This sits in tension with the 2026-08-26 sweep noted just above, which
- * recorded "Booking.com 8/8" auto-charging reliably. Both can be true —
- * Booking.com supports channel-collect and hotel-collect per property — but if
- * some of our Booking.com inventory is hotel-collect, suppressing its balances
- * hides real uncollected money. `suppressedBalances` in the response is how to
- * check: if that count is large and growing, confirm the collection model per
- * listing rather than assuming.
+ * ⚠️ The 2026-08-26 sweep noted just above recorded "Booking.com 8/8"
+ * auto-charging reliably, which reads like a contradiction. It is not:
+ * **Nadim confirmed 2026-10-25 that our entire Booking.com inventory is
+ * "Payments by Booking.com"** — the channel collects every one of them. What
+ * that sweep counted was the presence of a payment record, which the channel
+ * remittance also produces, not proof that we charged a card.
+ *
+ * Should Booking.com ever be switched to hotel-collect on any listing, this
+ * exemption would start hiding real uncollected money. `suppressedBalances`
+ * in the response is the tripwire: it should track Booking.com and Homes &
+ * Villas departure volume, and nothing else.
  *
  * Read-only. It never mutates Guesty or Stripe — a mismatch needs a human to
  * decide which record is the real one.
