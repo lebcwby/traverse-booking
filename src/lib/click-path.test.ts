@@ -33,6 +33,62 @@ describe("sanitizePath", () => {
     expect(sanitizePath("https://evil.example/x")).toBeNull();
     expect(sanitizePath("")).toBeNull();
   });
+
+  // A real production URL. The original cap cut the tail and took the Guesty
+  // id with it, so the digest said someone viewed a property but not which —
+  // and every listing slug on the site is long enough to hit the cap, so this
+  // happened on every property step of every path. Synthetic short paths in
+  // the first version of these tests is exactly why it shipped.
+  describe("over-long paths keep the identifying tail", () => {
+    const REAL =
+      "/properties/the-tennessee-pass-a-frame-cabin-9-acres-mt-elbert-views-woo-6ad00c9eded1620031ba3ef8";
+    const GUESTY_ID = "6ad00c9eded1620031ba3ef8";
+
+    it("keeps the full Guesty id", () => {
+      const out = sanitizePath(REAL)!;
+      expect(out).toContain(GUESTY_ID);
+      expect(out.endsWith(GUESTY_ID)).toBe(true);
+    });
+
+    it("keeps enough of the slug to recognise the listing", () => {
+      expect(sanitizePath(REAL)!).toContain("tennessee-pass");
+    });
+
+    it("marks the elision instead of pretending the path was short", () => {
+      expect(sanitizePath(REAL)!).toContain("..");
+    });
+
+    it("still respects the length cap", () => {
+      expect(sanitizePath(REAL)!.length).toBeLessThanOrEqual(64);
+    });
+
+    // Cookies are an ASCII medium and a literal "…" is not safe to write raw.
+    // `/` is legal in a cookie value even though encodeURIComponent escapes
+    // it, so the check is for genuinely forbidden characters, not for being
+    // URI-encodable.
+    it("uses only characters that are legal in a cookie value", () => {
+      const out = sanitizePath(REAL)!;
+      expect(out).toMatch(/^[A-Za-z0-9/_.\-]+$/);
+      // No control chars, whitespace, non-ASCII, or cookie delimiters.
+      expect(out).not.toMatch(/[\s;,"\\\u0080-￿]/);
+    });
+
+    it("leaves a path that fits completely alone", () => {
+      expect(sanitizePath("/crested-butte")).toBe("/crested-butte");
+      expect(sanitizePath("/")).toBe("/");
+    });
+
+    // Two different units in the same building differ only in the id.
+    it("keeps two long sibling listings distinguishable", () => {
+      const a = sanitizePath(
+        "/properties/grand-lodge-slopeside-studio-king-bed-kitchen-at-mt-cb-6a8dc0112755850082f1457c"
+      );
+      const b = sanitizePath(
+        "/properties/grand-lodge-slopeside-studio-king-bed-kitchen-at-mt-cb-6a8dc019c57522007aa9559f"
+      );
+      expect(a).not.toBe(b);
+    });
+  });
 });
 
 describe("appendStep", () => {
