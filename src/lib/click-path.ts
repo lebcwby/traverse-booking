@@ -36,7 +36,18 @@
 export const CLICK_PATH_COOKIE = "_sp_path";
 export const MAX_STEPS = 12;
 export const MAX_COOKIE_BYTES = 700;
-const MAX_PATH_LENGTH = 80;
+const MAX_PATH_LENGTH = 64;
+/**
+ * How much of the END of an over-long path to keep. Listing URLs are
+ * `/properties/<slug>-<24-hex-id>`, so the part that says WHICH listing is the
+ * last 24 characters. Head-only truncation cut straight through it and the
+ * digest showed that someone viewed a property without saying which one — the
+ * whole point of the line. 26 keeps the id plus a couple of characters of
+ * separator.
+ */
+const PATH_TAIL_LENGTH = 26;
+/** ASCII on purpose: a literal "…" is not safe to put in a cookie value. */
+const ELISION = "..";
 const VERSION = "v1";
 
 export interface ClickPathStep {
@@ -54,13 +65,32 @@ export interface ClickPath {
   steps: ClickPathStep[];
 }
 
-/** Strip the query, the separators, and anything unreasonably long. */
+/**
+ * Strip the query, the separators, and anything unreasonably long.
+ *
+ * An over-long path is truncated in the MIDDLE, not the tail. Our listing
+ * URLs end in the Guesty id, so cutting the end threw away the only part that
+ * identified the listing:
+ *
+ *   before  /properties/the-tennessee-pass-a-frame-cabin-9-acres-mt-elbert-views-woo-6ad00c9
+ *   after   /properties/the-tennessee-pass-a-f..woo-6ad00c9eded1620031ba3ef8
+ *
+ * Every listing slug on the site is long enough to hit the cap, so this was
+ * not an edge case — it was every property step in every path.
+ */
 export function sanitizePath(input: string): string | null {
   if (!input) return null;
   const withoutQuery = input.split(/[?#]/)[0];
   const cleaned = withoutQuery.replace(/[^A-Za-z0-9/_.\-]/g, "");
   if (!cleaned.startsWith("/")) return null;
-  return cleaned.slice(0, MAX_PATH_LENGTH);
+  if (cleaned.length <= MAX_PATH_LENGTH) return cleaned;
+
+  const headLength = MAX_PATH_LENGTH - PATH_TAIL_LENGTH - ELISION.length;
+  return (
+    cleaned.slice(0, headLength) +
+    ELISION +
+    cleaned.slice(cleaned.length - PATH_TAIL_LENGTH)
+  );
 }
 
 export function serializeClickPath(path: ClickPath): string {
