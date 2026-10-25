@@ -45,6 +45,21 @@
  * were eventually paid, but only because a person noticed. This job is now that
  * person.
  *
+ * BALANCES WE DO NOT REPORT (2026-10-25): owner stays, and the sources where
+ * the channel bills the guest and remits to us later — `Booking.com` and
+ * `homesVillasByMarriott`. Those carry `totalPaid: 0` and a full `balanceDue`
+ * permanently, because we never charge that guest. See
+ * src/lib/balance-exemptions.ts, which also explains why Expedia and VRBO are
+ * deliberately NOT on that list.
+ *
+ * ⚠️ This sits in tension with the 2026-08-26 sweep noted just above, which
+ * recorded "Booking.com 8/8" auto-charging reliably. Both can be true —
+ * Booking.com supports channel-collect and hotel-collect per property — but if
+ * some of our Booking.com inventory is hotel-collect, suppressing its balances
+ * hides real uncollected money. `suppressedBalances` in the response is how to
+ * check: if that count is large and growing, confirm the collection model per
+ * listing rather than assuming.
+ *
  * Read-only. It never mutates Guesty or Stripe — a mismatch needs a human to
  * decide which record is the real one.
  *
@@ -60,6 +75,11 @@ import { getPool } from "@/lib/db";
 import { getOpenAPIReservationsPage } from "@/lib/guesty-openapi";
 import { getStripeServer } from "@/lib/stripe";
 import { sendAlert, renderAlertDetails } from "@/lib/alerts";
+import {
+  balanceExemption,
+  EXEMPTION_LABELS,
+  type BalanceExemption,
+} from "@/lib/balance-exemptions";
 
 export const dynamic = "force-dynamic";
 
@@ -92,7 +112,6 @@ const RECENT_BOOKING_MAX = 600;
  * one is the expected shape rather than a defect. Everything else that reaches
  * check-out should be settled.
  */
-const UNBILLED_SOURCES = new Set(["owner", "owner-guest"]);
 
 interface GuestyPaymentAttempt {
   payload?: {
@@ -300,6 +319,11 @@ export async function GET(request: Request) {
   }
 
   const findings: Finding[] = [];
+  /** Balances we deliberately did not report, by reason. */
+  const suppressed: Record<BalanceExemption, number> = {
+    owner_stay: 0,
+    channel_collected: 0,
+  };
   const stamp = today();
   let scanned = 0;
 
@@ -425,12 +449,20 @@ export async function GET(request: Request) {
     // bury the real ones — that risk arrived with Guesty enumeration, since our
     // own table only ever held bookings paid in full at checkout.
     const departed = checkOut !== null && checkOut <= stamp;
-    if (
-      departed &&
-      balanceDue !== null &&
-      balanceDue > BALANCE_EPSILON &&
-      !UNBILLED_SOURCES.has(String(source))
-    ) {
+    const owesMoney =
+      departed && balanceDue !== null && balanceDue > BALANCE_EPSILON;
+
+    // Owner stays and channel-collected OTAs carry a balance forever by
+    // design. Counting them instead of reporting them keeps the suppression
+    // visible: if a source string changes upstream the count drops to zero and
+    // the findings come back, rather than failing silently either way.
+    const exemption = owesMoney ? balanceExemption(source) : null;
+    if (exemption) suppressed[exemption] += 1;
+
+    // `balanceDue !== null` is repeated, redundantly, so TypeScript narrows it
+    // for the toFixed calls below — the check inside `owesMoney` does not
+    // carry across the assignment.
+    if (owesMoney && !exemption && balanceDue !== null) {
       // A Guesty balance is NOT evidence the guest owes money. Two of the first
       // three found had already paid in full and only Guesty's ledger was
       // short: recordPayment hit Guesty's "amount > balance" error,
@@ -557,6 +589,11 @@ export async function GET(request: Request) {
     stripePisMatched: piByGuestyId.size,
     findingCount: findings.length,
     findings,
+    suppressedBalances: {
+      ...suppressed,
+      total: suppressed.owner_stay + suppressed.channel_collected,
+      why: EXEMPTION_LABELS,
+    },
     dryRun,
   });
 }
