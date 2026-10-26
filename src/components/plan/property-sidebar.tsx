@@ -9,6 +9,7 @@
 // API doesn't need to know about guesty-beapi (which is Node-only).
 
 import { useEffect, useMemo, useState } from "react";
+import { CANCELLATION_POLICY_DAYS } from "@/lib/cancellation-policy";
 import Link from "next/link";
 import type { Itinerary } from "@/lib/plan/schema";
 import {
@@ -292,7 +293,10 @@ export function PropertySidebar({ itinerary }: { itinerary: Itinerary }) {
         <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12.5px] text-neutral-700">
           <TrustItem icon={BadgeCheck} label="Confirmed availability" />
           <TrustItem icon={Tag} label="No booking fees" />
-          <TrustItem icon={ShieldCheck} label="Free cancel 14 days out" />
+          <TrustItem
+            icon={ShieldCheck}
+            label={`Free cancel ${CANCELLATION_POLICY_DAYS} days out`}
+          />
         </div>
       </div>
 

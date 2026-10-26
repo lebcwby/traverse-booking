@@ -60,6 +60,7 @@ import {
 import { getListingDetail } from "@/lib/guesty-beapi";
 import { cache } from "react";
 import { isPetFriendly } from "@/lib/pet-policy";
+import { CANCELLATION_POLICY_SUMMARY } from "@/lib/cancellation-policy";
 
 /**
  * Per-request memo. generateMetadata and the page body each fetched the same
@@ -131,15 +132,10 @@ function formatTime(time: string | null | undefined): string {
   return time;
 }
 
-// Traverse Direct uses a unified 14-day cancellation policy across every
-// property — BEAPI's per-listing terms.cancellation reflects what's set on
-// OTA channels (Airbnb/VRBO), which doesn't apply to direct bookings. Single
-// source of truth: src/app/cancellation/page.tsx.
-const TRAVERSE_DIRECT_CANCEL_TEXT =
-  "Free cancellation up to 14 days before check-in. Within 14 days, the reservation is non-refundable.";
-
+// Direct bookings ignore BEAPI's per-listing terms.cancellation — those
+// values are the OTA channel rules. Copy comes from the shared 14-day policy.
 function getCancellationText(_policy: string | undefined): string {
-  return TRAVERSE_DIRECT_CANCEL_TEXT;
+  return CANCELLATION_POLICY_SUMMARY;
 }
 
 function getCancellationTitle(_policy: string | undefined): string {

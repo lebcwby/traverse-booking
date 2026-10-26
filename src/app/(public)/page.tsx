@@ -10,6 +10,7 @@ import { getListingPricingCache } from "@/lib/supabase";
 import { NoFeesEmailSignup } from "@/components/no-fees/no-fees-email-signup";
 import { GoogleReviewsCarousel } from "@/components/google-reviews-carousel";
 import { buildWebSiteJsonLd } from "@/lib/listing-jsonld";
+import { CANCELLATION_POLICY_DAYS } from "@/lib/cancellation-policy";
 import "@/app/no-fees/no-fees.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -416,7 +417,7 @@ export default async function HomePage() {
             <path d="M3.5 10A9 9 0 1 1 6 18.5" />
           </svg>
           <span>
-            <strong>Flexible</strong> cancellation
+            <strong>{CANCELLATION_POLICY_DAYS}-day</strong> cancellation
           </span>
         </div>
         <div className="trust-pill">
@@ -602,7 +603,8 @@ export default async function HomePage() {
               </li>
               <li>
                 <strong>One simple cancellation policy</strong> — full refund up
-                to 14 days before check-in, every property
+                to {CANCELLATION_POLICY_DAYS} days before check-in, every
+                property
               </li>
               <li>
                 <strong>Direct relationships</strong> — talk to the team that

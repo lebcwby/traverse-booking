@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { TrackedContactLink } from "@/components/analytics/tracked-contact-link";
+import { CANCELLATION_POLICY_DAYS } from "@/lib/cancellation-policy";
 
 export const metadata: Metadata = {
   title: "Cancellation Policy",
-  description:
-    "Cancellation and refund policy for Traverse Hospitality direct bookings. Free cancellation up to 14 days before check-in.",
+  description: `Cancellation and refund policy for Traverse Hospitality direct bookings. Free cancellation up to ${CANCELLATION_POLICY_DAYS} days before check-in.`,
   robots: { index: false, follow: true },
   alternates: { canonical: "/cancellation" },
 };
@@ -35,24 +35,25 @@ export default function CancellationPage() {
           <div className="mt-3 space-y-4">
             <div className="rounded-lg border border-border bg-muted/30 p-4">
               <p className="font-medium text-foreground">
-                More than 14 days before check-in
+                {CANCELLATION_POLICY_DAYS} or more days before check-in
               </p>
               <p className="mt-1">
-                Full refund — including taxes and fees. Cancel any time up to 14
-                days before your scheduled arrival and we&apos;ll refund the
-                full amount you paid.
+                Full refund — including taxes and fees. Cancel any time up to{" "}
+                {CANCELLATION_POLICY_DAYS} days before your scheduled arrival
+                and we&apos;ll refund the full amount you paid.
               </p>
             </div>
             <div className="rounded-lg border border-border bg-muted/30 p-4">
               <p className="font-medium text-foreground">
-                Within 14 days of check-in
+                Within {CANCELLATION_POLICY_DAYS} days of check-in
               </p>
               <p className="mt-1">
-                Non-refundable. Once you&apos;re inside the 14-day window, the
-                booking is no longer eligible for a refund. We can&apos;t make
-                exceptions for weather, illness, change of plans, or travel
-                disruptions — please consider trip insurance for stays where
-                flexibility matters.
+                Non-refundable. Once you&apos;re inside the{" "}
+                {CANCELLATION_POLICY_DAYS}-day window, the booking is no longer
+                eligible for a refund. We can&apos;t make exceptions for
+                weather, illness, change of plans, or travel disruptions —
+                please consider trip insurance for stays where flexibility
+                matters.
               </p>
             </div>
           </div>

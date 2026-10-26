@@ -234,10 +234,10 @@ describe("POST /api/account/reservations/[reservationId]/cancel", () => {
     });
   });
 
-  it("non-refundable (within 48hrs) skips Stripe and recordRefund, sends email", async () => {
+  it("non-refundable (inside 14 days) skips Stripe and recordRefund, sends email", async () => {
     mockPoolQuery
       .mockResolvedValueOnce({
-        rows: [makeRow({ check_in: "2026-03-10" })], // 24h away
+        rows: [makeRow({ check_in: "2026-03-10" })], // 1 calendar day out
       })
       .mockResolvedValueOnce({
         rowCount: 1,
@@ -579,6 +579,227 @@ describe("POST /api/account/reservations/[reservationId]/cancel", () => {
       expect.any(String),
       expect.stringMatching(/cancellation-email-failed/)
     );
+  });
+
+  // Clock is Oct 12, 2026 at noon Mountain (18:00Z, MDT). Check-in dates
+  // below are calendar days before that, which is what the policy counts.
+  describe("14-day refund cutoff", () => {
+    const noonOnOct12 = new Date("2026-10-12T18:00:00.000Z");
+
+    function prime(
+      checkIn: string,
+      refundStatus: "refund_pending" | "non_refundable",
+      extra: Record<string, unknown> = {}
+    ) {
+      const row = makeRow({ check_in: checkIn, ...extra });
+      if (refundStatus === "non_refundable") {
+        mockPoolQuery
+          .mockResolvedValueOnce({ rows: [row] })
+          .mockResolvedValueOnce({
+            rowCount: 1,
+            rows: [
+              {
+                canceled_at: "2026-10-12T18:00:00.000Z",
+                refund_status: "non_refundable",
+              },
+            ],
+          })
+          .mockResolvedValueOnce({
+            rowCount: 1,
+            rows: [{ guesty_canceled_at: "2026-10-12T18:00:00.000Z" }],
+          })
+          .mockResolvedValueOnce({ rowCount: 1 });
+      } else {
+        mockPoolQuery
+          .mockResolvedValueOnce({ rows: [row] })
+          .mockResolvedValueOnce({
+            rowCount: 1,
+            rows: [
+              {
+                canceled_at: "2026-10-12T18:00:00.000Z",
+                refund_status: "refund_pending",
+              },
+            ],
+          })
+          .mockResolvedValueOnce({
+            rowCount: 1,
+            rows: [{ guesty_canceled_at: "2026-10-12T18:00:00.000Z" }],
+          })
+          .mockResolvedValueOnce({
+            rowCount: 1,
+            rows: [
+              {
+                refund_status: "full_refund",
+                stripe_refund_id: "re_123",
+                refund_amount: "57.93",
+              },
+            ],
+          })
+          .mockResolvedValueOnce({ rowCount: 1 })
+          .mockResolvedValueOnce({ rowCount: 1 });
+        mockRefundCreate.mockResolvedValue({ id: "re_123", amount: 5793 });
+      }
+      mockCancelOpenAPIReservation.mockResolvedValue(undefined);
+    }
+
+    it("15 days out issues a full Stripe refund", async () => {
+      vi.setSystemTime(noonOnOct12);
+      prime("2026-10-27", "refund_pending");
+      const response = await postReq();
+      expect(response.status).toBe(200);
+      expect(mockPoolQuery.mock.calls[1][1]).toEqual([
+        "res_123",
+        "refund_pending",
+      ]);
+      expect(mockRefundCreate).toHaveBeenCalledTimes(1);
+      await expect(response.json()).resolves.toMatchObject({
+        refundStatus: "full_refund",
+      });
+    });
+
+    it("14 days out still issues a full Stripe refund", async () => {
+      vi.setSystemTime(noonOnOct12);
+      prime("2026-10-26", "refund_pending");
+      const response = await postReq();
+      expect(response.status).toBe(200);
+      expect(mockPoolQuery.mock.calls[1][1]).toEqual([
+        "res_123",
+        "refund_pending",
+      ]);
+      expect(mockRefundCreate).toHaveBeenCalledTimes(1);
+    });
+
+    it("14 days out at 11:59pm Mountain is still refundable", async () => {
+      vi.setSystemTime(new Date("2026-10-13T05:59:00.000Z"));
+      prime("2026-10-26", "refund_pending");
+      const response = await postReq();
+      expect(response.status).toBe(200);
+      expect(mockPoolQuery.mock.calls[1][1]).toEqual([
+        "res_123",
+        "refund_pending",
+      ]);
+      expect(mockRefundCreate).toHaveBeenCalledTimes(1);
+    });
+
+    it("13 days out does not auto-refund", async () => {
+      vi.setSystemTime(new Date("2026-10-13T06:00:00.000Z"));
+      prime("2026-10-26", "non_refundable");
+      const response = await postReq();
+      expect(response.status).toBe(200);
+      expect(mockPoolQuery.mock.calls[1][1]).toEqual([
+        "res_123",
+        "non_refundable",
+      ]);
+      expect(mockRefundCreate).not.toHaveBeenCalled();
+      expect(mockRecordRefund).not.toHaveBeenCalled();
+      await expect(response.json()).resolves.toMatchObject({
+        refundStatus: "non_refundable",
+        refundAmount: 0,
+      });
+    });
+
+    it("2 days out does not auto-refund", async () => {
+      vi.setSystemTime(noonOnOct12);
+      prime("2026-10-14", "non_refundable");
+      const response = await postReq();
+      expect(response.status).toBe(200);
+      expect(mockPoolQuery.mock.calls[1][1]).toEqual([
+        "res_123",
+        "non_refundable",
+      ]);
+      expect(mockRefundCreate).not.toHaveBeenCalled();
+      expect(mockRecordRefund).not.toHaveBeenCalled();
+    });
+
+    it("prefers check_in_date_localized over a UTC instant that shifts the day", async () => {
+      // The instant is UTC midnight Oct 26, which is Oct 25 in Denver (13
+      // days — not refundable). The localized date is the real arrival day
+      // and is still 14 days out.
+      vi.setSystemTime(noonOnOct12);
+      prime("2026-10-26T00:00:00.000Z", "refund_pending", {
+        check_in_date_localized: "2026-10-26",
+      });
+      const response = await postReq();
+      expect(response.status).toBe(200);
+      expect(mockPoolQuery.mock.calls[1][1]).toEqual([
+        "res_123",
+        "refund_pending",
+      ]);
+      expect(mockRefundCreate).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not refund extension charges inside the 14-day window", async () => {
+      vi.setSystemTime(noonOnOct12);
+      prime("2026-10-14", "non_refundable", {
+        money: {
+          totalPaid: 712.45,
+          dateChanges: [
+            {
+              type: "charge",
+              paymentIntentId: "pi_ext",
+              amount: 80,
+              refunded: false,
+            },
+          ],
+        },
+      });
+      const response = await postReq();
+      expect(response.status).toBe(200);
+      expect(mockRefundCreate).not.toHaveBeenCalled();
+    });
+
+    it("still refunds extension charges when the cancellation is a full refund", async () => {
+      vi.setSystemTime(noonOnOct12);
+      const row = makeRow({
+        check_in: "2026-10-27",
+        money: {
+          totalPaid: 712.45,
+          dateChanges: [
+            {
+              type: "charge",
+              paymentIntentId: "pi_ext",
+              amount: 80,
+              refunded: false,
+            },
+          ],
+        },
+      });
+      mockPoolQuery
+        .mockResolvedValueOnce({ rows: [row] })
+        .mockResolvedValueOnce({
+          rowCount: 1,
+          rows: [
+            {
+              canceled_at: "2026-10-12T18:00:00.000Z",
+              refund_status: "refund_pending",
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          rowCount: 1,
+          rows: [{ guesty_canceled_at: "2026-10-12T18:00:00.000Z" }],
+        })
+        .mockResolvedValueOnce({
+          rowCount: 1,
+          rows: [
+            {
+              refund_status: "full_refund",
+              stripe_refund_id: "re_123",
+              refund_amount: "57.93",
+            },
+          ],
+        })
+        .mockResolvedValueOnce({ rowCount: 1 }) // dateChanges jsonb
+        .mockResolvedValueOnce({ rowCount: 1 }) // guesty_refund_recorded
+        .mockResolvedValueOnce({ rowCount: 1 }); // email
+      mockCancelOpenAPIReservation.mockResolvedValue(undefined);
+      mockRefundCreate.mockResolvedValue({ id: "re_ext", amount: 8000 });
+
+      const response = await postReq();
+      expect(response.status).toBe(200);
+      expect(mockRefundCreate).toHaveBeenCalledTimes(2);
+      expect(mockRefundCreate.mock.calls[1][0].payment_intent).toBe("pi_ext");
+    });
   });
 
   it("legacy/manual canceled row (status=canceled, refund_status=NULL) returns 400", async () => {

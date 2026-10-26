@@ -19,6 +19,7 @@ import { readSearchSelection, buildSearchQuery } from "@/lib/search-selection";
 import { WishlistButton } from "@/components/wishlist-button";
 import { SavingsPrice } from "@/components/properties/savings-price";
 import { trackSelectListing } from "@/lib/tracking";
+import { listingCancellationBadge } from "@/lib/cancellation-policy";
 
 export function PropertyCard({
   listing,
@@ -451,7 +452,7 @@ export function PropertyCard({
                   </p>
                 )}
                 <span className="inline-block rounded-md bg-muted/75 px-1 py-0.5 text-[11px] font-medium text-muted-foreground">
-                  Free cancellation
+                  {listingCancellationBadge(checkIn || listing.cachedCheckIn)}
                 </span>
               </div>
             ) : listing.prices?.basePrice ? (
@@ -462,7 +463,7 @@ export function PropertyCard({
                   suffix="/ night"
                 />
                 <span className="inline-block rounded-md bg-muted/75 px-1 py-0.5 text-[11px] font-medium text-muted-foreground">
-                  Free cancellation
+                  {listingCancellationBadge(checkIn || listing.cachedCheckIn)}
                 </span>
               </>
             ) : null}

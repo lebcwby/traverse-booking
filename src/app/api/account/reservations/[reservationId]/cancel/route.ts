@@ -15,8 +15,10 @@ import {
   trackCancellationServerSide,
   trackRefundServerSide,
 } from "@/lib/server-tracking";
-
-const CANCELLATION_WINDOW_MS = 48 * 60 * 60 * 1000;
+import {
+  calendarDaysBeforeCheckIn,
+  isFullRefundEligible,
+} from "@/lib/cancellation-policy";
 
 type RefundStatus =
   | "refund_pending"
@@ -32,6 +34,8 @@ interface ReservationRow {
   listing_id: string | null;
   listing: { title?: string } | null;
   check_in: string;
+  /** Guesty's property-local calendar date, when the sync stored one. */
+  check_in_date_localized: string | null;
   check_out: string;
   status: string | null;
   user_id: string | null;
@@ -56,6 +60,7 @@ const SELECT_RESERVATION = `
     r.listing_id,
     r.listing,
     r.check_in,
+    r.check_in_date_localized,
     r.check_out,
     r.status,
     r.user_id,
@@ -177,10 +182,15 @@ export async function POST(
       );
     }
 
-    const checkInDate = new Date(row.check_in);
+    // Prefer Guesty's localized calendar date when the sync stored one.
+    // Otherwise the helper reads a date-only string as that calendar day, or
+    // converts a check-in instant into America/Denver. Either way the cutoff
+    // is whole Mountain calendar days, not 14×24 hours.
     const now = new Date();
-    const msUntilCheckIn = checkInDate.getTime() - now.getTime();
-    const refundEligible = msUntilCheckIn > CANCELLATION_WINDOW_MS;
+    const checkInForPolicy =
+      row.check_in_date_localized?.trim() || row.check_in;
+    const refundEligible = isFullRefundEligible(checkInForPolicy, now);
+    const daysUntilCheckIn = calendarDaysBeforeCheckIn(checkInForPolicy, now);
 
     // Prefer the explicit column, but fall back to the PI embedded in the
     // Guesty payment note for reservations that were synced via webhook
@@ -379,12 +389,10 @@ export async function POST(
     }
 
     // Step: Refund any date-change extension payments (resume-safe).
-    // These are additional Stripe PaymentIntents from stay extensions/date changes.
-    if (
-      (row.refund_status === "full_refund" ||
-        row.refund_status === "non_refundable") &&
-      row.money?.dateChanges
-    ) {
+    // These are additional Stripe PaymentIntents from stay extensions/date
+    // changes. Only a full-refund cancellation returns them. A non-refundable
+    // cancellation (inside 14 days) keeps the extension charges too.
+    if (row.refund_status === "full_refund" && row.money?.dateChanges) {
       const dateChanges = Array.isArray(row.money.dateChanges)
         ? row.money.dateChanges
         : [];
@@ -504,7 +512,7 @@ export async function POST(
         row.refund_status === "full_refund"
           ? `Full refund — Stripe refund <code>${row.stripe_refund_id}</code> ($${asNumber(row.refund_amount).toFixed(2)})`
           : row.refund_status === "non_refundable"
-            ? "Non-refundable (within 48hrs of check-in)"
+            ? "Non-refundable (within 14 days of check-in)"
             : row.refund_status === "pending_manual"
               ? "Refund eligible but no Stripe PI on file — manual refund needed"
               : row.refund_status === "failed"
@@ -519,7 +527,7 @@ export async function POST(
           `Check-in: ${row.check_in}<br/>` +
           `Check-out: ${row.check_out}<br/>` +
           `Refund: <strong>${refundNote}</strong> ` +
-          `(${msUntilCheckIn > 0 ? Math.round(msUntilCheckIn / (1000 * 60 * 60)) + "hrs" : "past"} until check-in)`,
+          `(${daysUntilCheckIn === null ? "check-in date unreadable" : `${daysUntilCheckIn} calendar days until check-in (America/Denver)`})`,
         `guest-cancellation-${reservationId}`
       );
     }
@@ -597,35 +605,16 @@ export async function POST(
         console.error("[Server Tracking] cancellation error:", err)
       );
 
-      // GA4 refund event: prefer the actual refund amount; otherwise pull the original PI charge
-      let ga4RefundAmount = refundedNumeric;
-      if (
-        ga4RefundAmount === 0 &&
-        piId &&
-        (row.refund_status === "non_refundable" ||
-          row.refund_status === "pending_manual" ||
-          row.refund_status === "failed")
-      ) {
-        try {
-          const stripeForLookup = getStripeServer();
-          const originalPi =
-            await stripeForLookup.paymentIntents.retrieve(piId);
-          ga4RefundAmount = originalPi.amount / 100;
-        } catch (err) {
-          console.warn(
-            "[Cancel] Failed to retrieve original PI for GA4 refund:",
-            err instanceof Error ? err.message : err
-          );
-        }
-      }
-
-      if (ga4RefundAmount > 0) {
+      // Report a refund only when money actually moved. A non-refundable
+      // cancellation used to send the original charge as a GA4/Meta refund,
+      // which would now fire for every cancel inside 14 days.
+      if (refundedNumeric > 0) {
         trackRefundServerSide(
           {
             reservationId,
             listingId: row.listing_id || undefined,
             listingTitle: row.listing_title || row.listing?.title || undefined,
-            refundAmount: ga4RefundAmount,
+            refundAmount: refundedNumeric,
             guest: { email: guest?.email },
             gaClientId,
             context: { clientIp, clientUserAgent, fbp, gaSessionId },

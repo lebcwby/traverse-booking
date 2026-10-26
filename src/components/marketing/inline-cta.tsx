@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CANCELLATION_POLICY_DAYS } from "@/lib/cancellation-policy";
 
 export function InlineCTA({ href, label }: { href: string; label: string }) {
   return (
@@ -10,7 +11,8 @@ export function InlineCTA({ href, label }: { href: string; label: string }) {
         {label}
       </Link>
       <p className="mt-2 text-xs text-muted-foreground">
-        No booking fees &middot; Free cancellation up to 14 days before check-in
+        No booking fees &middot; Free cancellation up to{" "}
+        {CANCELLATION_POLICY_DAYS} days before check-in
       </p>
     </div>
   );

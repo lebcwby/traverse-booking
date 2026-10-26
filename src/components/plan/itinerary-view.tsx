@@ -6,6 +6,7 @@
 // properties interleaved after day 2.
 
 import { useEffect, useState } from "react";
+import { CANCELLATION_POLICY_DAYS } from "@/lib/cancellation-policy";
 import Link from "next/link";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
@@ -311,7 +312,7 @@ function BookingCTA({ itinerary }: { itinerary: Itinerary }) {
         <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
       </Link>
       <p className="text-[11px] text-neutral-500">
-        No booking fees · Free cancel 14 days out
+        No booking fees · Free cancel {CANCELLATION_POLICY_DAYS} days out
       </p>
     </div>
   );

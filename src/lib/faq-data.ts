@@ -1,3 +1,5 @@
+import { CANCELLATION_POLICY_DAYS } from "./cancellation-policy";
+
 export const FAQ_SCHEMA_DATA = [
   {
     question:
@@ -32,8 +34,7 @@ export const FAQ_SCHEMA_DATA = [
   },
   {
     question: "Can I get a refund if I need to cancel my Colorado trip?",
-    answer:
-      "Yes. The cancellation policy allows flexible changes and refunds within the cancellation window listed on each property. Booking direct offers the most flexible terms.",
+    answer: `Yes, when you cancel ${CANCELLATION_POLICY_DAYS} or more days before check-in. Every direct booking uses the same policy: a full refund up to ${CANCELLATION_POLICY_DAYS} days before check-in, and non-refundable within ${CANCELLATION_POLICY_DAYS} days. Details are at booktraverse.com/cancellation.`,
   },
   {
     question: "Is Colorado a good destination for a family vacation?",

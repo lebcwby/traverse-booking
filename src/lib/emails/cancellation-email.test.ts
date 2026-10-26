@@ -49,7 +49,8 @@ describe("buildCancellationEmailHtml", () => {
       refundAmount: 0,
     });
     expect(html).toContain("Non-refundable");
-    expect(html).toContain("48 hours of check-in");
+    expect(html).toContain("within 14 days of check-in");
+    expect(html).not.toContain("48 hours");
     expect(html).not.toContain("Amount refunded");
   });
 
