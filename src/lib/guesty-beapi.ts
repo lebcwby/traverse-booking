@@ -1,6 +1,7 @@
 import { getSupabaseAdmin } from "./supabase-admin";
 import { sendAlert } from "./alerts";
 import { rateLimit } from "./rate-limit";
+import { ConcurrencyGate } from "./concurrency-gate";
 import {
   recordRateLimitEvent,
   summarizeRecentRateLimitEvents,
@@ -276,7 +277,39 @@ export async function getBEAPIToken(): Promise<string> {
 
 // ─── Authenticated BEAPI Fetch ────────────────────────────────────
 
+/**
+ * Ceiling on simultaneous BEAPI calls from this instance.
+ *
+ * Guesty rate-limits per ACCOUNT at roughly 120/min, and that quota is shared
+ * with the CRM, PriceLabs and Conduit. Backoff alone did not protect it: a
+ * sweep of the property catalogue on 2026-10-25 fired 183 listing-detail
+ * requests in 3 seconds, and the retries then stacked on top of the breach.
+ * Every 429 burst in the preceding week had that shape.
+ *
+ * 8 is deliberately well under the ceiling, since this is a per-instance cap
+ * and several lambdas can be warm at once. It is a queue, not a reject: page
+ * renders wait rather than fail.
+ */
+const BEAPI_MAX_CONCURRENCY = 8;
+const beapiGate = new ConcurrencyGate(BEAPI_MAX_CONCURRENCY);
+
 async function beapiFetch(
+  path: string,
+  options?: RequestInit & { next?: { revalidate?: number } },
+  retries = 4
+) {
+  return beapiGate.run(() => beapiFetchUnthrottled(path, options, retries));
+}
+
+/**
+ * The real request loop. Call beapiFetch, not this — going around the gate is
+ * what caused the stampede this module exists to prevent.
+ *
+ * The gate wraps the whole retry loop on purpose. Holding the slot across
+ * backoff sleeps means a throttled caller stops competing for Guesty while it
+ * waits, instead of releasing and immediately re-entering the queue.
+ */
+async function beapiFetchUnthrottled(
   path: string,
   options?: RequestInit & { next?: { revalidate?: number } },
   retries = 4
@@ -375,17 +408,30 @@ async function beapiFetch(
             `Guesty returned <strong>6+ rate-limit (429) errors within 5 minutes</strong> ` +
               `on BEAPI calls (most recent path: <code>${path}</code>).<br/><br/>` +
               context +
-              `<strong>⚠️ Do not assume this site caused it.</strong> Guesty rate-limits per ` +
-              `<strong>account</strong>, and that quota is shared with every other integration — ` +
-              `the CRM's hourly reservations/guests/messages sweep, PriceLabs, Conduit. On ` +
-              `2026-10-14 this alert fired while the site had served ~42 requests that hour, ` +
-              `against a ceiling of 120 per <em>minute</em>. It was not us.<br/><br/>` +
+              `<strong>Read the path above first — it names the caller.</strong> Guesty ` +
+              `rate-limits per <strong>account</strong> and that quota is shared with the CRM, ` +
+              `PriceLabs and Conduit, so another integration can exhaust it. But this site is ` +
+              `just as often the cause, and an earlier version of this alert asserted it was ` +
+              `not — which sent people to audit CRM crons that were idle.<br/><br/>` +
+              `Reviewing 7 days to 2026-10-26: <em>every</em> burst was ` +
+              `<code>/api/listings/{id}</code>, the public property page's own detail fetch. ` +
+              `The largest was 183 calls in 3 seconds — about one per listing in the ` +
+              `catalogue, roughly 3,660/min against a ~120/min ceiling. Those bursts landed on ` +
+              `scattered minutes and did not line up with deploys, so they were traffic ` +
+              `sweeping the catalogue, not a cron.<br/><br/>` +
               `<strong>Check, in this order:</strong><br/>` +
-              `1. Does the timing cluster near :00 or :15? Those are CRM cron starts — ` +
-              `compare the minute-of-hour column above.<br/>` +
-              `2. <a href="https://www.booktraverse.com/api/health/beapi">/api/health/beapi</a> token status.<br/>` +
-              `3. Only if this site's own traffic is genuinely elevated: Vercel Firewall ` +
-              `(traffic by IP / user-agent), and Attack Challenge Mode if it's an active flood.<br/><br/>` +
+              `1. <strong>What path is above?</strong> A <code>/api/listings/{id}</code> burst ` +
+              `compressed into seconds is this site serving a catalogue sweep. Reservations, ` +
+              `guests or messages paths point at the CRM instead.<br/>` +
+              `2. Is it one tight burst or spread across the window? Tight means a sweep; ` +
+              `spread means the account quota was already exhausted by someone else.<br/>` +
+              `3. Vercel Firewall — traffic by IP and user-agent. A catalogue sweep from one ` +
+              `client is a scraper; <code>/properties/*</code> has no bot challenge, unlike ` +
+              `<code>/calendar</code>.<br/>` +
+              `4. <a href="https://www.booktraverse.com/api/health/beapi">/api/health/beapi</a> token status.<br/><br/>` +
+              `BEAPI calls are capped at ${BEAPI_MAX_CONCURRENCY} concurrent per instance, so a ` +
+              `burst queues rather than stampedes. Seeing many 429s anyway means either several ` +
+              `instances were warm at once, or the account quota was already spent elsewhere.<br/><br/>` +
               `Full history: <code>select * from guesty_rate_limit_events order by occurred_at desc</code>`,
             "guesty-429-burst"
           );
