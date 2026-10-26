@@ -40,7 +40,14 @@ import { getPool } from "./db";
 
 export interface DigestBooking {
   reservationId: string | null;
+  /** Public-facing title, e.g. "Top Floor Remodeled Studio with Pool". */
   listingTitle: string;
+  /**
+   * Operator-facing nickname, e.g. "CB:GL411:Cole". Null when the listing is
+   * not in the mirror. Reports show this in preference to the title: the team
+   * identifies properties by nickname, and two listings can share a title.
+   */
+  listingNickname: string | null;
   checkIn: string;
   checkOut: string;
   guests: number | null;
@@ -141,12 +148,23 @@ function minutesBetween(from: unknown, to: unknown): number | null {
 // Exported so the weekly roll-up in ./weekly-digest.ts can type the rows it
 // buckets by completed_at without redeclaring the shape.
 export interface Row {
+  /** Operator-facing nickname, joined from the listings mirror. */
+  listing_nickname?: string | null;
   reservation_id: string | null;
   guest: Record<string, unknown> | null;
   tracking: Record<string, unknown> | null;
   tracking_context: Record<string, unknown> | null;
   created_at: string;
   completed_at: string;
+}
+
+/**
+ * How a listing is labelled in Slack: the operator nickname when we have one,
+ * the public title when we don't. Shared by the daily and weekly reports so
+ * the same booking never appears under two different names.
+ */
+export function displayListing(b: DigestBooking): string {
+  return b.listingNickname || b.listingTitle;
 }
 
 export function rowToBooking(row: Row): DigestBooking {
@@ -173,6 +191,12 @@ export function rowToBooking(row: Row): DigestBooking {
   return {
     reservationId: row.reservation_id,
     listingTitle: String(t.listingTitle || "(unknown listing)"),
+    // Joined column first, then the tracking field for rows written after it
+    // was added but whose listing has since left the mirror.
+    listingNickname:
+      (typeof row.listing_nickname === "string" && row.listing_nickname) ||
+      (typeof t.listingNickname === "string" && t.listingNickname) ||
+      null,
     checkIn: String(t.checkIn || "?"),
     checkOut: String(t.checkOut || "?"),
     guests: typeof t.guests === "number" ? t.guests : null,
@@ -272,7 +296,7 @@ export function renderSlackBlocks(d: Digest): Record<string, unknown> {
 
   const bookingBlocks = d.bookings.flatMap((b) => {
     const lines = [
-      `*${b.listingTitle}* — ${money(b.totalPaid)}`,
+      `*${displayListing(b)}* — ${money(b.totalPaid)}`,
       `${b.checkIn} → ${b.checkOut}${b.guests ? ` · ${b.guests} guest${b.guests === 1 ? "" : "s"}` : ""} · ${b.guestName}${b.reservationId ? ` · \`${b.reservationId}\`` : ""}`,
       `converted from \`${b.source}\`${b.firstTouchSource ? `  _(first touch: \`${b.firstTouchSource}\`)_` : ""}`,
     ];
@@ -327,13 +351,21 @@ export async function fetchCompletedCheckouts(
   dayStartIso: string,
   dayEndIso: string
 ): Promise<Row[]> {
+  // The nickname comes from the listings mirror, not from `tracking`.
+  // tracking.listingNickname does exist, but only on checkouts created after
+  // it was added — 1 of the last 60 — so reading it alone would leave almost
+  // every row showing the public title. tracking.listingId is on all of them
+  // and joins cleanly: 60/60 resolved, 0 unmatched, when this was written.
+  // LEFT JOIN so a listing missing from the mirror still yields its booking.
   const { rows } = await getPool().query(
-    `select reservation_id, guest, tracking, tracking_context, created_at, completed_at
-       from pending_checkouts
-      where status = 'completed'
-        and completed_at >= $1::timestamptz
-        and completed_at <  $2::timestamptz
-      order by completed_at asc`,
+    `select pc.reservation_id, pc.guest, pc.tracking, pc.tracking_context,
+            pc.created_at, pc.completed_at, l.nickname as listing_nickname
+       from pending_checkouts pc
+       left join listings l on l.guesty_id = pc.tracking->>'listingId'
+      where pc.status = 'completed'
+        and pc.completed_at >= $1::timestamptz
+        and pc.completed_at <  $2::timestamptz
+      order by pc.completed_at asc`,
     [dayStartIso, dayEndIso]
   );
   return rows as Row[];
