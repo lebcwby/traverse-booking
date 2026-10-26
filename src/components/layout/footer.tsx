@@ -184,6 +184,14 @@ function MobileFooter() {
             >
               Guest Reviews
             </Link>
+            {/* Present in the desktop block below since launch, absent here,
+                so /press was unreachable on a phone across the whole site. */}
+            <Link
+              href="/press"
+              className="block py-2.5 text-sm text-primary-foreground/70 transition-colors"
+            >
+              Press Room
+            </Link>
             <Link
               href="/contact"
               className="block py-2.5 text-sm text-primary-foreground/70 transition-colors"
