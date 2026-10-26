@@ -24,6 +24,7 @@ import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import type { DayButton as DayButtonType } from "react-day-picker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
+import { freeCancellationLabel } from "@/lib/cancellation-policy";
 import { extractTaxBreakdown } from "@/lib/quote-response";
 import { promoDisplay } from "@/lib/promotions";
 import Image from "next/image";
@@ -96,25 +97,15 @@ interface CalendarDay {
 }
 
 /**
- * Traverse Direct uses a UNIFIED cancellation policy across every property:
- * full refund up to 14 days before check-in; non-refundable within 14 days.
- * BEAPI's per-listing terms.cancellation enums (strict, moderate, firm, etc.)
- * reflect what's set on OTA channels (Airbnb/VRBO) — those don't apply to
- * direct bookings, so we ignore the per-listing policy and always show the
- * unified 14-day window. Single source of truth: /cancellation page.
+ * Direct bookings ignore BEAPI's per-listing terms.cancellation (those are
+ * the Airbnb/VRBO channel rules). The label always comes from the shared
+ * 14-day policy.
  */
-const TRAVERSE_DIRECT_CANCEL_DAYS = 14;
-
 function getCancellationLabel(
   _policy: string | undefined,
   checkIn?: Date | null
 ): string {
-  if (checkIn) {
-    const deadline = addDays(checkIn, -TRAVERSE_DIRECT_CANCEL_DAYS);
-    if (deadline <= new Date()) return "";
-    return `Free cancellation before ${format(deadline, "MMM d")}`;
-  }
-  return `Free cancellation up to ${TRAVERSE_DIRECT_CANCEL_DAYS} days before check-in`;
+  return freeCancellationLabel(checkIn ?? null);
 }
 
 export function BookingSidebar({
@@ -1257,11 +1248,10 @@ export function BookingSidebar({
 
         {/* Cancellation policy — above Reserve like Airbnb */}
         {(() => {
-          const policy =
-            pricing?.cancellationPolicy ||
-            cancellationPolicy ||
-            "semi_flexible";
-          const label = getCancellationLabel(policy, dateRange?.from);
+          const label = getCancellationLabel(
+            pricing?.cancellationPolicy || cancellationPolicy,
+            dateRange?.from
+          );
           return label ? (
             <div className="rounded-lg bg-muted px-3 py-2 text-center text-xs text-foreground">
               {label}

@@ -12,13 +12,17 @@ import {
   MapPin,
   Key,
   Loader2,
-  AlertTriangle,
   DollarSign,
   CreditCard,
   ExternalLink,
 } from "lucide-react";
 import { CardBrandIcon } from "@/components/ui/card-brand-icon";
 import { ChangeDates } from "@/components/booking/change-dates";
+import {
+  CANCELLATION_NON_REFUNDABLE_NOTE,
+  isFullRefundEligible,
+} from "@/lib/cancellation-policy";
+import { CancelReservationDialog } from "@/components/account/cancel-reservation-dialog";
 
 interface InvoiceItem {
   title: string;
@@ -131,7 +135,7 @@ function CanceledBanner({
     body = `This reservation was canceled on ${dateLabel}. A full refund of ${amount} was issued to your card. Refunds typically appear in 5-10 business days.`;
   } else if (refundStatus === "non_refundable") {
     tone = "border-border bg-muted/50 text-foreground";
-    body = `This reservation was canceled on ${dateLabel}. Per our cancellation policy, reservations canceled within 48 hours of check-in are non-refundable.`;
+    body = `This reservation was canceled on ${dateLabel}. ${CANCELLATION_NON_REFUNDABLE_NOTE}`;
   } else if (refundStatus === "pending_manual") {
     tone = "border-blue-200 bg-blue-50 text-blue-900";
     body = `This reservation was canceled on ${dateLabel}. A refund is being processed manually — we'll email you within 24 hours.`;
@@ -307,11 +311,10 @@ export default function ReservationDetailPage() {
     }
   }
 
-  // Refund eligibility calculation
+  // Refund eligibility: 14 or more Mountain calendar days before check-in.
   function getRefundEligible(): boolean {
     if (!reservation?.check_in) return false;
-    const checkInDate = parseISO(reservation.check_in);
-    return differenceInHours(checkInDate, new Date()) > 48;
+    return isFullRefundEligible(reservation.check_in);
   }
 
   // Key code visibility: only within 24 hours of check-in
@@ -791,76 +794,14 @@ export default function ReservationDetailPage() {
         </section>
       )}
 
-      {/* Cancel confirmation modal */}
       {showCancelModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => !canceling && setShowCancelModal(false)}
-          />
-          <div className="relative z-10 mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
-              </div>
-              <h2 className="text-lg font-semibold text-foreground">
-                Cancel Reservation
-              </h2>
-            </div>
-
-            <div className="mt-4 space-y-3">
-              {getRefundEligible() ? (
-                <p className="text-sm text-foreground">
-                  You will receive a <strong>full refund</strong>.
-                </p>
-              ) : (
-                <p className="text-sm text-foreground">
-                  This cancellation is <strong>non-refundable</strong>. You will
-                  not receive a refund.
-                </p>
-              )}
-
-              <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
-                <p className="font-medium text-foreground">
-                  Cancellation Policy
-                </p>
-                <p className="mt-1">
-                  Cancellations made more than 48 hours before check-in receive
-                  a full refund. Cancellations within 48 hours of check-in are
-                  non-refundable.
-                </p>
-              </div>
-            </div>
-
-            {cancelError && (
-              <p className="mt-3 text-sm text-red-600">{cancelError}</p>
-            )}
-
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => setShowCancelModal(false)}
-                disabled={canceling}
-                className="flex-1 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
-              >
-                Keep Reservation
-              </button>
-              <button
-                onClick={handleCancelConfirm}
-                disabled={canceling}
-                className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
-              >
-                {canceling ? (
-                  <span className="inline-flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Canceling...
-                  </span>
-                ) : (
-                  "Confirm Cancellation"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
+        <CancelReservationDialog
+          refundEligible={getRefundEligible()}
+          canceling={canceling}
+          error={cancelError}
+          onClose={() => setShowCancelModal(false)}
+          onConfirm={handleCancelConfirm}
+        />
       )}
     </div>
   );

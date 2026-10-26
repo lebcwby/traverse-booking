@@ -8,6 +8,7 @@ import { PropertyCarousel } from "./property-carousel";
 import { DateAwareLinks } from "./date-aware-link";
 import { BehaviorTracker } from "@/components/behavior-tracker";
 import { getBreadcrumbSchema, getFaqSchema, JsonLd } from "@/lib/schema";
+import { CANCELLATION_POLICY_DAYS } from "@/lib/cancellation-policy";
 
 // ─── Types ─────────────────────────────────────────────────
 export interface PpcPageConfig {
@@ -46,9 +47,8 @@ export interface PpcPageConfig {
 const DEFAULT_TRUST_SIGNALS = [
   {
     icon: "calendar" as const,
-    title: "Keep it flexible",
-    description:
-      "Most homes offer flexible cancellation, so you can rebook if your plans change.",
+    title: "14-day cancellation",
+    description: `Full refund when you cancel ${CANCELLATION_POLICY_DAYS} or more days before check-in. Within ${CANCELLATION_POLICY_DAYS} days the stay is non-refundable, on every home.`,
   },
   {
     icon: "sliders" as const,
@@ -137,7 +137,9 @@ export function PpcLandingPage({ config }: { config: PpcPageConfig }) {
                   </p>
                   <div className="mt-6">
                     <InlineSearchForm
-                      location={config.searchLocation || "Crested Butte, Colorado"}
+                      location={
+                        config.searchLocation || "Crested Butte, Colorado"
+                      }
                       extraParams={config.searchExtraParams}
                     />
                   </div>

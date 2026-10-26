@@ -4,6 +4,7 @@ import { Users, Bed, Bath, Star } from "lucide-react";
 import { type Listing } from "@/lib/supabase";
 import { getPhotoUrl, getListingSlug } from "@/lib/utils";
 import { SavingsPrice } from "@/components/properties/savings-price";
+import { listingCancellationBadge } from "@/lib/cancellation-policy";
 
 /**
  * Server-rendered property card for collection pages.
@@ -60,9 +61,7 @@ export function ServerPropertyCard({
           <Image
             src={photo}
             alt={
-              listing.title ||
-              listing.nickname ||
-              "Colorado vacation rental"
+              listing.title || listing.nickname || "Colorado vacation rental"
             }
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -186,7 +185,7 @@ export function ServerPropertyCard({
               suffix="/ night"
             />
             <span className="inline-block rounded-md bg-muted/75 px-1 py-0.5 text-[11px] font-medium text-muted-foreground">
-              Free cancellation
+              {listingCancellationBadge(checkIn)}
             </span>
           </>
         ) : null}

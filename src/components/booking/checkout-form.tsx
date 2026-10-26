@@ -40,6 +40,10 @@ import { CouponInput } from "./coupon-input";
 import { UpsellSelector } from "./upsell-selector";
 import { getSelectedUpsells, resolveUpsellsForListing } from "@/lib/upsells";
 import { petPolicyNoteFor } from "@/lib/pet-policy";
+import {
+  checkoutCancellationText,
+  isFullRefundEligible,
+} from "@/lib/cancellation-policy";
 import { extractQuotePricing, getQuoteIdentifiers } from "@/lib/quote-response";
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -105,30 +109,6 @@ export interface QuoteData {
    *  not allowed, Pet Fee is hidden from the upsell picker entirely. */
   petsAllowed?: boolean;
   petFeePerPet?: number | null;
-}
-
-// Traverse Direct uses ONE unified cancellation policy on all direct bookings:
-// full refund up to 14 days before check-in (matches the property sidebar and
-// /cancellation page). BEAPI's per-listing policy enums (flexible/moderate/firm/
-// strict) reflect OTA-channel terms and do NOT apply here — using them produced a
-// refund deadline that contradicted the stated 14-day policy.
-const TRAVERSE_DIRECT_CANCEL_DAYS = 14;
-
-function getCheckoutCancellationText(
-  _policy: string | undefined,
-  checkIn: string
-): string {
-  const checkInDate = new Date(checkIn + "T12:00:00");
-  const deadline = addDays(checkInDate, -TRAVERSE_DIRECT_CANCEL_DAYS);
-  if (deadline <= new Date())
-    return "This booking is non-refundable — you're within 14 days of check-in. ";
-  return `Cancel before check-in on ${format(deadline, "MMM d")} for a full refund. `;
-}
-
-/** True when the booking is still inside the free-cancellation window. */
-function isCheckoutRefundable(checkIn: string): boolean {
-  const checkInDate = new Date(checkIn + "T12:00:00");
-  return addDays(checkInDate, -TRAVERSE_DIRECT_CANCEL_DAYS) > new Date();
 }
 
 export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
@@ -1771,11 +1751,8 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
           <div className="pt-4 border-t border-border">
             {/* Cancellation reassurance */}
             {(() => {
-              const text = getCheckoutCancellationText(
-                quote.pricing.cancellationPolicy,
-                quote.checkIn
-              );
-              const refundable = isCheckoutRefundable(quote.checkIn);
+              const text = checkoutCancellationText(quote.checkIn);
+              const refundable = isFullRefundEligible(quote.checkIn);
               return text ? (
                 <div className="flex items-center gap-2 mb-2">
                   {refundable && (
@@ -1976,15 +1953,12 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
               </div>
               {/* Cancellation policy */}
               {(() => {
-                const text = getCheckoutCancellationText(
-                  quote.pricing.cancellationPolicy,
-                  quote.checkIn
-                );
+                const text = checkoutCancellationText(quote.checkIn);
                 return text ? (
                   <>
                     <Separator />
                     <p className="text-sm text-foreground leading-relaxed">
-                      {text}
+                      {text}{" "}
                       <Link
                         href="/cancellation"
                         target="_blank"
@@ -2115,15 +2089,9 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
                 {quote.pricing.nights}{" "}
                 {quote.pricing.nights === 1 ? "night" : "nights"}
               </p>
-              {getCheckoutCancellationText(
-                quote.pricing.cancellationPolicy,
-                quote.checkIn
-              ) && (
+              {checkoutCancellationText(quote.checkIn) && (
                 <p className="mt-0.5 text-xs text-foreground">
-                  {getCheckoutCancellationText(
-                    quote.pricing.cancellationPolicy,
-                    quote.checkIn
-                  )}
+                  {checkoutCancellationText(quote.checkIn)}{" "}
                   <Link
                     href="/cancellation"
                     target="_blank"
@@ -2256,11 +2224,8 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
         <div className="fixed inset-x-0 bottom-0 z-50 border-t bg-background px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           {/* Cancellation reassurance — one centered line above button */}
           {(() => {
-            const text = getCheckoutCancellationText(
-              quote.pricing.cancellationPolicy,
-              quote.checkIn
-            );
-            const refundable = isCheckoutRefundable(quote.checkIn);
+            const text = checkoutCancellationText(quote.checkIn);
+            const refundable = isFullRefundEligible(quote.checkIn);
             return text ? (
               <p
                 className={`flex items-center justify-center gap-1.5 text-[13px] mb-2.5 ${refundable ? "text-green-600" : "text-amber-700"}`}

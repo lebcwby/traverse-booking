@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { CANCELLATION_NON_REFUNDABLE_NOTE } from "@/lib/cancellation-policy";
 
 const FROM = "Book Traverse <noreply@booktraverse.com>";
 const REPLY_TO = "bookings@traversehospitality.com";
@@ -110,7 +111,7 @@ function refundSection(
       </tr>
       </table>
       <div style="margin-top:16px;padding:14px 16px;background:#f3f4f6;border-radius:8px;color:#374151;font-size:14px;line-height:21px;">
-        Per our cancellation policy, reservations canceled within 48 hours of check-in are non-refundable.
+        ${CANCELLATION_NON_REFUNDABLE_NOTE}
       </div>
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
     `;

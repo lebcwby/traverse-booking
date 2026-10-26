@@ -16,6 +16,7 @@
 
 import { getListings } from "@/lib/supabase";
 import { getListingSlug } from "@/lib/utils";
+import { CANCELLATION_POLICY_SUMMARY } from "@/lib/cancellation-policy";
 
 export const revalidate = 3600;
 
@@ -79,9 +80,7 @@ capability.
 
 ## Policies
 
-- **Cancellation**: free cancellation up to 14 days before check-in. Within 14
-  days the reservation is non-refundable. This policy is the same across every
-  property.
+- **Cancellation**: ${CANCELLATION_POLICY_SUMMARY} This policy is the same across every property.
 - **Check-in / check-out**: check-in after 4:00 PM, check-out before 10:00 AM
   local (Mountain) time. Every property has self check-in with a smart lock —
   no key handoff to coordinate.

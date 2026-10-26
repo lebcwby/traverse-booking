@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { format, addDays } from "date-fns";
+import { format } from "date-fns";
+import { freeCancellationLabel } from "@/lib/cancellation-policy";
 import { Loader2, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDateRange } from "./date-range-context";
@@ -286,28 +287,14 @@ export function MobileBottomBar({
         ? `${pricing.nights} nights`
         : "";
 
+  // Channel policies (Airbnb flexible / strict / …) do not apply to direct
+  // bookings. `_channelPolicy` is accepted so callers can keep passing the
+  // Guesty value; the label always comes from the 14-day direct policy.
   function getCancellationLabel(
-    policy: string | undefined,
+    _channelPolicy: string | undefined,
     checkIn?: Date | null
   ): string {
-    if (!policy) return "";
-    const daysMap: Record<string, number> = {
-      flexible: 1,
-      semi_flexible: 2,
-      moderate: 5,
-      firm: 30,
-      strict: 60,
-    };
-    const days = daysMap[policy];
-    if (days === undefined) return "";
-    if (checkIn) {
-      const deadline = addDays(checkIn, -days);
-      if (deadline <= new Date()) return "";
-      return `Free cancellation before ${format(deadline, "MMM d")}`;
-    }
-    if (days <= 2)
-      return `Free cancellation up to ${days * 24} hrs before check-in`;
-    return `Free cancellation up to ${days} days before check-in`;
+    return freeCancellationLabel(checkIn ?? null);
   }
 
   return (
@@ -316,11 +303,10 @@ export function MobileBottomBar({
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
         {/* Cancellation policy — full width above the price/button row */}
         {(() => {
-          const policy =
-            pricing?.cancellationPolicy ||
-            cancellationPolicy ||
-            "semi_flexible";
-          const label = getCancellationLabel(policy, dateRange?.from);
+          const label = getCancellationLabel(
+            pricing?.cancellationPolicy || cancellationPolicy,
+            dateRange?.from
+          );
           return pricing && label ? (
             <div className="inline-block rounded-full bg-muted px-2 py-0.5 text-xs text-foreground mb-2">
               {label}
@@ -485,18 +471,12 @@ export function MobileBottomBar({
                     Change
                   </button>
                 </div>
-                {pricing.cancellationPolicy &&
-                  getCancellationLabel(
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  {getCancellationLabel(
                     pricing.cancellationPolicy,
-                    dateRange?.from
-                  ) && (
-                    <p className="text-xs text-muted-foreground mt-1.5">
-                      {getCancellationLabel(
-                        pricing.cancellationPolicy,
-                        dateRange?.from
-                      )}
-                    </p>
+                    dateRange.from
                   )}
+                </p>
               </div>
             )}
 

@@ -18,6 +18,7 @@ import {
 import { StripePayment } from "@/components/booking/stripe-payment";
 import { useCart } from "@/lib/cart/cart-store";
 import { formatCurrency } from "@/lib/utils";
+import { CANCELLATION_POLICY_DAYS } from "@/lib/cancellation-policy";
 import { trackCartCheckoutStage } from "@/lib/tracking";
 
 interface CartLineQuote {
@@ -127,10 +128,16 @@ export function CartCheckoutForm() {
           }),
         });
         if (!batch.ok) {
-          throw new Error(`Couldn't price your group booking (${batch.status})`);
+          throw new Error(
+            `Couldn't price your group booking (${batch.status})`
+          );
         }
         const batchData = (await batch.json()) as {
-          results: { lineId: string; ok: boolean; quote?: { quoteId: string } }[];
+          results: {
+            lineId: string;
+            ok: boolean;
+            quote?: { quoteId: string };
+          }[];
         };
         const failed = batchData.results.filter((r) => !r.ok);
         if (failed.length > 0) {
@@ -302,8 +309,9 @@ export function CartCheckoutForm() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ lines: newPiPayload, guest }),
         });
-        const piData =
-          (await piRes.json()) as CartPaymentIntentResponse | { error: string };
+        const piData = (await piRes.json()) as
+          | CartPaymentIntentResponse
+          | { error: string };
         if ("error" in piData) {
           throw new Error(piData.error);
         }
@@ -401,9 +409,7 @@ export function CartCheckoutForm() {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3">
         <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
-        <p className="text-sm text-neutral-500">
-          Pricing your group booking…
-        </p>
+        <p className="text-sm text-neutral-500">Pricing your group booking…</p>
       </div>
     );
   }
@@ -442,8 +448,8 @@ export function CartCheckoutForm() {
               className="mt-0.5 h-3.5 w-3.5 rounded border-neutral-300"
             />
             <span>
-              Send me Colorado travel tips and seasonal deals from Traverse.
-              No spam, unsubscribe any time.
+              Send me Colorado travel tips and seasonal deals from Traverse. No
+              spam, unsubscribe any time.
             </span>
           </label>
         </section>
@@ -507,7 +513,10 @@ export function CartCheckoutForm() {
             {pi.lines.map((line) => {
               const item = items.find((i) => i.lineId === line.lineId);
               return (
-                <li key={line.lineId} className="flex gap-3 py-3 first:pt-0 last:pb-0">
+                <li
+                  key={line.lineId}
+                  className="flex gap-3 py-3 first:pt-0 last:pb-0"
+                >
                   {item?.listingPicture ? (
                     <Image
                       src={item.listingPicture}
@@ -560,7 +569,11 @@ export function CartCheckoutForm() {
                     disabled={!couponInput.trim() || couponLoading}
                     className="rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-semibold text-white disabled:bg-neutral-300"
                   >
-                    {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                    {couponLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Apply"
+                    )}
                   </button>
                 </div>
                 {couponError && (
@@ -606,14 +619,16 @@ export function CartCheckoutForm() {
           </div>
 
           <div className="mt-4 flex items-baseline justify-between border-t border-neutral-200 pt-4">
-            <span className="text-base font-semibold text-neutral-900">Total</span>
+            <span className="text-base font-semibold text-neutral-900">
+              Total
+            </span>
             <span className="text-lg font-bold text-neutral-900">
               {formatCurrency(total, { cents: true })}
             </span>
           </div>
           <p className="mt-3 text-[11px] text-neutral-500">
-            One charge for all {pi.lines.length} reservations. Free
-            cancellation up to 14 days before each check-in.
+            One charge for all {pi.lines.length} reservations. Free cancellation
+            up to {CANCELLATION_POLICY_DAYS} days before each check-in.
           </p>
         </div>
       </aside>
