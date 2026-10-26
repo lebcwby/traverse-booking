@@ -28,6 +28,11 @@ import { getListingSlug } from "@/lib/utils";
 import { buildListingItemList, SITE_ORIGIN } from "@/lib/listing-jsonld";
 import { sendAlert, OPS_ALERT_INBOX } from "@/lib/alerts";
 import {
+  describeUpstreamFailure,
+  FAILURE_GUIDANCE,
+  type FailureReason,
+} from "@/lib/failure-reason";
+import {
   loadCatalogFallback,
   type CatalogFilters,
 } from "@/lib/catalog-fallback";
@@ -235,6 +240,9 @@ export default async function PropertiesPage({
     propertyType: searchParams.propertyType || undefined,
   };
   let usedFallback = false;
+  /** Why BEAPI failed, for the alert. Null until something throws. */
+  let fallbackReason: FailureReason | null = null;
+  let fallbackBranch: "dated search" | "undated browse" | null = null;
 
   if (hasDateFilter) {
     // Use BEAPI for real-time availability when dates are selected
@@ -305,6 +313,8 @@ export default async function PropertiesPage({
       console.error("BEAPI search failed, falling back to mirror:", err);
       listings = (await loadCatalogFallback(fallbackFilters, err)).listings;
       usedFallback = true;
+      fallbackReason = describeUpstreamFailure(err);
+      fallbackBranch = "dated search";
     }
   } else {
     // No dates — still use BEAPI so we only show bookable listings
@@ -361,6 +371,8 @@ export default async function PropertiesPage({
       console.error("BEAPI browse failed, falling back to mirror:", err);
       listings = (await loadCatalogFallback(fallbackFilters, err)).listings;
       usedFallback = true;
+      fallbackReason = describeUpstreamFailure(err);
+      fallbackBranch = "undated browse";
     }
   }
 
@@ -440,14 +452,26 @@ export default async function PropertiesPage({
     // which means nothing would surface the outage at all unless we say so.
     // sendAlert's one-hour cooldown caps this at 1/hour however much traffic
     // the page takes, and it must never block the render.
+    // The reason matters more than the fact. "BEAPI failed" is the one thing
+    // the reader already knows; whether it was a 429, a timeout or a dead
+    // token decides whether the fix is pacing, patience or the token cron.
+    const reason = fallbackReason ?? describeUpstreamFailure("no error captured");
     sendAlert(
       "LISTING CATALOGUE SERVED FROM MIRROR",
-      "BEAPI failed on <code>/properties</code>, so the page is being served " +
-        "from the Supabase <code>listings</code> mirror instead of live " +
-        "inventory.<br><br>The page and its internal links are intact, but " +
+      `BEAPI failed on <code>/properties</code> (${fallbackBranch ?? "unknown branch"}), ` +
+        "so the page is being served from the Supabase <code>listings</code> " +
+        "mirror instead of live inventory.<br><br>" +
+        `<b>Reason:</b> ${reason.kind}` +
+        (reason.status !== null ? ` (HTTP ${reason.status})` : "") +
+        `<br><code>${reason.summary}</code><br><br>` +
+        `${FAILURE_GUIDANCE[reason.kind]}<br><br>` +
+        "The page and its internal links are intact, but " +
         "<b>availability and pricing are stale and booking is likely failing</b>. " +
         "Check <code>/api/health/beapi</code>.",
-      "catalog-served-from-mirror",
+      // Keyed by kind so a 429 and a timeout in the same hour are two
+      // different emails. They have different causes and collapsing them is
+      // how the 2026-10-26 pair became indistinguishable.
+      `catalog-served-from-mirror:${reason.kind}`,
       { to: OPS_ALERT_INBOX }
     ).catch(() => {});
   }

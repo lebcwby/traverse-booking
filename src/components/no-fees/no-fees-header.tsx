@@ -13,6 +13,7 @@ import {
   Bike,
   TreePine,
   BedDouble,
+  Megaphone,
   Newspaper,
   Briefcase,
   LayoutDashboard,
@@ -66,6 +67,7 @@ const GUIDES_MENU: NavItem[] = [
   { href: "/crested-butte/things-to-do", label: "Things to Do in Crested Butte", icon: Camera },
   { href: "/leadville/things-to-do", label: "Things to Do in Leadville", icon: Camera },
   { href: "/blog", label: "Blog", icon: Newspaper },
+  { href: "/press", label: "Press Room", icon: Megaphone },
 ];
 
 const OWNERS_MENU: NavItem[] = [

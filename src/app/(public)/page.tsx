@@ -1156,6 +1156,16 @@ export default async function HomePage() {
                 >
                   Reviews
                 </Link>
+                {/* /press exists and is in the sitemap, but the homepage
+                    renders this footer rather than the shared <Footer />,
+                    so the press link there was unreachable from the front
+                    door. */}
+                <Link
+                  href="/press"
+                  style={{ color: "inherit", textDecoration: "none" }}
+                >
+                  Press Room
+                </Link>
                 <Link
                   href="/terms"
                   style={{ color: "inherit", textDecoration: "none" }}
