@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildDigest,
+  displayListing,
   formatChannel,
   renderSlackBlocks,
   rowToBooking,
@@ -311,5 +312,49 @@ describe("renderSlackBlocks", () => {
       renderSlackBlocks(buildDigest([row()], "2026-10-18"))
     );
     expect(json).not.toContain("path:");
+  });
+});
+
+describe("listing nickname", () => {
+  it("prefers the nickname joined from the listings mirror", () => {
+    const b = rowToBooking(row({ listing_nickname: "CB:GL411:Cole" }));
+    expect(b.listingNickname).toBe("CB:GL411:Cole");
+    expect(b.listingTitle).toBe("Plaza 339");
+    expect(displayListing(b)).toBe("CB:GL411:Cole");
+  });
+
+  it("falls back to tracking.listingNickname when the join found nothing", () => {
+    const b = rowToBooking(
+      row({
+        tracking: {
+          listingTitle: "Plaza 339",
+          listingNickname: "CB:Plaza339:Miron",
+          totalPaid: 100,
+        },
+      })
+    );
+    expect(displayListing(b)).toBe("CB:Plaza339:Miron");
+  });
+
+  it("falls back to the public title when there is no nickname anywhere", () => {
+    const b = rowToBooking(row());
+    expect(b.listingNickname).toBeNull();
+    expect(displayListing(b)).toBe("Plaza 339");
+  });
+
+  it("ignores a non-string nickname rather than rendering it", () => {
+    const b = rowToBooking(row({ listing_nickname: null }));
+    expect(b.listingNickname).toBeNull();
+    expect(displayListing(b)).toBe("Plaza 339");
+  });
+
+  it("renders the nickname, not the title, in the Slack payload", () => {
+    const json = JSON.stringify(
+      renderSlackBlocks(
+        buildDigest([row({ listing_nickname: "CB:GL411:Cole" })], "2026-10-18")
+      )
+    );
+    expect(json).toContain("CB:GL411:Cole");
+    expect(json).not.toContain("*Plaza 339*");
   });
 });

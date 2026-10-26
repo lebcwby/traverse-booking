@@ -13,7 +13,12 @@
  * Weeks run Monday–Sunday midnight to midnight **Mountain time**, matching the
  * daily digest's day boundary. See src/lib/report-day.ts for why not UTC.
  */
-import { rowToBooking, type DigestBooking, type Row } from "./booking-digest";
+import {
+  displayListing,
+  rowToBooking,
+  type DigestBooking,
+  type Row,
+} from "./booking-digest";
 import { civilDate, REPORT_TIMEZONE } from "./report-day";
 
 export interface WeeklyTotals {
@@ -97,10 +102,13 @@ export function buildWeeklyDigest(
     s.value += b.totalPaid;
     bySourceMap.set(b.source, s);
 
-    const l = byListingMap.get(b.listingTitle) ?? { count: 0, value: 0 };
+    // Grouped on the nickname so the weekly roll-up and the daily report
+    // name the same property the same way.
+    const listing = displayListing(b);
+    const l = byListingMap.get(listing) ?? { count: 0, value: 0 };
     l.count += 1;
     l.value += b.totalPaid;
-    byListingMap.set(b.listingTitle, l);
+    byListingMap.set(listing, l);
 
     // Bucketed on when the booking was COMPLETED, in Mountain time — the same
     // instant and the same zone the week bounds were built from, so every row

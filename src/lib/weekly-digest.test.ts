@@ -227,3 +227,56 @@ describe("renderWeeklySlackBlocks", () => {
     expect(JSON.stringify(without)).not.toContain("vs prior week");
   });
 });
+
+describe("listing nickname in the weekly roll-up", () => {
+  it("groups top listings by nickname, not public title", () => {
+    const d = buildWeeklyDigest(
+      [
+        row({ listing_nickname: "CB:GL411:Cole" }),
+        row({ listing_nickname: "CB:GL411:Cole" }),
+      ] as never,
+      "2026-10-12",
+      "2026-10-18"
+    );
+    expect(d.byListing).toHaveLength(1);
+    expect(d.byListing[0]).toMatchObject({
+      listing: "CB:GL411:Cole",
+      count: 2,
+    });
+  });
+
+  it("keeps two listings apart when they share a public title", () => {
+    const d = buildWeeklyDigest(
+      [
+        row({ listing_nickname: "CB:GL379:Turk" }),
+        row({ listing_nickname: "CB:GL381:Turk" }),
+      ] as never,
+      "2026-10-12",
+      "2026-10-18"
+    );
+    expect(d.byListing).toHaveLength(2);
+    expect(d.byListing.map((l) => l.listing).sort()).toEqual([
+      "CB:GL379:Turk",
+      "CB:GL381:Turk",
+    ]);
+  });
+
+  it("falls back to the title for a listing missing from the mirror", () => {
+    const d = buildWeeklyDigest([row()] as never, "2026-10-12", "2026-10-18");
+    expect(d.byListing[0].listing).toBe("Mountain-View Cabin");
+  });
+
+  it("renders the nickname in the Slack payload", () => {
+    const json = JSON.stringify(
+      renderWeeklySlackBlocks(
+        buildWeeklyDigest(
+          [row({ listing_nickname: "CB:GL411:Cole" })] as never,
+          "2026-10-12",
+          "2026-10-18"
+        )
+      )
+    );
+    expect(json).toContain("CB:GL411:Cole");
+    expect(json).not.toContain("Mountain-View Cabin");
+  });
+});
