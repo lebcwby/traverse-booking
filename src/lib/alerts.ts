@@ -1,5 +1,7 @@
 import { Resend } from "resend";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { getPool } from "@/lib/db";
+import { compareNight, totalsFor } from "@/lib/yoy-revenue";
 
 // ALERT_TO_EMAIL may hold several addresses ("a@x.com,b@x.com"). Resend's `to`
 // takes a string[] and does NOT split a comma-joined string — it would treat
@@ -427,61 +429,49 @@ function getLastYearDate(dateStr: string): string {
   return ly.toISOString().slice(0, 10);
 }
 
+/**
+ * Nightly rates from OUR OWN `calendar_days`.
+ *
+ * This used to read a separate "dashboard" Supabase behind
+ * DASHBOARD_SUPABASE_URL / _ANON_KEY. Neither has ever been set in
+ * production, so `dashboardConfigured()` was false, this returned an empty
+ * map on every call, and the comparison table rendered entirely blank —
+ * including for nights two days away whose prices were sitting in our own
+ * database the whole time.
+ *
+ * `calendar_days` here holds 2026-10-12 → 2027-10-26, refreshed by
+ * sync-calendar. It is FORWARD-looking and keeps no history, so last year's
+ * dates legitimately return nothing; see buildYoYComparison.
+ */
 async function fetchCalendarDays(
   listingId: string,
   dates: string[]
 ): Promise<Map<string, CalendarDayData>> {
   const result = new Map<string, CalendarDayData>();
   if (!listingId || dates.length === 0) return result;
-  if (!dashboardConfigured()) return result;
 
-  const dateList = dates.join(",");
-  const url = `${DASHBOARD_SUPABASE_URL}/rest/v1/calendar_days?select=date,price,status&listing_id=eq.${encodeURIComponent(listingId)}&date=in.(${dateList})&limit=100`;
-
-  // Retry once on empty result (handles transient failures / cold-start timeouts)
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      const resp = await fetch(url, {
-        headers: {
-          apikey: DASHBOARD_SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${DASHBOARD_SUPABASE_ANON_KEY}`,
-        },
-        cache: "no-store",
-        signal: AbortSignal.timeout(10000),
+  try {
+    const { rows } = await getPool().query<{
+      date: string;
+      price: string | number | null;
+      status: string | null;
+    }>(
+      `select date, price, status
+         from calendar_days
+        where listing_id = $1 and date = any($2::text[])`,
+      [listingId, dates]
+    );
+    for (const row of rows) {
+      if (row.price === null) continue;
+      result.set(row.date, {
+        date: row.date,
+        price: Number(row.price),
+        status: row.status ?? "unknown",
       });
-      if (!resp.ok) {
-        console.error(
-          `[YoYRates] calendar_days fetch failed (attempt ${attempt}): ${resp.status} ${resp.statusText} for listing ${listingId}`
-        );
-        if (attempt < 2) {
-          await new Promise((r) => setTimeout(r, 500));
-          continue;
-        }
-        return result;
-      }
-      const rows: CalendarDayData[] = await resp.json();
-      console.log(
-        `[YoYRates] Fetched ${rows.length} calendar days for listing ${listingId} (${dates.length} dates requested, attempt ${attempt})`
-      );
-      if (rows.length === 0 && attempt < 2) {
-        console.warn(
-          `[YoYRates] Empty result for listing ${listingId} with dates [${dateList}] — retrying`
-        );
-        await new Promise((r) => setTimeout(r, 500));
-        continue;
-      }
-      for (const row of rows) result.set(row.date, row);
-      return result;
-    } catch (err) {
-      console.error(
-        `[YoYRates] calendar_days fetch error (attempt ${attempt}) for listing ${listingId}:`,
-        err
-      );
-      if (attempt < 2) {
-        await new Promise((r) => setTimeout(r, 500));
-        continue;
-      }
     }
+  } catch (err) {
+    // An enrichment must never take the alert down with it.
+    console.error(`[YoYRates] calendar_days query failed for ${listingId}:`, err);
   }
   return result;
 }
@@ -506,16 +496,21 @@ async function buildYoYComparison(
     const lastRate = lastYear?.price ?? null;
     const lyStatus = lastYear?.status ?? null;
 
-    // Net revenue: booked last year → rate differential; unbooked/blocked → full rate is incremental
-    let netRevenue: number | null = null;
-    if (thisRate !== null) {
-      if (lyStatus === "booked" && lastRate !== null) {
-        netRevenue = thisRate - lastRate;
-      } else {
-        // available, blocked, or unknown — was $0 actual revenue last year
-        netRevenue = thisRate;
-      }
-    }
+    // ⚠️ The old rule here was "anything not booked last year means the full
+    // rate is incremental". That silently treats "we have no record" as "the
+    // night went unsold", and since `calendar_days` holds no history at all,
+    // EVERY night took that branch — inventing incremental revenue on every
+    // booking. It is especially wrong for the 24 listings onboarded since
+    // June 2026, which had no last year to compare against.
+    //
+    // compareNight() only credits the full rate when the listing was
+    // demonstrably selling at the time, and returns null otherwise. Until a
+    // source of last-year REVENUE is wired up (see the note in
+    // src/lib/yoy-revenue.ts) that null is the honest answer.
+    const netRevenue = compareNight(date, thisRate, {
+      earned: lastRate,
+      firstStayDate: null,
+    }).net;
 
     return {
       date,
@@ -556,7 +551,17 @@ function renderRateComparisonTable(
   comparison: NightlyComparison[],
   checkIn: string
 ): string {
+  // A row per night is produced whether or not any lookup succeeded, so
+  // counting rows does not tell you whether there is anything to say. When
+  // the dashboard DB is unconfigured (it is, in production) every rate comes
+  // back null and this drew a full table of dashes under a bold "$0" —
+  // which reads as "this booking added nothing" rather than "we have no
+  // data". Render nothing instead.
   if (comparison.length === 0) return "";
+  const hasAnyRate = comparison.some(
+    (c) => c.thisYearRate !== null || c.lastYearRate !== null
+  );
+  if (!hasAnyRate) return "";
   const thisYear = new Date(checkIn + "T12:00:00Z").getUTCFullYear();
   const lastYear = thisYear - 1;
   const hasLastYearData = comparison.some((c) => c.lastYearRate !== null);
@@ -572,7 +577,19 @@ function renderRateComparisonTable(
       ? avgLast.reduce((s, c) => s + c.lastYearRate!, 0) / avgLast.length
       : null;
 
-  const totalNet = comparison.reduce((s, c) => s + (c.netRevenue ?? 0), 0);
+  // `?? 0` here is what turned "nothing to compare" into a bold "$0", which
+  // reads as "this booking added nothing". totalsFor() returns null when no
+  // night could be compared, and renderNetRevenue renders null as a dash.
+  const totalNet = totalsFor(
+    comparison.map((c) => ({
+      date: c.date,
+      lastYearDate: c.date,
+      thisYearRate: c.thisYearRate,
+      lastYearEarned: c.lastYearRate,
+      state: c.netRevenue === null ? ("no_comparable" as const) : ("vacant" as const),
+      net: c.netRevenue,
+    }))
+  ).netTotal;
   const bookedLastYear = comparison.filter(
     (c) => c.lastYearStatus === "booked"
   ).length;
