@@ -1,7 +1,13 @@
 import { Resend } from "resend";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { getPool } from "@/lib/db";
-import { compareNight, totalsFor } from "@/lib/yoy-revenue";
+import {
+  compareNight,
+  lastYearEquivalent,
+  totalsFor,
+  type NightState,
+} from "@/lib/yoy-revenue";
+import { fetchListingHistory } from "@/lib/crm-revenue";
 
 // ALERT_TO_EMAIL may hold several addresses ("a@x.com,b@x.com"). Resend's `to`
 // takes a string[] and does NOT split a comma-joined string — it would treat
@@ -370,8 +376,10 @@ interface NightlyComparison {
   date: string;
   dayOfWeek: string;
   thisYearRate: number | null;
+  /** Base fare this night actually earned last year; null when it sold nothing. */
   lastYearRate: number | null;
-  lastYearStatus: string | null;
+  /** Whether that null means "went unsold" or "we weren't selling it yet". */
+  state: NightState;
   netRevenue: number | null;
 }
 
@@ -420,15 +428,6 @@ function generateNightlyDates(checkIn: string, checkOut: string): string[] {
   return dates;
 }
 
-function getLastYearDate(dateStr: string): string {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  const ly = new Date(Date.UTC(y - 1, m - 1, d));
-  if (ly.getUTCMonth() !== m - 1) {
-    return new Date(Date.UTC(y - 1, m - 1, 0)).toISOString().slice(0, 10);
-  }
-  return ly.toISOString().slice(0, 10);
-}
-
 /**
  * Nightly rates from OUR OWN `calendar_days`.
  *
@@ -440,8 +439,9 @@ function getLastYearDate(dateStr: string): string {
  * database the whole time.
  *
  * `calendar_days` here holds 2026-10-12 → 2027-10-26, refreshed by
- * sync-calendar. It is FORWARD-looking and keeps no history, so last year's
- * dates legitimately return nothing; see buildYoYComparison.
+ * sync-calendar. It is FORWARD-looking and keeps no history, so it is asked
+ * only about THIS year's nights; last year's side comes from realised
+ * reservation revenue in the CRM. See buildYoYComparison.
  */
 async function fetchCalendarDays(
   listingId: string,
@@ -484,54 +484,55 @@ async function buildYoYComparison(
   const thisYearDates = generateNightlyDates(checkIn, checkOut);
   if (thisYearDates.length === 0) return [];
 
-  const lastYearDates = thisYearDates.map(getLastYearDate);
-  const allDates = [...thisYearDates, ...lastYearDates];
-  const calendarData = await fetchCalendarDays(listingId, allDates);
+  // 364 days back, not one calendar year: that preserves the weekday, and
+  // weekend pricing is the single biggest driver of a nightly rate. This file
+  // previously had its own calendar-year helper, which disagreed with the
+  // date compareNight() reports — so the table could show a Tuesday's revenue
+  // labelled as the equivalent of a Wednesday.
+  const lastYearDates = thisYearDates.map(lastYearEquivalent);
+
+  // Two databases, deliberately. This year's asking rate is ours and local;
+  // last year's realised revenue only exists in the CRM, and that lookup is
+  // optional — unconfigured, it returns empty and the column stays blank.
+  const [calendarData, history] = await Promise.all([
+    fetchCalendarDays(listingId, thisYearDates),
+    fetchListingHistory(listingId, lastYearDates),
+  ]);
 
   return thisYearDates.map((date, i) => {
-    const lyDate = lastYearDates[i];
-    const thisYear = calendarData.get(date);
-    const lastYear = calendarData.get(lyDate);
-    const thisRate = thisYear?.price ?? null;
-    const lastRate = lastYear?.price ?? null;
-    const lyStatus = lastYear?.status ?? null;
+    const thisRate = calendarData.get(date)?.price ?? null;
+    const earned = history.earnedByDate.get(lastYearDates[i]) ?? null;
 
-    // ⚠️ The old rule here was "anything not booked last year means the full
-    // rate is incremental". That silently treats "we have no record" as "the
-    // night went unsold", and since `calendar_days` holds no history at all,
-    // EVERY night took that branch — inventing incremental revenue on every
-    // booking. It is especially wrong for the 24 listings onboarded since
-    // June 2026, which had no last year to compare against.
-    //
-    // compareNight() only credits the full rate when the listing was
-    // demonstrably selling at the time, and returns null otherwise. Until a
-    // source of last-year REVENUE is wired up (see the note in
-    // src/lib/yoy-revenue.ts) that null is the honest answer.
-    const netRevenue = compareNight(date, thisRate, {
-      earned: lastRate,
-      firstStayDate: null,
-    }).net;
+    // compareNight() decides what a missing figure means. "Nothing earned"
+    // is only incremental revenue when the listing was demonstrably selling
+    // then; otherwise there is no honest comparison and net stays null.
+    const night = compareNight(date, thisRate, {
+      earned,
+      firstStayDate: history.firstStayDate,
+    });
 
     return {
       date,
       dayOfWeek: DAYS[new Date(date + "T12:00:00Z").getUTCDay()],
       thisYearRate: thisRate,
-      lastYearRate: lastRate,
-      lastYearStatus: lyStatus,
-      netRevenue,
+      lastYearRate: earned,
+      state: night.state,
+      netRevenue: night.net,
     };
   });
 }
 
-function renderStatusBadge(status: string | null): string {
-  if (!status) return '<span style="color:#d1d5db;">—</span>';
-  switch (status) {
+// "Not yet listed" is the badge that matters: it is the difference between
+// "this night went unsold last year" and "we were not selling this home
+// yet", and only the first of those makes the full rate incremental.
+function renderStatusBadge(state: NightState): string {
+  switch (state) {
     case "booked":
       return '<span style="color:#f2c070;font-size:11px;">&#9679; Booked</span>';
-    case "available":
-      return '<span style="color:#6b7280;font-size:11px;">&#9675; Available</span>';
+    case "vacant":
+      return '<span style="color:#6b7280;font-size:11px;">&#9675; Vacant</span>';
     default:
-      return `<span style="color:#d1d5db;font-size:11px;">&#9679; ${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+      return '<span style="color:#d1d5db;font-size:11px;">&#9675; Not yet listed</span>';
   }
 }
 
@@ -564,7 +565,12 @@ function renderRateComparisonTable(
   if (!hasAnyRate) return "";
   const thisYear = new Date(checkIn + "T12:00:00Z").getUTCFullYear();
   const lastYear = thisYear - 1;
-  const hasLastYearData = comparison.some((c) => c.lastYearRate !== null);
+  // Show the per-night badges once there is any last-year signal at all —
+  // including an all-"not yet listed" stay, where the badge is the whole
+  // explanation for a column of dashes.
+  const hasLastYearData = comparison.some(
+    (c) => c.lastYearRate !== null || c.state !== "no_comparable"
+  );
 
   const avgThis = comparison.filter((c) => c.thisYearRate !== null);
   const avgLast = comparison.filter((c) => c.lastYearRate !== null);
@@ -583,16 +589,14 @@ function renderRateComparisonTable(
   const totalNet = totalsFor(
     comparison.map((c) => ({
       date: c.date,
-      lastYearDate: c.date,
+      lastYearDate: lastYearEquivalent(c.date),
       thisYearRate: c.thisYearRate,
       lastYearEarned: c.lastYearRate,
-      state: c.netRevenue === null ? ("no_comparable" as const) : ("vacant" as const),
+      state: c.state,
       net: c.netRevenue,
     }))
   ).netTotal;
-  const bookedLastYear = comparison.filter(
-    (c) => c.lastYearStatus === "booked"
-  ).length;
+  const bookedLastYear = comparison.filter((c) => c.state === "booked").length;
   const totalNights = comparison.length;
 
   return `
@@ -620,7 +624,7 @@ function renderRateComparisonTable(
               </td>
               <td style="padding:10px 14px;text-align:right;">
                 <span style="font-size:14px;color:#6b7280;">${c.lastYearRate !== null ? `$${c.lastYearRate}` : "—"}</span>
-                ${hasLastYearData ? `<br>${renderStatusBadge(c.lastYearStatus)}` : ""}
+                ${hasLastYearData ? `<br>${renderStatusBadge(c.state)}` : ""}
               </td>
               <td style="padding:10px 14px;text-align:right;font-size:13px;">
                 ${renderNetRevenue(c.netRevenue)}
