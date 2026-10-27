@@ -5,7 +5,7 @@ export const pageContent = `<main id="main">
   <div class="hero-bg" style="background-image:url('/markets/the-plaza.jpg');"></div>
   <div class="hero-overlay"></div>
   <div class="hero-inner">
-    <div class="eyebrow">For Owners · Mt. Crested Butte · Updated June 2026</div>
+    <div class="eyebrow">For Owners · Mt. Crested Butte · Updated October 2026</div>
     <h1>Crested Butte <em>property management.</em></h1>
     <p class="hero-lede">Full-service short-term rental management for Crested Butte and Mt. Crested Butte homeowners — handled by a local team that manages units in all three slope-side buildings. Marketing, dynamic pricing, housekeeping, maintenance, and 24/7 guest support, with a direct-booking channel that keeps more of every reservation with you instead of the OTAs.</p>
   </div>
@@ -45,6 +45,8 @@ export const pageContent = `<main id="main">
   <div class="callout">
     <p><strong>Local vs. national:</strong> National managers offer scale and brand recognition but operate remotely and rarely tailor to a small mountain market. A local Crested Butte company offers faster response, building-level expertise, and a vested interest in the town's reputation — which is why most successful slope-side rentals are locally managed.</p>
   </div>
+
+  <p>Before you choose anyone, including us: <a href="/crested-butte/best-property-manager">six questions to ask a Crested Butte property manager</a>, with Traverse's own answers and the data behind them.</p>
 
   <h2>Crested Butte short-term rental rules and licensing</h2>
 
