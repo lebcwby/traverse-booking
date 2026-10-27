@@ -2,11 +2,12 @@
 //
 // The owner explainer ("Best property manager in Crested Butte & Leadville?
 // Here is the data behind the claim", Sept 29, 2026) rebuilt as a Crested
-// Butte-specific page. The H1 is the query as a question, the first block
+// Butte-specific page, updated to the v4 edition (Oct 2026). The H1 is the query as a question, the first block
 // is the answer an AI overview can lift whole, and every figure carries its
 // source and date. Deliberately NOT on this page: the explainer's +47%
 // revenue-per-home table (different cohort and window from the +2.7%
-// headline), the "175+ homes" count, and the 4.77 lifetime Airbnb average.
+// headline; v4 keeps a rate/nights version of it, included below with its
+// cohort labelled).
 //
 // Figures to re-check when the PDF is reissued: everything in the
 // `.comparison` tables and the stat row.
@@ -52,6 +53,8 @@ export const pageContent = `<main id="main">
     </table>
   </div>
 
+  <p>Occupancy stayed 6 to 14 points above the comp sets every month: 69.5%, 71.1% and 73.6% in June, July and August against 58%, 65% and 61%. None of it is one trick. It is five things done at the same time, most of which a single owner cannot do alone.</p>
+
   <p><strong>In Crested Butte specifically:</strong> Traverse-managed condos at the base area ran 65% occupancy in August 2026 against a 58% market average, and Crested Butte one-bedrooms gave up 9% on revenue per available night in a market that gave up 16%. Of the 82 mountain homes with a full prior-year history, 51 beat their competitive set, 19 matched it and 12 trailed it. The results were good, not uniform; the <a href="/summer-2026-market-snapshot">full report</a> says which and why.</p>
 
   <div class="callout">
@@ -68,8 +71,23 @@ export const pageContent = `<main id="main">
   <h3>2. Who sets prices, how often, and what is the structure underneath?</h3>
   <p>"Smart pricing is on" is not an answer. Since May 12, 2026 a dedicated revenue manager has run pricing for every Traverse home in PriceLabs. From mid-May through late August that desk made roughly 10,000 pricing actions, about 150 a day in the first month and 100–110 a day through the summer; in September, with ski season being priced, the activity log shows 7,025 actions in 29 days. Each action is a rate, a minimum-stay rule or a floor on a specific date range for a specific home. The larger lever is the layer nobody sees: base rates, minimum prices, seasonal profiles, gap-night and orphan-day rules, and last-minute discount curves set per home and revised as the season moves. A self-managed listing usually has one nightly rate, a weekend bump and a smart-pricing toggle. A Traverse home has a pricing model.</p>
 
+  <p>What that produced, same homes, same dates, 2026 vs. 2025 (May 12 – August 26, 138 homes with a full prior year):</p>
+
+  <div class="comparison-wrap">
+    <table class="comparison">
+      <thead><tr><th>Measure</th><th>Change vs. 2025</th></tr></thead>
+      <tbody>
+        <tr><td>Average nightly rate</td><td class="highlight">+19%</td></tr>
+        <tr><td>Nights booked per home</td><td class="highlight">+24%</td></tr>
+        <tr><td>Bookings per day, portfolio-wide</td><td class="highlight">15 → 34</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>The same homes were running 18% below the prior year from January to May 11, before the change. That is the part most owners never see in a marketing claim: the comparison against what the same homes did with the old approach, not just against the market. Rate and volume moved together; the +19% in nightly rate is the check that the extra nights were not bought with discounts.</p>
+
   <h3>3. Which channels is my home on, and how is the calendar synced?</h3>
-  <p>One platform is one audience. Every Traverse home is for sale on Airbnb, Vrbo, the Expedia group (Expedia, Hotels.com, Orbitz, Travelocity), Booking.com and <a href="/">booktraverse.com</a>, priced and synced from one calendar, so a rate change at 7 a.m. reaches every channel by 7:05. About a third of 2026 rental revenue has come from outside Airbnb. The Expedia group, added this year, produced $328,000 in its first year and one in five Crested Butte rental dollars, on nine-day lead times that fill the gaps the rental platforms leave open.</p>
+  <p>One platform is one audience. Most Traverse homes are for sale on Airbnb, Vrbo, the Expedia group (Expedia, Hotels.com, Orbitz, Travelocity), Booking.com and <a href="/">booktraverse.com</a>, priced and synced from one calendar, so a rate change at 7 a.m. reaches every channel by 7:05. About a third of 2026 rental revenue has come from outside Airbnb. The Expedia group, added this year, went from zero to one in five Crested Butte rental dollars in its first year, on nine-day lead times that fill the gaps the rental platforms leave open.</p>
 
   <div class="comparison-wrap">
     <table class="comparison">
@@ -97,10 +115,10 @@ export const pageContent = `<main id="main">
     </table>
   </div>
 
-  <p>The rate is identical; the entire difference is that badged homes get shown more and booked more. The portfolio-wide guest rating across all channels was 4.88 for summer 2026. Every Traverse listing gets professional photography, a title written for search rather than for the owner, a description and amenity set rewritten per platform, a review-request sequence after every stay, and a quarterly audit of every listing without the badge, grouped by what is blocking it.</p>
+  <p>The rate is identical; the entire difference is that badged homes get shown more and booked more. On Google, Traverse is rated 5 stars in Crested Butte and 4.9 stars in Leadville. Every Traverse listing gets professional photography, a title written for search rather than for the owner, a description and amenity set rewritten per platform, a review-request sequence after every stay, and a quarterly audit of every listing without the badge, grouped by what is blocking it.</p>
 
   <h3>5. Who cleans, who fixes, and who manages them?</h3>
-  <p>Ask how a 4:00 p.m. check-in after a 10:00 a.m. checkout works in February. Traverse runs its own cleaning crews in Crested Butte and Leadville under its own cleaning manager rather than booking a third-party service, with a general manager in each market, a guest-experience team with a 100% response rate and a typical reply inside an hour on Airbnb, and an in-house maintenance team that includes a full-time technician based in Crested Butte for same-day fixes across the base-area buildings. Preventive maintenance walks happen between stays. The host cancellation rate is held under one percent, which is both a Guest Favorite requirement and the fastest way to lose search ranking if it slips.</p>
+  <p>Ask how a 4:00 p.m. check-in after a 10:00 a.m. checkout works in February. Traverse runs its own cleaning crews in Crested Butte and Leadville under its own cleaning manager rather than booking a third-party service, with a general manager in each market, a guest-experience team with a 100% response rate and a typical reply inside an hour on Airbnb, and an in-house maintenance team that includes a full-time technician based in Crested Butte for same-day fixes across the base-area buildings. Preventive maintenance walks happen between stays. The host cancellation rate is held under one percent, which is both a Guest Favorite requirement and the fastest way to lose search ranking if it slips. The result shows up in the review data: 5 stars on Google in Crested Butte, 4.9 in Leadville, more than 80,000 guests hosted, and an Airbnb Superhost profile with ten years of hosting and 2,700-plus reviews. A single owner can match that on one property with real effort; doing it across 200-plus listings in two mountain towns, through a winter, is a staffing model.</p>
 
   <h3>6. Where is guest money held?</h3>
   <p>Traverse uses trust-account banking: guest funds are held in a trust account separate from operating funds, and owner payouts come from the trust side. That separation protects the owner if anything goes wrong on the operating side, and it is the question most owners never think to ask.</p>
@@ -111,9 +129,9 @@ export const pageContent = `<main id="main">
 
   <h2>What this means if you are choosing a manager</h2>
 
-  <p>The gap between a well-run home and an average one in a soft market was about 19 points of revenue per available night this summer. That is larger than any management fee. So the useful question is not "what do you charge" but "what do you do," and the six questions above separate managers quickly. Traverse's answers are on this page. Bring the same list to anyone else.</p>
+  <p>The gap between a well-run home and an average one in a soft market was about 19 points of revenue per available night this summer. That covers the majority of management fees. So the useful question is not "what do you charge" but "what do you do," and the six questions above separate managers quickly. Traverse's answers are on this page. Bring the same list to anyone else.</p>
 
-  <p><a href="/reports/Best_Property_Manager_Crested_Butte_Leadville_Explainer.pdf" class="bcard-link">Download the owner explainer (PDF, 5 pages) →</a></p>
+  <p><a href="/reports/Best_Property_Manager_Crested_Butte_Leadville_Explainer.pdf" class="bcard-link">Download the owner explainer (PDF, 6 pages) →</a></p>
 
 </section>
 
@@ -123,7 +141,7 @@ export const pageContent = `<main id="main">
     <h2>Questions owners ask</h2>
     <div class="faq">
       <h3>Who is the best property manager in Crested Butte?</h3>
-      <p>The one whose homes earn the most per available night against their own competitive sets, month after month, and who will show you the comparison. In summer 2026 Traverse-managed mountain homes earned 2.7% more per available night than the year before while nearby listings earned 16% less, and Traverse publishes that comparison every season. Ask any manager you are considering for the same numbers.</p>
+      <p>The one whose homes earn the most per available night against their own competitive sets, month after month, and who will show you the comparison. In summer 2026 Traverse-managed mountain homes earned 2.7% more per available night than the year before while nearby listings earned 16% less, according to PriceLabs data, and Traverse publishes that comparison every season. Ask any manager you are considering for the same numbers.</p>
     </div>
     <div class="faq">
       <h3>Who manages condos at the Grand Lodge, Mountaineer Square and The Plaza?</h3>
@@ -139,11 +157,11 @@ export const pageContent = `<main id="main">
     </div>
     <div class="faq">
       <h3>Does Traverse list on Airbnb, Vrbo and Expedia?</h3>
-      <p>Yes. Every home runs on Airbnb, Vrbo, the Expedia group (Expedia, Hotels.com, Orbitz, Travelocity), Booking.com and booktraverse.com from one synced calendar and one pricing model.</p>
+      <p>Yes. Most homes run on Airbnb, Vrbo, the Expedia group (Expedia, Hotels.com, Orbitz, Travelocity), Booking.com and booktraverse.com from one synced calendar and one pricing model.</p>
     </div>
     <div class="faq">
       <h3>How do I check any property manager's results?</h3>
-      <p>Ask for their homes against PriceLabs or AirDNA competitive sets by month for the last full season, including losing months. Check their public Airbnb host profile for Superhost status, rating and review count. Ask what share of their listings are Guest Favorites, and where guest money is held.</p>
+      <p>Ask for their homes against PriceLabs or AirDNA competitive sets by month for the last full season, including losing months. Check their public Airbnb host profile for Superhost status, rating and review count, and their Google rating in each market. Ask what share of their listings are Guest Favorites, and where guest money is held.</p>
     </div>
   </div>
 </section>
@@ -151,7 +169,7 @@ export const pageContent = `<main id="main">
 <!-- ══════ SOURCES ══════ -->
 <section class="prose-section">
   <h2>About the numbers</h2>
-  <p>Comp-set figures are from PriceLabs Portfolio Analytics, which benchmarks each home against nearby competing listings of every kind, managed and self-managed. Summer results cover June 1 – August 31, 2026 vs. the same period in 2025 for the 82 Traverse-managed Colorado mountain homes with a full prior-year history; homes blocked more than 90% of the season are excluded; figures reflect the September 21, 2026 refresh. The Crested Butte August occupancy comparison is from the same source for the Crested Butte one-bedroom segment. Channel mix is share of rents booked January 1 – September 13, 2026. Guest Favorite figures were pulled from Airbnb on August 21, 2026; the July occupancy comparison covers 181 Airbnb listings with July revenue. Pricing-action counts are from the PriceLabs activity log, pulled September 29, 2026. Response rate and cancellation rate are from Traverse's public Airbnb host profile. Building unit counts are Traverse's as of September 2026. Individual results vary by property; an owner's monthly statement remains the record for their home.</p>
+  <p>Comp-set figures are from PriceLabs Portfolio Analytics, which benchmarks each home against nearby competing listings of every kind, managed and self-managed; they are booking-performance data, not accounting figures. Summer results cover June 1 – August 31, 2026 vs. the same period in 2025 for the 82 Traverse-managed Colorado mountain homes with a full prior-year history; homes blocked more than 90% of the season are excluded; figures reflect the September 21, 2026 refresh. The Crested Butte August occupancy comparison is from the same source for the Crested Butte one-bedroom segment. Revenue-management results cover May 12 – August 26, 2026 vs. 2025 for 138 homes booking in both years. Channel mix is share of rents booked January 1 – September 13, 2026. Guest Favorite figures were pulled from Airbnb on August 21, 2026; the July occupancy comparison covers 181 Airbnb listings with July revenue. Pricing-action counts are from the PriceLabs activity log, pulled September 29, 2026. Superhost status, response rate and review count are from Traverse's public Airbnb host profile; Google ratings are from Traverse's Google Business Profiles. Building unit counts are Traverse's as of September 2026. Traverse Hospitality (formerly High Rocky Homes) manages 200-plus listings across Colorado. Individual results vary by property; an owner's monthly statement remains the record for their home.</p>
 </section>
 
 <!-- ══════ CTA ══════ -->
@@ -228,7 +246,7 @@ export const schemaBlocks: Array<Record<string, unknown>> = [
         name: "Who is the best property manager in Crested Butte?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "The one whose homes earn the most per available night against their own competitive sets, month after month, and who will show you the comparison. In summer 2026 Traverse-managed mountain homes earned 2.7% more per available night than the year before while nearby listings earned 16% less, and Traverse publishes that comparison every season. Ask any manager you are considering for the same numbers.",
+          text: "The one whose homes earn the most per available night against their own competitive sets, month after month, and who will show you the comparison. In summer 2026 Traverse-managed mountain homes earned 2.7% more per available night than the year before while nearby listings earned 16% less, according to PriceLabs data, and Traverse publishes that comparison every season. Ask any manager you are considering for the same numbers.",
         },
       },
       {
@@ -260,7 +278,7 @@ export const schemaBlocks: Array<Record<string, unknown>> = [
         name: "Does Traverse list on Airbnb, Vrbo and Expedia?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Yes. Every home runs on Airbnb, Vrbo, the Expedia group (Expedia, Hotels.com, Orbitz, Travelocity), Booking.com and booktraverse.com from one synced calendar and one pricing model.",
+          text: "Yes. Most homes run on Airbnb, Vrbo, the Expedia group (Expedia, Hotels.com, Orbitz, Travelocity), Booking.com and booktraverse.com from one synced calendar and one pricing model.",
         },
       },
       {
@@ -268,7 +286,7 @@ export const schemaBlocks: Array<Record<string, unknown>> = [
         name: "How do I check any property manager's results?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Ask for their homes against PriceLabs or AirDNA competitive sets by month for the last full season, including losing months. Check their public Airbnb host profile for Superhost status, rating and review count. Ask what share of their listings are Guest Favorites, and where guest money is held.",
+          text: "Ask for their homes against PriceLabs or AirDNA competitive sets by month for the last full season, including losing months. Check their public Airbnb host profile for Superhost status, rating and review count, and their Google rating in each market. Ask what share of their listings are Guest Favorites, and where guest money is held.",
         },
       },
     ],
