@@ -439,6 +439,13 @@ export default function MarketSnapshotPage() {
           </Link>
           <span style={{ color: "#94a3b8" }}> · </span>
           <Link
+            href="/crested-butte/best-property-manager"
+            style={{ color: "#0f766e", fontWeight: 600, fontSize: "15px" }}
+          >
+            Six questions to ask a property manager
+          </Link>
+          <span style={{ color: "#94a3b8" }}> · </span>
+          <Link
             href="/press"
             style={{ color: "#0f766e", fontWeight: 600, fontSize: "15px" }}
           >

@@ -91,6 +91,11 @@ const CONTENT_PAGES: {
     changeFrequency: "monthly",
     priority: 0.8,
   },
+  {
+    path: "/crested-butte/best-property-manager",
+    changeFrequency: "monthly",
+    priority: 0.8,
+  },
   // Reports (see src/app/summer-2026-market-snapshot)
   {
     path: "/summer-2026-market-snapshot",
