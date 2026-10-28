@@ -36,6 +36,26 @@ export interface FailureReason {
 
 const MAX_SUMMARY = 200;
 
+/**
+ * Cut long upstream text without slicing a word in half.
+ *
+ * A bare slice(0, 200) ended one real alert at "Check /api/health/beapi for
+ * the token's real e", which reads like the email itself is broken. Back up
+ * to the last space and say explicitly that there is more.
+ */
+function truncate(message: string): string {
+  if (message.length <= MAX_SUMMARY) return message;
+  // The ellipsis counts against the budget: callers (and the existing test)
+  // treat MAX_SUMMARY as the length of what comes out, not of what went in.
+  const cut = message.slice(0, MAX_SUMMARY - 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  // Only honour the word boundary if it is not pathologically early — a long
+  // run with no spaces (a URL, a stack frame, a base64 blob) should still
+  // show its first ~200 characters rather than almost nothing.
+  const body = lastSpace > (MAX_SUMMARY - 1) * 0.6 ? cut.slice(0, lastSpace) : cut;
+  return `${body.trimEnd()}…`;
+}
+
 /** The alert body is HTML, and the message contains upstream response text. */
 function escapeHtml(value: string): string {
   return value
@@ -75,7 +95,18 @@ function kindOf(
   const name = err instanceof Error ? err.name : "";
 
   if (status === 429 || /\brate.?limit/i.test(message)) return "rate_limited";
-  if (status === 401 || /token unavailable|unauthoriz/i.test(message)) {
+  // "token unavailable" is the alert SUBJECT; the thrown message says "Could
+  // not obtain a BEAPI token …", which matched nothing and classified the
+  // single most common real failure as `unknown`. That cost twice: the email
+  // said "unrecognised failure shape" about a failure we recognise perfectly
+  // well, and `unknown` opened its own cooldown bucket alongside the real
+  // ones. Match on obtaining/refreshing a token, not on the subject line.
+  if (
+    status === 401 ||
+    /token unavailable|unauthoriz|(?:obtain|refresh|mint)\w*\s+(?:a\s+)?\w*\s*token/i.test(
+      message
+    )
+  ) {
     return "token";
   }
   if (status === 403) return "forbidden";
@@ -104,7 +135,7 @@ export function describeUpstreamFailure(err: unknown): FailureReason {
   return {
     kind: kindOf(err, message, status),
     status,
-    summary: escapeHtml(message.slice(0, MAX_SUMMARY)),
+    summary: escapeHtml(truncate(message)),
   };
 }
 

@@ -2,10 +2,7 @@ import { getSupabaseAdmin } from "./supabase-admin";
 import { sendAlert } from "./alerts";
 import { rateLimit } from "./rate-limit";
 import { ConcurrencyGate } from "./concurrency-gate";
-import {
-  recordRateLimitEvent,
-  summarizeRecentRateLimitEvents,
-} from "./guesty-rate-limit-events";
+import { recordRateLimitEvent } from "./guesty-rate-limit-events";
 
 const BEAPI_BASE_URL = "https://booking.guesty.com";
 const FULL_SEARCH_LISTING_FIELDS =
@@ -290,7 +287,7 @@ export async function getBEAPIToken(): Promise<string> {
  * and several lambdas can be warm at once. It is a queue, not a reject: page
  * renders wait rather than fail.
  */
-const BEAPI_MAX_CONCURRENCY = 8;
+export const BEAPI_MAX_CONCURRENCY = 8;
 const beapiGate = new ConcurrencyGate(BEAPI_MAX_CONCURRENCY);
 
 async function beapiFetch(
@@ -380,64 +377,35 @@ async function beapiFetchUnthrottled(
         await new Promise((r) => setTimeout(r, backoff));
         continue;
       }
-      // Retries exhausted on a 429 — Guesty is actively rejecting us. Use the
-      // shared limiter purely as a cross-instance counter: the 6th terminal
-      // 429 inside 5 min flips allowed→false, which is our trigger. sendAlert
-      // dedups to 1/hour.
+      // Retries exhausted on a 429 — Guesty is actively rejecting us.
+      //
+      // This used to EMAIL on the 6th terminal 429 in 5 minutes, deduped to
+      // 1/hour. That produced 1–6 interruptions a day (the trigger itself
+      // fired 168 times on 2026-10-15) for a condition the email's own text
+      // told the reader not to act on. A rate-limit trend is not an
+      // incident: nothing here is fixed within the hour, and the fix when
+      // there is one is a pacing change, not a page.
+      //
+      // So: record every terminal 429 and say nothing. The daily digest at
+      // /api/cron/guesty-health-digest reports the shape of it once a day,
+      // and escalates to a real alert only when the volume is genuinely
+      // abnormal.
       //
       // Awaited (not fire-and-forget) because this is an error path that's
       // about to throw — a detached promise can be dropped when the lambda
       // freezes after the response. The extra latency only hits failing
       // requests, which are already rare.
       try {
+        // The shared limiter still runs, purely as a cross-instance counter,
+        // so `alerted` keeps marking which events were part of a burst. The
+        // digest reads that column to tell a spike from a trickle.
         const burst = await rateLimit("guesty-429-burst", {
           limit: 5,
           windowMs: 5 * 60 * 1000,
         });
-        const alerted = !burst.allowed;
-
-        // Record EVERY terminal 429, alerted or not. The cooldown row keeps
-        // only the most recent send, which left no history to correlate
-        // against — see recordRateLimitEvent.
-        await recordRateLimitEvent(path, alerted);
-
-        if (alerted) {
-          const context = await summarizeRecentRateLimitEvents();
-          await sendAlert(
-            "Guesty API rate-limiting spike",
-            `Guesty returned <strong>6+ rate-limit (429) errors within 5 minutes</strong> ` +
-              `on BEAPI calls (most recent path: <code>${path}</code>).<br/><br/>` +
-              context +
-              `<strong>Read the path above first — it names the caller.</strong> Guesty ` +
-              `rate-limits per <strong>account</strong> and that quota is shared with the CRM, ` +
-              `PriceLabs and Conduit, so another integration can exhaust it. But this site is ` +
-              `just as often the cause, and an earlier version of this alert asserted it was ` +
-              `not — which sent people to audit CRM crons that were idle.<br/><br/>` +
-              `Reviewing 7 days to 2026-10-26: <em>every</em> burst was ` +
-              `<code>/api/listings/{id}</code>, the public property page's own detail fetch. ` +
-              `The largest was 183 calls in 3 seconds — about one per listing in the ` +
-              `catalogue, roughly 3,660/min against a ~120/min ceiling. Those bursts landed on ` +
-              `scattered minutes and did not line up with deploys, so they were traffic ` +
-              `sweeping the catalogue, not a cron.<br/><br/>` +
-              `<strong>Check, in this order:</strong><br/>` +
-              `1. <strong>What path is above?</strong> A <code>/api/listings/{id}</code> burst ` +
-              `compressed into seconds is this site serving a catalogue sweep. Reservations, ` +
-              `guests or messages paths point at the CRM instead.<br/>` +
-              `2. Is it one tight burst or spread across the window? Tight means a sweep; ` +
-              `spread means the account quota was already exhausted by someone else.<br/>` +
-              `3. Vercel Firewall — traffic by IP and user-agent. A catalogue sweep from one ` +
-              `client is a scraper; <code>/properties/*</code> has no bot challenge, unlike ` +
-              `<code>/calendar</code>.<br/>` +
-              `4. <a href="https://www.booktraverse.com/api/health/beapi">/api/health/beapi</a> token status.<br/><br/>` +
-              `BEAPI calls are capped at ${BEAPI_MAX_CONCURRENCY} concurrent per instance, so a ` +
-              `burst queues rather than stampedes. Seeing many 429s anyway means either several ` +
-              `instances were warm at once, or the account quota was already spent elsewhere.<br/><br/>` +
-              `Full history: <code>select * from guesty_rate_limit_events order by occurred_at desc</code>`,
-            "guesty-429-burst"
-          );
-        }
+        await recordRateLimitEvent(path, !burst.allowed);
       } catch {
-        // best-effort — never let alerting break the BEAPI error path
+        // best-effort — never let bookkeeping break the BEAPI error path
       }
     }
 
