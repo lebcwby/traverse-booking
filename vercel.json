@@ -89,6 +89,10 @@
     {
       "schedule": "45 7 * * 1",
       "path": "/api/cron/weekly-booking-digest"
+    },
+    {
+      "schedule": "35 7 * * *",
+      "path": "/api/cron/guesty-health-digest"
     }
   ]
 }

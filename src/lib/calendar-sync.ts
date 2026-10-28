@@ -52,15 +52,32 @@ import { getSupabaseAdmin } from "./supabase-admin";
 const WINDOW_DAYS = 365;
 
 /**
- * Listings per invocation. 40 listings ≈ 40 requests ≈ 20s at the pacing
+ * Listings per invocation. 40 listings ≈ 40 requests ≈ 60s at the pacing
  * below, which keeps a run far inside the route's maxDuration even when
- * Guesty is slow, and leaves the rate-limit budget mostly free for guests.
- * Hourly × 40 refreshes all 208 roughly every 5 hours.
+ * Guesty is slow. Hourly × 40 refreshes all 208 roughly every 5 hours.
  */
 const LISTINGS_PER_RUN = 40;
 
-/** ~2 requests/second — an order of magnitude under Guesty's sustained cap. */
-const REQUEST_SPACING_MS = 500;
+/**
+ * ~0.67 requests/second.
+ *
+ * ⚠️ This was 500ms, with a comment claiming "an order of magnitude under
+ * Guesty's sustained cap". It was not: 2/s IS 120/min, which is the cap
+ * itself, so this job spent ~20 seconds of every hour pinned to the ceiling
+ * with no headroom for anything else on the account.
+ *
+ * The damage was measurable. Of ~580 terminal 429s in the week to
+ * 2026-10-28, 248 — more than two in five — fell in minutes :25–:29, and
+ * this job's cron is `25 * * * *`. The paths that recorded the 429s were
+ * ordinary page renders fetching listing detail: they were the victims, not
+ * the cause. The `guesty-429-burst` alert meanwhile told the reader "Do not
+ * assume this site caused it", which had been true in October and had
+ * quietly stopped being true.
+ *
+ * 1500ms puts a run at roughly a third of the account budget, so a guest
+ * quote or a page render landing inside the window still has room.
+ */
+const REQUEST_SPACING_MS = 1500;
 
 /** Postgres upsert batch. A listing-year is ~365 rows, so this is ~3 batches. */
 const UPSERT_CHUNK = 500;
@@ -322,7 +339,7 @@ export async function syncCalendarDays(opts?: {
   for (let i = 0; i < listingIds.length; i++) {
     const listingId = listingIds[i];
     // Pace the calls. Spacing BEFORE each request after the first keeps us at
-    // a steady ~2/s rather than bursting and then idling.
+    // a steady rate rather than bursting and then idling.
     if (i > 0) {
       await new Promise((r) => setTimeout(r, REQUEST_SPACING_MS));
     }
