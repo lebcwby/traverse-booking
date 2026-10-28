@@ -92,3 +92,34 @@ describe("describeUpstreamFailure", () => {
     expect(r.kind).toBe("upstream_error");
   });
 });
+
+describe("truncation", () => {
+  // The alert that prompted this ended mid-word at "the token's real e",
+  // which reads like the email itself is broken.
+  it("breaks on a word boundary and says there is more", () => {
+    const long =
+      "Could not obtain a BEAPI token. The cached token was expired, missing, " +
+      "or unreadable (Supabase error), and the self-heal refresh was throttled " +
+      "or failed. Check /api/health/beapi for the token's real expiry before " +
+      "assuming it lapsed.";
+    const { summary } = describeUpstreamFailure(new Error(long));
+
+    expect(summary.length).toBeLessThanOrEqual(200);
+    expect(summary.endsWith("…")).toBe(true);
+    // No half-word before the ellipsis.
+    expect(long).toContain(summary.slice(0, -1));
+    expect(summary).not.toMatch(/real e…$/);
+  });
+
+  // A 200-char run with no spaces must not collapse to nothing.
+  it("falls back to a hard cut when there is no space to break on", () => {
+    const { summary } = describeUpstreamFailure(new Error("y".repeat(400)));
+    expect(summary.length).toBe(200);
+    expect(summary.endsWith("…")).toBe(true);
+  });
+
+  it("leaves a short message exactly as it is", () => {
+    const { summary } = describeUpstreamFailure(new Error("short and done"));
+    expect(summary).toBe("short and done");
+  });
+});

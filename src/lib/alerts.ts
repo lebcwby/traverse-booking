@@ -226,6 +226,28 @@ async function readCooldownFromSupabase(key: string) {
   }
 }
 
+/**
+ * Did an alert under `key` go out within the last `withinMs`?
+ *
+ * For suppressing an alert that is DOWNSTREAM of another one. The BEAPI
+ * token failure and the catalogue-mirror fallback are not two events: the
+ * mirror is served *because* the token could not be obtained. On 2026-10-28
+ * they arrived one second apart (04:51:11 and 04:51:12) as two separate
+ * emails saying the same thing.
+ *
+ * Deliberately reads only the shared Supabase row and ignores the in-memory
+ * map: the two alerts are raised from different code paths and, on
+ * serverless, usually different lambda instances, so the process-local map
+ * would almost never see the other one's send.
+ */
+export async function wasAlertSentRecently(
+  key: string,
+  withinMs: number
+): Promise<boolean> {
+  const lastSent = await readCooldownFromSupabase(key);
+  return lastSent !== null && Date.now() - lastSent < withinMs;
+}
+
 async function persistCooldownToSupabase(key: string, lastSentAt: number) {
   const supabase = getSupabaseAdmin();
   if (!supabase) return;
