@@ -25,6 +25,11 @@ const EXEMPT = new Set([
   // Internal design preview for rose-stem icon options — never linked from
   // production, not an ad destination.
   "badge-preview.html",
+  // Meta Business domain-verification token. Its whole contract is that the
+  // body is the bare token and nothing else — adding the tracking scripts
+  // would make Meta's check fail, which is the opposite of what this file is
+  // for. Never a destination: only Meta's crawler fetches it.
+  "u2z8ve88hyoqevwbissu2apayfkl8b.html",
 ]);
 
 async function walkHtml(dir) {
@@ -43,10 +48,12 @@ async function walkHtml(dir) {
 
 const files = await walkHtml(PUBLIC_DIR);
 const missing = [];
+let checked = 0;
 
 for (const file of files) {
   const rel = relative(PUBLIC_DIR, file);
   if (EXEMPT.has(rel)) continue;
+  checked += 1;
   const html = await readFile(file, "utf8");
   if (!html.includes(REQUIRED_MARKER)) {
     missing.push(rel);
@@ -72,6 +79,8 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
-console.log(
-  `✓ Tracking bundle present on ${files.length - EXEMPT.size} public HTML page(s).`
-);
+// Count what was actually checked, not `files.length - EXEMPT.size`: that
+// subtracted every allowlist entry whether or not a matching file existed, so
+// once badge-preview.html was deleted the script cheerfully reported checking
+// -1 pages.
+console.log(`✓ Tracking bundle present on ${checked} public HTML page(s).`);
