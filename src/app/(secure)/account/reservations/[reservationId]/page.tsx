@@ -17,11 +17,14 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { CardBrandIcon } from "@/components/ui/card-brand-icon";
-import { ChangeDates } from "@/components/booking/change-dates";
+import { DateChangeRequest } from "@/components/account/date-change-request";
 import {
   CANCELLATION_NON_REFUNDABLE_NOTE,
+  CANCELLATION_TIMEZONE,
   isFullRefundEligible,
+  resolveCheckInDate,
 } from "@/lib/cancellation-policy";
+import { civilDate } from "@/lib/report-day";
 import { CancelReservationDialog } from "@/components/account/cancel-reservation-dialog";
 
 interface InvoiceItem {
@@ -333,15 +336,15 @@ export default function ReservationDetailPage() {
     return s === "confirmed" && isUpcoming(reservation.check_in);
   }
 
-  // Can extend: confirmed + checkout is today or in the future
-  function canExtend(): boolean {
-    if (!reservation?.check_out || !reservation?.listing_id) return false;
+  // A date change is a request. Shown for a confirmed stay that has not ended
+  // on the Mountain calendar. The server applies the same rule.
+  function canRequestDateChange(): boolean {
+    if (!reservation?.check_out) return false;
     const s = (reservation.status || "").toLowerCase();
     if (s !== "confirmed") return false;
-    const checkout = parseISO(reservation.check_out);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return checkout >= today;
+    const checkout = resolveCheckInDate(reservation.check_out);
+    if (!checkout) return false;
+    return checkout >= civilDate(new Date(), CANCELLATION_TIMEZONE);
   }
 
   if (loading) {
@@ -763,23 +766,12 @@ export default function ReservationDetailPage() {
         </section>
       )}
 
-      {/* Change dates */}
-      {canExtend() && r.check_in && (
-        <section className="mt-6">
-          <ChangeDates
-            reservationId={r.reservation_id}
-            listingId={r.listing_id!}
-            currentCheckIn={r.check_in}
-            currentCheckOut={r.check_out!}
-            onChanged={(newCheckIn, newCheckOut) => {
-              setReservation((prev) =>
-                prev
-                  ? { ...prev, check_in: newCheckIn, check_out: newCheckOut }
-                  : prev
-              );
-            }}
-          />
-        </section>
+      {canRequestDateChange() && r.check_in && r.check_out && (
+        <DateChangeRequest
+          reservationId={r.reservation_id}
+          currentCheckIn={r.check_in}
+          currentCheckOut={r.check_out}
+        />
       )}
 
       {/* Cancel section */}
