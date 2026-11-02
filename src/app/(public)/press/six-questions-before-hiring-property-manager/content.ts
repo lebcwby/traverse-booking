@@ -1,0 +1,33 @@
+export const pageContent = `
+<p><strong>CRESTED BUTTE, Colo. — November 2, 2026</strong> — Traverse Hospitality, a Colorado-owned vacation rental and property management company based in Mt. Crested Butte, has published an owner's guide for homeowners comparing property managers in Colorado's mountain towns. The guide sets out six questions an owner can put to any manager, answers each with Traverse's own numbers, and names the source and date behind every figure, including the months Traverse lost. It is published at <a href="/crested-butte/best-property-manager">booktraverse.com/crested-butte/best-property-manager</a>.</p>
+
+<p>The guide starts from the result Traverse reported in its Summer 2026 Market Snapshot: homes it has managed for more than a year earned 2.7% more per available night in June through August 2026 than the summer before, while the nearby competing listings PriceLabs tracks for those same homes earned 16% less. Average nightly rate rose 7.0% against a market decline of about five percent, and occupancy finished at 71.4% against roughly 61% for the competitive sets. Of 82 mountain homes with a full prior-year history, 51 beat their competitive set, 19 matched it, and 12 trailed it. In Crested Butte specifically, Traverse-managed condominiums at the base area ran 65% occupancy in August against a 58% market average.</p>
+
+<p>"The gap between a well-run home and an average one in a soft market was about 19 points of revenue per available night this summer. That covers the majority of any management fee," said Alex Haler, CEO and co-founder of Traverse Hospitality. "So the useful question for an owner is not 'what do you charge' but 'what do you do.' We wrote down the six questions we would ask, and we answered them first."</p>
+
+<h2>The six questions</h2>
+
+<p>The guide asks owners to put the following to any manager they are considering: Show me your homes against their comp sets, by month, for the last full season, including the losing months. Who sets prices, how often, and what is the structure underneath. Which channels is my home on, and how is the calendar synced. What percentage of your listings are Airbnb Guest Favorites, and what is your average rating. Who cleans, who fixes, and who manages them. And where is guest money held.</p>
+
+<h2>Traverse's answers</h2>
+
+<p>On pricing, a dedicated revenue manager has run every Traverse home in PriceLabs since May 12, 2026. From mid-May through late August that desk made roughly 10,000 pricing actions, about 150 a day in the first month, each one a rate, a minimum-stay rule, or a floor on a specific date range for a specific home. In September, with ski season being priced, the activity log shows 7,025 actions in 29 days. For the 138 homes with a full prior year, the same dates in 2026 produced a 19% higher average nightly rate and 24% more nights booked per home than in 2025, after those same homes had run 18% below the prior year from January to mid-May under the old approach.</p>
+
+<p>On distribution, most Traverse homes are for sale on Airbnb, Vrbo, the Expedia group (Expedia, Hotels.com, Orbitz, Travelocity), Booking.com, and booktraverse.com, priced from one calendar. Airbnb produced 64% of 2026 rents through September, Vrbo 16%, the Expedia group 8%, direct bookings 8%, and Booking.com 4%. The Expedia group, added this year, went from zero to one in five Crested Butte rental dollars in its first year, on nine-day lead times that fill gaps the rental platforms leave open.</p>
+
+<p>On listings, 110 of Traverse's 191 live Airbnb listings carry the Guest Favorite badge, which requires a sustained 4.90-plus rating, at least five recent reviews, and a host cancellation rate under one percent. Inside the portfolio in July 2026, badged homes ran 80.8% occupancy at a $197 average nightly rate; homes without the badge ran 70.9% at $195. The rate is the same; the badge is worth about ten points of occupancy. On Google, Traverse is rated 5 stars in Crested Butte and 4.9 stars in Leadville, the highest-rated property manager on Google in both towns.</p>
+
+<p>"Every one of those numbers is public or checkable," said Nadim Tannous, CTO and co-founder of Traverse Hospitality. "Guest Favorite counts are on Airbnb. Comp-set performance is in PriceLabs. We built our reporting so that an owner could verify the claim, and the guide tells them how to run the same check on anyone else."</p>
+
+<p>On operations, Traverse runs its own cleaning crews in Crested Butte and Leadville under its own cleaning manager, with a general manager in each market, an in-house maintenance team that includes a full-time technician based in Crested Butte, a guest-experience team with a 100% response rate on Airbnb, and a host cancellation rate held under one percent. The company's Airbnb host profile shows ten years of hosting, Superhost status, and more than 2,700 reviews.</p>
+
+<p>On guest money, Traverse uses trust-account banking: guest funds are held in a trust account separate from operating funds, and owner payouts come from the trust side.</p>
+
+<p>The guide closes with the question owners search most. "Who is the best property manager in Crested Butte?" it asks, and answers: the one whose homes earn the most per available night against their own comp sets, month after month, and who will show you the comparison. "Ask any manager you are considering for the same numbers," Haler said. "If they have them, you will learn something. If they don't, you have learned something too."</p>
+
+<p>The full guide, with sources and dates for every figure, is at <a href="/crested-butte/best-property-manager">booktraverse.com/crested-butte/best-property-manager</a>. Homeowners in Crested Butte or Leadville can request their own home's comp-set numbers, at no cost, at <a href="/projection">booktraverse.com/projection</a>.</p>
+
+<h2>About Traverse Hospitality</h2>
+
+<p>Traverse Hospitality, formerly High Rocky Homes, is a Colorado-owned property management and vacation rental company founded in 2016 and headquartered at 11 Snowmass Road, Mt. Crested Butte, Colorado. Traverse manages more than 200 vacation rentals across six Colorado markets — Crested Butte, Leadville, Vail, Avon, Granby, and Twin Lakes — including 101 condominiums at the Grand Lodge Crested Butte, the Lodge at Mountaineer Square, and The Plaza. The company has hosted more than 80,000 guests, holds a 4.88 average guest rating across booking channels, and is the highest-rated property management company on Google in both Crested Butte and Leadville. Owners can learn more at <a href="/property-management">booktraverse.com/property-management</a>.</p>
+`;
