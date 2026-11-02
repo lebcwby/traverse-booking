@@ -38,6 +38,9 @@ export const PRESS_RELEASES: PressRelease[] = [
     date: "2026-11-02",
     excerpt:
       "Traverse Hospitality has published an owner's guide that puts six questions to any property manager and answers each with its own numbers: revenue per available night up 2.7% while nearby listings fell 16%, occupancy 71.4% against roughly 61%, about 150 pricing decisions a day, five sales channels, and 110 of 191 Airbnb listings carrying the Guest Favorite badge. The full guide is at booktraverse.com/crested-butte/best-property-manager.",
+    image: "/press/guest-favorite-occupancy-july-2026.jpg",
+    imageAlt:
+      "Bar chart: occupancy of Traverse-managed Airbnb listings in July 2026 — homes with the Guest Favorite badge 80.8% at $197 a night, homes without it 70.9% at $195, about ten points of occupancy at the same nightly rate",
   },
   {
     slug: "summer-2026-market-snapshot",
