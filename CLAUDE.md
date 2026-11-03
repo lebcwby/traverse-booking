@@ -662,14 +662,13 @@ This has bitten production at least three times historically. As of
    the cron interval, leaving a 16-second margin). Tokens last 24h, so this
    mints ~once a day.
 
-   ⚠️ **CORRECTED 2026-10-19 — this route is the ONLY scheduled refresher.**
-   This file used to say the Supabase edge function `supabase/functions/
-refresh-tokens` was the sole owner "via pg_cron", and `guesty-beapi.ts`
-   still carries a comment saying the same. **There is no pg_cron job for it**
-   — `select * from cron.job` returns exactly one row, `monthly-owner-report`.
-   The edge function is deployed but **dormant**. It is still a latent risk:
-   it mints from the same client id and is invocable over HTTP, so it bypasses
-   the budget in 1a. Verify before trusting either claim:
+   ⚠️ **CORRECTED 2026-10-19 — this route is the ONLY refresher, and always
+   was.** This file used to say a Supabase edge function was the sole owner
+   "via pg_cron". Two things were wrong: there is **no pg_cron job** for it
+   (`select * from cron.job` returns one row, `monthly-owner-report`), and the
+   function **was never deployed** — the project has only
+   `monthly-owner-report`. It existed solely as unused repo source, now
+   deleted along with every comment that pointed at it. Verify:
 
    ```sql
    select jobname, schedule, active from cron.job;

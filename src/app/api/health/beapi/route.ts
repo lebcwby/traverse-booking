@@ -54,8 +54,8 @@ export async function GET(request: Request) {
     void sendAlert(
       "BEAPI token life low — cron drag",
       `<p>BEAPI token has <strong>${beapi.hoursRemaining}h</strong> remaining and is in status <strong>${beapi.status}</strong>.</p>
-       <p>The refresh-tokens cron is configured to fire every 4h and refresh
-       when &lt; 2h life remains. This alert means the cron has dragged past
+       <p>The refresh-tokens cron fires every 2h and refreshes
+       when &lt; 6h life remains. This alert means the cron has dragged past
        at least one expected fire. Hit
        <code>/api/cron/refresh-tokens</code> with the CRON_SECRET to manually
        refresh, OR rely on the in-app self-heal in
