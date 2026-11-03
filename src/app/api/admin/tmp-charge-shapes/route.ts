@@ -84,9 +84,16 @@ interface Shape {
 }
 
 export async function GET(request: Request) {
+  // Accepts its OWN key as well as CRON_SECRET. CRON_SECRET is stored in
+  // Vercel as a Sensitive variable, which is write-only by design — nobody,
+  // dashboard or API, can read it back — so there is no way to hand it to a
+  // curl. PROBE_SECRET is a throwaway created for this one read and deleted
+  // with the route, which avoids rotating the secret every cron depends on.
   const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  const accepted = [process.env.PROBE_SECRET, process.env.CRON_SECRET]
+    .map((s) => (s ?? "").trim())
+    .filter((s) => s.length > 0);
+  if (!accepted.some((secret) => authHeader === `Bearer ${secret}`)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
