@@ -35,7 +35,7 @@ import {
   renderSlackBlocks,
 } from "@/lib/booking-digest";
 import { buildReviewSummary, fetchReviewsForDay } from "@/lib/review-digest";
-import { buildWaiverSummary, fetchWaiverIntents } from "@/lib/waiver-digest";
+import { fetchWaiverSummary } from "@/lib/waiver-digest";
 import { REPORT_TIMEZONE, yesterdayIn, zonedDayBounds } from "@/lib/report-day";
 
 export const dynamic = "force-dynamic";
@@ -86,7 +86,7 @@ export async function GET(request: Request) {
   // digest one line, not the post.
   let waivers = null;
   try {
-    waivers = buildWaiverSummary(await fetchWaiverIntents(start, end), day);
+    waivers = await fetchWaiverSummary(day, start, end);
   } catch (err) {
     console.error("[daily-booking-digest] waiver query failed:", err);
   }
@@ -147,5 +147,7 @@ export async function GET(request: Request) {
     reviewFlags: reviews === null ? null : reviews.flags.length,
     waivers: waivers === null ? null : waivers.count,
     waiverNetCents: waivers === null ? null : waivers.netCents,
+    // Says whether the figure matches SuiteOp's dashboard or fell back.
+    waiverBasis: waivers === null ? null : waivers.basis,
   });
 }
