@@ -35,6 +35,7 @@ import {
   renderSlackBlocks,
 } from "@/lib/booking-digest";
 import { buildReviewSummary, fetchReviewsForDay } from "@/lib/review-digest";
+import { buildWaiverSummary, fetchWaiverIntents } from "@/lib/waiver-digest";
 import { REPORT_TIMEZONE, yesterdayIn, zonedDayBounds } from "@/lib/report-day";
 
 export const dynamic = "force-dynamic";
@@ -80,11 +81,27 @@ export async function GET(request: Request) {
     console.error("[daily-booking-digest] review query failed:", err);
   }
 
-  const payload = renderSlackBlocks(digest, reviews);
+  // Waivers are a third independent read, and the only one that leaves our
+  // infrastructure, so it gets the same treatment: a Stripe outage costs the
+  // digest one line, not the post.
+  let waivers = null;
+  try {
+    waivers = buildWaiverSummary(await fetchWaiverIntents(start, end), day);
+  } catch (err) {
+    console.error("[daily-booking-digest] waiver query failed:", err);
+  }
+
+  const payload = renderSlackBlocks(digest, reviews, waivers);
   const webhook = (process.env.SLACK_WEBHOOK_URL || "").trim();
 
   if (dryRun) {
-    return NextResponse.json({ mode: "dryRun", digest, reviews, payload });
+    return NextResponse.json({
+      mode: "dryRun",
+      digest,
+      reviews,
+      waivers,
+      payload,
+    });
   }
   if (!webhook) {
     return NextResponse.json({
@@ -128,5 +145,7 @@ export async function GET(request: Request) {
     // null distinguishes "the review read failed" from "nobody reviewed".
     reviews: reviews === null ? null : reviews.total,
     reviewFlags: reviews === null ? null : reviews.flags.length,
+    waivers: waivers === null ? null : waivers.count,
+    waiverNetCents: waivers === null ? null : waivers.netCents,
   });
 }
