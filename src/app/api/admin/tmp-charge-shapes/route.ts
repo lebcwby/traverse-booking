@@ -44,6 +44,12 @@
 import { NextResponse } from "next/server";
 import { getStripeServer } from "@/lib/stripe";
 import { classifyPaymentIntent } from "@/lib/stripe-payment-source";
+import { zonedDayBounds } from "@/lib/report-day";
+import {
+  buildWaiverSummary,
+  fetchWaiverIntents,
+  renderWaiverBlocks,
+} from "@/lib/waiver-digest";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -99,6 +105,25 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const raw = url.searchParams.get("raw") === "1";
+
+  // ?waiverDay=YYYY-MM-DD runs the REAL production filter — the same
+  // fetchWaiverIntents + buildWaiverSummary the digest calls — against live
+  // Stripe for one Mountain day, so the number going into Slack is verified
+  // against real data before it ever posts. Goes away with this route.
+  const waiverDay = url.searchParams.get("waiverDay");
+  if (waiverDay && /^\d{4}-\d{2}-\d{2}$/.test(waiverDay)) {
+    const { start, end } = zonedDayBounds(waiverDay);
+    const summary = buildWaiverSummary(
+      await fetchWaiverIntents(start, end),
+      waiverDay
+    );
+    return NextResponse.json({
+      waiverDay,
+      bounds: { start, end },
+      summary,
+      slack: renderWaiverBlocks(summary),
+    });
+  }
   const days = Math.min(
     31,
     Math.max(1, Number(url.searchParams.get("days") ?? 31) || 31)

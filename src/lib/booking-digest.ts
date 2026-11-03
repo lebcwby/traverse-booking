@@ -38,6 +38,7 @@ import {
 } from "./click-path";
 import { getPool } from "./db";
 import { renderReviewBlocks, type ReviewSummary } from "./review-digest";
+import { renderWaiverBlocks, type WaiverSummary } from "./waiver-digest";
 
 export interface DigestBooking {
   reservationId: string | null;
@@ -280,9 +281,18 @@ function pageCount(b: DigestBooking): string {
  */
 export function renderSlackBlocks(
   d: Digest,
-  reviews?: ReviewSummary | null
+  reviews?: ReviewSummary | null,
+  waivers?: WaiverSummary | null
 ): Record<string, unknown> {
+  // Both tails are portfolio-wide and bounded — reviews at three blocks,
+  // waivers at one — so neither can push the message near Slack's 50-block
+  // cap however busy the day was.
   const reviewBlocks = reviews ? renderReviewBlocks(reviews) : [];
+  const waiverBlocks = waivers ? renderWaiverBlocks(waivers) : [];
+  const tailBlocks =
+    reviewBlocks.length + waiverBlocks.length > 0
+      ? [...reviewBlocks, ...waiverBlocks]
+      : [];
 
   if (d.bookings.length === 0) {
     return {
@@ -297,9 +307,7 @@ export function renderSlackBlocks(
         },
         // Reviews still matter on a day with no website bookings, which in
         // shoulder season is most of them.
-        ...(reviewBlocks.length > 0
-          ? [{ type: "divider" }, ...reviewBlocks]
-          : []),
+        ...(tailBlocks.length > 0 ? [{ type: "divider" }, ...tailBlocks] : []),
       ],
     };
   }
@@ -343,7 +351,7 @@ export function renderSlackBlocks(
       { type: "divider" },
       ...bookingBlocks,
       // bookingBlocks already ends with a divider, so reviews land separated.
-      ...(reviewBlocks.length > 0 ? [...reviewBlocks, { type: "divider" }] : []),
+      ...(tailBlocks.length > 0 ? [...tailBlocks, { type: "divider" }] : []),
       {
         type: "context",
         elements: [
