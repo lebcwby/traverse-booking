@@ -133,7 +133,7 @@ describe("renderWaiverBlocks", () => {
         buildWaiverSummary([pi({ amount: 1000 }), pi({ amount: 2500 })], "2026-11-02")
       )
     );
-    expect(text).toContain("Damage waivers — 2026-11-02");
+    expect(text).toContain("Damage waivers — charged 2026-11-02");
     expect(text).toContain("2 waivers");
     expect(text).toContain("$35.00");
   });
@@ -166,6 +166,51 @@ describe("renderWaiverBlocks", () => {
     );
     expect(text).toContain("1 waiver failed to charge");
     expect(text).toContain("uncovered");
+  });
+
+  it("labels the check-in basis as arrivals, not as charges", () => {
+    // The two bases are different numbers, so the heading has to say which
+    // one is on screen or the figure cannot be checked against SuiteOp.
+    const checkIn = textOf(
+      renderWaiverBlocks(
+        buildWaiverSummary([pi({ amount: 1000 })], "2026-11-02", "check_in", 30)
+      )
+    );
+    expect(checkIn).toContain("stays arriving 2026-11-02");
+    expect(checkIn).toContain("across 30 arrivals");
+
+    const charged = textOf(
+      renderWaiverBlocks(
+        buildWaiverSummary([pi({ amount: 1000 })], "2026-11-02", "charge_date")
+      )
+    );
+    expect(charged).toContain("charged 2026-11-02");
+    expect(charged).not.toContain("arrivals");
+  });
+
+  it("distinguishes a day with no arrivals from a day nobody paid", () => {
+    const noArrivals = textOf(
+      renderWaiverBlocks(buildWaiverSummary([], "2026-11-02", "check_in", 0))
+    );
+    expect(noArrivals).toContain("No arrivals");
+
+    const nobodyPaid = textOf(
+      renderWaiverBlocks(buildWaiverSummary([], "2026-11-02", "check_in", 12))
+    );
+    expect(nobodyPaid).toContain("No waivers charged");
+  });
+
+  it("counts an intent once when two search batches both return it", () => {
+    // Stripe search is queried in batches of reservation ids; a single
+    // intent can legitimately come back from more than one of them.
+    const dup = pi({ amount: 2500 });
+    const s = buildWaiverSummary([dup, dup, dup], "2026-11-02", "check_in", 5);
+    expect(s.count).toBe(1);
+    expect(s.grossCents).toBe(2500);
+  });
+
+  it("defaults to the charge-date basis", () => {
+    expect(buildWaiverSummary([], "2026-11-02").basis).toBe("charge_date");
   });
 
   it("stays a single block", () => {
