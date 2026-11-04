@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { TrackedContactLink } from "@/components/analytics/tracked-contact-link";
 import { CANCELLATION_POLICY_DAYS } from "@/lib/cancellation-policy";
+import {
+  DATE_CHANGE_REQUEST_LEAD,
+  dateChangePriceCopy,
+} from "@/lib/date-change-requests";
 
 export const metadata: Metadata = {
   title: "Cancellation Policy",
@@ -15,7 +19,7 @@ export default function CancellationPage() {
       <h1 className="text-3xl font-bold tracking-tight text-foreground">
         Cancellation Policy
       </h1>
-      <p className="mt-3 text-muted-foreground">Last updated: May 2026</p>
+      <p className="mt-3 text-muted-foreground">Last updated: October 2026</p>
 
       <div className="mt-10 space-y-8 text-sm leading-relaxed text-muted-foreground">
         <section>
@@ -106,10 +110,16 @@ export default function CancellationPage() {
           <h2 className="text-lg font-semibold text-foreground">
             Modifications
           </h2>
+          <p className="mt-2">{DATE_CHANGE_REQUEST_LEAD}</p>
           <p className="mt-2">
-            Date changes and other modifications are subject to availability and
-            may result in a price adjustment. Please contact us to discuss any
-            changes to your reservation.
+            Send the request from the reservation in your account, or email{" "}
+            <TrackedContactLink
+              href="mailto:bookings@traversehospitality.com"
+              className="text-primary hover:underline"
+            >
+              bookings@traversehospitality.com
+            </TrackedContactLink>
+            . {dateChangePriceCopy()}
           </p>
         </section>
 
