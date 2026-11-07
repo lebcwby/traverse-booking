@@ -93,6 +93,10 @@
     {
       "schedule": "35 7 * * *",
       "path": "/api/cron/guesty-health-digest"
+    },
+    {
+      "path": "/api/cron/sync-listing-details",
+      "schedule": "55 * * * *"
     }
   ]
 }

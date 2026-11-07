@@ -507,8 +507,15 @@ async function searchListingsWithCacheMode(
 
 // ─── 2. PROPERTY INFO ──────────────────────────────────────────────
 
-export async function getListingDetail(listingId: string) {
-  const fields = [
+/**
+ * The exact field set the listing page needs from BEAPI.
+ *
+ * Exported because `listing_details` stores it alongside each cached row:
+ * add a field here and every cached payload is silently missing it, which
+ * would render as a blank section rather than an error. The cache compares
+ * this string and refetches when it no longer matches.
+ */
+export const LISTING_DETAIL_FIELDS = [
     "prices",
     "pictures",
     "title",
@@ -532,7 +539,10 @@ export async function getListingDetail(listingId: string) {
     "bedArrangements",
     "unitTypeHouseRules",
     "autoPayments",
-  ].join(" ");
+].join(" ");
+
+export async function getListingDetail(listingId: string) {
+  const fields = LISTING_DETAIL_FIELDS;
 
   return beapiFetch(
     `/api/listings/${listingId}?fields=${encodeURIComponent(fields)}`,
