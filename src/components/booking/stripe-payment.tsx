@@ -18,17 +18,20 @@ import { loadStripe } from "@stripe/stripe-js";
 import type { StripeExpressCheckoutElementConfirmEvent } from "@stripe/stripe-js";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import {
+  isBookableBillingName,
+  toExpressBillingDetails,
+  type ExpressCheckoutBillingDetails,
+} from "@/lib/express-billing";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 );
 
-export interface ExpressCheckoutBillingDetails {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-}
+// Owned by src/lib/express-billing.ts so the name-splitting and the
+// "can this be booked" rule can be tested without React. Re-exported here
+// because both checkout surfaces already import the type from this module.
+export type { ExpressCheckoutBillingDetails };
 
 interface StripePaymentProps {
   clientSecret: string;
@@ -196,14 +199,35 @@ function PaymentForm({
     }
 
     const returnUrl = `${window.location.origin}/book/3ds-callback`;
-    const fullName = event.billingDetails?.name || "";
-    const nameParts = fullName.trim().split(/\s+/);
-    const billingDetails: ExpressCheckoutBillingDetails = {
-      firstName: nameParts[0] || "",
-      lastName: nameParts.slice(1).join(" ") || "",
-      email: event.billingDetails?.email || "",
-      phone: event.billingDetails?.phone || "",
-    };
+    const fullName = (event.billingDetails?.name || "").trim();
+    const billingDetails = toExpressBillingDetails({
+      name: event.billingDetails?.name,
+      email: event.billingDetails?.email,
+      phone: event.billingDetails?.phone,
+    });
+
+    // Backstop: never charge for a stay we cannot book.
+    //
+    // The billingAddressRequired option should mean a name always arrives,
+    // but a wallet that returns none regardless — or a future edit to those
+    // options — must not reach confirmPayment. Guesty rejects a reservation
+    // with an empty firstName or lastName, so taking the money first leaves a
+    // guest charged with nothing to show for it, which is what happened on
+    // 2026-11-08.
+    //
+    // paymentFailed() keeps the wallet sheet's own error UI and, critically,
+    // takes no payment. The card form below remains available.
+    if (!isBookableBillingName(billingDetails)) {
+      const message =
+        "Your wallet didn't share a name for the booking. Please pay by card below, or add a name to your wallet account and try again.";
+      console.error("[Stripe] express confirm blocked — wallet sent no name", {
+        hasEmail: !!billingDetails.email,
+        hasPhone: !!billingDetails.phone,
+      });
+      event.paymentFailed({ reason: "invalid_payment_data", message });
+      onError(message);
+      return;
+    }
 
     try {
       await onBeforeExpressConfirm?.(billingDetails);
@@ -225,7 +249,7 @@ function PaymentForm({
           return_url: returnUrl,
           payment_method_data: {
             billing_details: {
-              name: fullName.trim(),
+              name: fullName,
               email: billingDetails.email.trim(),
               phone: billingDetails.phone.trim(),
             },
@@ -289,6 +313,18 @@ function PaymentForm({
           options={{
             emailRequired: true,
             phoneNumberRequired: true,
+            // ⚠️ This is what makes the wallet return the cardholder's NAME.
+            //
+            // Without it, Apple Pay and Google Pay hand back email and phone
+            // and `billingDetails.name` is empty — so firstName/lastName parse
+            // to "". On 2026-11-08 a guest paid $477.44 that way; Guesty then
+            // refused the reservation with `"guest.firstName" is not allowed
+            // to be empty`, and the booking sat unfinalised for 27 hours with
+            // the money taken. Guesty requires both names, so a wallet payment
+            // without one can never become a reservation.
+            //
+            // The address itself is incidental — the name is the point.
+            billingAddressRequired: true,
             // Hybrid: cards go to GuestyPay, so the Stripe express zone is
             // restricted to true device wallets — no Link/PayPal/Amazon Pay.
             ...(walletsOnly
