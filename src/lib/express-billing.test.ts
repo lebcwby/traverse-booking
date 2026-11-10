@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  chargeBillingName,
   isBookableBillingName,
   splitWalletName,
   toExpressBillingDetails,
@@ -109,5 +110,90 @@ describe("toExpressBillingDetails", () => {
       email: "",
       phone: "",
     });
+  });
+});
+
+describe("chargeBillingName", () => {
+  it("reads the cardholder name off an expanded charge", () => {
+    expect(chargeBillingName({ billing_details: { name: "Emily Carter" } })).toBe(
+      "Emily Carter"
+    );
+  });
+
+  // latest_charge is a bare string id unless the retrieve expands it. If that
+  // expand is ever dropped, this must degrade to "no name" rather than throw
+  // inside the recovery loop and stall every other stuck row behind it.
+  it("returns null for an unexpanded charge id", () => {
+    expect(chargeBillingName("ch_3UZX3uFlSHWQrCQq1AbCdEfG")).toBeNull();
+  });
+
+  it.each([
+    ["null", null],
+    ["undefined", undefined],
+    ["no billing_details", {}],
+    ["a null name", { billing_details: { name: null } }],
+    ["an empty name", { billing_details: { name: "" } }],
+    ["a whitespace name", { billing_details: { name: "   " } }],
+  ])("returns null for %s", (_label, input) => {
+    expect(chargeBillingName(input)).toBeNull();
+  });
+});
+
+/**
+ * The decision recover-checkouts makes with the two helpers above. Mirrors
+ * the guard in that cron; both call the same exported functions, so only the
+ * four-line shape is restated here.
+ */
+function backfilled(
+  guest: { firstName: string; lastName: string },
+  latestCharge: unknown
+) {
+  if (guest.firstName.trim() && guest.lastName.trim()) return guest;
+  const billingName = chargeBillingName(latestCharge);
+  if (!billingName) return guest;
+  const parsed = splitWalletName(billingName);
+  if (!parsed.firstName || !parsed.lastName) return guest;
+  return parsed;
+}
+
+describe("recovery name backfill", () => {
+  // The stuck booking: email and phone present, both names blank, Guesty
+  // refusing it every ten minutes for 46 hours.
+  it("fills both names when ours are blank and Stripe has one", () => {
+    expect(
+      backfilled(
+        { firstName: "", lastName: "" },
+        { billing_details: { name: "Emily Carter" } }
+      )
+    ).toEqual({ firstName: "Emily", lastName: "Carter" });
+  });
+
+  // ⚠️ Our own record wins. Stripe holds the CARDHOLDER, who is frequently
+  // not the guest — someone booking for their parents would otherwise have
+  // the reservation silently renamed to whoever paid.
+  it("leaves a complete guest record alone", () => {
+    expect(
+      backfilled(
+        { firstName: "Dana", lastName: "Reed" },
+        { billing_details: { name: "Emily Carter" } }
+      )
+    ).toEqual({ firstName: "Dana", lastName: "Reed" });
+  });
+
+  // A single-token billing name cannot produce a lastName, and Guesty needs
+  // one. Leave it for a human rather than invent a surname.
+  it("does not half-fill from a single-token billing name", () => {
+    expect(
+      backfilled(
+        { firstName: "", lastName: "" },
+        { billing_details: { name: "Emily" } }
+      )
+    ).toEqual({ firstName: "", lastName: "" });
+  });
+
+  it("leaves the row untouched when Stripe has no name either", () => {
+    expect(
+      backfilled({ firstName: "", lastName: "" }, { billing_details: {} })
+    ).toEqual({ firstName: "", lastName: "" });
   });
 });

@@ -74,3 +74,24 @@ export function isBookableBillingName(
     details.firstName.trim().length > 0 && details.lastName.trim().length > 0
   );
 }
+
+/**
+ * The cardholder name on a Stripe PaymentIntent's latest charge, if any.
+ *
+ * `latest_charge` is a bare string id unless the retrieve expands it, and
+ * `billing_details.name` is nullable, so every check here is a real
+ * possibility rather than defensive noise. Returns null for anything
+ * unusable so the caller can fall through to its existing handling.
+ *
+ * Used by the recover-checkouts cron to fill a guest name our own record is
+ * missing — see the note there.
+ */
+export function chargeBillingName(latestCharge: unknown): string | null {
+  if (!latestCharge || typeof latestCharge !== "object") return null;
+  const billing = (latestCharge as { billing_details?: { name?: unknown } })
+    .billing_details;
+  const name = billing?.name;
+  if (typeof name !== "string") return null;
+  const trimmed = name.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
