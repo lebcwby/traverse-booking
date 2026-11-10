@@ -271,12 +271,52 @@ export async function listRecoverablePendingCheckouts(limit = 20) {
   // Rows with reservation_id set are already booked in Guesty; payment
   // recording (if still outstanding) is handled by the record-payments cron.
   // Reprocessing them here just wastes API calls and can race concurrent work.
+  //
+  // The 2-day age cap applies to `pending` ONLY. Those rows are abandoned
+  // carts: nothing was captured, the guest owes nothing, and the Guesty quote
+  // behind them is long expired — retrying them for weeks buys nothing.
+  //
+  // `paid_pending_reservation` means the opposite: Stripe took the money and
+  // the guest is holding nothing. Those get no age limit at all.
+  // pi_3UZX3uFlSHWQrCQq1wzui10S is why. It sat here with $477.44 captured and
+  // no reservation, failing identically every 10 minutes because Guesty
+  // rejects an empty guest.firstName. The fix that would have rescued it
+  // (reading the name off the Stripe charge, #126) deployed ~25 minutes AFTER
+  // the row crossed 48 hours — so the cron had already stopped looking at it,
+  // while orphan-sweep went on alerting about it forever. "We retry for two
+  // days, then just complain" is not a recovery policy for captured money.
+  //
+  // What bounds a paid row is the STAY, not its age. Guesty refuses a quote
+  // whose checkIn is before today in the listing's timezone, so once check-in
+  // has passed the row can never finalize and retrying only burns BEAPI calls
+  // against a rate limit we share with the CRM, PriceLabs and Conduit.
+  // pi_3UHMk9FlSHWQrCQq1KcrL7Fe is the cautionary case: $217.63 for a
+  // 2026-09-20 one-night stay, failing on exactly that validation ever since.
+  // Dropping it here leaves it to the orphan-sweep alert and a human, which is
+  // correct — the money question outlived the booking question.
+  //
+  // checkIn is ISO 'YYYY-MM-DD' text inside the tracking JSON, so it is
+  // compared as text: lexicographic order is chronological for that format,
+  // and it cannot throw the way ::date would on a malformed value. A row with
+  // no checkIn at all defaults to the far future and stays eligible — when in
+  // doubt, keep trying to give the guest the booking they paid for.
+  //
+  // Within those bounds the only escape hatch is reservation_id: once the
+  // booking exists — finalized by the cron, or created by hand and stamped on
+  // the row — the predicate drops it. The alert in recover-checkouts/route.ts
+  // spells out that stamping the row is what stops the retries and the alerts.
   const result = await pool.query(
     `SELECT *
      FROM pending_checkouts
-     WHERE status IN ('pending', 'paid_pending_reservation')
-       AND reservation_id IS NULL
-       AND created_at > now() - interval '2 days'
+     WHERE reservation_id IS NULL
+       AND (
+         (
+           status = 'paid_pending_reservation'
+           AND coalesce(nullif(tracking->>'checkIn', ''), '9999-12-31')
+               >= to_char(now() AT TIME ZONE 'America/Denver', 'YYYY-MM-DD')
+         )
+         OR (status = 'pending' AND created_at > now() - interval '2 days')
+       )
      ORDER BY created_at ASC
      LIMIT $1`,
     [limit]

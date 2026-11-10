@@ -31,6 +31,7 @@ vi.mock("@/lib/booking-identity", () => ({
 
 import {
   getPendingCheckout,
+  listRecoverablePendingCheckouts,
   markPendingCheckoutCompleted,
   upsertPendingCheckout,
 } from "./pending-checkouts";
@@ -245,6 +246,103 @@ describe("markPendingCheckoutCompleted", () => {
     expect(sql).toMatch(/status = 'completed'/);
     expect(sql).toMatch(/reservation_id = \$2/);
     expect(params).toEqual(["pi_test_abc", "RES-12345"]);
+  });
+});
+
+// 2026-11-10: pi_3UZX3uFlSHWQrCQq1wzui10S had $477.44 captured, no
+// reservation, and silently dropped out of this query at the 48-hour mark —
+// ~25 minutes before the fix that would have rescued it (#126) deployed.
+// The age cap now applies to abandoned `pending` carts only. These tests
+// guard the SHAPE of the predicate, so a future "simplification" back to one
+// blanket `created_at >` filter fails here rather than in production.
+describe("listRecoverablePendingCheckouts — recovery window", () => {
+  beforeEach(() => {
+    mockQuery.mockReset();
+  });
+
+  // The status group is the only place an age filter is allowed to live.
+  const statusGroup = (sql: string) => {
+    const match = sql.match(/AND\s*\(([\s\S]*?)\)\s*ORDER BY/);
+    if (!match) throw new Error("no parenthesized status group in predicate");
+    return match[1];
+  };
+
+  it("never age-caps a paid row, and still age-caps an abandoned cart", async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    await listRecoverablePendingCheckouts();
+    const [sql] = mockQuery.mock.calls[0] as [string, unknown[]];
+
+    const group = statusGroup(sql);
+    const branches = group.split(/\bOR\b/);
+    const paid = branches.filter((b) => b.includes("paid_pending_reservation"));
+    const abandoned = branches.filter(
+      (b) => b.includes("'pending'") && !b.includes("paid_pending_reservation")
+    );
+
+    expect(paid).toHaveLength(1);
+    expect(abandoned).toHaveLength(1);
+    // Captured money is retried forever; an abandoned cart expires.
+    expect(paid[0]).not.toMatch(/interval/);
+    expect(abandoned[0]).toMatch(/created_at > now\(\) - interval '2 days'/);
+  });
+
+  it("bounds a paid row by its stay date, not its age", async () => {
+    // Guesty refuses a quote whose checkIn is before today in the listing's
+    // timezone, so a paid row for a past stay can never finalize and must
+    // stop consuming BEAPI calls. pi_3UHMk9FlSHWQrCQq1KcrL7Fe ($217.63, a
+    // 2026-09-20 stay) is the row this clause exists to drop.
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    await listRecoverablePendingCheckouts();
+    const [sql] = mockQuery.mock.calls[0] as [string, unknown[]];
+
+    const paid = statusGroup(sql)
+      .split(/\bOR\b/)
+      .find((b) => b.includes("paid_pending_reservation"))!;
+
+    expect(paid).toMatch(/tracking->>'checkIn'/);
+    expect(paid).toMatch(/America\/Denver/);
+    // A missing checkIn must NOT silently drop the row — bias toward
+    // recovering a booking the guest already paid for.
+    expect(paid).toMatch(/9999-12-31/);
+  });
+
+  it("keeps the age filter out of the top-level conjunction", async () => {
+    // Regression guard: an `AND created_at > ...` sitting outside the status
+    // group would re-cap paid rows no matter how the group is written.
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    await listRecoverablePendingCheckouts();
+    const [sql] = mockQuery.mock.calls[0] as [string, unknown[]];
+    expect(sql.replace(statusGroup(sql), "")).not.toMatch(/interval/);
+  });
+
+  it("excludes rows that already have a reservation and honors the limit", async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    await listRecoverablePendingCheckouts(5);
+    const [sql, params] = mockQuery.mock.calls[0] as [string, unknown[]];
+    expect(sql).toMatch(/reservation_id IS NULL/);
+    expect(params).toEqual([5]);
+  });
+
+  it("maps returned rows through mapRow", async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [
+        {
+          payment_intent_id: "pi_stuck",
+          quote_id: "q_stuck",
+          guest: { firstName: "", lastName: "", email: "guest@example.com" },
+          tracking: { listingId: "l_1", checkIn: "2026-12-13" },
+          status: "paid_pending_reservation",
+          reservation_id: null,
+          created_at: "2026-11-08T14:27:14Z",
+          updated_at: "2026-11-08T14:27:14Z",
+        },
+      ],
+    });
+    const out = await listRecoverablePendingCheckouts();
+    expect(out).toHaveLength(1);
+    expect(out[0].paymentIntentId).toBe("pi_stuck");
+    expect(out[0].status).toBe("paid_pending_reservation");
+    expect(out[0].guest.firstName).toBe("");
   });
 });
 
