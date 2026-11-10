@@ -167,7 +167,9 @@ export async function GET() {
                 ["Previous error", row.lastError || ""],
                 [
                   "Next action",
-                  "Recovery cron will keep retrying. If this alert repeats, create the reservation manually and verify Stripe was recorded in Guesty.",
+                  row.status === "paid_pending_reservation"
+                    ? "Money is captured and the guest has no booking. Recovery retries every 10 minutes with no age limit. If this alert repeats, create the reservation in Guesty by hand, verify the Stripe payment was recorded against it, then set reservation_id on the pending_checkouts row — stamping the row is what stops both the retries and this alert."
+                    : "Recovery retries every 10 minutes until the row is 2 days old. Nothing was captured, so no guest action is outstanding.",
                 ],
               ]),
               renderAlertLinks([
