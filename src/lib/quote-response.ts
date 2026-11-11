@@ -135,8 +135,20 @@ export function buildTaxRateIndex(
 
 export function extractTaxBreakdown(
   invoiceItems: unknown[] | undefined,
-  /** The listing's configured taxes, for the authoritative rate. */
-  taxConfig?: Array<Record<string, unknown>> | null
+  /**
+   * The listing's configured taxes — the ONLY source of a displayed rate.
+   *
+   * Required on purpose. This parameter was optional for exactly one day, and
+   * in that day two client call sites (booking-sidebar, mobile-bottom-bar)
+   * went on compiling without it and shipped a checkout that showed tax
+   * amounts with no percentage, while `tsc` and the full suite stayed green.
+   * The quote API was correct the whole time; the bug only appeared on the
+   * sessionStorage path, which is the one a real guest takes.
+   *
+   * A caller with genuinely no config passes `null` explicitly, so that
+   * decision is visible in the diff instead of being the default.
+   */
+  taxConfig: Array<Record<string, unknown>> | null | undefined
 ): QuoteTaxLineItem[] | undefined {
   if (!Array.isArray(invoiceItems)) return undefined;
   const TAX_NORMAL_TYPES = new Set(["TOT", "ST", "COT", "LT", "TAX"]);

@@ -68,6 +68,7 @@ export function MobileBottomBar({
   cancellationPolicy,
   reviewRating,
   reviewCount,
+  listingTaxes,
 }: {
   listingId: string;
   listingTitle: string;
@@ -80,6 +81,12 @@ export function MobileBottomBar({
   cancellationPolicy?: string;
   reviewRating?: number;
   reviewCount?: number;
+  /**
+   * The listing's Guesty tax configuration, forwarded from the page so the
+   * pricing object cached for /book carries real rates. Without it the
+   * checkout shows tax amounts with no percentage. See extractTaxBreakdown.
+   */
+  listingTaxes?: Array<Record<string, unknown>> | null;
 }) {
   const router = useRouter();
   // `pointofsale` is read here rather than passed from the page: the page had
@@ -253,7 +260,10 @@ export function MobileBottomBar({
           // taxBreakdown so the /book PriceBreakdown dropdown renders when
           // checkout reads from sessionStorage.
           invoiceItems: rp.ratePlan.money.invoiceItems ?? [],
-          taxBreakdown: extractTaxBreakdown(rp.ratePlan.money.invoiceItems),
+          taxBreakdown: extractTaxBreakdown(
+            rp.ratePlan.money.invoiceItems,
+            listingTaxes
+          ),
           days: rp.days,
         },
         promotion: q.promotions,

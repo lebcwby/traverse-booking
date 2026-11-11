@@ -666,6 +666,15 @@ export default async function PropertyDetailPage({ params }: Props) {
     beapiListing?.defaultCheckOutTime || listing.default_check_out_time;
   const cancellationPolicy = beapiListing?.terms?.cancellation;
   const houseRules = beapiListing?.unitTypeHouseRules?.houseRules;
+  // Guesty's configured tax rates for this listing. Already present on the
+  // BEAPI detail we fetch above ("taxes" is in LISTING_DETAIL_FIELDS), so
+  // forwarding it costs no extra call. The Book Now path caches its pricing
+  // object in sessionStorage and /book reads that cache in preference to the
+  // quote API, so the rate has to travel with it or the checkout renders tax
+  // amounts with no percentage.
+  const listingTaxes = (beapiListing?.taxes ?? null) as Array<
+    Record<string, unknown>
+  > | null;
 
   // "Other things to note" — Guesty's free-form notes field. The first line
   // typically contains the short-term-rental license # (required by Colorado
@@ -1316,6 +1325,7 @@ export default async function PropertyDetailPage({ params }: Props) {
               accommodates={listing.accommodates ?? undefined}
               amenities={amenities}
               listingSlug={slug}
+              listingTaxes={listingTaxes}
               city={
                 listing.address?.city
                   ? `${listing.address.city}, ${listing.address?.state || "Colorado"}`
@@ -1914,6 +1924,7 @@ export default async function PropertyDetailPage({ params }: Props) {
         cancellationPolicy={cancellationPolicy}
         reviewRating={displayRating ?? undefined}
         reviewCount={reviewTotal ?? undefined}
+        listingTaxes={listingTaxes}
       />
     </DateRangeProvider>
   );

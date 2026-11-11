@@ -79,41 +79,47 @@ const RATE_PLAN_SHAPE = {
 
 describe("extractTaxBreakdown", () => {
   it("returns undefined for non-array input", () => {
-    expect(extractTaxBreakdown(undefined)).toBeUndefined();
+    expect(extractTaxBreakdown(undefined, null)).toBeUndefined();
     expect(
-      extractTaxBreakdown(null as unknown as unknown[] | undefined)
+      extractTaxBreakdown(null as unknown as unknown[] | undefined, null)
     ).toBeUndefined();
   });
 
   it("returns undefined when no items are tax-shaped", () => {
     expect(
-      extractTaxBreakdown([
-        { title: "Cleaning", amount: 225, type: "CLEANING_FEE" },
-      ])
+      extractTaxBreakdown(
+        [{ title: "Cleaning", amount: 225, type: "CLEANING_FEE" }],
+        null
+      )
     ).toBeUndefined();
   });
 
   it("recognizes isTax: true", () => {
-    const out = extractTaxBreakdown([
-      { title: "STATE_TAX", amount: 50, isTax: true },
-    ]);
+    const out = extractTaxBreakdown(
+      [{ title: "STATE_TAX", amount: 50, isTax: true }],
+      null
+    );
     expect(out).toEqual([{ name: "State sales tax", amount: 50 }]);
   });
 
   it("recognizes type: 'TAX'", () => {
-    const out = extractTaxBreakdown([
-      { title: "Tourism tax", amount: 12, type: "TAX" },
-    ]);
+    const out = extractTaxBreakdown(
+      [{ title: "Tourism tax", amount: 12, type: "TAX" }],
+      null
+    );
     expect(out?.[0]?.name).toBe("Tourism tax");
   });
 
   it("recognizes normalType TOT / ST / COT / LT", () => {
-    const out = extractTaxBreakdown([
-      { title: "STATE_TAX", amount: 10, normalType: "ST" },
-      { title: "TRANSIENT_OCCUPANCY_TAX", amount: 20, normalType: "TOT" },
-      { title: "COUNTY_TAX", amount: 5, normalType: "COT" },
-      { title: "CITY_TAX", amount: 3, normalType: "LT" },
-    ]);
+    const out = extractTaxBreakdown(
+      [
+        { title: "STATE_TAX", amount: 10, normalType: "ST" },
+        { title: "TRANSIENT_OCCUPANCY_TAX", amount: 20, normalType: "TOT" },
+        { title: "COUNTY_TAX", amount: 5, normalType: "COT" },
+        { title: "CITY_TAX", amount: 3, normalType: "LT" },
+      ],
+      null
+    );
     expect(out).toHaveLength(4);
     expect(out?.map((t) => t.name)).toEqual([
       "State sales tax",
@@ -124,17 +130,21 @@ describe("extractTaxBreakdown", () => {
   });
 
   it("falls back to title-case for unknown tax titles", () => {
-    const out = extractTaxBreakdown([
-      { title: "TOURISM_IMPROVEMENT_DISTRICT", amount: 5, isTax: true },
-    ]);
+    const out = extractTaxBreakdown(
+      [{ title: "TOURISM_IMPROVEMENT_DISTRICT", amount: 5, isTax: true }],
+      null
+    );
     expect(out?.[0]?.name).toBe("Tourism Improvement District");
   });
 
   it("filters out zero-amount tax items (sometimes returned as placeholders)", () => {
-    const out = extractTaxBreakdown([
-      { title: "STATE_TAX", amount: 50, isTax: true },
-      { title: "OTHER_TAX", amount: 0, isTax: true },
-    ]);
+    const out = extractTaxBreakdown(
+      [
+        { title: "STATE_TAX", amount: 50, isTax: true },
+        { title: "OTHER_TAX", amount: 0, isTax: true },
+      ],
+      null
+    );
     expect(out).toHaveLength(1);
   });
 });
@@ -384,7 +394,7 @@ describe("extractTaxBreakdown — rates come from the listing config", () => {
   });
 
   it("still returns amounts, with no rate, when there is no config", () => {
-    const out = extractTaxBreakdown(TAX_ITEMS);
+    const out = extractTaxBreakdown(TAX_ITEMS, null);
     expect(out).toHaveLength(3);
     expect(out!.every((t) => t.rate === undefined)).toBe(true);
     expect(out!.map((t) => t.amount)).toEqual([33.7, 20.41, 9.88]);

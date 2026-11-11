@@ -93,8 +93,11 @@ export interface QuoteData {
     taxes: number;
     /** Per-tax line items extracted from invoiceItems by extractQuotePricing.
      *  When present, PriceBreakdown renders the Taxes row as an expandable
-     *  dropdown. See src/lib/quote-response.ts:extractTaxBreakdown. */
-    taxBreakdown?: Array<{ name: string; amount: number }>;
+     *  dropdown. See src/lib/quote-response.ts:extractTaxBreakdown.
+     *  `rate` is Guesty's configured percentage for that tax and is absent
+     *  when the listing config does not yield exactly one PERCENTAGE entry
+     *  for the type — PriceBreakdown then shows the amount with no rate. */
+    taxBreakdown?: Array<{ name: string; amount: number; rate?: number }>;
     total: number;
     days: Array<{ date: string; price: number }>;
     invoiceItems?: Array<{ title: string; amount: number; type: string }>;
