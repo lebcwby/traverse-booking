@@ -2024,7 +2024,6 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
                 nights={quote.pricing.nights}
                 accommodation={quote.pricing.accommodation}
                 accommodationAdjusted={quote.pricing.accommodationAdjusted}
-                cleaning={quote.pricing.cleaning}
                 taxes={quote.pricing.taxes}
                 taxBreakdown={quote.pricing.taxBreakdown}
                 total={quote.pricing.total}
@@ -2160,7 +2159,6 @@ export function CheckoutForm({ quote: initialQuote }: { quote: QuoteData }) {
                 nights={quote.pricing.nights}
                 accommodation={quote.pricing.accommodation}
                 accommodationAdjusted={quote.pricing.accommodationAdjusted}
-                cleaning={quote.pricing.cleaning}
                 taxes={quote.pricing.taxes}
                 taxBreakdown={quote.pricing.taxBreakdown}
                 total={quote.pricing.total}
