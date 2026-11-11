@@ -123,6 +123,7 @@ export function BookingSidebar({
   amenities,
   listingSlug,
   city,
+  listingTaxes,
 }: {
   listingId: string;
   listingTitle: string;
@@ -138,6 +139,12 @@ export function BookingSidebar({
   amenities?: string[];
   listingSlug?: string;
   city?: string;
+  /**
+   * The listing's Guesty tax configuration, forwarded from the page so the
+   * pricing object cached for /book carries real rates. Without it the
+   * checkout shows tax amounts with no percentage. See extractTaxBreakdown.
+   */
+  listingTaxes?: Array<Record<string, unknown>> | null;
 }) {
   const router = useRouter();
   // `pointofsale` is read here rather than passed from the page: the page had
@@ -597,10 +604,10 @@ export function BookingSidebar({
       // caches this pricing object in sessionStorage, and /book reads from
       // cache without re-fetching. Without this, fresh searches lose the
       // tax breakdown until the cache expires.
-      taxBreakdown: extractTaxBreakdown(money.invoiceItems),
+      taxBreakdown: extractTaxBreakdown(money.invoiceItems, listingTaxes),
       days,
     };
-  }, [quote]);
+  }, [quote, listingTaxes]);
 
   // Active promotion (early-bird / last-minute) on the current quote — drives the
   // price-header strikethrough + badge so the deal is visible before checkout.
