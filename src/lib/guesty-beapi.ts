@@ -1,5 +1,5 @@
 import { getSupabaseAdmin } from "./supabase-admin";
-import { sendAlert } from "./alerts";
+import { renderAlertDetails, renderAlertLinks, sendAlert } from "./alerts";
 import { rateLimit } from "./rate-limit";
 import { ConcurrencyGate } from "./concurrency-gate";
 import { recordRateLimitEvent } from "./guesty-rate-limit-events";
@@ -54,12 +54,44 @@ const SELF_HEAL_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
  * requests.
  *
  * Throttled to once per SELF_HEAL_COOLDOWN_MS per serverless instance.
- * Returns true if a refresh was attempted, false if throttled.
+ *
+ * Returns WHY, not just whether. This used to return a bare boolean, and
+ * `false` meant any of "throttled", "CRON_SECRET missing" or "the trigger
+ * fetch blew up" — three very different problems that the alert downstream
+ * then reported with one sentence covering all of them.
  */
-async function attemptTokenSelfHeal(reason: string): Promise<boolean> {
+type SelfHealOutcome =
+  | { kind: "attempted"; status: number | null }
+  | { kind: "throttled"; secondsSinceLastAttempt: number }
+  | { kind: "no_cron_secret" }
+  | { kind: "trigger_failed"; detail: string };
+
+function describeSelfHeal(o: SelfHealOutcome): string {
+  switch (o.kind) {
+    case "attempted":
+      return o.status === null
+        ? "the self-heal refresh ran but its response was unreadable"
+        : `the self-heal refresh ran and returned HTTP ${o.status}`;
+    case "throttled":
+      return `the self-heal refresh was SKIPPED — this instance last tried ${o.secondsSinceLastAttempt}s ago and the throttle is ${SELF_HEAL_COOLDOWN_MS / 1000}s`;
+    case "no_cron_secret":
+      return "the self-heal refresh could not run — CRON_SECRET is not set in this environment";
+    case "trigger_failed":
+      return `the self-heal refresh could not be triggered — ${o.detail}`;
+  }
+}
+
+async function attemptTokenSelfHeal(
+  reason: string
+): Promise<SelfHealOutcome> {
   const now = Date.now();
   if (now - lastSelfHealAttemptAt < SELF_HEAL_COOLDOWN_MS) {
-    return false;
+    return {
+      kind: "throttled",
+      secondsSinceLastAttempt: Math.round(
+        (now - lastSelfHealAttemptAt) / 1000
+      ),
+    };
   }
   lastSelfHealAttemptAt = now;
 
@@ -70,7 +102,7 @@ async function attemptTokenSelfHeal(reason: string): Promise<boolean> {
     console.warn(
       "[BEAPI self-heal] CRON_SECRET not set — can't trigger refresh"
     );
-    return false;
+    return { kind: "no_cron_secret" };
   }
 
   console.warn(`[BEAPI self-heal] Triggering refresh — reason: ${reason}`);
@@ -91,11 +123,11 @@ async function attemptTokenSelfHeal(reason: string): Promise<boolean> {
         `[BEAPI self-heal] Refresh route returned ${resp.status} — continuing anyway`
       );
     }
-    return true;
+    return { kind: "attempted", status: resp.status };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.warn(`[BEAPI self-heal] Refresh trigger failed: ${msg}`);
-    return false;
+    return { kind: "trigger_failed", detail: msg };
   }
 }
 
@@ -139,14 +171,44 @@ function isTokenUsable(expiresAt: number): boolean {
 }
 
 /**
- * Read the cached token from Supabase. Returns the token if it exists and hasn't expired.
- * Sets a flag if the token is within the buffer window (needs refresh but is still usable).
+ * Read the cached token from Supabase. Returns the token if it exists and
+ * hasn't expired, and otherwise says WHY — a bare null here is what made the
+ * downstream alert undiagnosable.
+ *
+ * Four very different situations used to collapse into one `null`:
+ * the read failed three times, the row is missing, the row is there but
+ * lapsed, or something threw. Only the third is "the token expired", yet the
+ * alert said as much for all four. On 2026-11-10 it fired while the token had
+ * 20.6h of life left and every one of 626 Supabase reads that day returned
+ * 200 — with no way, from the alert or from Supabase's own logs, to tell which
+ * branch had been taken.
  */
-async function getSupabaseCachedToken(): Promise<{
-  token: string;
-  expiresAt: number;
-  needsRefresh: boolean;
-} | null> {
+type TokenCacheFailure =
+  | { kind: "read_failed"; detail: string }
+  | { kind: "no_row" }
+  | { kind: "expired"; expiresAt: number }
+  | { kind: "unexpected_error"; detail: string };
+
+type TokenCacheResult =
+  | { ok: true; token: string; expiresAt: number; needsRefresh: boolean }
+  | { ok: false; cause: TokenCacheFailure };
+
+function describeTokenCacheFailure(c: TokenCacheFailure): string {
+  switch (c.kind) {
+    case "read_failed":
+      return `the Supabase read failed all ${TOKEN_READ_ATTEMPTS} attempts (${c.detail}) — the token itself may be perfectly valid`;
+    case "no_row":
+      return "Supabase answered, but there is NO beapi row in guesty_tokens at all";
+    case "expired": {
+      const minsAgo = Math.round((Date.now() - c.expiresAt) / 60000);
+      return `the cached token genuinely lapsed — it expired ${minsAgo}min ago (${new Date(c.expiresAt).toISOString()})`;
+    }
+    case "unexpected_error":
+      return `an unexpected error was thrown while reading the cache (${c.detail}) — the token itself may be perfectly valid`;
+  }
+}
+
+async function getSupabaseCachedToken(): Promise<TokenCacheResult> {
   try {
     const supabase = getSupabaseAdmin();
     // Retry the READ. A single transient Supabase error used to be
@@ -182,7 +244,7 @@ async function getSupabaseCachedToken(): Promise<{
       console.warn(
         `BEAPI token cache lookup failed after ${TOKEN_READ_ATTEMPTS} attempts: ${lastError}`
       );
-      return null;
+      return { ok: false, cause: { kind: "read_failed", detail: lastError } };
     }
 
     if (data && isTokenUsable(data.expires_at)) {
@@ -194,6 +256,7 @@ async function getSupabaseCachedToken(): Promise<{
         );
       }
       return {
+        ok: true,
         token: data.access_token,
         expiresAt: data.expires_at,
         needsRefresh,
@@ -202,12 +265,20 @@ async function getSupabaseCachedToken(): Promise<{
 
     if (data) {
       console.log("BEAPI token is fully expired in Supabase");
+      return {
+        ok: false,
+        cause: { kind: "expired", expiresAt: data.expires_at },
+      };
     }
-  } catch (err) {
-    console.error("Unexpected error checking BEAPI token cache:", err);
-  }
 
-  return null;
+    // `.single()` without an error and without a row shouldn't happen, but
+    // saying so explicitly beats reporting it as an expiry.
+    return { ok: false, cause: { kind: "no_row" } };
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("Unexpected error checking BEAPI token cache:", err);
+    return { ok: false, cause: { kind: "unexpected_error", detail } };
+  }
 }
 
 // Token writes removed — refresh-tokens edge function is the SOLE owner of
@@ -225,7 +296,7 @@ export async function getBEAPIToken(): Promise<string> {
 
   // Layer 2: Supabase persistent cache (survives cold starts)
   const cached = await getSupabaseCachedToken();
-  if (cached) {
+  if (cached.ok) {
     memoryToken = { token: cached.token, expiresAt: cached.expiresAt };
     return cached.token;
   }
@@ -236,37 +307,84 @@ export async function getBEAPIToken(): Promise<string> {
   // after that, alert and fail. The throttle keeps a stampede of expired-
   // token requests from burning through Guesty's 5 OAuth tokens / 24h.
   const healed = await attemptTokenSelfHeal(
-    "getBEAPIToken found no usable token"
+    `getBEAPIToken found no usable token (${cached.cause.kind})`
   );
-  if (healed) {
+  let retryCause: TokenCacheFailure | null = null;
+  if (healed.kind === "attempted") {
     // After the cron route returns, the new token row is in Supabase.
     // Re-poll once.
     const retried = await getSupabaseCachedToken();
-    if (retried) {
+    if (retried.ok) {
       memoryToken = { token: retried.token, expiresAt: retried.expiresAt };
       console.log("[BEAPI self-heal] Recovery succeeded");
       return retried.token;
     }
+    retryCause = retried.cause;
     console.warn(
       "[BEAPI self-heal] Refresh route ran but Supabase still has no usable token"
     );
   }
 
-  // Either self-heal was throttled (already attempted recently) or the
-  // refresh route itself failed. Alert and surface the error.
-  // Say what actually happened. This used to read "BEAPI token expired", but
-  // this branch is reached whenever a token could not be OBTAINED — expired,
-  // missing, or simply unreadable because Supabase errored. On 2026-10-09 it
-  // reported an expiry for a token with 22.7 hours left, and the wrong
-  // diagnosis cost real time.
+  // Alert, and SAY WHICH BRANCH WE TOOK.
+  //
+  // Naming this branch honestly was the previous fix: it used to claim the
+  // token had expired, and on 2026-10-09 it said so about a token with 22.7
+  // hours left. But "expired, missing, or unreadable … throttled or failed"
+  // is an honest sentence that still names six possibilities at once, so the
+  // next person has to go to Vercel runtime logs to learn anything — and on
+  // 2026-11-10 that was not possible: the Vercel MCP token 403s on this team
+  // scope and `vercel logs` only tails live, so a fire 40 minutes old was
+  // already unreachable. Meanwhile the alert's own 1h cooldown disguises how
+  // often this happens: it fires continuously and arrives hourly.
+  //
+  // So the cause travels WITH the alert. The next fire diagnoses itself.
+  const details: Array<[string, unknown]> = [
+    ["Cache read", describeTokenCacheFailure(cached.cause)],
+    ["Self-heal", describeSelfHeal(healed)],
+  ];
+  if (retryCause) {
+    // Repeating an identical sentence makes the reader hunt for a difference
+    // that isn't there. Say "unchanged" and only spell it out when the second
+    // read actually found something new.
+    details.push([
+      "After the refresh",
+      retryCause.kind === cached.cause.kind
+        ? "unchanged — the refresh did not alter the outcome"
+        : describeTokenCacheFailure(retryCause),
+    ]);
+  }
+  // `expired` is the ONLY cause that means what this alert's name implies.
+  details.push([
+    "Verdict",
+    cached.cause.kind === "expired"
+      ? "The token really did lapse. The refresh cron is the thing to look at."
+      : "The token was probably FINE — this is a failure to read it, not an expiry. Check /api/health/beapi before touching OAuth.",
+  ]);
+
   const msg =
-    "Could not obtain a BEAPI token. The cached token was expired, missing, " +
-    "or unreadable (Supabase error), and the self-heal refresh was throttled " +
-    "or failed. Check /api/health/beapi for the token's real expiry before " +
-    "assuming it lapsed — and the refresh-tokens cron's recent runs.";
+    `Could not obtain a BEAPI token. ` +
+    details.map(([k, v]) => `${k}: ${String(v)}`).join(" | ");
+
   await sendAlert(
     "CRITICAL: BEAPI token unavailable",
-    msg,
+    [
+      `<p>A request could not get a BEAPI token. Guests are served the listings
+        mirror while this persists, so the catalog goes stale rather than
+        breaking — expect <code>catalog-served-from-mirror</code> in the same
+        second.</p>`,
+      renderAlertDetails(details),
+      renderAlertLinks([
+        {
+          label: "BEAPI health (real expiry)",
+          url: "https://www.booktraverse.com/api/health/beapi",
+        },
+      ]),
+      `<p>Never mint a token by hand without reading the above first: Guesty
+        allows 5 per 24h and the cron deliberately holds one back for manual
+        recovery.</p>
+       <p><em>This alert has a 1-hour cooldown, so a single email can stand for
+        many occurrences — its arrival rate is not the failure rate.</em></p>`,
+    ].join(""),
     "beapi-token-expired"
   );
   throw new Error(msg);
