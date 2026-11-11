@@ -324,3 +324,130 @@ describe("buildNormalizedQuoteResponse", () => {
     expect(normalized.pricing.total).toBe(869.2);
   });
 });
+
+// ── Tax RATES read from the listing config ────────────────────────────────
+//
+// 2026-11-11. The checkout breakdown used to derive the percentage beside
+// each tax by dividing its amount by `accommodationAdjusted + cleaning`.
+// That denominator is wrong in Crested Butte — Guesty also taxes the service
+// fee there — so every CB listing published a Colorado state sales tax of
+// 3.1% against an actual 2.9%, on a guest receipt, for months.
+//
+// Adding the fees to the denominator does not fix it: across 228 real
+// bookings the state line only lands on 2.9% with a DIFFERENT base per
+// jurisdiction, because Guesty is configured per listing —
+//   Crested Butte  appliedOnFees: [AF, CF, SERVICE, DAMAGE_WAIVER]
+//   Leadville      appliedOnFees: [AF, CF]
+// So the rate is now READ from that config, never computed.
+//
+// Both fixtures below are the real shape, taken from listing_details.
+const CB_TAX_CONFIG = [
+  { type: "TRANSIENT_OCCUPANCY_TAX", units: "PERCENTAGE", amount: 9.9,
+    appliedOnFees: ["AF", "CF", "SERVICE", "DAMAGE_WAIVER"] },
+  { type: "COUNTY_TAX", units: "PERCENTAGE", amount: 6,
+    appliedOnFees: ["AF", "CF", "SERVICE", "DAMAGE_WAIVER"] },
+  { type: "STATE_TAX", units: "PERCENTAGE", amount: 2.9,
+    appliedOnFees: ["AF", "CF", "SERVICE", "DAMAGE_WAIVER"] },
+];
+const LEADVILLE_TAX_CONFIG = [
+  { type: "TRANSIENT_OCCUPANCY_TAX", units: "PERCENTAGE", amount: 5.42,
+    appliedOnFees: ["AF", "CF"] },
+  { type: "COUNTY_TAX", units: "PERCENTAGE", amount: 4, appliedOnFees: ["AF", "CF"] },
+  { type: "STATE_TAX", units: "PERCENTAGE", amount: 2.9, appliedOnFees: ["AF", "CF"] },
+];
+const TAX_ITEMS = [
+  { title: "TRANSIENT_OCCUPANCY_TAX", amount: 33.7, type: "TAX", isTax: true, normalType: "TOT" },
+  { title: "COUNTY_TAX", amount: 20.41, type: "TAX", isTax: true, normalType: "COT" },
+  { title: "STATE_TAX", amount: 9.88, type: "TAX", isTax: true, normalType: "ST" },
+];
+const rateOf = (out: ReturnType<typeof extractTaxBreakdown>, needle: string) =>
+  out?.find((t) => t.name.toLowerCase().includes(needle))?.rate;
+
+describe("extractTaxBreakdown — rates come from the listing config", () => {
+  it("reports Guesty's configured rate, not one derived from the amounts", () => {
+    const out = extractTaxBreakdown(TAX_ITEMS, CB_TAX_CONFIG);
+    expect(rateOf(out, "state")).toBe(2.9);
+    expect(rateOf(out, "county")).toBe(6);
+    expect(rateOf(out, "lodging")).toBe(9.9);
+  });
+
+  it("gives the same stay different rates in a different jurisdiction", () => {
+    // Identical dollar amounts, different listing: the rate must follow the
+    // CONFIG, which is the whole point. A derived percentage could not do
+    // this — it would return the same number for both.
+    const cb = extractTaxBreakdown(TAX_ITEMS, CB_TAX_CONFIG);
+    const lead = extractTaxBreakdown(TAX_ITEMS, LEADVILLE_TAX_CONFIG);
+    expect(rateOf(cb, "lodging")).toBe(9.9);
+    expect(rateOf(lead, "lodging")).toBe(5.42);
+    expect(rateOf(cb, "county")).toBe(6);
+    expect(rateOf(lead, "county")).toBe(4);
+  });
+
+  it("still returns amounts, with no rate, when there is no config", () => {
+    const out = extractTaxBreakdown(TAX_ITEMS);
+    expect(out).toHaveLength(3);
+    expect(out!.every((t) => t.rate === undefined)).toBe(true);
+    expect(out!.map((t) => t.amount)).toEqual([33.7, 20.41, 9.88]);
+  });
+
+  it("matches a Title Case invoice title to an UPPER_SNAKE config type", () => {
+    // At least one listing emits "Transient Occupancy Tax" rather than
+    // TRANSIENT_OCCUPANCY_TAX; without normalizing, its rate silently vanished.
+    const out = extractTaxBreakdown(
+      [{ title: "Transient Occupancy Tax", amount: 33.7, type: "TAX", isTax: true }],
+      CB_TAX_CONFIG
+    );
+    expect(out![0].rate).toBe(9.9);
+  });
+
+  it("shows no rate for a non-percentage tax", () => {
+    // A FIXED per-night levy has no rate; rendering its dollar value with a
+    // "%" would be a new flavour of the bug this replaces.
+    const out = extractTaxBreakdown(
+      [{ title: "CITY_TAX", amount: 12, type: "TAX", isTax: true }],
+      [{ type: "CITY_TAX", units: "FIXED", amount: 4 }]
+    );
+    expect(out![0].amount).toBe(12);
+    expect(out![0].rate).toBeUndefined();
+  });
+
+  it("shows no rate when the config is ambiguous for that type", () => {
+    // Two different rates configured for one type: no single answer is
+    // defensible, so show none rather than pick one.
+    const out = extractTaxBreakdown(TAX_ITEMS, [
+      { type: "STATE_TAX", units: "PERCENTAGE", amount: 2.9 },
+      { type: "STATE_TAX", units: "PERCENTAGE", amount: 4.1 },
+      { type: "COUNTY_TAX", units: "PERCENTAGE", amount: 6 },
+    ]);
+    expect(rateOf(out, "state")).toBeUndefined();
+    expect(rateOf(out, "county")).toBe(6); // unambiguous one survives
+  });
+
+  it("tolerates a duplicate entry that agrees with itself", () => {
+    const out = extractTaxBreakdown(TAX_ITEMS, [
+      { type: "STATE_TAX", units: "PERCENTAGE", amount: 2.9 },
+      { type: "STATE_TAX", units: "PERCENTAGE", amount: 2.9 },
+    ]);
+    expect(rateOf(out, "state")).toBe(2.9);
+  });
+
+  it("threads the rate through buildNormalizedQuoteResponse", () => {
+    const normalized = buildNormalizedQuoteResponse(
+      RATE_PLAN_SHAPE,
+      null,
+      CB_TAX_CONFIG
+    );
+    const states = normalized.pricing.taxBreakdown?.filter((t) =>
+      t.name.toLowerCase().includes("state")
+    );
+    expect(states?.[0]?.rate).toBe(2.9);
+  });
+
+  it("survives a config that is junk rather than throwing", () => {
+    for (const junk of [null, undefined, "nope", 42, [null, 7, {}]]) {
+      expect(() =>
+        extractTaxBreakdown(TAX_ITEMS, junk as never)
+      ).not.toThrow();
+    }
+  });
+});

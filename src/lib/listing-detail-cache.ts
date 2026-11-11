@@ -50,11 +50,43 @@ interface HouseRule {
  *
  * Keep in step with LISTING_DETAIL_FIELDS.
  */
+/**
+ * One tax as Guesty has it CONFIGURED on the listing — the authoritative rate.
+ *
+ * This is the thing a quote does not carry. A quote gives dollar amounts and
+ * never says what they were levied on, which is why the checkout breakdown
+ * used to derive a percentage by division and got Crested Butte wrong for
+ * months (see the note in price-breakdown.tsx). Here Guesty states both:
+ * `amount` + `units` is the rate, and `appliedOnFees` is the base it applies
+ * to — and that base genuinely differs by jurisdiction, e.g.
+ *
+ *   Crested Butte  TOT 9.9%  appliedOnFees: [AF, CF, SERVICE, DAMAGE_WAIVER]
+ *   Leadville      TOT 5.42% appliedOnFees: [AF, CF]
+ *
+ * which is exactly why no single formula could ever have worked.
+ */
+export interface ListingTax {
+  _id?: string;
+  /** e.g. "TRANSIENT_OCCUPANCY_TAX", "COUNTY_TAX", "STATE_TAX". */
+  type?: string;
+  /** "PERCENTAGE" | "FIXED" — a rate is only meaningful for PERCENTAGE. */
+  units?: string;
+  /** The rate itself when units is PERCENTAGE (9.9 means 9.9%). */
+  amount?: number;
+  quantifier?: string;
+  /** Fee codes this tax is levied on, e.g. ["AF","CF","SERVICE"]. */
+  appliedOnFees?: string[];
+  appliedToAllFees?: boolean;
+  [key: string]: unknown;
+}
+
 export interface BeapiListingDetail {
   _id?: string;
   id?: string;
   title?: string;
   nickname?: string;
+  /** Guesty's configured taxes for this listing. See ListingTax. */
+  taxes?: ListingTax[];
   address?: Record<string, unknown>;
   accommodates?: number;
   bedrooms?: number;
