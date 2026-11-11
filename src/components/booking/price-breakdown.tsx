@@ -13,7 +13,9 @@ interface PriceBreakdownProps {
   nights: number;
   accommodation: number;
   accommodationAdjusted: number;
-  cleaning: number;
+  // `cleaning` was removed with the tax-rate percentages — it existed only to
+  // build the taxable-base guess described below. Re-adding it to recompute a
+  // rate would reintroduce the bug.
   taxes: number;
   /** Per-tax line items (e.g. State Tax, Transient Occupancy Tax,
    *  County Tax). When provided, the Taxes row becomes an expandable
@@ -28,7 +30,6 @@ export function PriceBreakdown({
   nights,
   accommodation,
   accommodationAdjusted,
-  cleaning,
   taxes,
   taxBreakdown,
   total,
@@ -55,18 +56,36 @@ export function PriceBreakdown({
   // the total is made of, subtotal + taxes === total by construction.
   const subtotal = grandTotal - taxes;
 
-  // Percentages stay keyed to what tax is actually levied on (accommodation
-  // after discount, plus cleaning) rather than the displayed subtotal, so the
-  // rate shown is the real rate. The two are equal unless upsells are present,
-  // since upsells are added after tax.
-  const taxBase = accommodationAdjusted + cleaning;
-  const formatTaxRate = (amount: number): string | null => {
-    if (taxBase <= 0) return null;
-    const pct = (amount / taxBase) * 100;
-    if (!Number.isFinite(pct) || pct <= 0) return null;
-    // One decimal, but drop trailing ".0" so 6.0% reads as 6%.
-    return `${pct.toFixed(1).replace(/\.0$/, "")}%`;
-  };
+  // NO PERCENTAGE IS SHOWN NEXT TO A TAX. This is deliberate; please do not
+  // "restore" it without reading this first.
+  //
+  // Guesty gives us each tax as a dollar amount and never tells us what it was
+  // levied on. This component used to divide by `accommodationAdjusted +
+  // cleaning` and present the result as the tax rate. That guess is wrong in
+  // Crested Butte, where Guesty's base also includes the service fee and the
+  // TCCA fee, so every CB listing advertised a Colorado state sales tax of
+  // 3.1% when the rate is 2.9% — on a receipt, to guests, for months. It was
+  // our accountant who caught it.
+  //
+  // The obvious repair — add those fees to the denominator — is also wrong.
+  // Measured against 228 real direct bookings, the state line lands on exactly
+  // 2.9% only when the base is computed DIFFERENTLY PER JURISDICTION:
+  //
+  //            base = accom + cleaning        base = accom + cleaning + fees
+  //   CB            3 / 135                        118 / 135
+  //   Leadville    76 /  88                          5 /  88
+  //   Twin Lakes    4 /   5                          0 /   5
+  //
+  // Leadville does not tax the fees; Crested Butte does. Any single formula we
+  // hardcode is therefore correct in one market and wrong in another, which is
+  // precisely how the original bug happened. We cannot derive this number from
+  // what a quote contains, so we no longer pretend to.
+  //
+  // The guest still sees every tax by name and to the cent, which is the part
+  // that has always been correct and is what they actually pay. To bring the
+  // rates back properly, read the real per-listing tax configuration from
+  // Guesty's Open API (each listing carries its taxes with their true rates
+  // and bases) and display THAT, rather than inferring one from a total.
 
   return (
     <div className="space-y-2 text-sm">
@@ -113,25 +132,15 @@ export function PriceBreakdown({
               </button>
               {taxesExpanded && (
                 <div className="pl-3 space-y-1 text-xs">
-                  {taxBreakdown!.map((tax) => {
-                    const rate = formatTaxRate(tax.amount);
-                    return (
-                      <div
-                        key={tax.name}
-                        className="flex justify-between text-muted-foreground"
-                      >
-                        <span>
-                          {tax.name}
-                          {rate && (
-                            <span className="ml-1 text-muted-foreground/70">
-                              ({rate})
-                            </span>
-                          )}
-                        </span>
-                        <span>{$(tax.amount)}</span>
-                      </div>
-                    );
-                  })}
+                  {taxBreakdown!.map((tax) => (
+                    <div
+                      key={tax.name}
+                      className="flex justify-between text-muted-foreground"
+                    >
+                      <span>{tax.name}</span>
+                      <span>{$(tax.amount)}</span>
+                    </div>
+                  ))}
                 </div>
               )}
             </>
