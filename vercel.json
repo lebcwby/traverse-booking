@@ -97,6 +97,10 @@
     {
       "path": "/api/cron/sync-listing-details",
       "schedule": "55 * * * *"
+    },
+    {
+      "path": "/api/cron/audit-listing-taxes",
+      "schedule": "10 8 * * *"
     }
   ]
 }

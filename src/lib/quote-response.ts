@@ -8,6 +8,21 @@ export interface QuoteTaxLineItem {
   name: string;
   /** Dollar amount for this specific tax on this stay. */
   amount: number;
+  /**
+   * The rate as Guesty has it CONFIGURED on the listing — 9.9 meaning 9.9%.
+   *
+   * Read, never derived. The checkout breakdown previously computed a rate by
+   * dividing the amount by a guessed taxable base, which was wrong on every
+   * Crested Butte listing (it advertised 3.1% state sales tax against an
+   * actual 2.9%). A quote does not carry its base, so division cannot recover
+   * the rate; the listing's own tax config can, and does.
+   *
+   * Undefined when we cannot be certain: no cached config for the listing, no
+   * entry matching this tax type, a non-PERCENTAGE tax, or more than one
+   * config entry of the same type (ambiguous — we show nothing rather than
+   * pick one). Callers must treat undefined as "show no percentage".
+   */
+  rate?: number;
 }
 
 export interface QuotePricing {
@@ -73,11 +88,59 @@ function humanizeTaxLabel(raw: string): string {
  * `normalType` codes (TOT, ST, COT). Returns null when no tax items found
  * so the breakdown UI can fall back to the flat `taxes` total.
  */
+/**
+ * Normalize a tax identifier so the quote's invoice title and the listing's
+ * configured type meet on common ground. Guesty is not consistent about this:
+ * invoice titles arrive as "TRANSIENT_OCCUPANCY_TAX" on most listings but
+ * "Transient Occupancy Tax" on at least one, while the listing config uses
+ * the UPPER_SNAKE form.
+ */
+function taxTypeKey(raw: string): string {
+  return raw.trim().toUpperCase().replace(/[\s-]+/g, "_");
+}
+
+/**
+ * Index a listing's configured taxes by type, keeping ONLY the entries we can
+ * quote a rate for without guessing.
+ *
+ * A type is dropped when it appears more than once, because then no single
+ * rate is defensible and a wrong number on a receipt is worse than no number
+ * — which is the whole lesson of the bug this replaces.
+ */
+export function buildTaxRateIndex(
+  taxes: Array<Record<string, unknown>> | undefined | null
+): Map<string, number> {
+  const seen = new Map<string, number>();
+  const ambiguous = new Set<string>();
+  if (!Array.isArray(taxes)) return seen;
+
+  for (const entry of taxes) {
+    if (!entry || typeof entry !== "object") continue;
+    const type = typeof entry.type === "string" ? entry.type : "";
+    if (!type) continue;
+    // Only a percentage has a "rate". A FIXED per-night levy does not, and
+    // rendering its dollar value as "%" would be a new flavour of the same bug.
+    if (String(entry.units ?? "").toUpperCase() !== "PERCENTAGE") continue;
+    const amount = Number(entry.amount);
+    if (!Number.isFinite(amount) || amount <= 0) continue;
+
+    const key = taxTypeKey(type);
+    if (seen.has(key) && seen.get(key) !== amount) ambiguous.add(key);
+    seen.set(key, amount);
+  }
+
+  for (const key of ambiguous) seen.delete(key);
+  return seen;
+}
+
 export function extractTaxBreakdown(
-  invoiceItems: unknown[] | undefined
+  invoiceItems: unknown[] | undefined,
+  /** The listing's configured taxes, for the authoritative rate. */
+  taxConfig?: Array<Record<string, unknown>> | null
 ): QuoteTaxLineItem[] | undefined {
   if (!Array.isArray(invoiceItems)) return undefined;
   const TAX_NORMAL_TYPES = new Set(["TOT", "ST", "COT", "LT", "TAX"]);
+  const rates = buildTaxRateIndex(taxConfig);
   const items: QuoteTaxLineItem[] = [];
   for (const raw of invoiceItems) {
     if (!raw || typeof raw !== "object") continue;
@@ -91,7 +154,12 @@ export function extractTaxBreakdown(
     const amount = Number(item.amount ?? 0);
     if (!Number.isFinite(amount) || amount === 0) continue;
     const title = typeof item.title === "string" ? item.title : "Tax";
-    items.push({ name: humanizeTaxLabel(title), amount });
+    const rate = rates.get(taxTypeKey(title));
+    items.push({
+      name: humanizeTaxLabel(title),
+      amount,
+      ...(rate !== undefined ? { rate } : {}),
+    });
   }
   return items.length > 0 ? items : undefined;
 }
@@ -125,7 +193,8 @@ function normalizePromotion(raw: unknown): QuotePromotion | undefined {
 
 export function extractQuotePricing(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  quoteResponse: any
+  quoteResponse: any,
+  taxConfig?: Array<Record<string, unknown>> | null
 ): QuotePricing & { promotion?: QuotePromotion } {
   if (quoteResponse?.pricing) {
     const invoiceItems = Array.isArray(quoteResponse.pricing.invoiceItems)
@@ -139,7 +208,7 @@ export function extractQuotePricing(
       ),
       cleaning: Number(quoteResponse.pricing.cleaning || 0),
       taxes: Number(quoteResponse.pricing.taxes || 0),
-      taxBreakdown: extractTaxBreakdown(invoiceItems),
+      taxBreakdown: extractTaxBreakdown(invoiceItems, taxConfig),
       total: Number(quoteResponse.pricing.total || 0),
       days: Array.isArray(quoteResponse.pricing.days)
         ? quoteResponse.pricing.days
@@ -168,7 +237,7 @@ export function extractQuotePricing(
     accommodationAdjusted: Number(money.fareAccommodationAdjusted || 0),
     cleaning: Number(money.fareCleaning || 0),
     taxes: Number(money.totalTaxes || 0),
-    taxBreakdown: extractTaxBreakdown(invoiceItems),
+    taxBreakdown: extractTaxBreakdown(invoiceItems, taxConfig),
     total: Number(money.hostPayout || 0),
     days,
     invoiceItems,
@@ -203,9 +272,18 @@ export function buildNormalizedQuoteResponse(
     pictures?: string[] | null;
     property_type?: string | null;
     address?: { city?: string | null } | null;
-  } | null
+  } | null,
+  /**
+   * The listing's configured taxes, from the `listing_details` cache. Supplies
+   * the real rate for each tax line; omit it and the breakdown simply carries
+   * no percentages, which is the safe fallback rather than a guessed one.
+   */
+  taxConfig?: Array<Record<string, unknown>> | null
 ) {
-  const { promotion, ...pricing } = extractQuotePricing(quoteResponse);
+  const { promotion, ...pricing } = extractQuotePricing(
+    quoteResponse,
+    taxConfig
+  );
   const { quoteId, ratePlanId } = getQuoteIdentifiers(quoteResponse);
 
   return {
