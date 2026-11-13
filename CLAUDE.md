@@ -364,6 +364,31 @@ page is worth removing properly.
    entire request. Rich attributes need a separate `profile-bulk-import-jobs` call. This bug
    silently killed signups until 2026-07-30 — don't reintroduce it.
 
+4b. **Tax PERCENTAGES are deliberately not shown at checkout — don't "restore" them.**
+   The checkout tax dropdown lists each tax by name and amount, and **no rate**.
+   It used to print one, derived as `amount / (accommodation + cleaning)`, and
+   that guess was wrong in Crested Butte — where Guesty's taxable base also
+   includes the **service fee and the TCCA fee** — so every CB listing showed a
+   Colorado **state sales tax of 3.1% when the rate is 2.9%**. Our accountant
+   caught it, not us (2026-11-11).
+
+   ⚠️ **Adding the fees to the denominator does NOT fix it.** Measured over 228
+   real direct bookings, the state line hits exactly 2.9% only with a
+   **different base per jurisdiction** — Leadville does not tax the fees,
+   Crested Butte does:
+
+   | base | Crested Butte | Leadville | Twin Lakes |
+   | ---- | ------------- | --------- | ---------- |
+   | accom + cleaning | 3/135 | 76/88 | 4/5 |
+   | + service & TCCA fees | 118/135 | 5/88 | 0/5 |
+
+   Any single hardcoded formula is right in one market and wrong in another,
+   which is exactly how the original bug happened. **A quote does not contain
+   the base**, so it cannot be inferred from one. To bring rates back, read the
+   real per-listing tax config from the Open API (each listing carries its taxes
+   with true rates) and display that. Dollar amounts were always correct —
+   guests were never overcharged; only the label was wrong.
+
 5. **Soft-404 on unbounded dynamic routes — ACCEPTED, not a bug to re-fix.**
    `/properties/[id]` and `/plan/[id]` return **HTTP 200 with a noindex meta** for unknown
    params. This is documented Next 16 behaviour: a _streamed_ response commits its status
@@ -662,14 +687,13 @@ This has bitten production at least three times historically. As of
    the cron interval, leaving a 16-second margin). Tokens last 24h, so this
    mints ~once a day.
 
-   ⚠️ **CORRECTED 2026-10-19 — this route is the ONLY scheduled refresher.**
-   This file used to say the Supabase edge function `supabase/functions/
-refresh-tokens` was the sole owner "via pg_cron", and `guesty-beapi.ts`
-   still carries a comment saying the same. **There is no pg_cron job for it**
-   — `select * from cron.job` returns exactly one row, `monthly-owner-report`.
-   The edge function is deployed but **dormant**. It is still a latent risk:
-   it mints from the same client id and is invocable over HTTP, so it bypasses
-   the budget in 1a. Verify before trusting either claim:
+   ⚠️ **CORRECTED 2026-10-19 — this route is the ONLY refresher, and always
+   was.** This file used to say a Supabase edge function was the sole owner
+   "via pg_cron". Two things were wrong: there is **no pg_cron job** for it
+   (`select * from cron.job` returns one row, `monthly-owner-report`), and the
+   function **was never deployed** — the project has only
+   `monthly-owner-report`. It existed solely as unused repo source, now
+   deleted along with every comment that pointed at it. Verify:
 
    ```sql
    select jobname, schedule, active from cron.job;
@@ -710,9 +734,15 @@ https://www.booktraverse.com/api/cron/refresh-tokens` always works.
 Health-check endpoints:
 
 - `https://www.booktraverse.com/api/health/beapi` — current BEAPI status
-- `https://www.booktraverse.com/api/health/openapi` — OpenAPI status (still
-  failing because `GUESTY_CLIENT_ID`/`SECRET` aren't set in Vercel, but
-  OpenAPI isn't used by the public booking surface — only admin endpoints).
+- `https://www.booktraverse.com/api/health/openapi` — OpenAPI status.
+  ⚠️ **CORRECTED 2026-11-11: OpenAPI is HEALTHY.** This file said for months
+  that it was "still failing because `GUESTY_CLIENT_ID`/`SECRET` aren't set in
+  Vercel". `/api/health/openapi` returns `{"status":"healthy"}` and
+  `guesty_tokens` holds a live `openapi` row refreshed alongside the BEAPI one.
+  That matters: reading per-listing config (taxes, owners, financials) is
+  unblocked, and the mirror's `financials` column — empty on all 216 rows — can
+  now actually be populated. Verify with the curl above before trusting either
+  claim.
 
 Where to look in Vercel dashboard if the cron is suspected to be dropping
 fires: Project → Crons tab → `/api/cron/refresh-tokens` → execution

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   applyConsentMode,
@@ -144,16 +144,56 @@ function toAdvancedMatching(guest: KnownGuest): Record<string, string> {
   return out;
 }
 
+/**
+ * The advanced matching the pixel was last initialised with, serialised.
+ *
+ * Re-initialising is how Meta's browser API updates advanced matching — there
+ * is no separate "set user data" call — but every `fbq('init')` after the
+ * first logs `Duplicate Pixel ID` to the console. Three call sites below used
+ * to re-init unconditionally, so the warning fired on ordinary page loads.
+ *
+ * That is worse than untidy. A duplicate-pixel warning is exactly what you
+ * would see if someone also added the pixel in GTM, and a warning that is
+ * always present is one nobody reads. Tracking it here means we only re-init
+ * when the payload genuinely changed, so the warning means something again.
+ */
+let appliedMatching: string | null = null;
+
+/** Everything we currently know about the visitor, anonymous floor included. */
+function currentMatching(): Record<string, string> {
+  return toAdvancedMatching(getKnownGuest());
+}
+
+/**
+ * Re-init the pixel, but only when the matching payload actually changed.
+ *
+ * In a warm session the geo resolves synchronously from sessionStorage and
+ * this is a no-op; on the first page view of a session the geo arrives from
+ * the network after the pixel is already up, which is a real change and the
+ * one re-init worth paying for.
+ */
+export function applyAdvancedMatching(matching: Record<string, string>) {
+  if (!META_PIXEL_ID || !window.fbq) return;
+  if (Object.keys(matching).length === 0) return;
+  const serialised = JSON.stringify(matching);
+  if (serialised === appliedMatching) return;
+  appliedMatching = serialised;
+  window.fbq("init", META_PIXEL_ID, matching);
+}
+
+/** Forget the applied payload, so the next call re-sends it. */
+export function resetAppliedMatching() {
+  appliedMatching = null;
+}
+
 function loadMetaPixel(advancedMatching?: Record<string, string>) {
   // Without an id there is nothing safe to init against — see the note on
   // META_PIXEL_ID. Bail rather than fire at a default.
   if (!META_PIXEL_ID) return;
   if (window.fbq) {
     window.fbq("consent", "grant");
-    // If we got user data after pixel was already initialized, re-init to update matching
-    if (advancedMatching && Object.keys(advancedMatching).length > 0) {
-      window.fbq("init", META_PIXEL_ID, advancedMatching);
-    }
+    // Pixel is already up; this is an identity refresh, not a load.
+    if (advancedMatching) applyAdvancedMatching(advancedMatching);
     return;
   }
 
@@ -187,7 +227,11 @@ function loadMetaPixel(advancedMatching?: Record<string, string>) {
   );
 
   window.fbq("consent", "grant");
-  window.fbq("init", META_PIXEL_ID, advancedMatching || {});
+  const initial = advancedMatching || {};
+  // Record what the first init carried, so the refresh paths can tell a real
+  // change from a repeat.
+  appliedMatching = Object.keys(initial).length > 0 ? JSON.stringify(initial) : null;
+  window.fbq("init", META_PIXEL_ID, initial);
   // PageView removed — MetaPageViewTracker owns all PageViews with dedup eventIds
 
   // Signal that the pixel stub is ready to accept queued events
@@ -198,6 +242,9 @@ function revokeMetaPixel() {
   if (window.fbq) {
     window.fbq("consent", "revoke");
   }
+  // Forget what was applied, so a later opt-in re-sends matching instead of
+  // being deduped against the identity we are about to clear.
+  resetAppliedMatching();
   // Clear guest identity on opt-out so we don't keep firing enriched events
   // against consent. clearKnownGuest() also dispatches the updated event
   // so any listener (including the effect below) can react.
@@ -212,9 +259,6 @@ export function ConsentManager() {
   const pathname = usePathname();
   const isCheckout = pathname.startsWith("/book");
   const [consent, setConsent] = useState<ConsentState | null>(null);
-  const advancedMatchingRef = useRef<Record<string, string>>(
-    toAdvancedMatching(getKnownGuest())
-  );
 
   // Subscribe to auth state for Meta Advanced Matching.
   // onAuthStateChange fires INITIAL_SESSION on subscribe, plus login/logout.
@@ -247,25 +291,14 @@ export function ConsentManager() {
   // the first page view of a session it resolves synchronously from
   // sessionStorage and the re-init is a no-op refresh.
   useEffect(() => {
-    primeAnonymousMatching(() => {
-      const matching = getAnonymousMatching();
-      if (META_PIXEL_ID && window.fbq && Object.keys(matching).length > 0) {
-        window.fbq("init", META_PIXEL_ID, matching);
-      }
-    });
+    primeAnonymousMatching(() => applyAdvancedMatching(currentMatching()));
   }, []);
 
   // Whenever known-guest updates (auth login, checkout form fill, inquiry form),
   // refresh the pixel's advanced matching config so subsequent browser-side
   // fbq('track', ...) calls carry the richer identity for Meta matching.
   useEffect(() => {
-    const handler = () => {
-      const matching = toAdvancedMatching(getKnownGuest());
-      advancedMatchingRef.current = matching;
-      if (META_PIXEL_ID && window.fbq && Object.keys(matching).length > 0) {
-        window.fbq("init", META_PIXEL_ID, matching);
-      }
-    };
+    const handler = () => applyAdvancedMatching(currentMatching());
     window.addEventListener(KNOWN_GUEST_UPDATED_EVENT, handler);
     return () => window.removeEventListener(KNOWN_GUEST_UPDATED_EVENT, handler);
   }, []);
@@ -328,7 +361,14 @@ export function ConsentManager() {
       // delay is a ms where ViewContent/Search/IC events fire without the
       // _fbp cookie, which breaks Listing Viewers audience population.
       // Tracking quality > LCP for SP's direct-booking funnel.
-      loadMetaPixel(advancedMatchingRef.current);
+      // Computed here, not read from a ref captured at first render. The ref
+      // was built before primeAnonymousMatching() had populated
+      // window.__sp_anon_match, so on a warm session — geo already cached in
+      // sessionStorage, prime resolving synchronously before the pixel
+      // existed — the init carried external_id alone and ct/st/zp/country
+      // never reached the pixel at all. Only the very first page view of a
+      // session, where the prime landed late enough to re-init, got them.
+      loadMetaPixel(currentMatching());
 
       // Klaviyo onsite (popups) is not tracking-critical — keep it deferred so
       // it doesn't contend with fbevents.js for main-thread time. Skip on

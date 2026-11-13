@@ -51,6 +51,36 @@ export async function recordRateLimitEvent(
   }
 }
 
+/**
+ * Raw events for the last {@link SUMMARY_WINDOW_DAYS} days, newest first.
+ *
+ * Exposed so the daily digest can count its own windows without a second
+ * round trip; `summarize`/`renderSummary` then reuse the same rows.
+ */
+export async function fetchRecentEvents(): Promise<
+  Array<{ occurred_at: string; path: string | null; alerted: boolean | null }>
+> {
+  try {
+    const since = new Date(
+      Date.now() - SUMMARY_WINDOW_DAYS * 86_400_000
+    ).toISOString();
+    const { data, error } = await getSupabaseAdmin()
+      .from(TABLE)
+      .select("occurred_at, path, alerted")
+      .gte("occurred_at", since)
+      .order("occurred_at", { ascending: false })
+      .limit(SUMMARY_ROW_CAP);
+    if (error || !data) return [];
+    return data as Array<{
+      occurred_at: string;
+      path: string | null;
+      alerted: boolean | null;
+    }>;
+  } catch {
+    return [];
+  }
+}
+
 export interface RateLimitEventSummary {
   lastHour: number;
   lastWeek: number;
@@ -112,27 +142,25 @@ export function renderSummary(s: RateLimitEventSummary): string {
     `${s.lastWeek} in the last ${SUMMARY_WINDOW_DAYS} days.<br/><br/>` +
     `<strong>Clustering by minute of hour (UTC, last ${SUMMARY_WINDOW_DAYS} days):</strong><br/>` +
     `<table style="border-collapse:collapse;margin:6px 0">${rows}</table>` +
-    `<em>Our own traffic has no reason to favour a particular minute. Scheduled ` +
-    `jobs do — weight in :00–:09 or :10–:19 points at a cron on the shared ` +
-    `Guesty account, not at this site.</em><br/><br/>`
+    `<em>Organic traffic has no reason to favour a particular minute; scheduled ` +
+    `jobs do. Weight in <strong>:20–:29</strong> is OUR OWN <code>sync-calendar</code> ` +
+    `cron (<code>25 * * * *</code>) — that is the first thing to pace. Weight in ` +
+    `:00–:09 or :10–:19 points at a cron elsewhere on the shared Guesty account ` +
+    `(the CRM sweep, PriceLabs, Conduit) rather than at this site.</em><br/><br/>`
   );
 }
 
+/**
+ * Fetch and render in one call.
+ *
+ * Was the per-incident alert's context block. That alert is gone (see
+ * guesty-beapi.ts) and the daily digest needs the raw rows for its own
+ * windows, so it calls fetchRecentEvents() + summarize() + renderSummary()
+ * directly. Kept because it is the obvious entry point for any future
+ * surface that just wants the HTML.
+ */
 export async function summarizeRecentRateLimitEvents(): Promise<string> {
-  try {
-    const since = new Date(
-      Date.now() - SUMMARY_WINDOW_DAYS * 86_400_000
-    ).toISOString();
-    const { data, error } = await getSupabaseAdmin()
-      .from(TABLE)
-      .select("occurred_at")
-      .gte("occurred_at", since)
-      .order("occurred_at", { ascending: false })
-      .limit(SUMMARY_ROW_CAP);
-    if (error || !data) return "";
-    return renderSummary(summarize(data as Array<{ occurred_at: string }>));
-  } catch {
-    // An alert with no context still beats no alert.
-    return "";
-  }
+  const rows = await fetchRecentEvents();
+  if (rows.length === 0) return "";
+  return renderSummary(summarize(rows));
 }

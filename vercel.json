@@ -89,6 +89,18 @@
     {
       "schedule": "45 7 * * 1",
       "path": "/api/cron/weekly-booking-digest"
+    },
+    {
+      "schedule": "35 7 * * *",
+      "path": "/api/cron/guesty-health-digest"
+    },
+    {
+      "path": "/api/cron/sync-listing-details",
+      "schedule": "55 * * * *"
+    },
+    {
+      "path": "/api/cron/audit-listing-taxes",
+      "schedule": "10 8 * * *"
     }
   ]
 }

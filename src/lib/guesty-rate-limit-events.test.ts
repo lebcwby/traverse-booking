@@ -99,8 +99,24 @@ describe("renderSummary", () => {
       lastWeek: 9,
       minuteBuckets: [9, 0, 0, 0, 0, 0],
     });
-    expect(html).toMatch(/cron on the shared\s+Guesty account/);
-    expect(html).toMatch(/not at this site/);
+    expect(html).toMatch(/shared\s+Guesty account/);
+    expect(html).toMatch(/rather than at this site/);
+  });
+
+  // The legend used to offer only two readings, both of them "someone
+  // else's cron". That was true when it was written and had quietly stopped
+  // being true: in the week to 2026-10-28, 248 of ~580 terminal 429s fell
+  // in :20–:29, which is this site's own sync-calendar at `25 * * * *`. A
+  // legend that cannot point at us is worse than no legend.
+  it("attributes the :20–:29 bucket to our own sync-calendar cron", () => {
+    const html = renderSummary({
+      lastHour: 0,
+      lastWeek: 248,
+      minuteBuckets: [0, 0, 248, 0, 0, 0],
+    });
+    expect(html).toContain("sync-calendar");
+    expect(html).toContain("25 * * * *");
+    expect(html).toMatch(/OUR OWN/);
   });
 
   it("does not divide by zero when every bucket is empty but a count exists", () => {

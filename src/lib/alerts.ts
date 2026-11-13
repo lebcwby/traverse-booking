@@ -1,5 +1,13 @@
 import { Resend } from "resend";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { getPool } from "@/lib/db";
+import {
+  compareNight,
+  lastYearEquivalent,
+  totalsFor,
+  type NightState,
+} from "@/lib/yoy-revenue";
+import { fetchListingHistory } from "@/lib/crm-revenue";
 
 // ALERT_TO_EMAIL may hold several addresses ("a@x.com,b@x.com"). Resend's `to`
 // takes a string[] and does NOT split a comma-joined string — it would treat
@@ -224,6 +232,28 @@ async function readCooldownFromSupabase(key: string) {
   }
 }
 
+/**
+ * Did an alert under `key` go out within the last `withinMs`?
+ *
+ * For suppressing an alert that is DOWNSTREAM of another one. The BEAPI
+ * token failure and the catalogue-mirror fallback are not two events: the
+ * mirror is served *because* the token could not be obtained. On 2026-10-28
+ * they arrived one second apart (04:51:11 and 04:51:12) as two separate
+ * emails saying the same thing.
+ *
+ * Deliberately reads only the shared Supabase row and ignores the in-memory
+ * map: the two alerts are raised from different code paths and, on
+ * serverless, usually different lambda instances, so the process-local map
+ * would almost never see the other one's send.
+ */
+export async function wasAlertSentRecently(
+  key: string,
+  withinMs: number
+): Promise<boolean> {
+  const lastSent = await readCooldownFromSupabase(key);
+  return lastSent !== null && Date.now() - lastSent < withinMs;
+}
+
 async function persistCooldownToSupabase(key: string, lastSentAt: number) {
   const supabase = getSupabaseAdmin();
   if (!supabase) return;
@@ -368,8 +398,10 @@ interface NightlyComparison {
   date: string;
   dayOfWeek: string;
   thisYearRate: number | null;
+  /** Base fare this night actually earned last year; null when it sold nothing. */
   lastYearRate: number | null;
-  lastYearStatus: string | null;
+  /** Whether that null means "went unsold" or "we weren't selling it yet". */
+  state: NightState;
   netRevenue: number | null;
 }
 
@@ -418,70 +450,50 @@ function generateNightlyDates(checkIn: string, checkOut: string): string[] {
   return dates;
 }
 
-function getLastYearDate(dateStr: string): string {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  const ly = new Date(Date.UTC(y - 1, m - 1, d));
-  if (ly.getUTCMonth() !== m - 1) {
-    return new Date(Date.UTC(y - 1, m - 1, 0)).toISOString().slice(0, 10);
-  }
-  return ly.toISOString().slice(0, 10);
-}
-
+/**
+ * Nightly rates from OUR OWN `calendar_days`.
+ *
+ * This used to read a separate "dashboard" Supabase behind
+ * DASHBOARD_SUPABASE_URL / _ANON_KEY. Neither has ever been set in
+ * production, so `dashboardConfigured()` was false, this returned an empty
+ * map on every call, and the comparison table rendered entirely blank —
+ * including for nights two days away whose prices were sitting in our own
+ * database the whole time.
+ *
+ * `calendar_days` here holds 2026-10-12 → 2027-10-26, refreshed by
+ * sync-calendar. It is FORWARD-looking and keeps no history, so it is asked
+ * only about THIS year's nights; last year's side comes from realised
+ * reservation revenue in the CRM. See buildYoYComparison.
+ */
 async function fetchCalendarDays(
   listingId: string,
   dates: string[]
 ): Promise<Map<string, CalendarDayData>> {
   const result = new Map<string, CalendarDayData>();
   if (!listingId || dates.length === 0) return result;
-  if (!dashboardConfigured()) return result;
 
-  const dateList = dates.join(",");
-  const url = `${DASHBOARD_SUPABASE_URL}/rest/v1/calendar_days?select=date,price,status&listing_id=eq.${encodeURIComponent(listingId)}&date=in.(${dateList})&limit=100`;
-
-  // Retry once on empty result (handles transient failures / cold-start timeouts)
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      const resp = await fetch(url, {
-        headers: {
-          apikey: DASHBOARD_SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${DASHBOARD_SUPABASE_ANON_KEY}`,
-        },
-        cache: "no-store",
-        signal: AbortSignal.timeout(10000),
+  try {
+    const { rows } = await getPool().query<{
+      date: string;
+      price: string | number | null;
+      status: string | null;
+    }>(
+      `select date, price, status
+         from calendar_days
+        where listing_id = $1 and date = any($2::text[])`,
+      [listingId, dates]
+    );
+    for (const row of rows) {
+      if (row.price === null) continue;
+      result.set(row.date, {
+        date: row.date,
+        price: Number(row.price),
+        status: row.status ?? "unknown",
       });
-      if (!resp.ok) {
-        console.error(
-          `[YoYRates] calendar_days fetch failed (attempt ${attempt}): ${resp.status} ${resp.statusText} for listing ${listingId}`
-        );
-        if (attempt < 2) {
-          await new Promise((r) => setTimeout(r, 500));
-          continue;
-        }
-        return result;
-      }
-      const rows: CalendarDayData[] = await resp.json();
-      console.log(
-        `[YoYRates] Fetched ${rows.length} calendar days for listing ${listingId} (${dates.length} dates requested, attempt ${attempt})`
-      );
-      if (rows.length === 0 && attempt < 2) {
-        console.warn(
-          `[YoYRates] Empty result for listing ${listingId} with dates [${dateList}] — retrying`
-        );
-        await new Promise((r) => setTimeout(r, 500));
-        continue;
-      }
-      for (const row of rows) result.set(row.date, row);
-      return result;
-    } catch (err) {
-      console.error(
-        `[YoYRates] calendar_days fetch error (attempt ${attempt}) for listing ${listingId}:`,
-        err
-      );
-      if (attempt < 2) {
-        await new Promise((r) => setTimeout(r, 500));
-        continue;
-      }
     }
+  } catch (err) {
+    // An enrichment must never take the alert down with it.
+    console.error(`[YoYRates] calendar_days query failed for ${listingId}:`, err);
   }
   return result;
 }
@@ -494,49 +506,55 @@ async function buildYoYComparison(
   const thisYearDates = generateNightlyDates(checkIn, checkOut);
   if (thisYearDates.length === 0) return [];
 
-  const lastYearDates = thisYearDates.map(getLastYearDate);
-  const allDates = [...thisYearDates, ...lastYearDates];
-  const calendarData = await fetchCalendarDays(listingId, allDates);
+  // 364 days back, not one calendar year: that preserves the weekday, and
+  // weekend pricing is the single biggest driver of a nightly rate. This file
+  // previously had its own calendar-year helper, which disagreed with the
+  // date compareNight() reports — so the table could show a Tuesday's revenue
+  // labelled as the equivalent of a Wednesday.
+  const lastYearDates = thisYearDates.map(lastYearEquivalent);
+
+  // Two databases, deliberately. This year's asking rate is ours and local;
+  // last year's realised revenue only exists in the CRM, and that lookup is
+  // optional — unconfigured, it returns empty and the column stays blank.
+  const [calendarData, history] = await Promise.all([
+    fetchCalendarDays(listingId, thisYearDates),
+    fetchListingHistory(listingId, lastYearDates),
+  ]);
 
   return thisYearDates.map((date, i) => {
-    const lyDate = lastYearDates[i];
-    const thisYear = calendarData.get(date);
-    const lastYear = calendarData.get(lyDate);
-    const thisRate = thisYear?.price ?? null;
-    const lastRate = lastYear?.price ?? null;
-    const lyStatus = lastYear?.status ?? null;
+    const thisRate = calendarData.get(date)?.price ?? null;
+    const earned = history.earnedByDate.get(lastYearDates[i]) ?? null;
 
-    // Net revenue: booked last year → rate differential; unbooked/blocked → full rate is incremental
-    let netRevenue: number | null = null;
-    if (thisRate !== null) {
-      if (lyStatus === "booked" && lastRate !== null) {
-        netRevenue = thisRate - lastRate;
-      } else {
-        // available, blocked, or unknown — was $0 actual revenue last year
-        netRevenue = thisRate;
-      }
-    }
+    // compareNight() decides what a missing figure means. "Nothing earned"
+    // is only incremental revenue when the listing was demonstrably selling
+    // then; otherwise there is no honest comparison and net stays null.
+    const night = compareNight(date, thisRate, {
+      earned,
+      firstStayDate: history.firstStayDate,
+    });
 
     return {
       date,
       dayOfWeek: DAYS[new Date(date + "T12:00:00Z").getUTCDay()],
       thisYearRate: thisRate,
-      lastYearRate: lastRate,
-      lastYearStatus: lyStatus,
-      netRevenue,
+      lastYearRate: earned,
+      state: night.state,
+      netRevenue: night.net,
     };
   });
 }
 
-function renderStatusBadge(status: string | null): string {
-  if (!status) return '<span style="color:#d1d5db;">—</span>';
-  switch (status) {
+// "Not yet listed" is the badge that matters: it is the difference between
+// "this night went unsold last year" and "we were not selling this home
+// yet", and only the first of those makes the full rate incremental.
+function renderStatusBadge(state: NightState): string {
+  switch (state) {
     case "booked":
       return '<span style="color:#f2c070;font-size:11px;">&#9679; Booked</span>';
-    case "available":
-      return '<span style="color:#6b7280;font-size:11px;">&#9675; Available</span>';
+    case "vacant":
+      return '<span style="color:#6b7280;font-size:11px;">&#9675; Vacant</span>';
     default:
-      return `<span style="color:#d1d5db;font-size:11px;">&#9679; ${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+      return '<span style="color:#d1d5db;font-size:11px;">&#9675; Not yet listed</span>';
   }
 }
 
@@ -556,10 +574,25 @@ function renderRateComparisonTable(
   comparison: NightlyComparison[],
   checkIn: string
 ): string {
+  // A row per night is produced whether or not any lookup succeeded, so
+  // counting rows does not tell you whether there is anything to say. When
+  // the dashboard DB is unconfigured (it is, in production) every rate comes
+  // back null and this drew a full table of dashes under a bold "$0" —
+  // which reads as "this booking added nothing" rather than "we have no
+  // data". Render nothing instead.
   if (comparison.length === 0) return "";
+  const hasAnyRate = comparison.some(
+    (c) => c.thisYearRate !== null || c.lastYearRate !== null
+  );
+  if (!hasAnyRate) return "";
   const thisYear = new Date(checkIn + "T12:00:00Z").getUTCFullYear();
   const lastYear = thisYear - 1;
-  const hasLastYearData = comparison.some((c) => c.lastYearRate !== null);
+  // Show the per-night badges once there is any last-year signal at all —
+  // including an all-"not yet listed" stay, where the badge is the whole
+  // explanation for a column of dashes.
+  const hasLastYearData = comparison.some(
+    (c) => c.lastYearRate !== null || c.state !== "no_comparable"
+  );
 
   const avgThis = comparison.filter((c) => c.thisYearRate !== null);
   const avgLast = comparison.filter((c) => c.lastYearRate !== null);
@@ -572,10 +605,20 @@ function renderRateComparisonTable(
       ? avgLast.reduce((s, c) => s + c.lastYearRate!, 0) / avgLast.length
       : null;
 
-  const totalNet = comparison.reduce((s, c) => s + (c.netRevenue ?? 0), 0);
-  const bookedLastYear = comparison.filter(
-    (c) => c.lastYearStatus === "booked"
-  ).length;
+  // `?? 0` here is what turned "nothing to compare" into a bold "$0", which
+  // reads as "this booking added nothing". totalsFor() returns null when no
+  // night could be compared, and renderNetRevenue renders null as a dash.
+  const totalNet = totalsFor(
+    comparison.map((c) => ({
+      date: c.date,
+      lastYearDate: lastYearEquivalent(c.date),
+      thisYearRate: c.thisYearRate,
+      lastYearEarned: c.lastYearRate,
+      state: c.state,
+      net: c.netRevenue,
+    }))
+  ).netTotal;
+  const bookedLastYear = comparison.filter((c) => c.state === "booked").length;
   const totalNights = comparison.length;
 
   return `
@@ -603,7 +646,7 @@ function renderRateComparisonTable(
               </td>
               <td style="padding:10px 14px;text-align:right;">
                 <span style="font-size:14px;color:#6b7280;">${c.lastYearRate !== null ? `$${c.lastYearRate}` : "—"}</span>
-                ${hasLastYearData ? `<br>${renderStatusBadge(c.lastYearStatus)}` : ""}
+                ${hasLastYearData ? `<br>${renderStatusBadge(c.state)}` : ""}
               </td>
               <td style="padding:10px 14px;text-align:right;font-size:13px;">
                 ${renderNetRevenue(c.netRevenue)}

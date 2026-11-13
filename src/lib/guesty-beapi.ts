@@ -1,10 +1,8 @@
 import { getSupabaseAdmin } from "./supabase-admin";
-import { sendAlert } from "./alerts";
+import { renderAlertDetails, renderAlertLinks, sendAlert } from "./alerts";
 import { rateLimit } from "./rate-limit";
-import {
-  recordRateLimitEvent,
-  summarizeRecentRateLimitEvents,
-} from "./guesty-rate-limit-events";
+import { ConcurrencyGate } from "./concurrency-gate";
+import { recordRateLimitEvent } from "./guesty-rate-limit-events";
 
 const BEAPI_BASE_URL = "https://booking.guesty.com";
 const FULL_SEARCH_LISTING_FIELDS =
@@ -20,7 +18,8 @@ const CARD_SEARCH_LISTING_FIELDS =
 //   1. Reads tokens from Supabase + in-memory cache
 //   2. NEVER writes, updates, or expires tokens in Supabase
 //   3. On 401, clears in-memory cache only — does NOT touch Supabase
-//   4. Token refresh is handled EXCLUSIVELY by refresh-tokens edge function (pg_cron)
+//   4. Token refresh is handled EXCLUSIVELY by the Vercel cron
+//      /api/cron/refresh-tokens (vercel.json, "10 */2 * * *")
 //   5. No OAuth calls, no token persistence, no token expiration writes
 
 // A token is "fresh" if it has more than this left; below it, the cron
@@ -56,12 +55,44 @@ const SELF_HEAL_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
  * requests.
  *
  * Throttled to once per SELF_HEAL_COOLDOWN_MS per serverless instance.
- * Returns true if a refresh was attempted, false if throttled.
+ *
+ * Returns WHY, not just whether. This used to return a bare boolean, and
+ * `false` meant any of "throttled", "CRON_SECRET missing" or "the trigger
+ * fetch blew up" — three very different problems that the alert downstream
+ * then reported with one sentence covering all of them.
  */
-async function attemptTokenSelfHeal(reason: string): Promise<boolean> {
+type SelfHealOutcome =
+  | { kind: "attempted"; status: number | null }
+  | { kind: "throttled"; secondsSinceLastAttempt: number }
+  | { kind: "no_cron_secret" }
+  | { kind: "trigger_failed"; detail: string };
+
+function describeSelfHeal(o: SelfHealOutcome): string {
+  switch (o.kind) {
+    case "attempted":
+      return o.status === null
+        ? "the self-heal refresh ran but its response was unreadable"
+        : `the self-heal refresh ran and returned HTTP ${o.status}`;
+    case "throttled":
+      return `the self-heal refresh was SKIPPED — this instance last tried ${o.secondsSinceLastAttempt}s ago and the throttle is ${SELF_HEAL_COOLDOWN_MS / 1000}s`;
+    case "no_cron_secret":
+      return "the self-heal refresh could not run — CRON_SECRET is not set in this environment";
+    case "trigger_failed":
+      return `the self-heal refresh could not be triggered — ${o.detail}`;
+  }
+}
+
+async function attemptTokenSelfHeal(
+  reason: string
+): Promise<SelfHealOutcome> {
   const now = Date.now();
   if (now - lastSelfHealAttemptAt < SELF_HEAL_COOLDOWN_MS) {
-    return false;
+    return {
+      kind: "throttled",
+      secondsSinceLastAttempt: Math.round(
+        (now - lastSelfHealAttemptAt) / 1000
+      ),
+    };
   }
   lastSelfHealAttemptAt = now;
 
@@ -72,7 +103,7 @@ async function attemptTokenSelfHeal(reason: string): Promise<boolean> {
     console.warn(
       "[BEAPI self-heal] CRON_SECRET not set — can't trigger refresh"
     );
-    return false;
+    return { kind: "no_cron_secret" };
   }
 
   console.warn(`[BEAPI self-heal] Triggering refresh — reason: ${reason}`);
@@ -93,11 +124,11 @@ async function attemptTokenSelfHeal(reason: string): Promise<boolean> {
         `[BEAPI self-heal] Refresh route returned ${resp.status} — continuing anyway`
       );
     }
-    return true;
+    return { kind: "attempted", status: resp.status };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.warn(`[BEAPI self-heal] Refresh trigger failed: ${msg}`);
-    return false;
+    return { kind: "trigger_failed", detail: msg };
   }
 }
 
@@ -141,14 +172,44 @@ function isTokenUsable(expiresAt: number): boolean {
 }
 
 /**
- * Read the cached token from Supabase. Returns the token if it exists and hasn't expired.
- * Sets a flag if the token is within the buffer window (needs refresh but is still usable).
+ * Read the cached token from Supabase. Returns the token if it exists and
+ * hasn't expired, and otherwise says WHY — a bare null here is what made the
+ * downstream alert undiagnosable.
+ *
+ * Four very different situations used to collapse into one `null`:
+ * the read failed three times, the row is missing, the row is there but
+ * lapsed, or something threw. Only the third is "the token expired", yet the
+ * alert said as much for all four. On 2026-11-10 it fired while the token had
+ * 20.6h of life left and every one of 626 Supabase reads that day returned
+ * 200 — with no way, from the alert or from Supabase's own logs, to tell which
+ * branch had been taken.
  */
-async function getSupabaseCachedToken(): Promise<{
-  token: string;
-  expiresAt: number;
-  needsRefresh: boolean;
-} | null> {
+type TokenCacheFailure =
+  | { kind: "read_failed"; detail: string }
+  | { kind: "no_row" }
+  | { kind: "expired"; expiresAt: number }
+  | { kind: "unexpected_error"; detail: string };
+
+type TokenCacheResult =
+  | { ok: true; token: string; expiresAt: number; needsRefresh: boolean }
+  | { ok: false; cause: TokenCacheFailure };
+
+function describeTokenCacheFailure(c: TokenCacheFailure): string {
+  switch (c.kind) {
+    case "read_failed":
+      return `the Supabase read failed all ${TOKEN_READ_ATTEMPTS} attempts (${c.detail}) — the token itself may be perfectly valid`;
+    case "no_row":
+      return "Supabase answered, but there is NO beapi row in guesty_tokens at all";
+    case "expired": {
+      const minsAgo = Math.round((Date.now() - c.expiresAt) / 60000);
+      return `the cached token genuinely lapsed — it expired ${minsAgo}min ago (${new Date(c.expiresAt).toISOString()})`;
+    }
+    case "unexpected_error":
+      return `an unexpected error was thrown while reading the cache (${c.detail}) — the token itself may be perfectly valid`;
+  }
+}
+
+async function getSupabaseCachedToken(): Promise<TokenCacheResult> {
   try {
     const supabase = getSupabaseAdmin();
     // Retry the READ. A single transient Supabase error used to be
@@ -184,7 +245,7 @@ async function getSupabaseCachedToken(): Promise<{
       console.warn(
         `BEAPI token cache lookup failed after ${TOKEN_READ_ATTEMPTS} attempts: ${lastError}`
       );
-      return null;
+      return { ok: false, cause: { kind: "read_failed", detail: lastError } };
     }
 
     if (data && isTokenUsable(data.expires_at)) {
@@ -196,6 +257,7 @@ async function getSupabaseCachedToken(): Promise<{
         );
       }
       return {
+        ok: true,
         token: data.access_token,
         expiresAt: data.expires_at,
         needsRefresh,
@@ -204,17 +266,30 @@ async function getSupabaseCachedToken(): Promise<{
 
     if (data) {
       console.log("BEAPI token is fully expired in Supabase");
+      return {
+        ok: false,
+        cause: { kind: "expired", expiresAt: data.expires_at },
+      };
     }
-  } catch (err) {
-    console.error("Unexpected error checking BEAPI token cache:", err);
-  }
 
-  return null;
+    // `.single()` without an error and without a row shouldn't happen, but
+    // saying so explicitly beats reporting it as an expiry.
+    return { ok: false, cause: { kind: "no_row" } };
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("Unexpected error checking BEAPI token cache:", err);
+    return { ok: false, cause: { kind: "unexpected_error", detail } };
+  }
 }
 
-// Token writes removed — refresh-tokens edge function is the SOLE owner of
+// Token writes removed — /api/cron/refresh-tokens is the SOLE owner of
 // guesty_tokens rows. The app is strictly read-only to prevent token-burn
 // cycles (401 → expire → cron refresh → 401 → burn all 5 tokens).
+//
+// ⚠️ This used to name a Supabase edge function "via pg_cron". There was no
+// such pg_cron job and the function was never deployed; the Vercel cron has
+// always been the only refresher. Corrected 2026-10-19 and the dead source
+// removed. `select jobname from cron.job` settles it in one query.
 
 // ─── Main Token Retrieval ────────────────────────────────────────
 // Strictly read-only. No writes to guesty_tokens. No OAuth calls.
@@ -227,7 +302,7 @@ export async function getBEAPIToken(): Promise<string> {
 
   // Layer 2: Supabase persistent cache (survives cold starts)
   const cached = await getSupabaseCachedToken();
-  if (cached) {
+  if (cached.ok) {
     memoryToken = { token: cached.token, expiresAt: cached.expiresAt };
     return cached.token;
   }
@@ -238,37 +313,84 @@ export async function getBEAPIToken(): Promise<string> {
   // after that, alert and fail. The throttle keeps a stampede of expired-
   // token requests from burning through Guesty's 5 OAuth tokens / 24h.
   const healed = await attemptTokenSelfHeal(
-    "getBEAPIToken found no usable token"
+    `getBEAPIToken found no usable token (${cached.cause.kind})`
   );
-  if (healed) {
+  let retryCause: TokenCacheFailure | null = null;
+  if (healed.kind === "attempted") {
     // After the cron route returns, the new token row is in Supabase.
     // Re-poll once.
     const retried = await getSupabaseCachedToken();
-    if (retried) {
+    if (retried.ok) {
       memoryToken = { token: retried.token, expiresAt: retried.expiresAt };
       console.log("[BEAPI self-heal] Recovery succeeded");
       return retried.token;
     }
+    retryCause = retried.cause;
     console.warn(
       "[BEAPI self-heal] Refresh route ran but Supabase still has no usable token"
     );
   }
 
-  // Either self-heal was throttled (already attempted recently) or the
-  // refresh route itself failed. Alert and surface the error.
-  // Say what actually happened. This used to read "BEAPI token expired", but
-  // this branch is reached whenever a token could not be OBTAINED — expired,
-  // missing, or simply unreadable because Supabase errored. On 2026-10-09 it
-  // reported an expiry for a token with 22.7 hours left, and the wrong
-  // diagnosis cost real time.
+  // Alert, and SAY WHICH BRANCH WE TOOK.
+  //
+  // Naming this branch honestly was the previous fix: it used to claim the
+  // token had expired, and on 2026-10-09 it said so about a token with 22.7
+  // hours left. But "expired, missing, or unreadable … throttled or failed"
+  // is an honest sentence that still names six possibilities at once, so the
+  // next person has to go to Vercel runtime logs to learn anything — and on
+  // 2026-11-10 that was not possible: the Vercel MCP token 403s on this team
+  // scope and `vercel logs` only tails live, so a fire 40 minutes old was
+  // already unreachable. Meanwhile the alert's own 1h cooldown disguises how
+  // often this happens: it fires continuously and arrives hourly.
+  //
+  // So the cause travels WITH the alert. The next fire diagnoses itself.
+  const details: Array<[string, unknown]> = [
+    ["Cache read", describeTokenCacheFailure(cached.cause)],
+    ["Self-heal", describeSelfHeal(healed)],
+  ];
+  if (retryCause) {
+    // Repeating an identical sentence makes the reader hunt for a difference
+    // that isn't there. Say "unchanged" and only spell it out when the second
+    // read actually found something new.
+    details.push([
+      "After the refresh",
+      retryCause.kind === cached.cause.kind
+        ? "unchanged — the refresh did not alter the outcome"
+        : describeTokenCacheFailure(retryCause),
+    ]);
+  }
+  // `expired` is the ONLY cause that means what this alert's name implies.
+  details.push([
+    "Verdict",
+    cached.cause.kind === "expired"
+      ? "The token really did lapse. The refresh cron is the thing to look at."
+      : "The token was probably FINE — this is a failure to read it, not an expiry. Check /api/health/beapi before touching OAuth.",
+  ]);
+
   const msg =
-    "Could not obtain a BEAPI token. The cached token was expired, missing, " +
-    "or unreadable (Supabase error), and the self-heal refresh was throttled " +
-    "or failed. Check /api/health/beapi for the token's real expiry before " +
-    "assuming it lapsed — and the refresh-tokens cron's recent runs.";
+    `Could not obtain a BEAPI token. ` +
+    details.map(([k, v]) => `${k}: ${String(v)}`).join(" | ");
+
   await sendAlert(
     "CRITICAL: BEAPI token unavailable",
-    msg,
+    [
+      `<p>A request could not get a BEAPI token. Guests are served the listings
+        mirror while this persists, so the catalog goes stale rather than
+        breaking — expect <code>catalog-served-from-mirror</code> in the same
+        second.</p>`,
+      renderAlertDetails(details),
+      renderAlertLinks([
+        {
+          label: "BEAPI health (real expiry)",
+          url: "https://www.booktraverse.com/api/health/beapi",
+        },
+      ]),
+      `<p>Never mint a token by hand without reading the above first: Guesty
+        allows 5 per 24h and the cron deliberately holds one back for manual
+        recovery.</p>
+       <p><em>This alert has a 1-hour cooldown, so a single email can stand for
+        many occurrences — its arrival rate is not the failure rate.</em></p>`,
+    ].join(""),
     "beapi-token-expired"
   );
   throw new Error(msg);
@@ -276,7 +398,39 @@ export async function getBEAPIToken(): Promise<string> {
 
 // ─── Authenticated BEAPI Fetch ────────────────────────────────────
 
+/**
+ * Ceiling on simultaneous BEAPI calls from this instance.
+ *
+ * Guesty rate-limits per ACCOUNT at roughly 120/min, and that quota is shared
+ * with the CRM, PriceLabs and Conduit. Backoff alone did not protect it: a
+ * sweep of the property catalogue on 2026-10-25 fired 183 listing-detail
+ * requests in 3 seconds, and the retries then stacked on top of the breach.
+ * Every 429 burst in the preceding week had that shape.
+ *
+ * 8 is deliberately well under the ceiling, since this is a per-instance cap
+ * and several lambdas can be warm at once. It is a queue, not a reject: page
+ * renders wait rather than fail.
+ */
+export const BEAPI_MAX_CONCURRENCY = 8;
+const beapiGate = new ConcurrencyGate(BEAPI_MAX_CONCURRENCY);
+
 async function beapiFetch(
+  path: string,
+  options?: RequestInit & { next?: { revalidate?: number } },
+  retries = 4
+) {
+  return beapiGate.run(() => beapiFetchUnthrottled(path, options, retries));
+}
+
+/**
+ * The real request loop. Call beapiFetch, not this — going around the gate is
+ * what caused the stampede this module exists to prevent.
+ *
+ * The gate wraps the whole retry loop on purpose. Holding the slot across
+ * backoff sleeps means a throttled caller stops competing for Guesty while it
+ * waits, instead of releasing and immediately re-entering the queue.
+ */
+async function beapiFetchUnthrottled(
   path: string,
   options?: RequestInit & { next?: { revalidate?: number } },
   retries = 4
@@ -325,7 +479,7 @@ async function beapiFetch(
 
     // 401 Unauthorized: token may be revoked or temporarily invalid.
     // Clear in-memory cache only — NEVER write to guesty_tokens.
-    // The refresh-tokens edge function (pg_cron) owns all token lifecycle.
+    // The /api/cron/refresh-tokens Vercel cron owns all token lifecycle.
     if (response.status === 401) {
       console.error(
         `BEAPI auth failure (401) on ${path} — attempt ${attempt}/${retries}`
@@ -335,7 +489,7 @@ async function beapiFetch(
 
       await sendAlert(
         "BEAPI Auth Failure — Retries Exhausted",
-        `Guesty BEAPI returned 401 on <code>${path}</code> after ${retries} attempts. Memory cache cleared — refresh-tokens pg_cron will handle token renewal.`,
+        `Guesty BEAPI returned 401 on <code>${path}</code> after ${retries} attempts. Memory cache cleared — the /api/cron/refresh-tokens Vercel cron (every 2h) will handle renewal.`,
         "beapi-auth-exhausted"
       );
     }
@@ -347,51 +501,35 @@ async function beapiFetch(
         await new Promise((r) => setTimeout(r, backoff));
         continue;
       }
-      // Retries exhausted on a 429 — Guesty is actively rejecting us. Use the
-      // shared limiter purely as a cross-instance counter: the 6th terminal
-      // 429 inside 5 min flips allowed→false, which is our trigger. sendAlert
-      // dedups to 1/hour.
+      // Retries exhausted on a 429 — Guesty is actively rejecting us.
+      //
+      // This used to EMAIL on the 6th terminal 429 in 5 minutes, deduped to
+      // 1/hour. That produced 1–6 interruptions a day (the trigger itself
+      // fired 168 times on 2026-10-15) for a condition the email's own text
+      // told the reader not to act on. A rate-limit trend is not an
+      // incident: nothing here is fixed within the hour, and the fix when
+      // there is one is a pacing change, not a page.
+      //
+      // So: record every terminal 429 and say nothing. The daily digest at
+      // /api/cron/guesty-health-digest reports the shape of it once a day,
+      // and escalates to a real alert only when the volume is genuinely
+      // abnormal.
       //
       // Awaited (not fire-and-forget) because this is an error path that's
       // about to throw — a detached promise can be dropped when the lambda
       // freezes after the response. The extra latency only hits failing
       // requests, which are already rare.
       try {
+        // The shared limiter still runs, purely as a cross-instance counter,
+        // so `alerted` keeps marking which events were part of a burst. The
+        // digest reads that column to tell a spike from a trickle.
         const burst = await rateLimit("guesty-429-burst", {
           limit: 5,
           windowMs: 5 * 60 * 1000,
         });
-        const alerted = !burst.allowed;
-
-        // Record EVERY terminal 429, alerted or not. The cooldown row keeps
-        // only the most recent send, which left no history to correlate
-        // against — see recordRateLimitEvent.
-        await recordRateLimitEvent(path, alerted);
-
-        if (alerted) {
-          const context = await summarizeRecentRateLimitEvents();
-          await sendAlert(
-            "Guesty API rate-limiting spike",
-            `Guesty returned <strong>6+ rate-limit (429) errors within 5 minutes</strong> ` +
-              `on BEAPI calls (most recent path: <code>${path}</code>).<br/><br/>` +
-              context +
-              `<strong>⚠️ Do not assume this site caused it.</strong> Guesty rate-limits per ` +
-              `<strong>account</strong>, and that quota is shared with every other integration — ` +
-              `the CRM's hourly reservations/guests/messages sweep, PriceLabs, Conduit. On ` +
-              `2026-10-14 this alert fired while the site had served ~42 requests that hour, ` +
-              `against a ceiling of 120 per <em>minute</em>. It was not us.<br/><br/>` +
-              `<strong>Check, in this order:</strong><br/>` +
-              `1. Does the timing cluster near :00 or :15? Those are CRM cron starts — ` +
-              `compare the minute-of-hour column above.<br/>` +
-              `2. <a href="https://www.booktraverse.com/api/health/beapi">/api/health/beapi</a> token status.<br/>` +
-              `3. Only if this site's own traffic is genuinely elevated: Vercel Firewall ` +
-              `(traffic by IP / user-agent), and Attack Challenge Mode if it's an active flood.<br/><br/>` +
-              `Full history: <code>select * from guesty_rate_limit_events order by occurred_at desc</code>`,
-            "guesty-429-burst"
-          );
-        }
+        await recordRateLimitEvent(path, !burst.allowed);
       } catch {
-        // best-effort — never let alerting break the BEAPI error path
+        // best-effort — never let bookkeeping break the BEAPI error path
       }
     }
 
@@ -493,8 +631,15 @@ async function searchListingsWithCacheMode(
 
 // ─── 2. PROPERTY INFO ──────────────────────────────────────────────
 
-export async function getListingDetail(listingId: string) {
-  const fields = [
+/**
+ * The exact field set the listing page needs from BEAPI.
+ *
+ * Exported because `listing_details` stores it alongside each cached row:
+ * add a field here and every cached payload is silently missing it, which
+ * would render as a blank section rather than an error. The cache compares
+ * this string and refetches when it no longer matches.
+ */
+export const LISTING_DETAIL_FIELDS = [
     "prices",
     "pictures",
     "title",
@@ -518,7 +663,10 @@ export async function getListingDetail(listingId: string) {
     "bedArrangements",
     "unitTypeHouseRules",
     "autoPayments",
-  ].join(" ");
+].join(" ");
+
+export async function getListingDetail(listingId: string) {
+  const fields = LISTING_DETAIL_FIELDS;
 
   return beapiFetch(
     `/api/listings/${listingId}?fields=${encodeURIComponent(fields)}`,

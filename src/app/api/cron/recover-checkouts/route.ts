@@ -9,6 +9,10 @@ import {
 } from "@/lib/pending-checkouts";
 import { getStripeServer } from "@/lib/stripe";
 import {
+  chargeBillingName,
+  splitWalletName,
+} from "@/lib/express-billing";
+import {
   buildStripeDashboardPaymentUrl,
   formatDurationMs,
   renderAlertDetails,
@@ -33,10 +37,15 @@ export async function GET() {
         status?: string;
         amount?: number;
         metadata?: Record<string, string>;
+        latest_charge?: unknown;
       } | null = null;
       try {
+        // latest_charge is expanded for its billing_details — see the name
+        // backfill below. One expand costs nothing extra; a second retrieve
+        // per stuck row would.
         paymentIntent = await stripe.paymentIntents.retrieve(
-          row.paymentIntentId
+          row.paymentIntentId,
+          { expand: ["latest_charge"] }
         );
         if (paymentIntent.status !== "succeeded") {
           skipped++;
@@ -47,6 +56,36 @@ export async function GET() {
         const guest = { ...row.guest };
         if (!guest.email && paymentIntent.metadata?.guestEmail) {
           guest.email = paymentIntent.metadata.guestEmail;
+        }
+
+        // ...and to the charge's billing details for a missing NAME.
+        //
+        // Guesty rejects a reservation whose guest.firstName or lastName is
+        // empty, so a row missing them can never finalise: the cron retries
+        // every 10 minutes forever, minting a fresh Guesty quote each time
+        // and failing identically. pi_3UZX3uFlSHWQrCQq1wzui10S did that for
+        // 46 hours with $477.44 taken and the guest holding nothing.
+        //
+        // The payment-intent route only ever stamps guestEmail and guestPhone
+        // into metadata — it is never sent a name — so the charge is the only
+        // place a name can come from on this path.
+        //
+        // This does not help if Stripe has no name either; the alert below
+        // still fires and it still needs doing by hand. It turns the cases
+        // where Stripe DOES hold the name from a manual job into a no-op.
+        if (!guest.firstName?.trim() || !guest.lastName?.trim()) {
+          const billingName = chargeBillingName(paymentIntent.latest_charge);
+          if (billingName) {
+            const parsed = splitWalletName(billingName);
+            if (parsed.firstName && parsed.lastName) {
+              guest.firstName = parsed.firstName;
+              guest.lastName = parsed.lastName;
+              console.log(
+                "[Cron] recover-checkouts backfilled guest name from Stripe",
+                { paymentIntentId: row.paymentIntentId }
+              );
+            }
+          }
         }
 
         await finalizeReservation({
@@ -128,7 +167,9 @@ export async function GET() {
                 ["Previous error", row.lastError || ""],
                 [
                   "Next action",
-                  "Recovery cron will keep retrying. If this alert repeats, create the reservation manually and verify Stripe was recorded in Guesty.",
+                  row.status === "paid_pending_reservation"
+                    ? "Money is captured and the guest has no booking. Recovery retries every 10 minutes with no age limit. If this alert repeats, create the reservation in Guesty by hand, verify the Stripe payment was recorded against it, then set reservation_id on the pending_checkouts row — stamping the row is what stops both the retries and this alert."
+                    : "Recovery retries every 10 minutes until the row is 2 days old. Nothing was captured, so no guest action is outstanding.",
                 ],
               ]),
               renderAlertLinks([

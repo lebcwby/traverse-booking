@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { addCouponToQuote, getQuote } from "@/lib/guesty-beapi";
 import { buildNormalizedQuoteResponse } from "@/lib/quote-response";
 import { getListing } from "@/lib/supabase";
+import { readCachedListingDetail } from "@/lib/listing-detail-cache";
 
 export async function POST(
   request: NextRequest,
@@ -21,8 +22,16 @@ export async function POST(
 
     await addCouponToQuote(quoteId, coupon);
     const quote = await getQuote(quoteId);
-    const listing = await getListing(quote.unitTypeId).catch(() => null);
-    return NextResponse.json(buildNormalizedQuoteResponse(quote, listing));
+    // Applying a coupon re-renders the whole breakdown, so the rates have to
+    // survive this path too — otherwise entering a discount code would make
+    // the percentages silently vanish.
+    const [listing, detail] = await Promise.all([
+      getListing(quote.unitTypeId).catch(() => null),
+      readCachedListingDetail(String(quote.unitTypeId || "")),
+    ]);
+    return NextResponse.json(
+      buildNormalizedQuoteResponse(quote, listing, detail?.taxes)
+    );
   } catch (error) {
     const raw = error instanceof Error ? error.message : "";
     console.error("[Quote Coupon] Error:", raw || error);

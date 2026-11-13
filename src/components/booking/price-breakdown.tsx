@@ -13,12 +13,14 @@ interface PriceBreakdownProps {
   nights: number;
   accommodation: number;
   accommodationAdjusted: number;
-  cleaning: number;
+  // `cleaning` was removed with the tax-rate percentages — it existed only to
+  // build the taxable-base guess described below. Re-adding it to recompute a
+  // rate would reintroduce the bug.
   taxes: number;
   /** Per-tax line items (e.g. State Tax, Transient Occupancy Tax,
    *  County Tax). When provided, the Taxes row becomes an expandable
    *  dropdown that reveals the individual breakdown. */
-  taxBreakdown?: Array<{ name: string; amount: number }>;
+  taxBreakdown?: Array<{ name: string; amount: number; rate?: number }>;
   total: number;
   promotion?: { name: string; type: string };
   upsells?: Array<{ title: string; amount: number }>;
@@ -28,7 +30,6 @@ export function PriceBreakdown({
   nights,
   accommodation,
   accommodationAdjusted,
-  cleaning,
   taxes,
   taxBreakdown,
   total,
@@ -55,17 +56,33 @@ export function PriceBreakdown({
   // the total is made of, subtotal + taxes === total by construction.
   const subtotal = grandTotal - taxes;
 
-  // Percentages stay keyed to what tax is actually levied on (accommodation
-  // after discount, plus cleaning) rather than the displayed subtotal, so the
-  // rate shown is the real rate. The two are equal unless upsells are present,
-  // since upsells are added after tax.
-  const taxBase = accommodationAdjusted + cleaning;
-  const formatTaxRate = (amount: number): string | null => {
-    if (taxBase <= 0) return null;
-    const pct = (amount / taxBase) * 100;
-    if (!Number.isFinite(pct) || pct <= 0) return null;
-    // One decimal, but drop trailing ".0" so 6.0% reads as 6%.
-    return `${pct.toFixed(1).replace(/\.0$/, "")}%`;
+  // The percentage beside each tax is READ FROM GUESTY, never calculated.
+  // `rate` arrives on the tax line from the listing's own tax configuration
+  // (see QuoteTaxLineItem). Do not compute one here, however tempting.
+  //
+  // This component used to divide the tax amount by `accommodationAdjusted +
+  // cleaning` and call the result the rate. That guess is wrong in Crested
+  // Butte, where Guesty's base also includes the service fee, so every CB
+  // listing advertised a Colorado state sales tax of 3.1% against an actual
+  // 2.9% — on a receipt, to guests, for months. Our accountant caught it.
+  //
+  // Adding those fees to the denominator does not fix it either. Across 228
+  // real bookings the state line lands on exactly 2.9% only with a DIFFERENT
+  // base per jurisdiction, because Guesty is configured that way per listing:
+  //
+  //   Crested Butte  appliedOnFees: [AF, CF, SERVICE, DAMAGE_WAIVER]
+  //   Leadville      appliedOnFees: [AF, CF]
+  //
+  // So no formula can be right everywhere. The listing config states both the
+  // rate and its base; we show the rate it states, and show nothing when the
+  // config is missing or ambiguous.
+  const formatTaxRate = (rate: number | undefined): string | null => {
+    if (typeof rate !== "number" || !Number.isFinite(rate) || rate <= 0) {
+      return null;
+    }
+    // Two decimals max, trailing zeros dropped: 9.9 → "9.9%", 6 → "6%",
+    // 5.42 → "5.42%".
+    return `${Number(rate.toFixed(2))}%`;
   };
 
   return (
@@ -114,7 +131,7 @@ export function PriceBreakdown({
               {taxesExpanded && (
                 <div className="pl-3 space-y-1 text-xs">
                   {taxBreakdown!.map((tax) => {
-                    const rate = formatTaxRate(tax.amount);
+                    const rate = formatTaxRate(tax.rate);
                     return (
                       <div
                         key={tax.name}

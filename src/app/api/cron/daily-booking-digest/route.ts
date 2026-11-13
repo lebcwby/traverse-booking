@@ -1,10 +1,15 @@
 /**
- * Daily Slack digest of yesterday's website bookings.
+ * Daily Slack digest of yesterday's website bookings and guest reviews.
  *
  * Shows, per booking: listing, dates, guests, value, guest, the channel that
  * converted them, the channel that FIRST found them when it differs, the page
  * they entered on, the pages they walked through to get to checkout, and how
  * long from first touch to booked.
+ *
+ * Then a reviews summary — count, average and anything scoring ≤ 3 overall or
+ * in any category. ⚠️ That half is **portfolio-wide, every channel**, while
+ * the bookings half is website-only; the two numbers are not comparable. See
+ * src/lib/review-digest.ts.
  *
  * ⚠️ The click path is session-scoped, client-written and consent-gated, so
  * some bookings legitimately have none — every booking before 2026-10-19
@@ -29,6 +34,8 @@ import {
   fetchCompletedCheckouts,
   renderSlackBlocks,
 } from "@/lib/booking-digest";
+import { buildReviewSummary, fetchReviewsForDay } from "@/lib/review-digest";
+import { fetchWaiverSummary } from "@/lib/waiver-digest";
 import { REPORT_TIMEZONE, yesterdayIn, zonedDayBounds } from "@/lib/report-day";
 
 export const dynamic = "force-dynamic";
@@ -49,9 +56,10 @@ export async function GET(request: Request) {
       ? dateParam
       : yesterdayIn();
 
+  const { start, end } = zonedDayBounds(day);
+
   let digest;
   try {
-    const { start, end } = zonedDayBounds(day);
     const rows = await fetchCompletedCheckouts(start, end);
     digest = buildDigest(rows, day);
   } catch (err) {
@@ -62,11 +70,38 @@ export async function GET(request: Request) {
     );
   }
 
-  const payload = renderSlackBlocks(digest);
+  // Reviews are a second, independent read. A failure here degrades the
+  // message to its bookings half rather than losing the whole post — the
+  // bookings data is already in hand at this point and is the part with a
+  // same-day decision attached to it.
+  let reviews = null;
+  try {
+    reviews = buildReviewSummary(await fetchReviewsForDay(start, end), day);
+  } catch (err) {
+    console.error("[daily-booking-digest] review query failed:", err);
+  }
+
+  // Waivers are a third independent read, and the only one that leaves our
+  // infrastructure, so it gets the same treatment: a Stripe outage costs the
+  // digest one line, not the post.
+  let waivers = null;
+  try {
+    waivers = await fetchWaiverSummary(day, start, end);
+  } catch (err) {
+    console.error("[daily-booking-digest] waiver query failed:", err);
+  }
+
+  const payload = renderSlackBlocks(digest, reviews, waivers);
   const webhook = (process.env.SLACK_WEBHOOK_URL || "").trim();
 
   if (dryRun) {
-    return NextResponse.json({ mode: "dryRun", digest, payload });
+    return NextResponse.json({
+      mode: "dryRun",
+      digest,
+      reviews,
+      waivers,
+      payload,
+    });
   }
   if (!webhook) {
     return NextResponse.json({
@@ -107,5 +142,12 @@ export async function GET(request: Request) {
     timezone: REPORT_TIMEZONE,
     bookings: digest.bookings.length,
     totalValue: digest.totalValue,
+    // null distinguishes "the review read failed" from "nobody reviewed".
+    reviews: reviews === null ? null : reviews.total,
+    reviewFlags: reviews === null ? null : reviews.flags.length,
+    waivers: waivers === null ? null : waivers.count,
+    waiverNetCents: waivers === null ? null : waivers.netCents,
+    // Says whether the figure matches SuiteOp's dashboard or fell back.
+    waiverBasis: waivers === null ? null : waivers.basis,
   });
 }
