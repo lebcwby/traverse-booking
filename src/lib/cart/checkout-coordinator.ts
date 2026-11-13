@@ -24,9 +24,7 @@ import {
   getQuote,
   createQuote,
 } from "@/lib/guesty-beapi";
-import {
-  recordPaymentWithIndexingRetry,
-} from "@/lib/checkout-finalizer";
+import { recordPaymentWithIndexingRetry } from "@/lib/checkout-finalizer";
 import {
   buildStripeDashboardPaymentUrl,
   renderAlertDetails,
@@ -34,6 +32,8 @@ import {
   sendAlert,
 } from "@/lib/alerts";
 import { getPool, withAdvisoryLock } from "@/lib/db";
+import { paymentTargetColumnsExist } from "@/lib/db-features";
+import { dollarsToCents } from "@/lib/money";
 import {
   getPendingCartCheckoutByPaymentIntent,
   setCartStatus,
@@ -186,8 +186,9 @@ async function finalizeCartCheckoutLocked(
     }
   }
 
-  const reservedCount = lineResults.filter((r) => r.status === "reserved")
-    .length;
+  const reservedCount = lineResults.filter(
+    (r) => r.status === "reserved"
+  ).length;
   const failedCount = lineResults.filter((r) => r.status === "failed").length;
 
   // 5. All lines succeeded.
@@ -216,10 +217,7 @@ async function finalizeCartCheckoutLocked(
     totalCharged,
     reservedCount,
   });
-  if (
-    refundResult.status === "partial" ||
-    refundResult.status === "refunded"
-  ) {
+  if (refundResult.status === "partial" || refundResult.status === "refunded") {
     sendCartConfirmation(record, refundResult).catch((err) =>
       console.error("[cart] Confirmation email failed:", err)
     );
@@ -259,8 +257,7 @@ async function fireCartConversionAnalytics(
     }
   }
   const gaSessionId = parseGA4SessionId(cookies?.gaSession);
-  const gaClientId =
-    cookies?.ga?.split(".").slice(-2).join(".") || undefined;
+  const gaClientId = cookies?.ga?.split(".").slice(-2).join(".") || undefined;
 
   const reserved = lineResults.filter((r) => r.status === "reserved");
   for (const lineResult of reserved) {
@@ -370,7 +367,10 @@ async function sendCartConfirmation(
  * the combined PI. Throws on any unrecoverable error. */
 async function reserveCartLine(args: {
   line: CartLine;
-  paymentIntent: { id: string; payment_method: string | { id?: string } | null };
+  paymentIntent: {
+    id: string;
+    payment_method: string | { id?: string } | null;
+  };
   guest: PendingCartCheckoutRecord["guest"];
 }): Promise<CartReservationLineResult> {
   const { line, paymentIntent, guest } = args;
@@ -486,45 +486,96 @@ async function reserveCartLine(args: {
   // has no local row is invisible to the recover-checkouts / record-payments
   // crons. Best-effort insert; DB failures are logged but don't fail the line.
   let payeeRecordedAt: number | null = null;
+  const schemaHasPaymentColumns = await paymentTargetColumnsExist(pool);
+  const linePayoutCents = dollarsToCents(line.hostPayout);
+  const nowEpoch = Date.now();
   try {
-    await pool.query(
-      `INSERT INTO reservations (
-         guesty_id, confirmation_code, listing_id, guest_id, status, source,
-         check_in, check_out, guests_count, guest, money, last_synced_at,
-         stripe_payment_intent_id, user_id, payment_recorded_at
-       ) VALUES ($1, $2, $3, $4, $5, 'BE-API', $6, $7, $8, $9, $10, $11, $12, $13, $14)
-       ON CONFLICT (guesty_id) DO UPDATE SET
-         status = EXCLUDED.status,
-         confirmation_code = EXCLUDED.confirmation_code,
-         guest = EXCLUDED.guest,
-         money = COALESCE(reservations.money, EXCLUDED.money),
-         stripe_payment_intent_id = COALESCE(reservations.stripe_payment_intent_id, EXCLUDED.stripe_payment_intent_id),
-         payment_recorded_at = COALESCE(reservations.payment_recorded_at, EXCLUDED.payment_recorded_at),
-         last_synced_at = $11`,
-      [
-        reservationId,
-        confirmationCode || null,
-        line.listingId,
-        ((reservation.guestId || reservation.bookerId) as string) || null,
-        (reservation.status as string) || "confirmed",
-        line.checkIn,
-        line.checkOut,
-        line.guests,
-        JSON.stringify({
-          email: guest.email || null,
-          firstName: guest.firstName || null,
-          lastName: guest.lastName || null,
-          fullName:
-            [guest.firstName, guest.lastName].filter(Boolean).join(" ") || null,
-          phone: guest.phone || null,
-        }),
-        JSON.stringify({ total_paid: line.hostPayout, currency: "USD" }),
-        Date.now(),
-        paymentIntent.id,
-        null,
-        null,
-      ]
-    );
+    if (schemaHasPaymentColumns) {
+      await pool.query(
+        `INSERT INTO reservations (
+           guesty_id, confirmation_code, listing_id, guest_id, status, source,
+           check_in, check_out, guests_count, guest, money, last_synced_at,
+           stripe_payment_intent_id, user_id, payment_recorded_at,
+           payment_target_cents, payment_recorded_cents, payment_target_cents_set_at
+         ) VALUES ($1, $2, $3, $4, $5, 'BE-API', $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 0, $16)
+         ON CONFLICT (guesty_id) DO UPDATE SET
+           status = EXCLUDED.status,
+           confirmation_code = EXCLUDED.confirmation_code,
+           guest = EXCLUDED.guest,
+           money = COALESCE(reservations.money, EXCLUDED.money),
+           stripe_payment_intent_id = COALESCE(reservations.stripe_payment_intent_id, EXCLUDED.stripe_payment_intent_id),
+           payment_recorded_at = COALESCE(reservations.payment_recorded_at, EXCLUDED.payment_recorded_at),
+           payment_target_cents = COALESCE(reservations.payment_target_cents, EXCLUDED.payment_target_cents),
+           payment_target_cents_set_at = COALESCE(reservations.payment_target_cents_set_at, EXCLUDED.payment_target_cents_set_at),
+           last_synced_at = $11`,
+        [
+          reservationId,
+          confirmationCode || null,
+          line.listingId,
+          ((reservation.guestId || reservation.bookerId) as string) || null,
+          (reservation.status as string) || "confirmed",
+          line.checkIn,
+          line.checkOut,
+          line.guests,
+          JSON.stringify({
+            email: guest.email || null,
+            firstName: guest.firstName || null,
+            lastName: guest.lastName || null,
+            fullName:
+              [guest.firstName, guest.lastName].filter(Boolean).join(" ") ||
+              null,
+            phone: guest.phone || null,
+          }),
+          JSON.stringify({ total_paid: line.hostPayout, currency: "USD" }),
+          nowEpoch,
+          paymentIntent.id,
+          null,
+          null,
+          linePayoutCents,
+          nowEpoch,
+        ]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO reservations (
+           guesty_id, confirmation_code, listing_id, guest_id, status, source,
+           check_in, check_out, guests_count, guest, money, last_synced_at,
+           stripe_payment_intent_id, user_id, payment_recorded_at
+         ) VALUES ($1, $2, $3, $4, $5, 'BE-API', $6, $7, $8, $9, $10, $11, $12, $13, $14)
+         ON CONFLICT (guesty_id) DO UPDATE SET
+           status = EXCLUDED.status,
+           confirmation_code = EXCLUDED.confirmation_code,
+           guest = EXCLUDED.guest,
+           money = COALESCE(reservations.money, EXCLUDED.money),
+           stripe_payment_intent_id = COALESCE(reservations.stripe_payment_intent_id, EXCLUDED.stripe_payment_intent_id),
+           payment_recorded_at = COALESCE(reservations.payment_recorded_at, EXCLUDED.payment_recorded_at),
+           last_synced_at = $11`,
+        [
+          reservationId,
+          confirmationCode || null,
+          line.listingId,
+          ((reservation.guestId || reservation.bookerId) as string) || null,
+          (reservation.status as string) || "confirmed",
+          line.checkIn,
+          line.checkOut,
+          line.guests,
+          JSON.stringify({
+            email: guest.email || null,
+            firstName: guest.firstName || null,
+            lastName: guest.lastName || null,
+            fullName:
+              [guest.firstName, guest.lastName].filter(Boolean).join(" ") ||
+              null,
+            phone: guest.phone || null,
+          }),
+          JSON.stringify({ total_paid: line.hostPayout, currency: "USD" }),
+          nowEpoch,
+          paymentIntent.id,
+          null,
+          null,
+        ]
+      );
+    }
   } catch (dbErr) {
     console.error(
       `[cart] Reservations table write failed for ${reservationId}:`,
@@ -539,18 +590,40 @@ async function reserveCartLine(args: {
   // payment_recorded_at IS NULL and retries indefinitely. This was the bug
   // that caused the first cart test to refund two real reservations.
   try {
-    await recordPaymentWithIndexingRetry(
+    const result = await recordPaymentWithIndexingRetry(
       reservationId,
       line.hostPayout,
       paymentIntent.id
     );
-    payeeRecordedAt = Date.now();
-    await pool.query(
-      `UPDATE reservations
-          SET payment_recorded_at = COALESCE(payment_recorded_at, $1)
-        WHERE guesty_id = $2`,
-      [payeeRecordedAt, reservationId]
-    );
+    if (result.outcome === "full") {
+      payeeRecordedAt = Date.now();
+      await pool.query(
+        `UPDATE reservations
+            SET payment_recorded_at = COALESCE(payment_recorded_at, $1)
+          WHERE guesty_id = $2`,
+        [payeeRecordedAt, reservationId]
+      );
+    } else if (result.outcome === "short") {
+      const stripeUrl = buildStripeDashboardPaymentUrl(paymentIntent.id);
+      const recorded = result.recordedCents / 100;
+      const shortfall = result.shortfallCents / 100;
+      await sendAlert(
+        `Guesty ledger short — partial payment recorded ($${recorded.toFixed(2)} of $${line.hostPayout.toFixed(2)}, $${shortfall.toFixed(2)} pending)`,
+        [
+          "<p>Guesty rejected the full line-charged amount because its outstanding balance was lower. The record-payments cron will top up the remainder as Guesty's balance rises.</p>",
+          renderAlertDetails([
+            ["Reservation", reservationId],
+            ["Cart line", line.lineId],
+            ["PaymentIntent", paymentIntent.id],
+            ["Line charged", `$${line.hostPayout.toFixed(2)}`],
+            ["Recorded now", `$${recorded.toFixed(2)}`],
+            ["Pending top-up", `$${shortfall.toFixed(2)}`],
+          ]),
+          renderAlertLinks([{ label: "Stripe payment", url: stripeUrl }]),
+        ].join(""),
+        `amount-short-${reservationId}`
+      );
+    }
   } catch (paymentErr) {
     console.warn(
       `[cart] recordPayment failed for ${reservationId} (will retry via cron):`,

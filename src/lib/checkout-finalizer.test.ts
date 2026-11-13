@@ -5,6 +5,7 @@ const {
   mockStripePiUpdate,
   mockStripeCustomerUpdate,
   mockRecordPayment,
+  mockRecordPaymentCapped,
   mockAddInvoiceItem,
   mockCreateReservationInstant,
   mockGetQuote,
@@ -21,11 +22,13 @@ const {
   mockGetListing,
   mockIsAlreadySettledPaymentError,
   mockResolveAmountVsBalance,
+  mockPaymentTargetColumnsExist,
 } = vi.hoisted(() => ({
   mockStripeRetrieve: vi.fn(),
   mockStripePiUpdate: vi.fn(),
   mockStripeCustomerUpdate: vi.fn(),
   mockRecordPayment: vi.fn(),
+  mockRecordPaymentCapped: vi.fn(),
   mockAddInvoiceItem: vi.fn(),
   mockCreateReservationInstant: vi.fn(),
   mockGetQuote: vi.fn(),
@@ -42,6 +45,7 @@ const {
   mockGetListing: vi.fn(),
   mockIsAlreadySettledPaymentError: vi.fn(),
   mockResolveAmountVsBalance: vi.fn(),
+  mockPaymentTargetColumnsExist: vi.fn(),
 }));
 
 vi.mock("@/lib/stripe", () => ({
@@ -58,9 +62,14 @@ vi.mock("@/lib/stripe", () => ({
 
 vi.mock("@/lib/guesty-openapi", () => ({
   recordPayment: mockRecordPayment,
+  recordPaymentCapped: mockRecordPaymentCapped,
   addInvoiceItem: mockAddInvoiceItem,
   isAlreadySettledPaymentError: mockIsAlreadySettledPaymentError,
   resolveAmountVsBalance: mockResolveAmountVsBalance,
+}));
+
+vi.mock("@/lib/db-features", () => ({
+  paymentTargetColumnsExist: mockPaymentTargetColumnsExist,
 }));
 
 vi.mock("@/lib/guesty-beapi", () => ({
@@ -182,6 +191,13 @@ describe("finalizeReservation", () => {
       address: { city: "Portland" },
     });
     mockIsAlreadySettledPaymentError.mockReturnValue(false);
+    // Default to the pre-migration schema so the existing happy-path tests
+    // exercise the legacy code path they were written for.
+    mockPaymentTargetColumnsExist.mockResolvedValue(false);
+    mockRecordPaymentCapped.mockResolvedValue({
+      outcome: "full",
+      recordedCents: 5793,
+    });
   });
 
   afterEach(() => {
@@ -495,26 +511,33 @@ describe("finalizeReservation", () => {
   });
 });
 
-describe("recordPaymentWithIndexingRetry", () => {
+describe("recordPaymentWithIndexingRetry — legacy path (pre-migration)", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mockRecordPayment.mockReset();
     mockIsAlreadySettledPaymentError.mockReset();
     mockIsAlreadySettledPaymentError.mockReturnValue(false);
+    mockPaymentTargetColumnsExist.mockResolvedValue(false);
+    mockSendAlert.mockReset();
+    mockResolveAmountVsBalance.mockReset();
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it("returns immediately on first-attempt success", async () => {
+  it("returns outcome:full and uses legacy recordPayment on first-attempt success", async () => {
     mockRecordPayment.mockResolvedValueOnce(undefined);
 
     await expect(
       recordPaymentWithIndexingRetry("res_1", 100, "pi_1")
-    ).resolves.toBeUndefined();
+    ).resolves.toEqual({ outcome: "full" });
 
-    expect(mockRecordPayment).toHaveBeenCalledTimes(1);
+    expect(mockRecordPayment).toHaveBeenCalledWith("res_1", 100, "pi_1", {
+      retries: 1,
+      timeoutMs: 5000,
+    });
+    expect(mockRecordPaymentCapped).not.toHaveBeenCalled();
   });
 
   it("retries through the indexing race and eventually succeeds", async () => {
@@ -526,21 +549,17 @@ describe("recordPaymentWithIndexingRetry", () => {
       .mockResolvedValueOnce(undefined);
 
     const promise = recordPaymentWithIndexingRetry("res_2", 100, "pi_2");
-    // Attempts complete instantly (mocked); only the inter-attempt delays consume fake time.
-    // Backoffs after attempts 1, 2, 3 = 1000 + 2000 + 3000 = 6000ms.
     await vi.advanceTimersByTimeAsync(6000);
-    await expect(promise).resolves.toBeUndefined();
+    await expect(promise).resolves.toEqual({ outcome: "full" });
 
     expect(mockRecordPayment).toHaveBeenCalledTimes(4);
   });
 
-  it("returns success when isAlreadySettledPaymentError matches and balance is 0 (truly settled)", async () => {
+  it("returns outcome:full when balance is 0 (truly settled) via resolveAmountVsBalance", async () => {
     mockRecordPayment.mockRejectedValueOnce(
       new Error("Payment amount can't be greater than balance due")
     );
     mockIsAlreadySettledPaymentError.mockReturnValueOnce(true);
-    // resolveAmountVsBalance returns { settled: true, mismatch: false } when
-    // Guesty's balance is 0 — meaning the payment was previously recorded.
     mockResolveAmountVsBalance.mockResolvedValueOnce({
       settled: true,
       mismatch: false,
@@ -548,7 +567,7 @@ describe("recordPaymentWithIndexingRetry", () => {
 
     await expect(
       recordPaymentWithIndexingRetry("res_3", 100, "pi_3")
-    ).resolves.toBeUndefined();
+    ).resolves.toEqual({ outcome: "full" });
 
     expect(mockRecordPayment).toHaveBeenCalledTimes(1);
     expect(mockResolveAmountVsBalance).toHaveBeenCalledWith(
@@ -559,11 +578,7 @@ describe("recordPaymentWithIndexingRetry", () => {
     expect(mockSendAlert).not.toHaveBeenCalled();
   });
 
-  it("returns success AND sends a mismatch alert when balance != captured amount", async () => {
-    // Simulates the original $3.71 bug: Stripe captured $536.83 but Guesty
-    // balance was $533.12. resolveAmountVsBalance retries with the actual
-    // balance and reports the delta — recordPaymentWithIndexingRetry should
-    // succeed but emit a sendAlert for ops to reconcile.
+  it("returns outcome:full AND sends a mismatch alert when the legacy path records Guesty's balance", async () => {
     mockRecordPayment.mockRejectedValueOnce(
       new Error("Payment amount can't be greater than balance due")
     );
@@ -578,7 +593,7 @@ describe("recordPaymentWithIndexingRetry", () => {
 
     await expect(
       recordPaymentWithIndexingRetry("res_mismatch", 536.83, "pi_mismatch")
-    ).resolves.toBeUndefined();
+    ).resolves.toEqual({ outcome: "full" });
 
     expect(mockSendAlert).toHaveBeenCalledTimes(1);
     expect(mockSendAlert.mock.calls[0]?.[0]).toContain(
@@ -590,9 +605,6 @@ describe("recordPaymentWithIndexingRetry", () => {
   });
 
   it("falls through to backoff retry if resolveAmountVsBalance itself fails", async () => {
-    // If we can't even fetch the reservation to check the balance, treat
-    // the original error as a normal retryable failure rather than silent
-    // success.
     for (let i = 0; i < 6; i++) {
       mockRecordPayment.mockRejectedValueOnce(
         new Error("Payment amount can't be greater than balance due")
@@ -612,24 +624,149 @@ describe("recordPaymentWithIndexingRetry", () => {
     await vi.advanceTimersByTimeAsync(15000);
     await expect(promise).rejects.toThrow("Guesty OpenAPI unavailable");
 
-    // All 6 attempts: each tries recordPayment, gets the ambiguous error,
-    // tries resolveAmountVsBalance, fails, retries.
     expect(mockRecordPayment).toHaveBeenCalledTimes(6);
   });
 
   it("throws after the budget is exhausted", async () => {
-    // 6 failures (initial attempt + 5 retries — total of 6 attempts)
     for (let i = 0; i < 6; i++) {
       mockRecordPayment.mockRejectedValueOnce(new Error("Guesty 500"));
     }
 
     const promise = recordPaymentWithIndexingRetry("res_4", 100, "pi_4");
-    // Suppress unhandled rejection warning while we advance timers
     promise.catch(() => {});
-    // Sum of all backoffs: 1000+2000+3000+4000+5000 = 15000ms
     await vi.advanceTimersByTimeAsync(15000);
     await expect(promise).rejects.toThrow("Guesty 500");
 
     expect(mockRecordPayment).toHaveBeenCalledTimes(6);
+  });
+});
+
+describe("recordPaymentWithIndexingRetry — new protocol (post-migration)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    mockPoolQuery.mockReset();
+    mockRecordPayment.mockReset();
+    mockRecordPaymentCapped.mockReset();
+    mockSendAlert.mockReset();
+    mockPaymentTargetColumnsExist.mockResolvedValue(true);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("reserves via CAS, calls recordPaymentCapped, returns outcome:full", async () => {
+    // 1) SELECT payment_recorded_cents (observed = 0)
+    // 2) UPDATE CAS reserve → rowCount 1
+    mockPoolQuery
+      .mockResolvedValueOnce({
+        rows: [{ payment_recorded_cents: 0 }],
+      })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ new_recorded: 5793 }] });
+    mockRecordPaymentCapped.mockResolvedValueOnce({
+      outcome: "full",
+      recordedCents: 5793,
+    });
+
+    await expect(
+      recordPaymentWithIndexingRetry("res_new_full", 57.93, "pi_new")
+    ).resolves.toEqual({ outcome: "full" });
+
+    expect(mockRecordPaymentCapped).toHaveBeenCalledWith(
+      "res_new_full",
+      5793,
+      "pi_new"
+    );
+    // Reserve UPDATE arguments: ($topupCents=5793, id, $observed=0)
+    const reserveCall = mockPoolQuery.mock.calls[1];
+    expect(reserveCall?.[0]).toMatch(/UPDATE reservations/);
+    expect(reserveCall?.[1]?.[0]).toBe(5793);
+    expect(reserveCall?.[1]?.[1]).toBe("res_new_full");
+    expect(reserveCall?.[1]?.[2]).toBe(0);
+  });
+
+  it("records only the balance, reverts the overshoot, returns outcome:short, and fires no alert (writer caller handles it)", async () => {
+    // Stripe captured $100 (10000c), Guesty balance was $50 (5000c).
+    mockPoolQuery
+      .mockResolvedValueOnce({
+        rows: [{ payment_recorded_cents: 0 }],
+      })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ new_recorded: 10000 }] })
+      .mockResolvedValueOnce({ rowCount: 1 }); // revert
+    mockRecordPaymentCapped.mockResolvedValueOnce({
+      outcome: "short",
+      recordedCents: 5000,
+      shortfallCents: 5000,
+      balanceCents: 5000,
+    });
+
+    const result = await recordPaymentWithIndexingRetry(
+      "res_short",
+      100,
+      "pi_short"
+    );
+    expect(result).toEqual({
+      outcome: "short",
+      recordedCents: 5000,
+      shortfallCents: 5000,
+    });
+    // Revert UPDATE: $overshoot = 10000 - 5000 = 5000
+    const revertCall = mockPoolQuery.mock.calls[2];
+    expect(revertCall?.[0]).toMatch(/UPDATE reservations/);
+    expect(revertCall?.[1]?.[0]).toBe(5000);
+    expect(revertCall?.[1]?.[1]).toBe("res_short");
+  });
+
+  it("reverts the full reservation when recordPaymentCapped returns no_op and retries through backoff", async () => {
+    // Every attempt: SELECT observed, reserve UPDATE rowCount=1, revert UPDATE
+    for (let i = 0; i < 6; i++) {
+      mockPoolQuery
+        .mockResolvedValueOnce({ rows: [{ payment_recorded_cents: 0 }] })
+        .mockResolvedValueOnce({ rowCount: 1 })
+        .mockResolvedValueOnce({ rowCount: 1 });
+      mockRecordPaymentCapped.mockResolvedValueOnce({ outcome: "no_op" });
+    }
+
+    const promise = recordPaymentWithIndexingRetry("res_noop", 100, "pi_noop");
+    promise.catch(() => {});
+    await vi.advanceTimersByTimeAsync(15000);
+    await expect(promise).rejects.toThrow(/recordPaymentCapped returned no_op/);
+  });
+
+  it("CAS lost (rowCount=0) short-circuits as no_op without calling Guesty", async () => {
+    for (let i = 0; i < 6; i++) {
+      mockPoolQuery
+        .mockResolvedValueOnce({ rows: [{ payment_recorded_cents: 0 }] })
+        .mockResolvedValueOnce({ rowCount: 0 });
+    }
+
+    const promise = recordPaymentWithIndexingRetry(
+      "res_cas_lost",
+      100,
+      "pi_cas_lost"
+    );
+    promise.catch(() => {});
+    await vi.advanceTimersByTimeAsync(15000);
+    await expect(promise).rejects.toThrow();
+    expect(mockRecordPaymentCapped).not.toHaveBeenCalled();
+  });
+
+  it("recordPaymentCapped throwing reverts the reservation and bubbles up on the last attempt", async () => {
+    for (let i = 0; i < 6; i++) {
+      mockPoolQuery
+        .mockResolvedValueOnce({ rows: [{ payment_recorded_cents: 0 }] })
+        .mockResolvedValueOnce({ rowCount: 1 })
+        .mockResolvedValueOnce({ rowCount: 1 }); // revert on throw
+      mockRecordPaymentCapped.mockRejectedValueOnce(new Error("Guesty 500"));
+    }
+
+    const promise = recordPaymentWithIndexingRetry(
+      "res_throw",
+      100,
+      "pi_throw"
+    );
+    promise.catch(() => {});
+    await vi.advanceTimersByTimeAsync(15000);
+    await expect(promise).rejects.toThrow("Guesty 500");
   });
 });
