@@ -10,6 +10,10 @@
  * Every function here is best-effort: bookkeeping must never break the guest's
  * date change. A failure to write the row is logged and swallowed, which
  * degrades to exactly the behaviour we had before.
+ *
+ * Guest self-service no longer opens these rows. A date change is a request
+ * in `date_change_requests`. This table remains for a change that was already
+ * in flight when that switch happened, so the sweeper can still put it back.
  */
 import { getPool } from "@/lib/db";
 
