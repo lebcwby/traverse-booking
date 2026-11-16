@@ -93,7 +93,7 @@ function extractEmailAddress(value: string): string {
 // kv_store. N concurrent Vercel instances all read "no recent send" before
 // any one of them wrote, so all N fired — the four "CRITICAL: BEAPI token
 // unavailable" emails arriving in the same second on 2026-11-10 07:14:49Z
-// are exactly that pattern. See migration 20261113120000_alert_incidents.
+// are exactly that pattern. See migration 20261116120000_alert_incidents.
 //
 // Now a single SQL round-trip does the claim atomically: one caller wins
 // the cadence tick, the rest see zero returned rows and stay quiet.

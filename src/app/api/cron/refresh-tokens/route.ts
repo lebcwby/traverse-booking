@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { sendAlert } from "@/lib/alerts";
 import { rateLimit } from "@/lib/rate-limit";
+import { advisoryLocksEffective, getPool, withAdvisoryLock } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,15 @@ const OPENAPI_TOKEN_URL = "https://open-api.guesty.com/oauth2/token";
 // that this cron is not yet refreshing.
 const REFRESH_BUFFER_MS = 6 * 60 * 60 * 1000;
 
+// Floor for the end-of-refresh health check. A mint that doesn't leave at
+// least this much life is treated as still-stale and surfaces as HTTP 500.
+const MIN_USABLE_MARGIN_MS = 5 * 60 * 1000;
+
+// How many successful mints we allow in a rolling 24h window per token type.
+// Guesty's hard cap is 5; we hold the 5th back for a human to use after an
+// incident. In V2 this counts SUCCESSES (rows in token_mint_log), not attempts.
+const V2_MINT_LIMIT_PER_24H = 4;
+
 interface RefreshTarget {
   tokenType: "beapi" | "openapi";
   tokenUrl: string;
@@ -32,6 +42,16 @@ interface RefreshTarget {
   clientSecret: string | undefined;
   scope: string;
   label: string;
+}
+
+/**
+ * V2 is gated — Nadim flips BEAPI_MINT_V2=1 in Vercel after the migration
+ * is applied and the SHARED_DATABASE_URL_DIRECT is confirmed pointing at the
+ * session-mode port (:5432). Off by default so Phase 2 ships safely alongside
+ * Phase 1.
+ */
+function isV2Enabled(): boolean {
+  return (process.env.BEAPI_MINT_V2 || "").trim() === "1";
 }
 
 export async function GET(request: Request) {
@@ -42,9 +62,10 @@ export async function GET(request: Request) {
   const userAgent = request.headers.get("user-agent") || "";
   const isVercelCron = userAgent.startsWith("vercel-cron/");
   const triggerSource = isVercelCron ? "vercel-cron" : "manual";
+  const v2 = isV2Enabled();
   const startMs = Date.now();
   console.log(
-    `[refresh-tokens] start trigger=${triggerSource} ua=${userAgent.slice(0, 60)}`
+    `[refresh-tokens] start trigger=${triggerSource} v2=${v2} ua=${userAgent.slice(0, 60)}`
   );
 
   const authHeader = request.headers.get("authorization");
@@ -96,18 +117,20 @@ export async function GET(request: Request) {
     }
     try {
       const beforeMs = Date.now();
-      results[target.tokenType] = await refreshOne(supabase, target);
+      results[target.tokenType] = v2
+        ? await refreshOneV2(supabase, target, triggerSource)
+        : await refreshOneV1(supabase, target);
       const r = results[target.tokenType] as {
         refreshed: boolean;
         hoursRemaining: number;
       };
       console.log(
-        `[refresh-tokens] ${target.label} ok refreshed=${r.refreshed} hoursLeft=${r.hoursRemaining} elapsedMs=${Date.now() - beforeMs}`
+        `[refresh-tokens] ${target.label} ok v2=${v2} refreshed=${r.refreshed} hoursLeft=${r.hoursRemaining} elapsedMs=${Date.now() - beforeMs}`
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(
-        `[refresh-tokens] ${target.label} FAILED trigger=${triggerSource}:`,
+        `[refresh-tokens] ${target.label} FAILED v2=${v2} trigger=${triggerSource}:`,
         msg
       );
       results[target.tokenType] = { error: msg };
@@ -151,16 +174,22 @@ export async function GET(request: Request) {
   );
 
   console.log(
-    `[refresh-tokens] done trigger=${triggerSource} success=${!anyFailed} totalMs=${Date.now() - startMs}`
+    `[refresh-tokens] done trigger=${triggerSource} v2=${v2} success=${!anyFailed} totalMs=${Date.now() - startMs}`
   );
 
   return NextResponse.json(
-    { success: !anyFailed, ...results },
+    { success: !anyFailed, v2, ...results },
     { status: anyFailed ? 500 : 200 }
   );
 }
 
-async function refreshOne(
+// ─── V1 (legacy) ─────────────────────────────────────────────────────────
+//
+// Kept intact so a bad V2 flip is one env var away from reverting. The known
+// hazard is documented in V2 below: this path's rateLimit counter increments
+// before the OAuth call, so a 429 burns budget without producing a token.
+
+async function refreshOneV1(
   supabase: ReturnType<typeof getSupabaseAdmin>,
   target: RefreshTarget
 ): Promise<{ refreshed: boolean; hoursRemaining: number }> {
@@ -176,28 +205,6 @@ async function refreshOne(
     return { refreshed: false, hoursRemaining: hoursLeft };
   }
 
-  // ─── Global mint budget ──────────────────────────────────────────────
-  //
-  // Guesty caps OAuth at 5 tokens per 24h per client. Burning all 5 is a
-  // 24-HOUR LOCKOUT with no way to recover — catastrophic for the site.
-  //
-  // The expiry-buffer check above stops *redundant* refreshes, but it is not
-  // a lock: when the token is genuinely stale every concurrent caller passes
-  // it and every one of them mints. And concurrency is exactly what happens
-  // then — `attemptTokenSelfHeal` in guesty-beapi.ts fires this route from
-  // request handlers and is throttled only PER SERVERLESS INSTANCE, so a
-  // burst of cold starts means a burst of mints. The "CRITICAL: BEAPI token
-  // unavailable" alert arriving 4x in the same second on 2026-10-16 is what
-  // that concurrency looks like from the outside.
-  //
-  // So cap mints globally, across every instance, at 4 per 24h per token
-  // type. Normal operation needs ~1 (24h tokens, refreshed once below the
-  // 6h buffer), so 4 is generous — and it deliberately leaves the 5th for a
-  // human to use by hand after an incident.
-  //
-  // ⚠️ Being blocked here is serious: the token will expire. That is still
-  // strictly better than a lockout, because it is recoverable in minutes and
-  // it alerts, whereas a lockout is not recoverable at all.
   const budget = await rateLimit(`guesty-token-mint:${target.tokenType}`, {
     limit: 4,
     windowMs: 24 * 60 * 60 * 1000,
@@ -209,9 +216,6 @@ async function refreshOne(
       `a loop — check the self-heal path in guesty-beapi.ts and Vercel logs. ` +
       `One mint is deliberately held back for manual recovery.`;
     console.error(`[refresh-tokens] ${msg}`);
-    // Same incident collapse as the refresh-fail path above: for BEAPI the
-    // mint-budget message is a facet of the broader health incident, not a
-    // standalone event.
     const budgetAlertKey =
       target.tokenType === "beapi"
         ? "beapi-health-incident"
@@ -226,6 +230,167 @@ async function refreshOne(
     throw new Error(`Mint budget exhausted for ${target.tokenType}`);
   }
 
+  const { expiresAt } = await performOAuthAndUpsert(supabase, target);
+  const hoursLeft = Math.round(((expiresAt - Date.now()) / 3600000) * 10) / 10;
+  return { refreshed: true, hoursRemaining: hoursLeft };
+}
+
+// ─── V2 — the actual fix (flag-gated) ────────────────────────────────────
+//
+// Three guarantees V1 couldn't give:
+//
+//   1. ONE mint at a time per token type, across every Vercel instance,
+//      via pg_advisory_lock on the direct (session-mode) connection. The
+//      per-instance throttle in attemptTokenSelfHeal was never cross-
+//      instance — four concurrent cold starts could all stampede. The
+//      advisory lock serialises them; after this, you can still see four
+//      concurrent self-heals, but only one of them hits Guesty.
+//
+//   2. Only SUCCESSFUL mints count against the local budget. V1 counted
+//      attempts via check_rate_limit, so an OAuth 429 (or network blip)
+//      burned budget without producing a token. V2 writes to token_mint_log
+//      AFTER a successful upsert, then enforces the 24h window with a
+//      SELECT COUNT(*). Semantically matches Guesty's own quota and makes a
+//      429 free of charge from our end.
+//
+//   3. End-of-refresh verification. V1 could return `{refreshed: true}` on
+//      a mint whose upsert raced a stale read somewhere and left the row
+//      effectively unchanged. V2 re-reads guesty_tokens after the lock
+//      releases and throws (HTTP 500) if the row isn't above
+//      MIN_USABLE_MARGIN_MS. The cron never returns 200 on a stale table.
+
+async function refreshOneV2(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  target: RefreshTarget,
+  triggerSource: string
+): Promise<{ refreshed: boolean; hoursRemaining: number }> {
+  // Hard assert: the lock has to be real. On the Supabase transaction pooler
+  // (:6543) pg_advisory_lock silently does nothing — withAdvisoryLock would
+  // warn and still run the function, which quietly reverts V2 to V1's
+  // concurrency guarantees without changing the branch. Refuse to run.
+  if (!advisoryLocksEffective()) {
+    throw new Error(
+      "BEAPI_MINT_V2 refuses to run: advisory locks are INEFFECTIVE on this " +
+        "connection. SHARED_DATABASE_URL_DIRECT must point at the session-mode " +
+        "URL (port 5432), not the transaction pooler (:6543). See " +
+        "src/lib/db.ts::advisoryLocksEffective and /api/health/db."
+    );
+  }
+
+  const outcome = await withAdvisoryLock(
+    `guesty-mint:${target.tokenType}`,
+    async () => {
+      // Re-read inside the lock. If another instance minted while we were
+      // waiting on pg_advisory_lock, the fresh row is already here and we
+      // skip the mint entirely — the "load the saved token on cold start"
+      // guarantee. Also handles the cold-start case where a long-warm peer
+      // has a valid row that this instance hasn't seen yet.
+      const { data: fresh } = await supabase
+        .from("guesty_tokens")
+        .select("expires_at")
+        .eq("token_type", target.tokenType)
+        .single();
+      if (fresh && fresh.expires_at > Date.now() + REFRESH_BUFFER_MS) {
+        const hoursLeft =
+          Math.round(((fresh.expires_at - Date.now()) / 3600000) * 10) / 10;
+        return { refreshed: false, hoursRemaining: hoursLeft };
+      }
+
+      await enforceSuccessfulMintBudget(target);
+      const { expiresAt } = await performOAuthAndUpsert(supabase, target);
+      await logSuccessfulMint(target, expiresAt, triggerSource);
+      const hoursLeft =
+        Math.round(((expiresAt - Date.now()) / 3600000) * 10) / 10;
+      return { refreshed: true, hoursRemaining: hoursLeft };
+    }
+  );
+
+  // End-of-refresh verification, AFTER the lock. The lock holder may have
+  // decided `refreshed: false` (someone else minted); either way the row
+  // must now be fresh. If it isn't, something between the lock-local view
+  // and the authoritative table is broken — don't let the cron claim
+  // success on a stale row.
+  const { data: verify } = await supabase
+    .from("guesty_tokens")
+    .select("expires_at")
+    .eq("token_type", target.tokenType)
+    .single();
+  const expiresAt = verify?.expires_at ?? 0;
+  const margin = expiresAt - Date.now();
+  if (margin < MIN_USABLE_MARGIN_MS) {
+    throw new Error(
+      `End-of-refresh check failed for ${target.tokenType}: ` +
+        `row expires in ${Math.round(margin / 1000)}s (min ${
+          MIN_USABLE_MARGIN_MS / 1000
+        }s). The cron is NOT returning HTTP 200 on a stale table.`
+    );
+  }
+
+  return outcome;
+}
+
+async function enforceSuccessfulMintBudget(target: RefreshTarget) {
+  const pool = getPool();
+  const { rows } = await pool.query<{ count: string }>(
+    `select count(*)::text as count
+       from public.token_mint_log
+      where token_type = $1
+        and minted_at > now() - interval '24 hours'`,
+    [target.tokenType]
+  );
+  const count = Number(rows[0]?.count ?? "0");
+  if (count >= V2_MINT_LIMIT_PER_24H) {
+    const msg =
+      `Refused to mint a ${target.label} token: ${count} SUCCESSFUL mints ` +
+      `in the last 24h and Guesty allows 5 total. Something is calling this ` +
+      `route in a loop — check self-heal in guesty-beapi.ts and Vercel logs. ` +
+      `One mint is deliberately held back for manual recovery.`;
+    console.error(`[refresh-tokens] ${msg}`);
+    const budgetAlertKey =
+      target.tokenType === "beapi"
+        ? "beapi-health-incident"
+        : `token-mint-budget-${target.tokenType}`;
+    await sendAlert(
+      `CRITICAL: ${target.label} token mint budget exhausted`,
+      `<p>${msg}</p><p>The token will expire and API calls will start failing. ` +
+        `Fix the caller before minting by hand, or the 5th mint is spent too ` +
+        `and the client is locked out for 24 hours.</p>`,
+      budgetAlertKey
+    );
+    throw new Error(`Mint budget exhausted for ${target.tokenType}`);
+  }
+}
+
+async function logSuccessfulMint(
+  target: RefreshTarget,
+  expiresAtEpochMs: number,
+  triggerSource: string
+) {
+  try {
+    const pool = getPool();
+    await pool.query(
+      `insert into public.token_mint_log (token_type, expires_at, source)
+       values ($1, to_timestamp($2::double precision / 1000), $3)`,
+      [target.tokenType, expiresAtEpochMs, triggerSource]
+    );
+  } catch (err) {
+    // A log failure cannot roll back a successful mint, and the Supabase
+    // guesty_tokens row IS the authoritative token. The 24h budget check
+    // overreads by one in that case, which is strictly safer than
+    // overwriting with a lost mint.
+    console.error(
+      `[refresh-tokens] token_mint_log insert failed for ${target.tokenType}:`,
+      err instanceof Error ? err.message : String(err)
+    );
+  }
+}
+
+// ─── Shared OAuth + upsert ───────────────────────────────────────────────
+
+async function performOAuthAndUpsert(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  target: RefreshTarget
+): Promise<{ expiresAt: number }> {
   const resp = await fetch(target.tokenUrl, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -238,6 +403,8 @@ async function refreshOne(
   });
 
   if (resp.status === 429) {
+    // In V2 the caller hasn't yet written to token_mint_log, so this 429
+    // costs nothing against the budget. That is the V2 point.
     throw new Error(`OAuth rate-limited (429) for ${target.tokenType}`);
   }
   if (!resp.ok) {
@@ -275,8 +442,7 @@ async function refreshOne(
     );
   }
 
-  const hoursLeft = Math.round(((expiresAt - Date.now()) / 3600000) * 10) / 10;
-  return { refreshed: true, hoursRemaining: hoursLeft };
+  return { expiresAt };
 }
 
 function escapeHtml(s: string) {
