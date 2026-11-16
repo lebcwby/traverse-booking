@@ -6,6 +6,7 @@ import {
 import {
   listRecoverablePendingCheckouts,
   markPendingCheckoutError,
+  type PendingCheckoutRecord,
 } from "@/lib/pending-checkouts";
 import { getStripeServer } from "@/lib/stripe";
 import { chargeBillingName, splitWalletName } from "@/lib/express-billing";
@@ -17,10 +18,26 @@ import {
   renderAlertLinks,
   sendAlert,
 } from "@/lib/alerts";
+import { classifyBeapiError } from "@/lib/beapi-error";
+import { getOpenAPIReservationsPage } from "@/lib/guesty-openapi";
+import {
+  buildReconcilePlan,
+  describeReconcileFailure,
+  type GuestyReservationLike,
+} from "@/lib/pending-checkout-reconcile";
+import { getPool } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 const ALERT_AFTER_MS = 15 * 60 * 1000;
+
+/**
+ * Fields the auto-link search pulls from Guesty's OpenAPI. Kept narrow:
+ * the match validator reads listingId/dates/guest/money.hostPayout, nothing
+ * else. Pulling more would bloat the response for no gain.
+ */
+const AUTO_LINK_FIELDS =
+  "_id confirmationCode status listingId checkIn checkOut guestsCount guest money.hostPayout money.totalPaid money.fareAccommodation";
 
 export async function GET() {
   try {
@@ -110,6 +127,30 @@ export async function GET() {
         const message =
           (error instanceof Error ? error.message : "Unknown recovery error") +
           detail;
+
+        // Auto-link path — if Guesty says the dates are no longer available
+        // on a paid_pending_reservation row, the single remaining possibility
+        // (short of the guest colliding with themselves) is that ops has
+        // created the reservation by hand. Check Guesty for an exact match
+        // and stamp the row so the retry loop stops. Any ambiguity → no
+        // write, falls through to the normal fail-alert below.
+        const classified = classifyBeapiError(error);
+        if (
+          classified.code === "DATES_UNAVAILABLE" &&
+          row.status === "paid_pending_reservation" &&
+          paymentIntent?.status === "succeeded"
+        ) {
+          const linked = await tryAutoLinkStuckCheckout(
+            row,
+            { id: row.paymentIntentId, amount: paymentIntent.amount ?? 0 },
+            message
+          );
+          if (linked) {
+            recovered++;
+            continue;
+          }
+        }
+
         errors.push(`${row.paymentIntentId}: ${message}`);
         console.error("[Recover Checkouts] Failed recovery attempt", {
           paymentIntentId: row.paymentIntentId,
@@ -197,5 +238,153 @@ export async function GET() {
       { error: "Failed to recover pending checkouts" },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Try to detect a Guesty reservation that ops created by hand and link it
+ * to a stuck pending_checkouts row. Returns true iff the link happened;
+ * false (silently) on every ambiguous or mismatching case so the caller
+ * continues to the normal fail-alert path.
+ *
+ * Strict by construction: exactly one Guesty match on listing + stay, and
+ * every field downstream (email, amount) verified by buildReconcilePlan
+ * before any write. A wrong link would mark the stuck guest as booked
+ * while their money sits against a different reservation; the only
+ * acceptable failure mode here is "didn't link and a human handles it".
+ */
+async function tryAutoLinkStuckCheckout(
+  row: PendingCheckoutRecord,
+  stripePaymentIntent: { id: string; amount: number },
+  lastError: string
+): Promise<boolean> {
+  try {
+    const { results } = await getOpenAPIReservationsPage({
+      fields: AUTO_LINK_FIELDS,
+      limit: 5,
+      sort: "-createdAt",
+      filters: [
+        { field: "listingId", operator: "$eq", value: row.tracking.listingId },
+        { field: "checkIn", operator: "$eq", value: row.tracking.checkIn },
+        { field: "checkOut", operator: "$eq", value: row.tracking.checkOut },
+      ],
+    });
+
+    // Ambiguity is a non-link, not an error. The retry loop will stop
+    // naturally once a human stamps the row; the alert tells them to.
+    const candidates = results.filter(
+      (r) =>
+        !["cancelled", "declined", "inquiry"].includes(
+          String((r as { status?: string }).status || "").toLowerCase()
+        )
+    );
+    if (candidates.length !== 1) {
+      console.log("[recover-checkouts auto-link] inconclusive candidate set", {
+        paymentIntentId: row.paymentIntentId,
+        listingId: row.tracking.listingId,
+        found: candidates.length,
+      });
+      return false;
+    }
+
+    const candidate = candidates[0] as GuestyReservationLike;
+    const decision = buildReconcilePlan({
+      pending: {
+        paymentIntentId: row.paymentIntentId,
+        reservationId: row.reservationId,
+        tracking: {
+          listingId: row.tracking.listingId,
+          listingTitle: row.tracking.listingTitle,
+          checkIn: row.tracking.checkIn,
+          checkOut: row.tracking.checkOut,
+          guests: row.tracking.guests,
+        },
+        guest: {
+          email: row.guest.email,
+          firstName: row.guest.firstName,
+          lastName: row.guest.lastName,
+          phone: row.guest.phone,
+        },
+      },
+      stripePaymentIntent,
+      guestyReservation: candidate,
+    });
+
+    if (!decision.ok) {
+      console.log("[recover-checkouts auto-link] match verification failed", {
+        paymentIntentId: row.paymentIntentId,
+        candidate: candidate._id,
+        reason: describeReconcileFailure(decision.reason),
+      });
+      return false;
+    }
+
+    const pool = getPool();
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const updateRes = await client.query(
+        decision.updates.pendingCheckoutUpdate.sql,
+        decision.updates.pendingCheckoutUpdate.params
+      );
+      // Row disappeared (concurrent stamp) → roll back and let the caller
+      // go through the normal path. 0 rows updated is NOT an error.
+      if (updateRes.rowCount === 0) {
+        await client.query("ROLLBACK");
+        return false;
+      }
+      await client.query(
+        decision.updates.reservationsUpsert.sql,
+        decision.updates.reservationsUpsert.params
+      );
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK").catch(() => {});
+      console.error(
+        "[recover-checkouts auto-link] transaction failed, rolled back",
+        { paymentIntentId: row.paymentIntentId, err }
+      );
+      return false;
+    } finally {
+      client.release();
+    }
+
+    // One-time per-PI alert with the stricter cadence — this is a
+    // resolved incident, not an ongoing one, so no reminders.
+    const stripeUrl = buildStripeDashboardPaymentUrl(row.paymentIntentId);
+    await sendAlert(
+      "CHECKOUT AUTO-LINKED to existing Guesty reservation",
+      [
+        "<p>A stuck pending_checkouts row was linked to a Guesty reservation that ops created by hand. The retry loop and the orphan sweep will both stop firing for this PI.</p>",
+        renderAlertDetails([
+          ["PaymentIntent", row.paymentIntentId],
+          ["Guesty reservation", decision.reservationId],
+          ["Confirmation code", decision.confirmationCode ?? "(none)"],
+          ["Listing", row.tracking.listingTitle || decision.listingId],
+          ["Stay", `${decision.checkIn} → ${decision.checkOut}`],
+          ["Guest email", decision.guestEmail],
+          [
+            "Amount",
+            `Stripe $${decision.chargedAmount.toFixed(2)} = Guesty $${decision.guestyMoneyMatched.toFixed(2)} (within 1¢)`,
+          ],
+          ["Previous error", lastError],
+        ]),
+        renderAlertLinks([{ label: "Stripe payment", url: stripeUrl }]),
+      ].join(""),
+      `checkout-auto-linked-${row.paymentIntentId}`,
+      { cadenceHours: [] } // one email, then silent
+    );
+
+    console.log("[recover-checkouts auto-link] linked", {
+      paymentIntentId: row.paymentIntentId,
+      reservationId: decision.reservationId,
+    });
+    return true;
+  } catch (err) {
+    console.warn(
+      "[recover-checkouts auto-link] threw — falling through to normal fail path",
+      { paymentIntentId: row.paymentIntentId, err }
+    );
+    return false;
   }
 }
