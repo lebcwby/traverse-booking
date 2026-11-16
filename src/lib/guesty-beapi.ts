@@ -82,16 +82,12 @@ function describeSelfHeal(o: SelfHealOutcome): string {
   }
 }
 
-async function attemptTokenSelfHeal(
-  reason: string
-): Promise<SelfHealOutcome> {
+async function attemptTokenSelfHeal(reason: string): Promise<SelfHealOutcome> {
   const now = Date.now();
   if (now - lastSelfHealAttemptAt < SELF_HEAL_COOLDOWN_MS) {
     return {
       kind: "throttled",
-      secondsSinceLastAttempt: Math.round(
-        (now - lastSelfHealAttemptAt) / 1000
-      ),
+      secondsSinceLastAttempt: Math.round((now - lastSelfHealAttemptAt) / 1000),
     };
   }
   lastSelfHealAttemptAt = now;
@@ -371,13 +367,17 @@ export async function getBEAPIToken(): Promise<string> {
     `Could not obtain a BEAPI token. ` +
     details.map(([k, v]) => `${k}: ${String(v)}`).join(" | ");
 
+  // One shared key across the whole BEAPI health family — the token alert,
+  // the mirror fallback, the refresh-fail and the mint-budget-exhausted all
+  // land in the same incident so one failure produces one email thread with
+  // reminders at 1h/5h/29h instead of four parallel subjects.
   await sendAlert(
     "CRITICAL: BEAPI token unavailable",
     [
       `<p>A request could not get a BEAPI token. Guests are served the listings
         mirror while this persists, so the catalog goes stale rather than
-        breaking — expect <code>catalog-served-from-mirror</code> in the same
-        second.</p>`,
+        breaking — the <code>catalog-served-from-mirror</code> alerts are
+        facets of the same incident and now collapse into this thread.</p>`,
       renderAlertDetails(details),
       renderAlertLinks([
         {
@@ -388,10 +388,11 @@ export async function getBEAPIToken(): Promise<string> {
       `<p>Never mint a token by hand without reading the above first: Guesty
         allows 5 per 24h and the cron deliberately holds one back for manual
         recovery.</p>
-       <p><em>This alert has a 1-hour cooldown, so a single email can stand for
-        many occurrences — its arrival rate is not the failure rate.</em></p>`,
+       <p><em>This incident collapses the BEAPI health alerts into one thread.
+        Reminders arrive at 1h, +4h, +24h then stay silent until resolved —
+        the daily digest still shows it if it drags on.</em></p>`,
     ].join(""),
-    "beapi-token-expired"
+    "beapi-health-incident"
   );
   throw new Error(msg);
 }
@@ -640,29 +641,29 @@ async function searchListingsWithCacheMode(
  * this string and refetches when it no longer matches.
  */
 export const LISTING_DETAIL_FIELDS = [
-    "prices",
-    "pictures",
-    "title",
-    "nickname",
-    "address",
-    "bedrooms",
-    "bathrooms",
-    "beds",
-    "accommodates",
-    "amenities",
-    "propertyType",
-    "roomType",
-    "tags",
-    "reviews",
-    "publicDescription",
-    "terms",
-    "calendarRules",
-    "taxes",
-    "defaultCheckInTime",
-    "defaultCheckOutTime",
-    "bedArrangements",
-    "unitTypeHouseRules",
-    "autoPayments",
+  "prices",
+  "pictures",
+  "title",
+  "nickname",
+  "address",
+  "bedrooms",
+  "bathrooms",
+  "beds",
+  "accommodates",
+  "amenities",
+  "propertyType",
+  "roomType",
+  "tags",
+  "reviews",
+  "publicDescription",
+  "terms",
+  "calendarRules",
+  "taxes",
+  "defaultCheckInTime",
+  "defaultCheckOutTime",
+  "bedArrangements",
+  "unitTypeHouseRules",
+  "autoPayments",
 ].join(" ");
 
 export async function getListingDetail(listingId: string) {

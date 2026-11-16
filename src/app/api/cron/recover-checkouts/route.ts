@@ -8,13 +8,11 @@ import {
   markPendingCheckoutError,
 } from "@/lib/pending-checkouts";
 import { getStripeServer } from "@/lib/stripe";
-import {
-  chargeBillingName,
-  splitWalletName,
-} from "@/lib/express-billing";
+import { chargeBillingName, splitWalletName } from "@/lib/express-billing";
 import {
   buildStripeDashboardPaymentUrl,
   formatDurationMs,
+  PER_ENTITY_CADENCE_HOURS,
   renderAlertDetails,
   renderAlertLinks,
   sendAlert,
@@ -176,7 +174,11 @@ export async function GET() {
                 { label: "Stripe payment", url: stripePaymentUrl },
               ]),
             ].join(""),
-            `checkout-recovery-fail-${row.paymentIntentId}`
+            `checkout-recovery-fail-${row.paymentIntentId}`,
+            // Per-PI cadence: first → +24h → +48h, then the daily
+            // incident-digest cron picks it up. Previous per-hour cadence
+            // meant 20 stuck PIs could produce ~480 emails/day.
+            { cadenceHours: PER_ENTITY_CADENCE_HOURS }
           );
         }
       }

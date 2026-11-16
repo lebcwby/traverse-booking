@@ -123,13 +123,21 @@ export async function GET(request: Request) {
         target.tokenType === "openapi" &&
         /use booking\.guesty\.com|UNAUTHO/i.test(msg);
       if (!isKnownWrongCreds) {
+        // BEAPI failures ride the shared incident key so one BEAPI incident
+        // produces one email thread (token-unavailable + mirror + refresh-
+        // fail + mint-budget are facets of the same thing). OpenAPI keeps a
+        // per-type key since it has no mirror/self-heal path to collapse.
+        const alertKey =
+          target.tokenType === "beapi"
+            ? "beapi-health-incident"
+            : `cron-${target.tokenType}-refresh-fail`;
         await sendAlert(
           `CRITICAL: ${target.label} Token Refresh Failed`,
           `<p>The refresh-tokens cron failed to refresh the ${target.label} token.</p>
            <p><strong>Trigger:</strong> ${escapeHtml(triggerSource)}</p>
            <p><strong>Error:</strong> ${escapeHtml(msg)}</p>
            <p>Next retry follows the cron schedule. If this repeats, check Guesty OAuth credentials.</p>`,
-          `cron-${target.tokenType}-refresh-fail`
+          alertKey
         );
       }
     }
@@ -201,12 +209,19 @@ async function refreshOne(
       `a loop — check the self-heal path in guesty-beapi.ts and Vercel logs. ` +
       `One mint is deliberately held back for manual recovery.`;
     console.error(`[refresh-tokens] ${msg}`);
+    // Same incident collapse as the refresh-fail path above: for BEAPI the
+    // mint-budget message is a facet of the broader health incident, not a
+    // standalone event.
+    const budgetAlertKey =
+      target.tokenType === "beapi"
+        ? "beapi-health-incident"
+        : `token-mint-budget-${target.tokenType}`;
     await sendAlert(
       `CRITICAL: ${target.label} token mint budget exhausted`,
       `<p>${msg}</p><p>The token will expire and API calls will start failing. ` +
         `Fix the caller before minting by hand, or the 5th mint is spent too ` +
         `and the client is locked out for 24 hours.</p>`,
-      `token-mint-budget-${target.tokenType}`
+      budgetAlertKey
     );
     throw new Error(`Mint budget exhausted for ${target.tokenType}`);
   }

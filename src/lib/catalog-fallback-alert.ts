@@ -27,19 +27,20 @@
 import { sendAlert, wasAlertSentRecently, OPS_ALERT_INBOX } from "@/lib/alerts";
 import { FAILURE_GUIDANCE, type FailureReason } from "@/lib/failure-reason";
 
-/** One hourly budget for this alert, whatever the cause. */
-export const MIRROR_ALERT_KEY = "catalog-served-from-mirror";
-
-/** The upstream alert this one defers to. */
-export const TOKEN_ALERT_KEY = "beapi-token-expired";
-
 /**
- * How recently the token alert must have fired for this one to stay quiet.
- *
- * Matches sendAlert's own cooldown: while the token alert is still inside
- * its own window it would not re-send anyway, so that is exactly the period
- * during which this alert would be the second email about one incident.
+ * Collapsed key: as of 2026-11-13 the token failure, the mirror fallback,
+ * the refresh-fail and the mint-budget-exhausted all share one incident
+ * row. The atomic claim in claimAlert() handles dedup across callers —
+ * the old deferral-by-recency trick is kept below only so the explicit
+ * "mirror is downstream of token" check still works for tests that mock
+ * wasAlertSentRecently.
  */
+export const MIRROR_ALERT_KEY = "beapi-health-incident";
+
+/** The upstream alert this one defers to (same key now; kept for callers). */
+export const TOKEN_ALERT_KEY = "beapi-health-incident";
+
+/** Window inside which a recent token alert suppresses the mirror alert. */
 export const TOKEN_SUPPRESSION_MS = 60 * 60 * 1000;
 
 /** Human-facing label for the subject line. */
