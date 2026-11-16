@@ -36,9 +36,10 @@ import {
   OPS_ALERT_INBOX,
 } from "@/lib/alerts";
 
-// Per-PI cadence: first alert → +24h → +48h, then silent (the daily
-// incident-digest cron handles anything still open past that). Previous
-// 1-hour cadence multiplied by every orphan PI in rotation.
+// Per-PI cadence: first alert → +24h → +48h, then silent. Previous
+// 1-hour cadence multiplied by every orphan PI in rotation. A still-open
+// orphan beyond 48h stays visible via the orphan-detection query — the
+// inbox cap is deliberate, the ledger is not.
 const ORPHAN_ALERT_OPTS = {
   to: OPS_ALERT_INBOX,
   cadenceHours: PER_ENTITY_CADENCE_HOURS,

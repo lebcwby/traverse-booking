@@ -216,9 +216,11 @@ export async function GET() {
               ]),
             ].join(""),
             `checkout-recovery-fail-${row.paymentIntentId}`,
-            // Per-PI cadence: first → +24h → +48h, then the daily
-            // incident-digest cron picks it up. Previous per-hour cadence
-            // meant 20 stuck PIs could produce ~480 emails/day.
+            // Per-PI cadence: first → +24h → +48h, then silent. Previous
+            // per-hour cadence meant 20 stuck PIs could produce ~480
+            // emails/day; four days of silence after the cadence is the
+            // deliberate inbox cap. A still-stuck row stays visible via
+            // the `reservation_id IS NULL` filter on this table.
             { cadenceHours: PER_ENTITY_CADENCE_HOURS }
           );
         }

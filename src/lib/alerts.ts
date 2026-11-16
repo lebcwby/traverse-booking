@@ -100,9 +100,15 @@ function extractEmailAddress(value: string): string {
 //
 // Cadences (hours between successive sends after the first):
 //   * incident style (BEAPI health, cron failures): [1, 4, 24]
-//     → sends at 0h, +1h, +5h, +29h, then silent until resolved or digest.
+//     → sends at 0h, +1h, +5h, +29h, then silent until the underlying
+//       failure resolves and a fresh send under the same key re-opens.
 //   * per-entity (per-PI Checkout Recovery / ORPHAN): [24, 24]
-//     → sends at 0h, +24h, +48h, then silent — the digest takes over.
+//     → sends at 0h, +24h, +48h, then silent — four days of continuous
+//       failure is the inbox cap, after which a human sees the stuck PI
+//       via `select … from pending_checkouts where reservation_id is null
+//       and created_at < now() - interval '48 hours'` (same query the
+//       first draft of this fix had running as a daily digest, since
+//       pulled per operator ask).
 //
 // Keep the in-memory Map as a best-effort local shortcut for the extremely
 // common "same lambda, same second" case and as a soft fallback when the
@@ -113,7 +119,7 @@ const COOLDOWN_MS = 60 * 60 * 1000; // 1 hour — floor for the in-memory shortc
 /** Default cadence for a durable incident, in hours between successive sends. */
 export const DEFAULT_CADENCE_HOURS = [1, 4, 24];
 
-/** Cadence for per-PI/per-entity alerts that hand off to the daily digest. */
+/** Cadence for per-PI/per-entity alerts that go silent after 48h. */
 export const PER_ENTITY_CADENCE_HOURS = [24, 24];
 
 let _supabaseAdmin: SupabaseClient | null = null;
