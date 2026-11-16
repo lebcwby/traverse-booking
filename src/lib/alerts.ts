@@ -87,9 +87,34 @@ function extractEmailAddress(value: string): string {
   return (angled ? angled[1] : value).trim();
 }
 
-// Throttle: don't send the same alert type more than once per hour
+// ─── Alert dedup (atomic, cross-instance) ─────────────────────────────────
+//
+// Before 2026-11-13 this was a per-instance Map plus a check-then-set over
+// kv_store. N concurrent Vercel instances all read "no recent send" before
+// any one of them wrote, so all N fired — the four "CRITICAL: BEAPI token
+// unavailable" emails arriving in the same second on 2026-11-10 07:14:49Z
+// are exactly that pattern. See migration 20261116120000_alert_incidents.
+//
+// Now a single SQL round-trip does the claim atomically: one caller wins
+// the cadence tick, the rest see zero returned rows and stay quiet.
+//
+// Cadences (hours between successive sends after the first):
+//   * incident style (BEAPI health, cron failures): [1, 4, 24]
+//     → sends at 0h, +1h, +5h, +29h, then silent until resolved or digest.
+//   * per-entity (per-PI Checkout Recovery / ORPHAN): [24, 24]
+//     → sends at 0h, +24h, +48h, then silent — the digest takes over.
+//
+// Keep the in-memory Map as a best-effort local shortcut for the extremely
+// common "same lambda, same second" case and as a soft fallback when the
+// DB round-trip itself errors (preferring a duplicate email over no email).
 const alertCooldowns = new Map<string, number>();
-const COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+const COOLDOWN_MS = 60 * 60 * 1000; // 1 hour — floor for the in-memory shortcut.
+
+/** Default cadence for a durable incident, in hours between successive sends. */
+export const DEFAULT_CADENCE_HOURS = [1, 4, 24];
+
+/** Cadence for per-PI/per-entity alerts that hand off to the daily digest. */
+export const PER_ENTITY_CADENCE_HOURS = [24, 24];
 
 let _supabaseAdmin: SupabaseClient | null = null;
 
@@ -208,66 +233,163 @@ export function renderAlertLinks(
   `;
 }
 
-async function readCooldownFromSupabase(key: string) {
-  const supabase = getSupabaseAdmin();
-  if (!supabase) return null;
+interface ClaimResult {
+  /** True iff THIS caller won the atomic claim and should actually send. */
+  claimed: boolean;
+  /** 1-based counter of emails sent for this incident — 1 means first ever. */
+  reminderCount: number;
+  /** True iff the row didn't exist before this claim (fresh incident). */
+  isNew: boolean;
+  /** Reason for a non-claim, for logs. */
+  reason?: "inside-cadence" | "db-error" | "memory-shortcut";
+}
+
+/**
+ * Atomic cross-instance claim for a send under `key`.
+ *
+ * One SQL round-trip against `public.alert_incidents`: INSERT on first ever,
+ * ON CONFLICT DO UPDATE on subsequent calls, gated by a cadence predicate.
+ * When the predicate is false the UPDATE is skipped, RETURNING yields no
+ * rows, and the caller stays quiet. Exactly one of N concurrent instances
+ * wins per cadence tick.
+ *
+ * `cadenceHours[i]` (1-based in SQL, 0-based here) is the hours gap between
+ * send `i+1` and send `i+2`. When reminderCount exceeds cadenceHours.length,
+ * the array index returns NULL, the predicate is false, and the alert goes
+ * silent. The next successful resolveAlertIncident() re-opens the row.
+ *
+ * DB-unavailable → fall through to the in-memory map and the per-instance
+ * 1h cooldown. A duplicate email during a Supabase outage is strictly better
+ * than a missed one, and the outage itself will clear the backlog.
+ */
+export async function claimAlert(
+  key: string,
+  cadenceHours: number[] = DEFAULT_CADENCE_HOURS
+): Promise<ClaimResult> {
+  // Local shortcut — spares the DB round-trip in the far-and-away common
+  // case (same lambda retrying twice in a second). It cannot replace the
+  // DB claim, only pre-empt it.
+  const now = Date.now();
+  const lastLocal = alertCooldowns.get(key);
+  if (lastLocal && now - lastLocal < COOLDOWN_MS) {
+    return {
+      claimed: false,
+      reminderCount: 0,
+      isNew: false,
+      reason: "memory-shortcut",
+    };
+  }
 
   try {
-    const { data, error } = await supabase
-      .from("kv_store")
-      .select("value")
-      .eq("key", `alert_cooldown:${key}`)
-      .single();
-
-    if (error || !data?.value || typeof data.value !== "object") {
-      return null;
-    }
-
-    const lastSentAt = Number(
-      (data.value as { lastSentAt?: number }).lastSentAt || 0
+    const { getPool } = await import("@/lib/db");
+    const pool = getPool();
+    // 1-based array indexing in SQL; cadenceHours[1] is the gap between
+    // the FIRST and SECOND send (i.e. the first reminder). When
+    // reminder_count outruns the array, `([$2])[reminder_count]` is NULL
+    // and the predicate is NULL → UPDATE skipped → zero rows → silent.
+    const result = await pool.query<{
+      is_new: boolean;
+      reminder_count: number;
+    }>(
+      `insert into public.alert_incidents
+         (key, first_sent_at, last_sent_at, reminder_count)
+       values ($1, now(), now(), 1)
+       on conflict (key) do update
+         set last_sent_at   = now(),
+             reminder_count = public.alert_incidents.reminder_count + 1,
+             first_sent_at  = case
+               when public.alert_incidents.resolved_at is not null then now()
+               else public.alert_incidents.first_sent_at
+             end,
+             resolved_at    = null
+       where public.alert_incidents.resolved_at is not null
+          or (
+            ($2::int[])[public.alert_incidents.reminder_count] is not null
+            and public.alert_incidents.last_sent_at
+                < now() - (($2::int[])[public.alert_incidents.reminder_count]
+                           * interval '1 hour')
+          )
+       returning (xmax = 0) as is_new, reminder_count`,
+      [key, cadenceHours]
     );
-    return Number.isFinite(lastSentAt) ? lastSentAt : null;
-  } catch {
-    return null;
+    if (result.rows.length === 0) {
+      return {
+        claimed: false,
+        reminderCount: 0,
+        isNew: false,
+        reason: "inside-cadence",
+      };
+    }
+    alertCooldowns.set(key, now);
+    const row = result.rows[0];
+    return {
+      claimed: true,
+      reminderCount: Number(row.reminder_count) || 1,
+      isNew: Boolean(row.is_new),
+    };
+  } catch (err) {
+    console.warn(
+      `[alerts] claimAlert DB error for "${key}" — degrading to in-memory dedup: ${
+        err instanceof Error ? err.message : String(err)
+      }`
+    );
+    alertCooldowns.set(key, now);
+    return { claimed: true, reminderCount: 1, isNew: true, reason: "db-error" };
   }
 }
 
 /**
- * Did an alert under `key` go out within the last `withinMs`?
+ * Close an open incident. The next claimAlert() for this key will re-open
+ * the row (reminder_count resets to 1, first_sent_at=now) and fire again.
+ * Call from a health check that just reported two consecutive healthy
+ * polls, or from a code path that observed the underlying failure resolve.
+ */
+export async function resolveAlertIncident(key: string): Promise<void> {
+  try {
+    const { getPool } = await import("@/lib/db");
+    const pool = getPool();
+    await pool.query(
+      `update public.alert_incidents
+          set resolved_at = now()
+        where key = $1
+          and resolved_at is null`,
+      [key]
+    );
+    alertCooldowns.delete(key);
+  } catch (err) {
+    console.warn(
+      `[alerts] resolveAlertIncident failed for "${key}": ${
+        err instanceof Error ? err.message : String(err)
+      }`
+    );
+  }
+}
+
+/**
+ * Did an alert under `key` get sent within the last `withinMs`?
  *
- * For suppressing an alert that is DOWNSTREAM of another one. The BEAPI
- * token failure and the catalogue-mirror fallback are not two events: the
- * mirror is served *because* the token could not be obtained. On 2026-10-28
- * they arrived one second apart (04:51:11 and 04:51:12) as two separate
- * emails saying the same thing.
- *
- * Deliberately reads only the shared Supabase row and ignores the in-memory
- * map: the two alerts are raised from different code paths and, on
- * serverless, usually different lambda instances, so the process-local map
- * would almost never see the other one's send.
+ * Used to suppress a downstream alert while an upstream one is still live
+ * (e.g. the mirror fallback deferring to the BEAPI health incident). Now
+ * reads alert_incidents, which is the authoritative record.
  */
 export async function wasAlertSentRecently(
   key: string,
   withinMs: number
 ): Promise<boolean> {
-  const lastSent = await readCooldownFromSupabase(key);
-  return lastSent !== null && Date.now() - lastSent < withinMs;
-}
-
-async function persistCooldownToSupabase(key: string, lastSentAt: number) {
-  const supabase = getSupabaseAdmin();
-  if (!supabase) return;
-
   try {
-    await supabase.from("kv_store").upsert(
-      {
-        key: `alert_cooldown:${key}`,
-        value: { lastSentAt },
-      },
-      { onConflict: "key" }
+    const { getPool } = await import("@/lib/db");
+    const pool = getPool();
+    const result = await pool.query<{ last_sent_at: Date }>(
+      `select last_sent_at from public.alert_incidents
+        where key = $1
+          and resolved_at is null`,
+      [key]
     );
+    if (result.rows.length === 0) return false;
+    const lastSent = result.rows[0].last_sent_at.getTime();
+    return Date.now() - lastSent < withinMs;
   } catch {
-    // best effort
+    return false;
   }
 }
 
@@ -493,7 +615,10 @@ async function fetchCalendarDays(
     }
   } catch (err) {
     // An enrichment must never take the alert down with it.
-    console.error(`[YoYRates] calendar_days query failed for ${listingId}:`, err);
+    console.error(
+      `[YoYRates] calendar_days query failed for ${listingId}:`,
+      err
+    );
   }
   return result;
 }
@@ -849,26 +974,28 @@ export async function sendBookingConfirmation(details: {
   }
 }
 
+export interface SendAlertOptions {
+  /** Add these recipients to the configured ALERT_TO_EMAIL. */
+  to?: string | string[];
+  /**
+   * Gaps in hours between successive sends. See DEFAULT_CADENCE_HOURS
+   * (incident) and PER_ENTITY_CADENCE_HOURS (per-PI). Default is incident.
+   */
+  cadenceHours?: number[];
+}
+
 export async function sendAlert(
   subject: string,
   body: string,
   alertKey?: string,
-  options?: { to?: string | string[] }
+  options?: SendAlertOptions
 ) {
   const key = alertKey || subject;
-  const now = Date.now();
+  const cadenceHours = options?.cadenceHours ?? DEFAULT_CADENCE_HOURS;
 
-  // Check cooldown to prevent alert spam
-  const lastSent = alertCooldowns.get(key);
-  if (lastSent && now - lastSent < COOLDOWN_MS) {
-    console.log(`Alert suppressed (cooldown): ${subject}`);
-    return;
-  }
-
-  const sharedLastSent = await readCooldownFromSupabase(key);
-  if (sharedLastSent && now - sharedLastSent < COOLDOWN_MS) {
-    alertCooldowns.set(key, sharedLastSent);
-    console.log(`Alert suppressed (shared cooldown): ${subject}`);
+  const claim = await claimAlert(key, cadenceHours);
+  if (!claim.claimed) {
+    console.log(`Alert suppressed (${claim.reason}): ${subject}`);
     return;
   }
 
@@ -895,26 +1022,31 @@ export async function sendAlert(
     return;
   }
 
+  // Thread the reminder count into the subject so a repeated incident reads
+  // as a reminder rather than a fresh event. The subject line was already
+  // the inbox's primary differentiator — this makes "same incident, hour 5"
+  // obvious at a glance.
+  const subjectPrefix =
+    claim.reminderCount > 1 ? `[reminder ${claim.reminderCount}] ` : "";
+
   try {
     const resend = new Resend(apiKey);
     await resend.emails.send({
       from: ALERT_FROM,
       to: recipients,
-      subject: `[BookTraverse Alert] ${subject}`,
+      subject: `[BookTraverse Alert] ${subjectPrefix}${subject}`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px;">
           <h2 style="color: #dc2626;">${subject}</h2>
           <p style="color: #4b5563; font-size: 14px; line-height: 22px;">${body}</p>
           <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
           <p style="color: #9ca3af; font-size: 12px;">
-            ${new Date().toISOString()} — booktraverse.com automated alert
+            ${new Date().toISOString()} — booktraverse.com automated alert · reminder ${claim.reminderCount}
           </p>
         </div>
       `,
     });
-    alertCooldowns.set(key, now);
-    await persistCooldownToSupabase(key, now);
-    console.log(`Alert sent: ${subject}`);
+    console.log(`Alert sent: ${subject} (reminder ${claim.reminderCount})`);
   } catch (err) {
     // Alert delivery is best-effort — never let it break the main flow
     console.error(`Failed to send alert: ${subject}`, err);

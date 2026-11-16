@@ -30,13 +30,24 @@ import {
 } from "@/lib/checkout-finalizer";
 import { createQuote, getQuote } from "@/lib/guesty-beapi";
 import { classifyBeapiError } from "@/lib/beapi-error";
-import { sendAlert, OPS_ALERT_INBOX } from "@/lib/alerts";
+import {
+  PER_ENTITY_CADENCE_HOURS,
+  sendAlert,
+  OPS_ALERT_INBOX,
+} from "@/lib/alerts";
+
+// Per-PI cadence: first alert → +24h → +48h, then silent (the daily
+// incident-digest cron handles anything still open past that). Previous
+// 1-hour cadence multiplied by every orphan PI in rotation.
+const ORPHAN_ALERT_OPTS = {
+  to: OPS_ALERT_INBOX,
+  cadenceHours: PER_ENTITY_CADENCE_HOURS,
+} as const;
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const OPS_INBOX = OPS_ALERT_INBOX;
 // Only act on orphans older than this so an in-flight finalize (which creates
 // the reservation a few seconds after the charge) is never mistaken for one.
 const MIN_AGE_MS = 60 * 60 * 1000; // 1h
@@ -183,7 +194,7 @@ export async function GET(request: Request) {
           "ORPHAN — NEEDS MANUAL REVIEW",
           `Paid charge with no reservation, and re-quote failed (not an availability error — don't auto-refund).<br>PI <code>${pi.id}</code> $${amount.toFixed(2)} ${email} ${checkIn}→${checkOut}.<br>${classified.message}`,
           `orphan-review-${pi.id}`,
-          { to: OPS_INBOX }
+          ORPHAN_ALERT_OPTS
         ).catch(() => {});
         outcomes.push({
           pi: pi.id,
@@ -210,7 +221,7 @@ export async function GET(request: Request) {
           "ORPHAN AUTO-RECOVERED",
           `A paid charge with no reservation was recovered into a booking.<br>PI <code>${pi.id}</code> $${amount.toFixed(2)} — ${email} — listing ${listingId}, ${checkIn}→${checkOut}.`,
           `orphan-recovered-${pi.id}`,
-          { to: OPS_INBOX }
+          ORPHAN_ALERT_OPTS
         ).catch(() => {});
         outcomes.push({ pi: pi.id, action: "recovered" });
         continue;
@@ -225,7 +236,7 @@ export async function GET(request: Request) {
           "ORPHAN — RECOVERY FAILED",
           `Re-quote succeeded but finalize threw for PI <code>${pi.id}</code> $${amount.toFixed(2)} ${email}. Not auto-refunded — review.<br>${err instanceof Error ? err.message : String(err)}`,
           `orphan-recovery-failed-${pi.id}`,
-          { to: OPS_INBOX }
+          ORPHAN_ALERT_OPTS
         ).catch(() => {});
         outcomes.push({ pi: pi.id, action: "recovery-failed" });
         continue;
@@ -239,7 +250,7 @@ export async function GET(request: Request) {
           "ORPHAN — REFUND NEEDED (auto-refund disabled)",
           `Paid charge with no reservation and dates now unavailable. Auto-refund is OFF — refund manually.<br>PI <code>${pi.id}</code> $${amount.toFixed(2)} ${email} ${checkIn}→${checkOut}.`,
           `orphan-refund-needed-${pi.id}`,
-          { to: OPS_INBOX }
+          ORPHAN_ALERT_OPTS
         ).catch(() => {});
         outcomes.push({ pi: pi.id, action: "refund-needed-manual" });
         continue;
@@ -270,7 +281,7 @@ export async function GET(request: Request) {
           "ORPHAN AUTO-REFUNDED",
           `A paid charge had no reservation and the dates are no longer available, so it was auto-refunded.<br>PI <code>${pi.id}</code> — refunded <b>$${(refund.amount / 100).toFixed(2)}</b> to ${email}.<br>Listing ${listingId}, ${checkIn}→${checkOut}. Please send the guest an apology.`,
           `orphan-refunded-${pi.id}`,
-          { to: OPS_INBOX }
+          ORPHAN_ALERT_OPTS
         ).catch(() => {});
         outcomes.push({
           pi: pi.id,
@@ -282,7 +293,7 @@ export async function GET(request: Request) {
           "ORPHAN — AUTO-REFUND FAILED",
           `Tried to auto-refund an unrecoverable orphan but the refund failed — refund manually.<br>PI <code>${pi.id}</code> $${amount.toFixed(2)} ${email}.<br>${err instanceof Error ? err.message : String(err)}`,
           `orphan-refund-failed-${pi.id}`,
-          { to: OPS_INBOX }
+          ORPHAN_ALERT_OPTS
         ).catch(() => {});
         outcomes.push({ pi: pi.id, action: "refund-failed" });
       }
@@ -294,7 +305,7 @@ export async function GET(request: Request) {
       "ORPHAN — NEEDS MANUAL REVIEW",
       `Paid charge with no reservation; couldn't auto-recover (missing guest details) and the dates are still available — create the booking manually.<br>PI <code>${pi.id}</code> $${amount.toFixed(2)} ${email || "(no email)"} ${checkIn}→${checkOut}.`,
       `orphan-review-${pi.id}`,
-      { to: OPS_INBOX }
+      ORPHAN_ALERT_OPTS
     ).catch(() => {});
     outcomes.push({ pi: pi.id, action: "manual-review-missing-details" });
   }
