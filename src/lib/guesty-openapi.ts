@@ -356,6 +356,16 @@ export function isAlreadySettledPaymentError(error: unknown) {
 }
 
 /**
+ * @deprecated Legacy fallback for the pre-migration schema. New code should
+ * use `recordPaymentCapped` below, which records only what Guesty will accept
+ * now (capped at `requestedCents`) and lets the top-up cron close the
+ * shortfall as Guesty's balance rises. This function records Guesty's current
+ * `balanceDue` even when it is LOWER than the Stripe captured amount, which
+ * is how GY-PvrJLvSa/XfNL7u3G/z9ai4HsW/eMkBggTH all ended up short in
+ * Guesty despite the guests paying in full. Kept so an out-of-order deploy
+ * (code live before the migration applies) still accepts bookings; delete in
+ * a follow-up PR once the migration is confirmed applied in prod.
+ *
  * Disambiguate the "amount > balance" error by fetching the reservation's
  * actual balance from Guesty.
  *
@@ -405,6 +415,126 @@ export async function resolveAmountVsBalance(
     balanceAmount: balanceDue,
     delta: Number((originalAmount - balanceDue).toFixed(2)),
   };
+}
+
+/**
+ * Result of one `recordPaymentCapped` attempt.
+ *
+ *   - `full`  — Guesty accepted the full `requestedCents`. Caller's running
+ *               total moves to `requestedCents`.
+ *   - `short` — Guesty's current `balanceDue` was positive but less than
+ *               `requestedCents`; we recorded the balance. Caller's running
+ *               total moves to `balanceCents`; `shortfallCents` is what
+ *               still needs to be recorded once a Guesty-side item lands.
+ *   - `no_op` — Guesty's `balanceDue` was already 0 (duplicate webhook /
+ *               prior race / tombstoned invoice). Nothing was recorded on
+ *               this call; caller must roll back any reservation it made.
+ */
+export type RecordPaymentResult =
+  | { outcome: "full"; recordedCents: number }
+  | {
+      outcome: "short";
+      recordedCents: number;
+      shortfallCents: number;
+      balanceCents: number;
+    }
+  | { outcome: "no_op" };
+
+/**
+ * Record a Stripe-captured amount against a Guesty reservation, never
+ * recording more than `requestedCents`. Inputs and outputs are in integer
+ * cents; the one dollars/cents conversion happens here at the Guesty call.
+ *
+ * Why this exists: `resolveAmountVsBalance` (its deprecated predecessor)
+ * fell back to recording Guesty's `balanceDue` when the first attempt was
+ * rejected with "amount > balance". When a Guesty-side fee (e.g. the $50
+ * pet fee pre-2026-10-17) had not yet landed on the invoice, that balance
+ * was $50 LESS than the guest actually paid — and the delta was lost,
+ * because `payment_recorded_at` got stamped with the short amount and the
+ * cron stopped retrying. Four reservations exhibit the bug today
+ * (GY-PvrJLvSa, GY-XfNL7u3G, GY-z9ai4HsW each $50; GY-eMkBggTH $5.77).
+ *
+ * This function is the money-path primitive; the DB-side reserve/revert
+ * CAS protocol lives in the writers (`checkout-finalizer.ts`,
+ * `cart/checkout-coordinator.ts`, `api/cron/record-payments`) so that
+ * concurrent attempts can never record more than Stripe captured.
+ */
+export async function recordPaymentCapped(
+  reservationId: string,
+  requestedCents: number,
+  paymentIntentId: string
+): Promise<RecordPaymentResult> {
+  if (!Number.isFinite(requestedCents) || requestedCents <= 0) {
+    throw new Error(
+      `recordPaymentCapped: requestedCents must be a positive finite integer, got ${requestedCents}`
+    );
+  }
+
+  const requestedDollars = requestedCents / 100;
+
+  try {
+    await recordPayment(reservationId, requestedDollars, paymentIntentId, {
+      retries: 1,
+      timeoutMs: 5000,
+    });
+    return { outcome: "full", recordedCents: requestedCents };
+  } catch (err) {
+    if (!isAlreadySettledPaymentError(err)) {
+      throw err;
+    }
+  }
+
+  const reservation = (await getOpenAPIReservation(reservationId)) as {
+    money?: { balanceDue?: number };
+  } | null;
+  const balanceDue = Number(reservation?.money?.balanceDue ?? 0);
+  // Guard against float drift: Guesty returns dollars with up to 2dp, but a
+  // 0.001 margin keeps us safe without accepting a real cent.
+  if (balanceDue <= 0.001) {
+    return { outcome: "no_op" };
+  }
+  const balanceCents = Math.round(balanceDue * 100);
+
+  if (balanceCents >= requestedCents) {
+    // Fee raced up between our first failed call and this fetch (e.g. a
+    // concurrent Guesty webhook posted an item). Record `requestedCents`
+    // — NEVER `balanceCents`, since that would exceed what Stripe captured.
+    try {
+      await recordPayment(reservationId, requestedDollars, paymentIntentId, {
+        retries: 1,
+        timeoutMs: 5000,
+      });
+      return { outcome: "full", recordedCents: requestedCents };
+    } catch (err) {
+      if (isAlreadySettledPaymentError(err)) {
+        // Balance slipped back down between the fetch and the record.
+        // Bail; the caller will reconcile on the next pass.
+        return { outcome: "no_op" };
+      }
+      throw err;
+    }
+  }
+
+  // 0 < balanceCents < requestedCents — classic "fee hasn't landed yet". Take
+  // what Guesty will accept now; the writer protocol updates its running
+  // total to balanceCents and the top-up cron picks up the rest.
+  await recordPayment(reservationId, balanceCents / 100, paymentIntentId, {
+    retries: 1,
+    timeoutMs: 5000,
+  });
+  const result: RecordPaymentResult = {
+    outcome: "short",
+    recordedCents: balanceCents,
+    shortfallCents: requestedCents - balanceCents,
+    balanceCents,
+  };
+  // Invariant that every writer relies on.
+  if (result.recordedCents > requestedCents) {
+    throw new Error(
+      `recordPaymentCapped invariant violated: recorded ${result.recordedCents} > requested ${requestedCents}`
+    );
+  }
+  return result;
 }
 
 export function isTestModePaymentIntentError(error: unknown) {

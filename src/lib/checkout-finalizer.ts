@@ -3,8 +3,12 @@ import {
   recordPayment,
   addInvoiceItem,
   isAlreadySettledPaymentError,
+  recordPaymentCapped,
   resolveAmountVsBalance,
+  type RecordPaymentResult,
 } from "@/lib/guesty-openapi";
+import { dollarsToCents } from "@/lib/money";
+import { paymentTargetColumnsExist } from "@/lib/db-features";
 import { toE164US } from "@/lib/phone";
 import {
   createReservationInstant,
@@ -108,7 +112,197 @@ export class ReservationPendingRecoveryError extends Error {
 // Stripe's 30s webhook delivery window.
 const PAYMENT_RECORD_BACKOFFS_MS = [1000, 2000, 3000, 4000, 5000];
 
+export type RecordPaymentFinal =
+  | { outcome: "full" }
+  | { outcome: "short"; recordedCents: number; shortfallCents: number }
+  | { outcome: "no_op" };
+
+/**
+ * Attempt to record a Stripe-captured charge against a Guesty reservation,
+ * using the new cents-tracked reserve-then-record protocol when the schema
+ * supports it and falling back to the legacy `resolveAmountVsBalance` path
+ * when it does not.
+ *
+ * Post-migration path: a conditional UPDATE in Postgres reserves the top-up
+ * amount on the reservation row (CAS on `payment_recorded_cents = observed`
+ * AND the new running total `<= payment_target_cents`). ONLY if that UPDATE
+ * affects exactly 1 row do we call `recordPaymentCapped`. On anything other
+ * than `full`, a REVERT UPDATE rolls the row back by the overshoot amount.
+ *
+ * Legacy path (pre-migration): the old behavior is preserved verbatim so a
+ * code-ahead-of-migration deploy still accepts bookings.
+ */
 export async function recordPaymentWithIndexingRetry(
+  reservationId: string,
+  chargedAmount: number,
+  paymentIntentId: string
+): Promise<RecordPaymentFinal> {
+  const pool = getPool();
+  const useNewProtocol = await paymentTargetColumnsExist(pool);
+  if (!useNewProtocol) {
+    await recordPaymentLegacy(reservationId, chargedAmount, paymentIntentId);
+    return { outcome: "full" };
+  }
+
+  const targetCents = dollarsToCents(chargedAmount);
+  let lastError: unknown;
+  for (
+    let attempt = 0;
+    attempt <= PAYMENT_RECORD_BACKOFFS_MS.length;
+    attempt++
+  ) {
+    try {
+      const result = await attemptReserveAndRecord({
+        reservationId,
+        paymentIntentId,
+        targetCents,
+      });
+      if (result.outcome === "full") {
+        return { outcome: "full" };
+      }
+      if (result.outcome === "no_op") {
+        // Nothing moved — either Guesty's balance was already 0 (duplicate
+        // webhook catching up) or our row was taken by a parallel attempt.
+        // Retry a few times while Guesty indexes; the next attempt reads
+        // the fresh state.
+        lastError = new Error("recordPaymentCapped returned no_op");
+      } else {
+        // Partial record. The DB running total has advanced to the balance
+        // Guesty accepted; the cron will top up the shortfall. We DO NOT
+        // keep looping — further in-request attempts won't close the
+        // Guesty-side gap (the fee has to land first).
+        return {
+          outcome: "short",
+          recordedCents: result.recordedCents,
+          shortfallCents: result.shortfallCents,
+        };
+      }
+    } catch (err) {
+      lastError = err;
+    }
+    const delay = PAYMENT_RECORD_BACKOFFS_MS[attempt];
+    if (delay === undefined) break;
+    console.warn(
+      `[Reservation] recordPayment attempt ${attempt + 1} failed, retrying in ${delay}ms:`,
+      lastError instanceof Error ? lastError.message : lastError
+    );
+    await new Promise((r) => setTimeout(r, delay));
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("recordPayment failed after retries");
+}
+
+/**
+ * The reserve-then-record CAS protocol. Shared by the single-flow finalizer,
+ * the cart coordinator, and the top-up cron. All in integer cents.
+ *
+ *   1. Read the current `payment_recorded_cents` (CAS observation).
+ *   2. Conditional UPDATE that advances `payment_recorded_cents` by
+ *      `topupCents` ONLY if the row's current value still equals `observed`
+ *      AND the new total stays `<= payment_target_cents`. If the UPDATE
+ *      affects 0 rows, another worker is ahead of us — return `no_op`.
+ *   3. If the reservation held (rowCount = 1), call `recordPaymentCapped`.
+ *      - `full` → done. The reserve UPDATE already stamped `payment_recorded_at`
+ *                 if we hit target.
+ *      - `short`/`no_op`/throw → REVERT the overshoot. On throw, rethrow
+ *        after the revert.
+ *
+ * `topupCents` must be `target - observed` for a top-up call; for the
+ * first-record call it is the whole target (observed = 0).
+ */
+export async function attemptReserveAndRecord(args: {
+  reservationId: string;
+  paymentIntentId: string;
+  targetCents: number;
+  observedCents?: number;
+}): Promise<RecordPaymentResult> {
+  const pool = getPool();
+  const { reservationId, paymentIntentId, targetCents } = args;
+
+  let observedCents = args.observedCents;
+  if (observedCents === undefined) {
+    const { rows } = await pool.query<{ payment_recorded_cents: number }>(
+      `SELECT payment_recorded_cents FROM reservations WHERE guesty_id = $1`,
+      [reservationId]
+    );
+    observedCents = Number(rows[0]?.payment_recorded_cents ?? 0);
+  }
+  const topupCents = targetCents - observedCents;
+  if (topupCents <= 0) {
+    return { outcome: "no_op" };
+  }
+
+  const now = Date.now();
+  const reserve = await pool.query<{ new_recorded: number }>(
+    `UPDATE reservations
+        SET payment_recorded_cents = payment_recorded_cents + $1,
+            payment_recorded_at = CASE
+              WHEN payment_recorded_cents + $1 >= payment_target_cents
+                THEN COALESCE(payment_recorded_at, $4)
+              ELSE payment_recorded_at
+            END
+      WHERE guesty_id = $2
+        AND payment_recorded_cents = $3
+        AND payment_target_cents IS NOT NULL
+        AND payment_recorded_cents + $1 <= payment_target_cents
+     RETURNING payment_recorded_cents AS new_recorded`,
+    [topupCents, reservationId, observedCents, now]
+  );
+
+  if (reserve.rowCount !== 1) {
+    // CAS lost — another worker moved the row since our read, or the
+    // topup would overflow target. Don't call Guesty.
+    return { outcome: "no_op" };
+  }
+
+  try {
+    const result = await recordPaymentCapped(
+      reservationId,
+      topupCents,
+      paymentIntentId
+    );
+    if (result.outcome === "full") {
+      return result;
+    }
+    const accepted = result.outcome === "short" ? result.recordedCents : 0;
+    const overshoot = topupCents - accepted;
+    if (overshoot > 0) {
+      await revertReserve(reservationId, overshoot);
+    }
+    return result;
+  } catch (err) {
+    await revertReserve(reservationId, topupCents).catch(() => {});
+    throw err;
+  }
+}
+
+async function revertReserve(
+  reservationId: string,
+  overshootCents: number
+): Promise<void> {
+  if (overshootCents <= 0) return;
+  const pool = getPool();
+  await pool.query(
+    `UPDATE reservations
+        SET payment_recorded_cents = payment_recorded_cents - $1,
+            payment_recorded_at = CASE
+              WHEN payment_recorded_cents - $1 < payment_target_cents
+                THEN NULL
+              ELSE payment_recorded_at
+            END
+      WHERE guesty_id = $2
+        AND payment_recorded_cents >= $1`,
+    [overshootCents, reservationId]
+  );
+}
+
+/**
+ * Pre-migration code path, kept verbatim. See `resolveAmountVsBalance`
+ * deprecation notice for why this is still here. Delete alongside
+ * `resolveAmountVsBalance` once the migration is confirmed applied.
+ */
+async function recordPaymentLegacy(
   reservationId: string,
   chargedAmount: number,
   paymentIntentId: string
@@ -127,11 +321,6 @@ export async function recordPaymentWithIndexingRetry(
       return;
     } catch (err) {
       if (isAlreadySettledPaymentError(err)) {
-        // Guesty's "amount > balance" error has two real meanings:
-        //   (a) balance is 0 — already settled, safe to skip
-        //   (b) we sent a higher amount than actual balance — must retry
-        // Disambiguate by fetching Guesty's actual balance. See
-        // resolveAmountVsBalance comment in src/lib/guesty-openapi.ts.
         try {
           const resolution = await resolveAmountVsBalance(
             reservationId,
@@ -139,11 +328,6 @@ export async function recordPaymentWithIndexingRetry(
             paymentIntentId
           );
           if (resolution.mismatch) {
-            // Real amount mismatch detected. Stripe captured one amount but
-            // Guesty's invoice/quote had a different balance. The payment
-            // IS now recorded (for Guesty's balance amount); the delta lives
-            // only in Stripe. Send an alert so the team can investigate
-            // where the gap is coming from (upsell? fee? rounding?).
             const stripeUrl = buildStripeDashboardPaymentUrl(paymentIntentId);
             await sendAlert(
               `Payment amount mismatch — Stripe $${resolution.originalAmount.toFixed(2)} vs Guesty $${resolution.balanceAmount.toFixed(2)}`,
@@ -173,8 +357,6 @@ export async function recordPaymentWithIndexingRetry(
           }
           return;
         } catch (resolveErr) {
-          // Couldn't fetch balance or couldn't retry-record with balance.
-          // Fall through to the normal retry/backoff loop.
           lastError = resolveErr;
         }
       } else {
@@ -679,48 +861,105 @@ async function finalizeReservationLocked(
   );
   const nowEpoch = Date.now();
   let reservationStoredLocally = false;
+  const schemaHasPaymentColumns = await paymentTargetColumnsExist(pool);
+  const chargedAmountCents = dollarsToCents(chargedAmount);
 
   try {
-    await pool.query(
-      `INSERT INTO reservations (guesty_id, confirmation_code, listing_id, guest_id, status, source, check_in, check_out, guests_count, guest, money, last_synced_at, stripe_payment_intent_id, user_id, payment_recorded_at, listing_title, listing_photo)
-       VALUES ($1, $2, $3, $4, $5, 'BE-API', $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-       ON CONFLICT (guesty_id) DO UPDATE SET
-         status = EXCLUDED.status,
-         confirmation_code = EXCLUDED.confirmation_code,
-         guest = EXCLUDED.guest,
-         money = COALESCE(reservations.money, EXCLUDED.money),
-         stripe_payment_intent_id = COALESCE(reservations.stripe_payment_intent_id, EXCLUDED.stripe_payment_intent_id),
-         user_id = COALESCE(reservations.user_id, EXCLUDED.user_id),
-         payment_recorded_at = COALESCE(reservations.payment_recorded_at, EXCLUDED.payment_recorded_at),
-         listing_title = COALESCE(reservations.listing_title, EXCLUDED.listing_title),
-         listing_photo = COALESCE(reservations.listing_photo, EXCLUDED.listing_photo),
-         last_synced_at = $11`,
-      [
-        reservationId,
-        confirmationCode || null,
-        tracking.listingId || (reservation.listingId as string) || null,
-        ((reservation.guestId || reservation.bookerId) as string) || null,
-        (reservation.status as string) || "confirmed",
-        checkIn || null,
-        checkOut || null,
-        tracking.guests || null,
-        JSON.stringify({
-          email: guest.email || null,
-          firstName: guest.firstName || null,
-          lastName: guest.lastName || null,
-          fullName:
-            [guest.firstName, guest.lastName].filter(Boolean).join(" ") || null,
-          phone: guest.phone || null,
-        }),
-        JSON.stringify({ total_paid: chargedAmount, currency: "USD" }),
-        nowEpoch,
-        paymentIntentId,
-        userId,
-        null,
-        tracking.listingTitle || null,
-        tracking.picture || null,
-      ]
-    );
+    if (schemaHasPaymentColumns) {
+      await pool.query(
+        `INSERT INTO reservations (
+           guesty_id, confirmation_code, listing_id, guest_id, status, source,
+           check_in, check_out, guests_count, guest, money, last_synced_at,
+           stripe_payment_intent_id, user_id, payment_recorded_at,
+           listing_title, listing_photo,
+           payment_target_cents, payment_recorded_cents, payment_target_cents_set_at
+         )
+         VALUES ($1, $2, $3, $4, $5, 'BE-API', $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 0, $18)
+         ON CONFLICT (guesty_id) DO UPDATE SET
+           status = EXCLUDED.status,
+           confirmation_code = EXCLUDED.confirmation_code,
+           guest = EXCLUDED.guest,
+           money = COALESCE(reservations.money, EXCLUDED.money),
+           stripe_payment_intent_id = COALESCE(reservations.stripe_payment_intent_id, EXCLUDED.stripe_payment_intent_id),
+           user_id = COALESCE(reservations.user_id, EXCLUDED.user_id),
+           payment_recorded_at = COALESCE(reservations.payment_recorded_at, EXCLUDED.payment_recorded_at),
+           listing_title = COALESCE(reservations.listing_title, EXCLUDED.listing_title),
+           listing_photo = COALESCE(reservations.listing_photo, EXCLUDED.listing_photo),
+           payment_target_cents = COALESCE(reservations.payment_target_cents, EXCLUDED.payment_target_cents),
+           payment_target_cents_set_at = COALESCE(reservations.payment_target_cents_set_at, EXCLUDED.payment_target_cents_set_at),
+           last_synced_at = $11`,
+        [
+          reservationId,
+          confirmationCode || null,
+          tracking.listingId || (reservation.listingId as string) || null,
+          ((reservation.guestId || reservation.bookerId) as string) || null,
+          (reservation.status as string) || "confirmed",
+          checkIn || null,
+          checkOut || null,
+          tracking.guests || null,
+          JSON.stringify({
+            email: guest.email || null,
+            firstName: guest.firstName || null,
+            lastName: guest.lastName || null,
+            fullName:
+              [guest.firstName, guest.lastName].filter(Boolean).join(" ") ||
+              null,
+            phone: guest.phone || null,
+          }),
+          JSON.stringify({ total_paid: chargedAmount, currency: "USD" }),
+          nowEpoch,
+          paymentIntentId,
+          userId,
+          null,
+          tracking.listingTitle || null,
+          tracking.picture || null,
+          chargedAmountCents,
+          nowEpoch,
+        ]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO reservations (guesty_id, confirmation_code, listing_id, guest_id, status, source, check_in, check_out, guests_count, guest, money, last_synced_at, stripe_payment_intent_id, user_id, payment_recorded_at, listing_title, listing_photo)
+         VALUES ($1, $2, $3, $4, $5, 'BE-API', $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+         ON CONFLICT (guesty_id) DO UPDATE SET
+           status = EXCLUDED.status,
+           confirmation_code = EXCLUDED.confirmation_code,
+           guest = EXCLUDED.guest,
+           money = COALESCE(reservations.money, EXCLUDED.money),
+           stripe_payment_intent_id = COALESCE(reservations.stripe_payment_intent_id, EXCLUDED.stripe_payment_intent_id),
+           user_id = COALESCE(reservations.user_id, EXCLUDED.user_id),
+           payment_recorded_at = COALESCE(reservations.payment_recorded_at, EXCLUDED.payment_recorded_at),
+           listing_title = COALESCE(reservations.listing_title, EXCLUDED.listing_title),
+           listing_photo = COALESCE(reservations.listing_photo, EXCLUDED.listing_photo),
+           last_synced_at = $11`,
+        [
+          reservationId,
+          confirmationCode || null,
+          tracking.listingId || (reservation.listingId as string) || null,
+          ((reservation.guestId || reservation.bookerId) as string) || null,
+          (reservation.status as string) || "confirmed",
+          checkIn || null,
+          checkOut || null,
+          tracking.guests || null,
+          JSON.stringify({
+            email: guest.email || null,
+            firstName: guest.firstName || null,
+            lastName: guest.lastName || null,
+            fullName:
+              [guest.firstName, guest.lastName].filter(Boolean).join(" ") ||
+              null,
+            phone: guest.phone || null,
+          }),
+          JSON.stringify({ total_paid: chargedAmount, currency: "USD" }),
+          nowEpoch,
+          paymentIntentId,
+          userId,
+          null,
+          tracking.listingTitle || null,
+          tracking.picture || null,
+        ]
+      );
+    }
     reservationStoredLocally = true;
   } catch (dbErr) {
     const stripePaymentUrl = buildStripeDashboardPaymentUrl(paymentIntentId);
@@ -751,18 +990,43 @@ async function finalizeReservationLocked(
   }
 
   try {
-    await recordPaymentWithIndexingRetry(
+    const result = await recordPaymentWithIndexingRetry(
       reservationId,
       chargedAmount,
       paymentIntentId
     );
 
-    if (reservationStoredLocally) {
+    if (result.outcome === "full" && reservationStoredLocally) {
+      // Legacy path only — the new protocol stamps payment_recorded_at
+      // atomically inside the reserve UPDATE when the running total hits
+      // target. This COALESCE is a defensive no-op when the new path ran.
       await pool.query(
         `UPDATE reservations
          SET payment_recorded_at = COALESCE(payment_recorded_at, $1)
          WHERE guesty_id = $2`,
         [Date.now(), reservationId]
+      );
+    } else if (result.outcome === "short") {
+      // Partial record. Guesty took what it could; the cron will top up as
+      // the item lands. Alert once per reservation (24h dedup via sendAlert).
+      const stripeUrl = buildStripeDashboardPaymentUrl(paymentIntentId);
+      const recorded = result.recordedCents / 100;
+      const shortfall = result.shortfallCents / 100;
+      await sendAlert(
+        `Guesty ledger short — partial payment recorded ($${recorded.toFixed(2)} of $${chargedAmount.toFixed(2)}, $${shortfall.toFixed(2)} pending)`,
+        [
+          "<p>Guesty rejected the full Stripe-captured amount because its outstanding balance was lower (likely an invoice item that hasn't landed yet).</p>",
+          "<p>We recorded what Guesty will accept now. The record-payments cron will top up the remaining amount once Guesty's balance rises, never exceeding what Stripe captured.</p>",
+          renderAlertDetails([
+            ["Reservation", reservationId],
+            ["PaymentIntent", paymentIntentId],
+            ["Stripe captured", `$${chargedAmount.toFixed(2)}`],
+            ["Recorded now", `$${recorded.toFixed(2)}`],
+            ["Pending top-up", `$${shortfall.toFixed(2)}`],
+          ]),
+          renderAlertLinks([{ label: "Stripe payment", url: stripeUrl }]),
+        ].join(""),
+        `amount-short-${reservationId}`
       );
     }
   } catch (err) {
