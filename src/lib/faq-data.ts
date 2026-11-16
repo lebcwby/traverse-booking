@@ -1,4 +1,8 @@
 import { CANCELLATION_POLICY_DAYS } from "./cancellation-policy";
+import {
+  DATE_CHANGE_REQUEST_LEAD,
+  dateChangePriceCopy,
+} from "./date-change-requests";
 
 export const FAQ_SCHEMA_DATA = [
   {
@@ -35,6 +39,10 @@ export const FAQ_SCHEMA_DATA = [
   {
     question: "Can I get a refund if I need to cancel my Colorado trip?",
     answer: `Yes, when you cancel ${CANCELLATION_POLICY_DAYS} or more days before check-in. Every direct booking uses the same policy: a full refund up to ${CANCELLATION_POLICY_DAYS} days before check-in, and non-refundable within ${CANCELLATION_POLICY_DAYS} days. Details are at booktraverse.com/cancellation.`,
+  },
+  {
+    question: "Can I change the dates of my reservation?",
+    answer: `${DATE_CHANGE_REQUEST_LEAD} ${dateChangePriceCopy()} Send the request from your reservation at booktraverse.com/account, or email bookings@traversehospitality.com.`,
   },
   {
     question: "Is Colorado a good destination for a family vacation?",

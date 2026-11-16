@@ -1,9 +1,13 @@
 /**
  * Sweeps portal date changes the guest started but never paid for.
  *
+ * New guest date changes are requests and do not write Guesty, so they never
+ * land in this table. The job still runs for a row that was already pending
+ * when self-service date changes were turned off.
+ *
  * WHY THIS EXISTS (2026-08-25, GY-fYaHGbj5 / Paul Dymond):
- * /api/account/reservations/[id]/extend moves the dates on Guesty during its
- * *quote* step, before payment, because Guesty offers no dry-run pricing for a
+ * The old extend route moved the dates on Guesty during its *quote* step,
+ * before payment, because Guesty offers no dry-run pricing for a
  * date change — moving the dates IS how you get the new price. Undoing that was
  * left entirely to a client-side rollback fired from the modal's close/back
  * buttons. Close the tab, lose signal, let the phone sleep, and nothing runs.
@@ -111,7 +115,10 @@ export async function GET(request: Request) {
         "date-change-sweep-broken"
       ).catch(() => {});
     }
-    return NextResponse.json({ error: "sweep query failed", message }, { status: 500 });
+    return NextResponse.json(
+      { error: "sweep query failed", message },
+      { status: 500 }
+    );
   }
 
   const results: Result[] = [];
@@ -122,7 +129,10 @@ export async function GET(request: Request) {
     // ── Read Guesty's current truth ────────────────────────────────────────
     let reservation: Record<string, unknown> | null = null;
     try {
-      reservation = (await getOpenAPIReservation(rid)) as Record<string, unknown>;
+      reservation = (await getOpenAPIReservation(rid)) as Record<
+        string,
+        unknown
+      >;
     } catch (err) {
       // Leave the row pending so the next run retries. An unreadable
       // reservation is not permission to guess.
@@ -186,9 +196,15 @@ export async function GET(request: Request) {
                 renderAlertDetails([
                   ["Reservation", row.confirmation_code || rid],
                   ["Stripe payment", row.stripe_payment_intent_id],
-                  ["Stripe took", `$${((pi.amount_received ?? 0) / 100).toFixed(2)}`],
+                  [
+                    "Stripe took",
+                    `$${((pi.amount_received ?? 0) / 100).toFixed(2)}`,
+                  ],
                   ["Dates on Guesty", `${currentIn} → ${currentOut}`],
-                  ["Dates before the change", `${row.original_check_in} → ${row.original_check_out}`],
+                  [
+                    "Dates before the change",
+                    `${row.original_check_in} → ${row.original_check_out}`,
+                  ],
                   ["Guesty balance", balanceDue],
                 ]),
               ].join(""),
@@ -213,7 +229,11 @@ export async function GET(request: Request) {
     // Staff collecting through GuestyPay is exactly how GY-fYaHGbj5 ended, and
     // it leaves no trace in our Stripe. A zero balance on an extended stay
     // means the extension was paid for — keep it, and fix our own record.
-    if (balanceDue !== null && balanceDue <= BALANCE_EPSILON && status !== "canceled") {
+    if (
+      balanceDue !== null &&
+      balanceDue <= BALANCE_EPSILON &&
+      status !== "canceled"
+    ) {
       if (!dryRun) {
         await resolve(pool, row.id, "settled_externally");
         await syncLocalDates(pool, rid, currentIn, currentOut);
@@ -247,7 +267,12 @@ export async function GET(request: Request) {
         row.original_check_out
       );
       await resolve(pool, row.id, "rolled_back");
-      await syncLocalDates(pool, rid, row.original_check_in, row.original_check_out);
+      await syncLocalDates(
+        pool,
+        rid,
+        row.original_check_in,
+        row.original_check_out
+      );
       results.push({
         reservationId: rid,
         confirmationCode: row.confirmation_code,
@@ -289,7 +314,10 @@ export async function GET(request: Request) {
             renderAlertDetails([
               ["Reservation", row.confirmation_code || rid],
               ["Dates on Guesty now", `${currentIn} → ${currentOut}`],
-              ["Should be", `${row.original_check_in} → ${row.original_check_out}`],
+              [
+                "Should be",
+                `${row.original_check_in} → ${row.original_check_out}`,
+              ],
               ["Balance showing", balanceDue],
               ["Attempts", attempts],
               ["Last error", message],

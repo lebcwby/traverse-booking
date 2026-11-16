@@ -17,6 +17,7 @@
 import { getListings } from "@/lib/supabase";
 import { getListingSlug } from "@/lib/utils";
 import { CANCELLATION_POLICY_SUMMARY } from "@/lib/cancellation-policy";
+import { DATE_CHANGE_REQUEST_SUMMARY } from "@/lib/date-change-requests";
 
 export const revalidate = 3600;
 
@@ -81,6 +82,7 @@ capability.
 ## Policies
 
 - **Cancellation**: ${CANCELLATION_POLICY_SUMMARY} This policy is the same across every property.
+- **Date changes**: ${DATE_CHANGE_REQUEST_SUMMARY}
 - **Check-in / check-out**: check-in after 4:00 PM, check-out before 10:00 AM
   local (Mountain) time. Every property has self check-in with a smart lock —
   no key handoff to coordinate.
