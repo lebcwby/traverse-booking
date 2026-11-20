@@ -28,6 +28,18 @@ const MAX_BODY_BYTES = 8 * 1024;
 interface Payload {
   building?: string;
   unitType?: string;
+  /**
+   * "condo" (default) or "home". Whole-home owners reach the same route from
+   * /cb-property-management, and every piece of prose below — the alert
+   * subject, the ops next-step, the owner acknowledgement — was written for a
+   * condo in a building we already manage units in. Sending a homeowner in
+   * Crested Butte South an email about "units of your size in your building"
+   * reads as a mail-merge failure, which is an odd first impression from a
+   * page whose whole argument is that somebody is paying attention.
+   *
+   * Absent or anything else behaves exactly as before.
+   */
+  propertyKind?: string;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -162,6 +174,10 @@ export async function POST(request: Request) {
   const smsNotifications = body.smsNotifications === true;
   const smsMarketing = body.smsMarketing === true;
   const page = str(body.page, 120) || "projection";
+  const isHome = str(body.propertyKind, 20).toLowerCase() === "home";
+  /** What to call the thing, and what to call where it is. */
+  const noun = isHome ? "home" : "condo";
+  const placeLabel = isHome ? "Area" : "Building";
 
   if (!firstName || !email || !building) {
     return NextResponse.json(
@@ -209,13 +225,13 @@ export async function POST(request: Request) {
   await sendAlert(
     `REVENUE PROJECTION REQUEST — ${fullName} (${building})`,
     [
-      "<p>A Crested Butte condo owner asked what their unit should be earning.</p>",
+      `<p>A Crested Butte ${noun} owner asked what their ${isHome ? "home" : "unit"} should be earning.</p>`,
       renderAlertDetails([
         ["Name", fullName],
         ["Email", email],
         ["Phone", phone || "(not given)"],
-        ["Building", building],
-        ["Unit size", unitType || "(not given)"],
+        [placeLabel, building],
+        [isHome ? "Home size" : "Unit size", unitType || "(not given)"],
         ["Managed today by", currentManager || "(not given)"],
         ["Submitted from", page],
         [
@@ -233,11 +249,20 @@ export async function POST(request: Request) {
             : `NOT CREATED — ${hubspot.detail ?? "unknown"}. Add this lead by hand.`,
         ],
       ]),
-      "<p><strong>Next step:</strong> pull trailing-12-month actuals for units " +
-        "of this size in this building and write the projection. Send a range " +
-        "with the comps and assumptions shown — never a single headline " +
-        "number. If the honest answer is that they're already doing well, " +
-        "say so.</p>",
+      isHome
+        ? "<p><strong>Next step:</strong> we manage one house in Crested Butte, " +
+          "so there is no in-building comp to pull here — price this off the " +
+          "valley market and our whole-home experience in Leadville and Twin " +
+          "Lakes, and say in the write-up which it is. Send a range with the " +
+          "assumptions shown, never a single headline number. Cover the care " +
+          "side too: what a home of this age and exposure needs over a winter " +
+          "that a condo doesn't. If the honest answer is that they're already " +
+          "doing well, say so.</p>"
+        : "<p><strong>Next step:</strong> pull trailing-12-month actuals for units " +
+          "of this size in this building and write the projection. Send a range " +
+          "with the comps and assumptions shown — never a single headline " +
+          "number. If the honest answer is that they're already doing well, " +
+          "say so.</p>",
     ].join(""),
     // Unique per submission so a second request from the same owner is never
     // swallowed by the alert cooldown.
@@ -256,7 +281,9 @@ export async function POST(request: Request) {
           process.env.LISTING_INQUIRY_FROM ||
           "Traverse Hospitality <noreply@booktraverse.com>",
         to: email,
-        subject: "Your Crested Butte projection is being put together",
+        subject: isHome
+          ? "Your Crested Butte home review is being put together"
+          : "Your Crested Butte projection is being put together",
         html: `
           <div style="font-family:system-ui,-apple-system,sans-serif;max-width:560px;color:#1e293b;line-height:1.6">
             <p>Hi ${firstName},</p>
@@ -264,14 +291,28 @@ export async function POST(request: Request) {
             <p style="margin:16px 0;padding:12px 14px;background:#f8fafc;border-left:3px solid #3b82f6;font-size:14px">
               <strong>${building}</strong>${unitType ? ` &middot; ${unitType}` : ""}
             </p>
-            <p>We manage 88 condos across the Mt. Crested Butte base area, so we'll
+            ${
+              isHome
+                ? `<p>We manage 100+ properties in Crested Butte and 70+ whole homes and
+            cabins across Colorado, so we'll price a home of your size in your area
+            against what the valley is actually booking — across every channel — and
+            send that back <strong>within one business day</strong>.</p>
+            <p>You'll get a range rather than a single number, with the assumptions
+            written out so you can check the working. It's an estimate, not a
+            guarantee — your home's condition, access, hot tub and calendar all move
+            the figure.</p>
+            <p>We'll also set out what a house your size needs over a Crested Butte
+            winter that a condo never does, because that is usually the part nobody
+            has been doing.</p>`
+                : `<p>We manage 88 condos across the Mt. Crested Butte base area, so we'll
             look at what units of your size <strong>in your building</strong> actually
             took over the last twelve months — across every channel — and send that
             back <strong>within one business day</strong>.</p>
             <p>You'll get a range rather than a single number, with the comparable
             units and the assumptions written out so you can check the working. It's
             an estimate based on similar units, not a guarantee — your condo's
-            condition, floor, view and calendar all move the figure.</p>
+            condition, floor, view and calendar all move the figure.</p>`
+            }
             <p>No cost and no commitment. If it turns out you're already doing well,
             we'll tell you that too.</p>
             <p style="margin-top:24px">— The Traverse Hospitality team<br>

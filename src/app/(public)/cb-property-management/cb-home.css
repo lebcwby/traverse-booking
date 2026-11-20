@@ -1,0 +1,246 @@
+/*
+ * /cb-property-management — single-family owner campaign.
+ *
+ * Additive only. The page is built on audit.css (shell, bands, hero, form
+ * card, FAQ) and projection.css (stat/cost grids, scenario beats), and this
+ * file adds ONLY the three things that page has and neither of those does:
+ * the two-pillar split, the seasonal care columns and the proof line under
+ * them. Everything here is scoped under .cbh-page so it cannot reach the
+ * condo pages that share the other two files.
+ *
+ * Colours come from the audit.css custom properties rather than literals, so
+ * a palette change there carries through here.
+ */
+
+/* ── Two pillars ───────────────────────────────────────────────── */
+
+.cbh-page .cbh-pillars {
+  padding: 72px 0 8px;
+  background: var(--a-bg);
+}
+
+.cbh-page .cbh-pillars h2 {
+  font-size: clamp(1.6rem, 3.4vw, 2.3rem);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin: 0 0 14px;
+  color: var(--a-navy);
+}
+
+.cbh-page .cbh-pillar-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 36px;
+}
+
+.cbh-page .cbh-pillar {
+  position: relative;
+  padding: 30px 28px 26px;
+  border: 1px solid var(--a-line);
+  border-radius: var(--a-radius);
+  background: var(--a-bg-alt);
+  /* The number sits half outside the top edge, so the card needs room above
+     it and the section needs the overflow. */
+  margin-top: 18px;
+}
+
+.cbh-page .cbh-pillar-alt {
+  background: #fffaf0;
+  border-color: #fde8c4;
+}
+
+.cbh-page .cbh-pillar-n {
+  position: absolute;
+  top: -18px;
+  left: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 36px;
+  border-radius: var(--a-radius-sm);
+  background: var(--a-blue);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.cbh-page .cbh-pillar-alt .cbh-pillar-n {
+  background: var(--a-amber);
+}
+
+.cbh-page .cbh-pillar h3 {
+  margin: 8px 0 10px;
+  font-size: 1.22rem;
+  line-height: 1.25;
+  color: var(--a-navy);
+}
+
+.cbh-page .cbh-pillar p {
+  margin: 0 0 14px;
+  color: var(--a-body);
+  line-height: 1.62;
+}
+
+.cbh-page .cbh-pillar a {
+  font-weight: 600;
+  color: var(--a-blue-dark);
+  text-decoration: none;
+}
+
+.cbh-page .cbh-pillar a:hover {
+  text-decoration: underline;
+}
+
+.cbh-page .cbh-pillar-alt a {
+  color: #b45309;
+}
+
+/* ── Four-up grids ─────────────────────────────────────────────── */
+
+/*
+ * Both leak grids on this page hold exactly FOUR cards, and the inherited
+ * `proj-costs-wide` is an auto-fit track that lands them 3 + 1 on a desktop
+ * viewport — the orphan reads as a mistake. Pin them to 2x2 above the
+ * breakpoint instead, and let the inherited auto-fit take over below it.
+ */
+@media (min-width: 900px) {
+  .cbh-page .cbh-quad {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/*
+ * The self-check carries FOUR questions here where the condo page has three,
+ * and projection.css lays that list out on a three-track grid — so the fourth
+ * drops onto a row of its own. Four across reads as "four quick questions",
+ * which is the point of the section, so widen the track on desktop only.
+ */
+@media (min-width: 1040px) {
+  .cbh-page .proj-check-steps {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ── Care section ──────────────────────────────────────────────── */
+
+.cbh-page .cbh-care {
+  padding: 68px 0 72px;
+  background: var(--a-bg);
+}
+
+/* ── Seasonal columns ──────────────────────────────────────────── */
+
+.cbh-page .cbh-seasons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  margin-top: 34px;
+}
+
+.cbh-page .cbh-season {
+  padding: 26px 24px;
+  background: var(--a-bg);
+  border: 1px solid var(--a-line);
+  border-radius: var(--a-radius);
+  /* The accent bar reads as a season marker and keeps the three columns
+     visually distinct without three different background colours. */
+  border-top: 3px solid var(--a-blue);
+}
+
+.cbh-page .cbh-season:nth-child(2) {
+  border-top-color: #0ea5e9;
+}
+
+.cbh-page .cbh-season:nth-child(3) {
+  border-top-color: var(--a-amber);
+}
+
+.cbh-page .cbh-season h3 {
+  margin: 0 0 14px;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--a-navy);
+}
+
+.cbh-page .cbh-season ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cbh-page .cbh-season li {
+  position: relative;
+  padding: 0 0 0 20px;
+  margin-bottom: 11px;
+  color: var(--a-body);
+  line-height: 1.55;
+  font-size: 0.97rem;
+}
+
+.cbh-page .cbh-season li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--a-blue);
+}
+
+.cbh-page .cbh-season:nth-child(2) li::before {
+  background: #0ea5e9;
+}
+
+.cbh-page .cbh-season:nth-child(3) li::before {
+  background: var(--a-amber);
+}
+
+.cbh-page .cbh-season li:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Proof line ────────────────────────────────────────────────── */
+
+.cbh-page .cbh-proof {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin: 28px 0 0;
+  padding: 20px 22px;
+  border-radius: var(--a-radius-sm);
+  background: var(--a-blue-soft);
+  color: #1e3a8a;
+  line-height: 1.6;
+  font-size: 0.97rem;
+}
+
+.cbh-page .cbh-proof svg {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  color: var(--a-blue-dark);
+}
+
+@media (max-width: 640px) {
+  .cbh-page .cbh-pillars {
+    padding-top: 52px;
+  }
+
+  .cbh-page .cbh-care {
+    padding: 48px 0 52px;
+  }
+
+  .cbh-page .cbh-pillar {
+    padding: 28px 20px 22px;
+  }
+
+  .cbh-page .cbh-season {
+    padding: 22px 18px;
+  }
+}

@@ -846,6 +846,56 @@ body:has(.audit-page) > main {
 .audit-midcta .audit-err {
   color: #fca5a5 !important;
 }
+
+/*
+ * Dark-band form text.
+ *
+ * This band was built for the audit's mid-page CTA, which is a single URL
+ * chip with NO <label> anywhere — so the form text colours were never
+ * exercised against #14142b. The projection form then reused the band with a
+ * fully labelled seven-field grid, and every label kept its light-background
+ * colour: #1e293b on #14142b is a contrast ratio of 1.23:1, which is not
+ * "hard to read", it is invisible. Measured on the live page 2026-11-20: 15
+ * failing elements, 7 of them field labels on a conversion form.
+ *
+ * The SMS consent text is the part that matters most. It sat at 3.79:1, and
+ * A2P 10DLC reviewers read that language on the opt-in page itself — illegible
+ * consent wording is a campaign rejection reason, not just an a11y defect.
+ *
+ * Scoped to .audit-midcta, so it is a no-op for the audit form that has no
+ * labels and cannot affect the light sections.
+ */
+.audit-midcta label,
+.audit-midcta .audit-consent,
+.audit-midcta .audit-consent span,
+.audit-midcta .audit-consent-note,
+.audit-midcta .proj-optional,
+.audit-midcta .audit-sms,
+.audit-midcta .audit-sms span,
+.audit-midcta .audit-legal-links {
+  color: #dbe1f0;
+}
+
+/* Secondary text stays quieter than the labels, but above 4.5:1 on the navy.
+   `!important` matches the base rules it overrides — .audit-consent-note and
+   .audit-legal-links both set `color: var(--a-muted) !important`, so a plain
+   declaration here loses however specific it is. Same approach the
+   .audit-formcard-dark block above already takes. */
+.audit-midcta .audit-consent,
+.audit-midcta .audit-consent span,
+.audit-midcta .audit-consent-note,
+.audit-midcta .proj-optional,
+.audit-midcta .audit-sms,
+.audit-midcta .audit-sms span,
+.audit-midcta .audit-legal-links {
+  color: #aab3cc !important;
+}
+
+.audit-midcta .audit-consent-note a,
+.audit-midcta .audit-legal-links a,
+.audit-midcta .audit-sms a {
+  color: #93c5fd;
+}
 .audit-midcta .audit-done h3 {
   color: #fff;
 }
@@ -940,6 +990,20 @@ body:has(.audit-page) > main {
 .audit-formcard-dark .audit-consent,
 .audit-formcard-dark .audit-done p {
   color: #b9c0d4 !important;
+}
+/* The same gap the .audit-midcta block below fixes, in the other dark
+   container: this block covered .audit-consent and the done state, but not
+   the consent note, the legal links or the "Optional" marker, which stayed
+   at --a-muted and measured 3.26:1 on the composited card. */
+.audit-formcard-dark .audit-consent-note,
+.audit-formcard-dark .audit-legal-links,
+.audit-formcard-dark .proj-optional,
+.audit-formcard-dark .audit-sms span {
+  color: #aab3cc !important;
+}
+.audit-formcard-dark .audit-legal-links a,
+.audit-formcard-dark .audit-consent-note a {
+  color: #93c5fd;
 }
 .audit-formcard-dark .audit-input,
 .audit-formcard-dark .audit-fields input {
