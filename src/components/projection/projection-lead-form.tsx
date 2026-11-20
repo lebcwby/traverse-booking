@@ -19,16 +19,32 @@ import { SmsConsent } from "@/components/legal/sms-consent";
  * building. It just no longer hides everything else.
  */
 /**
- * Only the three buildings we actually manage in. The whole page rests on
- * comping a unit against the ones down its own hallway, so a building we have
- * no units in has nothing credible to offer — and the dropdown doubles as the
- * qualifier. Adding an "elsewhere" option would buy unqualified leads at the
- * cost of the one claim that makes this page work.
+ * The buildings we manage in, plus an escape hatch.
+ *
+ * The page rests on comping a unit against the ones down its own hallway, so
+ * the dropdown doubles as a qualifier. An earlier version of this list held
+ * only the three base-area buildings and this note argued against an
+ * "elsewhere" option on the grounds that it buys unqualified leads. Nadim
+ * asked for "Other" anyway on 2026-11-18, which is a reasonable call — a
+ * Mt. Crested Butte owner who finds the page and is turned away at the first
+ * field is a lead we never hear about, and an unqualified lead is at least
+ * visible. The tradeoff did not go away, it was accepted.
+ *
+ * ⚠️ Two of these cannot be served the way the other three can:
+ *   - "Black Bear" — we manage exactly 2 units there (BB204, a 4BR, and
+ *     BB303, a 2BR; Guesty, active + listed, 2026-11-18). A same-building
+ *     comp exists for those two sizes and for nothing else.
+ *   - "Other" — no in-building comp at all, by definition.
+ * Both land in the ops alert's Building row, so whoever writes the projection
+ * can see before they start that they are pricing off the wider market. Say
+ * which it is in the write-up rather than implying a hallway comp.
  */
 export const BUILDINGS = [
   "The Grand Lodge",
   "The Lodge at Mountaineer Square",
   "The Plaza",
+  "Black Bear",
+  "Other",
 ] as const;
 
 const UNIT_TYPES = [
@@ -81,8 +97,7 @@ export function ProjectionLeadForm({
           page: source,
           // Same HubSpot visitor token the audit form passes — it's what ties
           // the submission to the pages this owner viewed first.
-          hutk:
-            document.cookie.match(/(?:^|; )hubspotutk=([^;]*)/)?.[1] ?? "",
+          hutk: document.cookie.match(/(?:^|; )hubspotutk=([^;]*)/)?.[1] ?? "",
         }),
       });
       const data = (await res.json()) as { ok?: boolean; error?: string };
@@ -103,7 +118,7 @@ export function ProjectionLeadForm({
               ? "Please fill in your name and email."
               : data.error === "rate limit exceeded"
                 ? "That's a few requests in a row — give it a few minutes and try again."
-                : "Something went wrong. Please try again, or call us on (970) 533-3583.",
+                : "Something went wrong. Please try again, or call us on (970) 533-3583."
       );
     } catch {
       setError("Network problem — please try again.");
@@ -148,7 +163,12 @@ export function ProjectionLeadForm({
         </div>
         <div className="audit-span2">
           <label htmlFor={`${id}-unitType`}>Unit size *</label>
-          <select id={`${id}-unitType`} name="unitType" required defaultValue="">
+          <select
+            id={`${id}-unitType`}
+            name="unitType"
+            required
+            defaultValue=""
+          >
             <option value="" disabled>
               Select…
             </option>
@@ -199,7 +219,8 @@ export function ProjectionLeadForm({
         </div>
         <div className="audit-span2">
           <label htmlFor={`${id}-currentManager`}>
-            Who manages it today? <span className="proj-optional">Optional</span>
+            Who manages it today?{" "}
+            <span className="proj-optional">Optional</span>
           </label>
           <input
             id={`${id}-currentManager`}

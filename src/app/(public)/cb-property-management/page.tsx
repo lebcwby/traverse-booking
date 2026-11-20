@@ -2,24 +2,40 @@
  * /cb-property-management — QR landing page for the Crested Butte owner
  * campaign (print → QR → this page).
  *
- * ⚠️ RIGHT NOW THIS IS A COPY OF /projection, deliberately and temporarily.
+ * This WAS a deliberate copy of /projection, held as a placeholder until the
+ * campaign content landed. It has now landed and the two pages have genuinely
+ * diverged, so the copy note is gone and so is the noindex that went with it.
+ * /projection still speaks to base-area condo owners inside resort rental
+ * programmes; this page speaks to people who own a whole house in the valley.
+ * They are different businesses with different problems, and almost none of
+ * the condo page's argument survived the move:
  *
- * The campaign content is still being written. Copying rather than extracting
- * a shared component was the call because the body is about to be rewritten:
- * refactoring 600 lines out of a live, converting page to share them with a
- * page that will stop matching next week is work that gets undone. Copying
- * also means /projection — which is converting today — is not touched at all.
+ *   - The density proof does not transfer. We manage 101 condos across three
+ *     base-area buildings and exactly ONE house in Crested Butte (Guesty,
+ *     active + listed, checked 2026-11-18). "We know your building" is the
+ *     condo page's strongest line and it would be a lie here. What is true is
+ *     that we run 100+ properties in the valley — so the team, the inspectors
+ *     and the overnight cover are already on the ground — and 70+ whole homes
+ *     and cabins elsewhere in Colorado, which is where the house-specific
+ *     experience actually comes from. Both are said plainly below.
  *
- * The cost is real while it lasts: a copy-paste duplicate that nobody is
- * tracking drifts. So, when the campaign content lands, either the two pages
- * genuinely diverge (and this note goes) or they turn out to be the same page
- * after all, in which case extract the shared body then and delete one.
+ *   - The fee argument does not transfer either. "40–50% is the going rate"
+ *     is true of resort rental programmes at the base area; a single-family
+ *     owner in CB South is comparing us against a local manager at 20–30% or
+ *     against self-managing. Leading on price to this audience would be
+ *     picking a fight we have not obviously won, so the page does not mention
+ *     our commission at all. The offer is the review, not the rate.
  *
- * What is NOT a copy, and should stay that way:
- *   - canonical and openGraph url point here, not at the projection subdomain
- *   - robots: noindex while the body is duplicated (see the metadata note)
- *   - lead-form `source` values are cb-pm-*, so campaign leads are separable
- *     from projection leads in the ops alert's "Submitted from" line
+ *   - The August RevPAR figures are gone rather than restated. They were a
+ *     point in time (August 2026) and this is November; the old file said to
+ *     refresh or remove them rather than let them go stale, and removing was
+ *     right here because a single month of condo RevPAR says nothing about a
+ *     4-bedroom house anyway.
+ *
+ * ⚠️ ONE CLAIM ON THIS PAGE IS AHEAD OF THE OPERATION. See HOME_CARE below.
+ *
+ * Lead-form `source` values are cb-home-*, so single-family leads stay
+ * separable from the cb-pm-* condo leads in the ops alert.
  */
 import type { Metadata } from "next";
 import { SITE_ORIGIN } from "@/lib/listing-jsonld";
@@ -27,267 +43,274 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   TrendingUp,
+  CalendarClock,
   MessageCircle,
   ClipboardCheck,
-  CalendarCheck,
   ShieldCheck,
-  BedDouble,
-  Receipt,
-  Building2,
+  Snowflake,
+  Thermometer,
+  Camera,
   LineChart,
   ListChecks,
   ScrollText,
+  Home,
 } from "lucide-react";
-import { ProjectionLeadForm } from "@/components/projection/projection-lead-form";
+import { HomeLeadForm } from "@/components/projection/home-lead-form";
+import { PORTFOLIO_STATS } from "@/lib/portfolio-stats";
 // Shared with audit.booktraverse.com on purpose: the layout primitives
 // (shell, band, hero, form card, FAQ) are the same landing-page system in the
-// same brand, and forking 900 lines of CSS to rename `audit-` to `proj-` would
-// mean every future design fix had to be made twice. projection.css below adds
-// only what this page has and the audit page doesn't.
+// same brand. projection.css adds the stat/scenario/beat primitives this page
+// inherited; cb-home.css adds only what is new here.
 import "../audit/audit.css";
 import "../projection/projection.css";
+import "./cb-home.css";
 
 const B2B_PHONE = { tel: "+19705333583", display: "(970) 533-3583" };
 
 /**
- * ⚠️ These counts are the page's core credibility claim. Verify before editing.
+ * ⚠️ Verify before editing — these are the page's credibility.
  *
- * Checked against Guesty directly on 2026-08-29 (not the mirror, which lags a
- * unit or two). Active AND listed:
+ * Counted from the listings mirror on 2026-11-18, active AND listed, which
+ * reconciled to 213 against Guesty's 214 (one unit in flight):
  *
- *   Grand Lodge          62
- *   Mountaineer Square   16
- *   The Plaza            20
- *   three buildings      98
- *   all Crested Butte   102   <- what MT_CB_TOTAL rounds down from
+ *   Crested Butte, all property types     108   -> "100+", rounded down
+ *   Houses + cabins, every market          74   -> "70+",  rounded down
+ *     (Leadville 52 + 11, Twin Lakes 1 + 6, Granby 1 + 1, Denver 1, CB 1)
  *
- * Grand Lodge is carried at 65, and that is DELIBERATE — do not "correct" it
- * down to Guesty's 62. Three units are signed and mid-onboarding rather than
- * live, and Alex/Nadim count them (2026-08-29), the same call made when the
- * marketing copy went to "190+" with five in onboarding. The +3 flows into the
- * three-building panel, which is why it reads 101 against Guesty's 98.
- *
- * Re-check once those three go live: if they do, the numbers converge and this
- * note can go. If they don't, 65 and 101 both need to come down.
- *
- * There is NO tagging problem: all 62 live Grand Lodge units carry "The Grand
- * Lodge Crested Butte" and nothing at 6 Emmons Road is missing it. An earlier
- * note here claimed four units were untagged and invisible on the building
- * pages — that was wrong, from a mirror query whose nickname pattern matched
- * Vail's "Eagle" listings. Guesty does hold ~21 archived Grand Lodge records
- * ("Copy GL504", "GL515 duplicate do not use", several "OLD"), which is the
- * likelier source of any inflated hand count.
+ * Both round DOWN so neither can overstate. MARKETING_COUNT and the rating
+ * come from portfolio-stats.ts, which the quarterly refresh script owns —
+ * don't hand-set them here.
  */
-const OUR_UNITS = { grandLodge: 65, mountaineerSquare: 16, plaza: 20 };
-const BASE_AREA_TOTAL =
-  OUR_UNITS.grandLodge + OUR_UNITS.mountaineerSquare + OUR_UNITS.plaza;
-
-/** Rounded down from the 101 the mirror holds, so it can never overstate. */
-const MT_CB_TOTAL = "100+";
+const CB_PROPERTIES = "100+";
+const WHOLE_HOMES = "70+";
+const MARKETING_COUNT = PORTFOLIO_STATS.marketingCount;
+const GUEST_RATING = PORTFOLIO_STATS.googleRating;
 
 export const metadata: Metadata = {
-  title: "What Should Your Crested Butte Condo Be Earning?",
+  title: "Crested Butte Home Management — Earning Less Than It Should?",
   description:
-    "A free, sourced revenue projection for Mt. Crested Butte condo owners — built from what comparable units in your own building actually earned over the last twelve months.",
+    "For people who own a whole house in the Gunnison Valley: a free, sourced review of what your home should be earning, and of whether anyone is actually looking after it between guests.",
   alternates: { canonical: `${SITE_ORIGIN}/cb-property-management` },
-  // ⚠️ noindex while this is a copy of /projection.
-  //
-  // The body below is identical, and two indexable URLs with the same content
-  // compete with each other — Google picks one, and it may not be the one we
-  // want ranking. This page is reached by QR from print, so it needs no search
-  // traffic to do its job.
-  //
-  // Once the campaign content lands and the two pages genuinely differ, drop
-  // this block and let it index.
-  robots: { index: false, follow: true },
   openGraph: {
     title:
-      "What Should Your Crested Butte Condo Be Earning? | Traverse Hospitality",
-    description: `Still paying 40-50% to your property manager? We manage ${MT_CB_TOTAL} condos in Mt Crested Butte. See what units like yours actually earned.`,
+      "Is your Crested Butte home earning what it should — and is anyone looking after it? | Traverse Hospitality",
+    description: `A free, sourced review for Crested Butte homeowners. We manage ${CB_PROPERTIES} properties in the valley and ${WHOLE_HOMES} whole homes across Colorado.`,
     url: `${SITE_ORIGIN}/cb-property-management`,
   },
 };
 
 /**
- * Three claims, kept deliberately top-level.
+ * Where the money actually goes on a whole house.
  *
- * This replaced a line-by-line owner-statement comparison. Two reasons it had
- * to go. First, a fee table invites a fee argument, and it hands an owner
- * something to take back to their current manager to be picked apart line by
- * line — an argument we do not need to win to win the account. Second, it was
- * fragile: the owner-net difference swung from $16 to $198 purely by changing
- * the example week, because the HOA fee is charged per night while the
- * commission difference is a percentage. Any owner trying their own week would
- * have got a different answer to ours.
- *
- * RevPAR does the same job in one number and is much harder to argue with,
- * because it is an outcome rather than a formula — it already contains both
- * occupancy and rate.
- *
- * ⚠️ The RevPAR figures are a point in time (August 2026). Date them, and
- * refresh or remove them rather than letting them quietly go stale.
+ * Deliberately no dollar figures. Every one would have to be either invented
+ * or derived from a comp set we do not have for Crested Butte houses, and a
+ * single soft number would undermine a page whose offer is "we'll show you
+ * the workings". The owner supplies the arithmetic from their own statement;
+ * we supply the list of places to look.
  */
-const HEADLINE_STATS = [
+const REVENUE_GAPS = [
   {
-    // The headline is the GAP, which is what an owner cares about, and it is
-    // 14.4 points rather than 14.4% growth — hence "ahead of the market"
-    // rather than a bare percentage, with both components spelled out below.
-    value: "+14.4%",
-    label: "Ahead of the market, August",
-    foot: "Revenue per unit rose 3.6% for us over the month, while the Crested Butte market fell 10.8%. Same mountain, same weather, same guests deciding.",
+    icon: TrendingUp,
+    title: "A rate that was set in October and never moved",
+    body: "A house is priced far less often than a condo, because there is no building full of near-identical units to price it against — so it tends to get a number at the start of the season and keep it. That is fine in a week that sells itself and expensive in every other one. Rates that respond to how the valley is actually booking are the single biggest line on this list.",
   },
   {
-    value: "30%",
-    label: "Our management commission",
-    foot: "Where 40% is the going rate for a resort programme at this base area.",
+    icon: CalendarClock,
+    title: "The orphan nights nobody fills",
+    body: "A Sunday-to-Thursday gap between two weekend bookings is worth nothing unless somebody notices it and prices it to go. On a large home those gaps are wider and more frequent, because the minimum stay that protects your peak weeks is the same one that blocks the midweek filling them.",
   },
   {
-    value: "4.8",
-    label: "Guest rating across 220+ homes",
-    foot: "The one part of service nobody can claim for themselves — guests decide it, stay by stay.",
+    icon: MessageCircle,
+    title: "Enquiries that go cold overnight",
+    body: "A family weighing a $700-a-night house asks more questions than someone booking a studio, and they ask them in the evening. An unanswered question at 9pm on a Friday is how a booking becomes somebody else's booking — and it never shows up as a loss anywhere you could see it.",
+  },
+  {
+    icon: LineChart,
+    title: "Too few places selling it",
+    body: "One or two channels is the normal state of a self-managed or lightly managed home. We list across 50+ channels, which matters most for exactly the weeks a large house struggles to fill — shoulder season, midweek, and the gaps either side of the holidays.",
   },
 ];
 
 /**
- * An incidentals scenario, because "we have a damage waiver" means nothing to
- * an owner until they can see how a specific bad night actually plays out.
+ * What a house needs that a condo does not. This is the second pillar and the
+ * more emotional one, so it is concrete and seasonal rather than abstract.
  *
- * Deliberately carries no invented dollar figure for the bed. The difference
- * that matters is WHO pays and WHEN the owner hears about it, and a made-up
- * replacement cost would be the one soft number in an otherwise sourced page.
+ * The framing is deliberately "a condo has an HOA doing this for you, a house
+ * has nobody" — true, non-insulting, and it explains why an owner who had a
+ * condo before is caught out by a house.
  */
-const BROKEN_BED = [
+const CARE_GAPS = [
   {
-    beat: "Saturday, the guest checks out",
-    other:
-      "The unit is turned over for the next arrival. A cracked bed frame under a made bed is not something a turnover is looking for.",
-    ours: "Every turnover is inspected, so the frame is found and photographed before anyone else is let into the unit.",
+    icon: Snowflake,
+    title: "Nobody is watching the roof or the pipes",
+    body: "In a condo the HOA plows, clears the roof and keeps the common systems alive. A house has no HOA. Ice dams, a heat tape that quietly stopped working, a crawl space that got cold — these are the failures that turn into five-figure repairs, and every one of them gives weeks of warning to somebody who is looking.",
   },
   {
-    beat: "Saturday afternoon",
-    other:
-      "Nothing reaches you. Whatever happens next happens without you in the conversation.",
-    ours: "You are told the same day, with the photographs and what we intend to do about it.",
-  },
-  {
-    beat: "Who pays for the replacement",
-    other:
-      "There is no damage waiver covering incidentals, so the cost lands on you or is argued out with a guest who has already gone home.",
-    ours: "The guest is charged, or it comes out of the damage waiver. Either way it is settled while the stay is still fresh.",
-  },
-  {
-    beat: "The next guest",
-    other: "Checks in to whatever state the bed was left in.",
-    ours: "Arrives to a bed that has been replaced, because we knew on Saturday.",
-  },
-];
-
-/** Why the bottom lines differ — what we actually do, not what they don't. */
-const reasons = [
-  {
-    icon: TrendingUp,
-    title: "Wider distribution, and pricing that moves",
-    body: "More places selling the unit, and rates that respond to how the mountain is actually booking rather than sitting where they were set in October. In August we finished 14.4 points ahead of the Crested Butte market — up 3.6% per unit while the market fell 10.8% — and that lands on the top line before a single fee is deducted, which is the one part of a statement that helps every line below it.",
-  },
-  {
-    icon: CalendarCheck,
-    title: "You can see your bookings as they happen",
-    body: "Log in and look — every reservation on your calendar the moment it is made, with what it is worth. Resort programmes allocate nights through block bookings, so what actually happened to your unit arrives with the owner statement at the end of the month. A calendar you can only read in arrears is not one you can plan a season around, or use your own home from.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "You hear about damage the day it happens",
-    body: "A broken dresser gets photographed at the inspection and you are told that afternoon — along with whether we are charging the guest for it or covering it from the damage waiver. Resort programmes here run no damage waiver for incidentals, so that kind of thing surfaces as a line on a statement weeks later, by which point nobody can do anything about it.",
-  },
-  {
-    icon: MessageCircle,
-    title: "Someone answers at eleven at night",
-    body: "Guest messaging is covered around the clock, near enough. An unanswered question at 9pm on a Friday is how an enquiry becomes a booking somewhere else, and how a fine stay becomes a three-star review that costs you the next six.",
+    icon: Thermometer,
+    title: "The gap between guests is when things break",
+    body: "A vacant house in January is the riskiest thing you own. A furnace that fails on a Tuesday with nobody booked until Friday is a burst pipe, not an inconvenience. The question is not whether your manager would fix it — it is whether anybody would be in the building to find it.",
   },
   {
     icon: ClipboardCheck,
-    title: "Every clean is inspected, not spot-checked",
-    body: "Cleanliness is the most-cited reason for a sub-five-star review across the whole industry, and it is almost never about effort — it is hair in a drain, dust on a ceiling fan, a fridge shelf someone missed. We inspect after every turnover, because that is a process problem and processes are fixable.",
+    title: "A turnover is not an inspection",
+    body: "Cleaners clean. They are not looking under sinks, testing the hot tub chemistry, checking the detector batteries or noticing that a deck board has gone soft — and they are not being asked to. If the only person who enters your home between guests is there to change the sheets, nothing preventative is happening in your house at all.",
   },
   {
-    icon: Receipt,
-    title: "Fees you can actually account for",
-    body: "A lower commission, and every other line on your statement one you can explain. Our own staff fix what our own staff can fix, so maintenance appears only when something genuinely needed a trade. Cleaning is billed at what the clean costs. The HOA fee is passed through at face value, with no resort fee charged to your guest carrying a margin inside it.",
+    icon: Camera,
+    title: "You find out from the statement, weeks later",
+    body: "Damage and wear surface as a line item long after anyone could charge a guest for them or stop them getting worse. By the time it reaches you it is your cost and your problem, and the guest who caused it went home a month ago.",
+  },
+];
+
+/**
+ * A single January night, told as beats. Chosen over a damage scenario (which
+ * is what the condo page runs) because it is the failure a homeowner already
+ * fears, and because it is the one where "somebody is physically nearby" is
+ * the whole answer — which is the honest shape of our advantage in a valley
+ * where we have the team but not the houses.
+ */
+const COLD_SNAP = [
+  {
+    beat: "Tuesday, 9°F, the house is empty",
+    other:
+      "Nobody is scheduled to enter until the Friday clean. The furnace has three days to fail unobserved.",
+    ours: "Vacant homes get checked on a set rotation through the winter, not only when a guest is due. Somebody opens the door.",
+  },
+  {
+    beat: "The furnace quits",
+    other:
+      "It is found on Friday morning by a cleaner, who is not a technician and whose job that is not.",
+    ours: "It is found on the check, with a photograph of the unit and the thermostat reading, and a trade is called the same morning.",
+  },
+  {
+    beat: "What you hear, and when",
+    other:
+      "A call on Friday — or a repair line on a statement at the end of the month.",
+    ours: "A message the day it is found, with the photographs and what we propose to do, before the money is spent.",
+  },
+  {
+    beat: "Friday's guests",
+    other:
+      "Arrive to a cold house, or do not arrive at all because you cancelled on them that morning.",
+    ours: "Arrive to a warm one, and never learn anything happened.",
+  },
+];
+
+/**
+ * ⚠️ READ THIS BEFORE SHIPPING.
+ *
+ * This section describes a seasonal home-care schedule. As of 2026-11-18 that
+ * schedule is NOT a configured programme anywhere in our stack: SuiteOp holds
+ * no element service rules and no recurring task schedules, and the CRM's
+ * `maintenance_log` table is empty. What we demonstrably do run is the
+ * inspection programme — 1,580 documented inspection runs covering 70,415
+ * individual checkpoints with photographs — which is why the inspection
+ * claims on this page are stated as fact and these are stated as what the
+ * home programme includes.
+ *
+ * So this is a commitment, not a track record. Either stand the schedule up
+ * before the QR codes go out, or soften this section to what we already do.
+ * Nadim's call — flagged, not decided here.
+ */
+const HOME_CARE = [
+  {
+    season: "Before the snow",
+    items: [
+      "Heat tape and gutters tested under power, not just looked at",
+      "Shut-offs located, labelled and photographed for the file",
+      "Detectors, extinguishers and furnace filters dated and replaced",
+    ],
+  },
+  {
+    season: "Through the winter",
+    items: [
+      "Vacant-home checks on a rotation, independent of the booking calendar",
+      "Plowing and roof clearing arranged before it becomes a problem",
+      "Hot tub chemistry logged every service, not topped up by eye",
+    ],
+  },
+  {
+    season: "Every single turnover",
+    items: [
+      "A documented inspection, item by item, with photographs",
+      "Anything wrong raised as a work order the same day",
+      "You told that day — with the photographs — not at month end",
+    ],
   },
 ];
 
 const steps = [
   {
     n: 1,
-    title: "Tell us the building and unit size",
-    body: "That is all we need to find the right comparison — no listing link required.",
+    title: "Tell us where the home is and how big",
+    body: "The area and the bedroom count. That is the whole ask — no listing link, no address, no account details.",
   },
   {
     n: 2,
-    title: "We pull the actuals",
-    body: `We manage ${BASE_AREA_TOTAL} condos across the base area. We look at what units of your size in your building genuinely took over the last twelve months, across every channel.`,
+    title: "We do the work by hand",
+    body: `We price a home of your size against what the valley is genuinely booking, using our own data from ${CB_PROPERTIES} properties here and what we have learned running ${WHOLE_HOMES} whole homes elsewhere in Colorado.`,
   },
   {
     n: 3,
-    title: "You get the figures and the workings",
-    body: "A range, not a single flattering number, with the comps and the assumptions written out so you can check them yourself.",
+    title: "You get both halves, in writing",
+    body: "A revenue range with the assumptions shown, and a straight read on what a house of that age and exposure needs over a winter. Including, where it applies, that you are already doing fine.",
   },
 ];
 
 const deliverables = [
   {
     icon: LineChart,
-    title: "What comparable units actually earned",
-    body: "Trailing twelve months for units of your size in your building — gross revenue, occupancy and average nightly rate. Real figures from real bookings, not a model.",
+    title: "What a home like yours should earn",
+    body: "A range for your size and area across a full year, with the seasonality broken out — because a Crested Butte house makes its money in a handful of weeks and the rest of the calendar is where the difference between managers shows up.",
   },
   {
     icon: ListChecks,
-    title: "What it would net you",
-    body: "Those same stays run through our fee schedule line by line, so the comparison is about what reaches your account rather than what appears at the top of a page. This is where the detail lives, on your unit rather than a worked example.",
+    title: "Where your gap most likely is",
+    body: "Which of the leaks above we would expect to be costing you most, ranked, and what we would change first. Specific enough to act on without us — if you would rather take it to your current manager, that is a perfectly good outcome.",
   },
   {
     icon: ScrollText,
     title: "The assumptions, in writing",
-    body: "Which units we compared you against, what we could not know about yours, and where the estimate is weakest. If the honest answer is that you're already doing well, that is what it will say.",
+    body: "What we priced against, what we could not know about your home, and where the estimate is weakest. We manage one house in Crested Butte and we will say so — the valley data is real, an in-your-street comp is not something we can honestly offer.",
   },
 ];
 
 const faqs = [
   {
-    q: "Where do the RevPAR figures come from?",
-    a: "Ours is our own portfolio across these markets, measured August against the same month last year. The market figure is the Crested Butte comparison set over the same period. It is one month rather than a trend, and we would rather show you the run of months for your own building than lean on a single good one.",
+    q: "How many houses do you actually manage in Crested Butte?",
+    a: `One. We would rather tell you that on the page than have you find out later. What we do have here is scale of a different kind — ${CB_PROPERTIES} properties in the valley, which is what pays for inspectors who are already out this morning and guest cover through the night — plus ${WHOLE_HOMES} whole homes and cabins in Leadville, Twin Lakes and Granby, which is where everything we know about boilers, crawl spaces, plowing and hot tubs comes from. Houses are not new to us. Houses in Crested Butte are.`,
   },
   {
-    q: "Isn't a lower commission just less service?",
-    a: "It is the reasonable question, and it would be true if the rate were the only thing that changed. The reason we can charge less here is density: we run 88 condos across these three buildings, so the inspector is already in your building that morning and the team already covers those guests overnight. That is why we are cheaper in Crested Butte specifically rather than everywhere, and why the service goes up rather than down.",
+    q: "Isn't a bigger company going to treat my home as one of many?",
+    a: "It is the right worry, and the honest answer is that it depends entirely on whether the work is documented. Ours is: every turnover produces an inspection with photographs against a fixed checklist, and you can see it. A one-person operation that knows your house well is a genuinely good alternative right up until they are ill, or on holiday, or stop answering.",
   },
   {
-    q: "Am I not locked into my current agreement?",
-    a: "Very possibly, and that is fine — knowing the number does not commit you to anything. Most owners who ask for this are simply working out whether to renew when their term is up. Nothing here asks you to break an agreement.",
+    q: "What does it cost?",
+    a: "The review is free and there is no obligation attached to it. Management terms depend on the home — size, location, whether there is a hot tub, how much of the care side you want us holding — so quoting a rate here before we have seen your place would be a number designed to be renegotiated later. We will put it in writing once we have looked.",
   },
   {
-    q: "What if my condo is already doing well?",
-    a: "Then we will tell you that. It happens, and saying so is the only reason this is worth anything to you. We would rather be the people who gave you a straight answer than the people who talked you into a switch you didn't need.",
+    q: "I'm half-managing it myself. Is that a problem?",
+    a: "No, and a lot of the best homes in the valley are run that way. Owners usually come to us when the bit they enjoy (choosing how the place feels) has been swallowed by the bit they don't (a boiler at 11pm while they are in Denver). Tell us which half you want to keep.",
   },
   {
-    q: "Why do you know my building?",
-    a: `Because we are in it. We manage ${OUR_UNITS.grandLodge} units at The Grand Lodge, ${OUR_UNITS.mountaineerSquare} at The Lodge at Mountaineer Square and ${OUR_UNITS.plaza} at The Plaza — same buildings, same floorplans, same lifts, same weather. That is why the comparison means something, and why we can do it in a day.`,
+    q: "Am I not locked in with my current manager?",
+    a: "Possibly, and that is fine — knowing the number commits you to nothing. Most owners who ask for this are working out whether to renew when the term is up. Nothing here asks you to break an agreement.",
   },
   {
     q: "What do you do with my details?",
-    a: "We send you the projection and follow up once. We do not sell your details, add you to a list or pass them to anyone else.",
+    a: "We send you the review and follow up once. We do not sell your details, add you to a list or pass them to anyone else.",
   },
 ];
 
-export default function ProjectionPage() {
+export default function CrestedButteHomePage() {
   return (
-    <div className="audit-page proj-page">
+    <div className="audit-page proj-page cbh-page">
       {/* ── Nav ── */}
       <header className="audit-nav">
         <a
           href="#top"
           className="audit-nav-brand"
-          aria-label="Traverse Hospitality revenue projection"
+          aria-label="Traverse Hospitality — Crested Butte home management"
         >
           <Image
             src="/book-traverse-wordmark-dark.png"
@@ -298,21 +321,20 @@ export default function ProjectionPage() {
           />
         </a>
         <nav className="audit-nav-links">
-          <a href="#compare">The comparison</a>
-          <a href="#why">Why it differs</a>
+          <a href="#earning">The money</a>
+          <a href="#care">The house</a>
           <a href="#faq">FAQ</a>
-          <a href="#projection" className="audit-nav-cta">
-            Get my projection
+          <a href="#review" className="audit-nav-cta">
+            Get my review
           </a>
         </nav>
       </header>
 
       {/* ── Hero ──
-           Opens on the rate because it is the one fact that qualifies this
-           audience instantly: legacy clients at this base area are on 50%,
-           newer ones on 40%. It blames the rate rather than the owner, which
-           matters — these people chose that manager deliberately and will not
-           buy from anyone who has just implied they were foolish. */}
+           Two questions, not one, because the campaign targets owners who may
+           only feel one of them. The second is deliberately the sharper: an
+           owner who suspects their house is being neglected acts faster than
+           one who suspects they are leaving a few points of yield behind. */}
       <section className="audit-hero" id="top">
         <Image
           src="/property-management/hero-porch-view.png"
@@ -325,23 +347,29 @@ export default function ProjectionPage() {
         <div className="audit-hero-scrim" />
         <div className="audit-shell audit-hero-inner">
           <div className="audit-hero-copy">
-            <p className="audit-eyebrow">Free revenue projection</p>
-            <h1>Still paying 40&ndash;50% to your property manager?</h1>
+            {/* Short on purpose — the longer "Free review for Crested Butte
+                homeowners" wrapped to two lines inside the pill at 375px. */}
+            <p className="audit-eyebrow">Free review for homeowners</p>
+            <h1>
+              Leaving thousands on the table? Or worse — is anyone actually
+              looking after your home?
+            </h1>
             <p className="audit-lede">
-              Then it is worth re-evaluating what your listing is actually
-              doing. We manage {MT_CB_TOTAL} condos in Mt Crested Butte — tell
-              us your building and we&apos;ll show you what units like yours
-              earned last year, and what they would earn with us.
+              Two different problems, and most owners of a whole house in this
+              valley have at least one of them. Tell us the area and the size
+              and we&apos;ll come back within a business day with what a home
+              like yours should be earning — and what a winter here does to a
+              house nobody is checking.
             </p>
             <ul className="audit-trust">
               <li>
-                <strong>{MT_CB_TOTAL}</strong> condos in Mt Crested Butte
+                <strong>{CB_PROPERTIES}</strong> properties in the valley
               </li>
               <li>
-                <strong>220+</strong> homes managed
+                <strong>{WHOLE_HOMES}</strong> whole homes in Colorado
               </li>
               <li>
-                <strong>4.8</strong> guest rating
+                <strong>{GUEST_RATING}</strong> guest rating
               </li>
               <li>
                 <strong>1</strong> business day
@@ -349,57 +377,86 @@ export default function ProjectionPage() {
             </ul>
           </div>
 
-          <div className="audit-formcard" id="projection">
+          <div className="audit-formcard" id="review">
             <p className="audit-formcard-title">
-              What should your condo be earning?
+              What should your home be earning?
             </p>
-            <ProjectionLeadForm id="projection-hero" source="cb-pm-hero" />
+            <HomeLeadForm id="home-hero" source="cb-home-hero" />
             <p className="audit-formnote">
-              Free, sourced from real bookings, back within one business day. No
-              card, no commitment.
+              Free, written by a person, back within one business day. No card,
+              no commitment.
             </p>
           </div>
         </div>
       </section>
 
-      {/* ── The three claims ── */}
-      <section className="proj-compare" id="compare">
+      {/* ── The two pillars, stated once, plainly ── */}
+      <section className="cbh-pillars" aria-labelledby="pillars-h">
         <div className="audit-shell">
-          <h2>Higher occupancy. Lower commission. You earn more.</h2>
+          <h2 id="pillars-h">
+            There are only two ways a mountain home lets you down.
+          </h2>
           <p className="proj-compare-sub">
-            That is the whole of it, and the three numbers below are where we
-            stand today. What follows them is the rest of what changes — the
-            parts of managing a condo you only notice when they are missing.
+            It earns less than it should, or it quietly falls apart. They are
+            usually the same problem wearing different clothes — nobody is
+            paying close enough attention — and the rest of this page is about
+            both.
           </p>
+          <div className="cbh-pillar-pair">
+            <article className="cbh-pillar">
+              <span className="cbh-pillar-n">01</span>
+              <h3>The money you never see</h3>
+              <p>
+                Not a dramatic loss. A rate that didn&apos;t move, a week that
+                didn&apos;t fill, an enquiry answered on Monday. None of it
+                appears on a statement as a number, because money you never
+                earned leaves no trace.
+              </p>
+              <a href="#earning">What that looks like →</a>
+            </article>
+            <article className="cbh-pillar cbh-pillar-alt">
+              <span className="cbh-pillar-n">02</span>
+              <h3>The house nobody is checking</h3>
+              <p>
+                A condo has an HOA watching the roof, the plowing and the common
+                systems. Your house has whoever you hired — and if all they do
+                is turn it over between guests, the answer is nobody.
+              </p>
+              <a href="#care">What that costs →</a>
+            </article>
+          </div>
+        </div>
+      </section>
 
-          <ul className="proj-stats">
-            {HEADLINE_STATS.map((s) => (
-              <li key={s.label}>
-                <strong>{s.value}</strong>
-                <span className="proj-stat-label">{s.label}</span>
-                <span className="proj-stat-foot">{s.foot}</span>
-              </li>
+      {/* ── Pillar one ── */}
+      <section className="audit-band" id="earning">
+        <div className="audit-shell">
+          <h2>Where the money actually goes</h2>
+          <p className="audit-sub">
+            Four leaks, none of which show up as a line you could point at.
+          </p>
+          <div className="proj-costs proj-costs-wide cbh-quad">
+            {REVENUE_GAPS.map(({ icon: Icon, title, body }) => (
+              <div className="proj-cost" key={title}>
+                <Icon className="audit-leak-icon" aria-hidden="true" />
+                <h3>{title}</h3>
+                <p>{body}</p>
+              </div>
             ))}
-          </ul>
-
+          </div>
           <p className="proj-delta-note">
-            A unit that books more nights at a better rate, with less taken out
-            of each one, is worth more to you at the end of the season. We would
-            rather show you what that looks like for your condo than argue about
-            percentages in the abstract.
+            We are not going to put a dollar figure on your home from a landing
+            page — anyone who does is guessing. That is what the review is for,
+            and it comes with the workings shown so you can disagree with it.
           </p>
         </div>
       </section>
 
-      {/* ── Self-check ──
-           Repointed away from statement line items when the fee comparison
-           came out. Line-by-line questions are a conversation to have with an
-           owner, not to start on a landing page — and this version lands the
-           visibility point instead, which is the one nobody has an answer to. */}
+      {/* ── Self-check ── */}
       <section className="proj-check" aria-labelledby="check-h">
         <div className="audit-shell">
           <h2 id="check-h">
-            Don&apos;t take our word for it. Try answering three questions.
+            Don&apos;t take our word for it. Try answering four questions.
           </h2>
           <ol className="proj-check-steps">
             <li>
@@ -412,12 +469,19 @@ export default function ProjectionPage() {
             <li>
               <span className="proj-check-n">2</span>
               <p>
-                What did your unit <strong>earn last month</strong>, and how
-                does that compare with the one down the hall?
+                When did your nightly rate <strong>last change</strong>, and who
+                changed it?
               </p>
             </li>
             <li>
               <span className="proj-check-n">3</span>
+              <p>
+                Who was the <strong>last person inside your house</strong>, and
+                what were they looking for?
+              </p>
+            </li>
+            <li>
+              <span className="proj-check-n">4</span>
               <p>
                 When something last broke, <strong>how did you find out</strong>{" "}
                 — and how long after?
@@ -425,21 +489,28 @@ export default function ProjectionPage() {
             </li>
           </ol>
           <p className="proj-check-foot">
-            If you can answer all three, you are being looked after. Most owners
-            we speak to cannot answer any of them.
+            If you can answer all four, you are being looked after and you
+            should stay where you are. Most owners we speak to cannot answer the
+            third one at all.
           </p>
         </div>
       </section>
 
-      {/* ── Why owners move ── */}
-      <section className="audit-band" id="why">
+      {/* ── Pillar two ── */}
+      <section className="cbh-care" id="care">
         <div className="audit-shell">
-          <h2>What the difference actually is</h2>
-          <p className="audit-sub">
-            Six things, and only one of them is the commission rate.
+          <div className="proj-scenario-head">
+            <div className="proj-scenario-mark">
+              <Home aria-hidden="true" />
+            </div>
+            <h2>A house is not a big condo</h2>
+          </div>
+          <p className="proj-compare-sub">
+            Everything the building used to do for you is now somebody&apos;s
+            job, and on most managed homes in this valley it is nobody&apos;s.
           </p>
-          <div className="proj-costs proj-costs-wide">
-            {reasons.map(({ icon: Icon, title, body }) => (
+          <div className="proj-costs proj-costs-wide cbh-quad">
+            {CARE_GAPS.map(({ icon: Icon, title, body }) => (
               <div className="proj-cost" key={title}>
                 <Icon className="audit-leak-icon" aria-hidden="true" />
                 <h3>{title}</h3>
@@ -450,30 +521,31 @@ export default function ProjectionPage() {
         </div>
       </section>
 
-      {/* ── Incidentals scenario ── */}
+      {/* ── Cold-snap scenario ──
+           An icon rather than a photograph on purpose: a stock shot of a
+           frozen pipe would visibly not be one of our homes, which undercuts
+           the very claim the section makes. */}
       <section className="proj-scenario" aria-labelledby="scenario-h">
         <div className="audit-shell">
           <div className="proj-scenario-head">
-            {/* An icon rather than a photograph on purpose. A stock shot of a
-                broken bed would be visibly not one of our units, which quietly
-                undercuts the very claim this section makes — that we photograph
-                the damage ourselves at the inspection. */}
             <div className="proj-scenario-mark">
-              <BedDouble aria-hidden="true" />
+              <Snowflake aria-hidden="true" />
             </div>
-            <h2 id="scenario-h">A guest breaks a bed. Now what?</h2>
+            <h2 id="scenario-h">
+              It&apos;s 9°F on a Tuesday and the furnace quits. Now what?
+            </h2>
           </div>
           <p className="proj-compare-sub">
-            Damage is the part of this business nobody quotes you on, and it is
-            where the difference between two managers is easiest to feel.
+            Nobody is booked in until Friday. This is the night that decides
+            whether you have a repair bill or an insurance claim.
           </p>
           <ol className="proj-beats">
-            {BROKEN_BED.map((b) => (
+            {COLD_SNAP.map((b) => (
               <li key={b.beat}>
                 <h3>{b.beat}</h3>
                 <div className="proj-beat-pair">
                   <div className="proj-beat proj-beat-other">
-                    <span>Resort manager</span>
+                    <span>Turnover-only management</span>
                     <p>{b.other}</p>
                   </div>
                   <div className="proj-beat proj-beat-ours">
@@ -485,38 +557,76 @@ export default function ProjectionPage() {
             ))}
           </ol>
           <p className="proj-check-foot">
-            The replacement costs what it costs either way. What differs is
-            whether you find out in time for anyone to do anything about it.
+            The furnace costs what it costs either way. What differs is whether
+            anyone was in the house while it was still only a furnace.
           </p>
         </div>
       </section>
 
-      {/* ── Same building ── */}
+      {/* ── The home care programme ── */}
+      <section className="audit-band audit-band-alt" id="care-plan">
+        <div className="audit-shell">
+          <h2>What looking after it actually means</h2>
+          <p className="audit-sub">
+            Not a promise to be responsive. A schedule, with dates on it.
+          </p>
+          <div className="cbh-seasons">
+            {HOME_CARE.map((s) => (
+              <div className="cbh-season" key={s.season}>
+                <h3>{s.season}</h3>
+                <ul>
+                  {s.items.map((i) => (
+                    <li key={i}>{i}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <p className="cbh-proof">
+            <ShieldCheck aria-hidden="true" />
+            <span>
+              The inspection half of this is not new and not a plan: across our
+              portfolio we have run thousands of documented turnover inspections
+              covering tens of thousands of individual checkpoints, with
+              photographs attached. It is the same checklist, the same software
+              and the same people your home would get.
+            </span>
+          </p>
+        </div>
+      </section>
+
+      {/* ── Who we are, honestly ── */}
       <section className="proj-building">
         <div className="audit-shell proj-building-inner">
           <div className="proj-building-mark">
-            <Building2 aria-hidden="true" />
+            <Home aria-hidden="true" />
           </div>
           <div>
-            <h2>We manage {BASE_AREA_TOTAL} condos in these buildings</h2>
+            <h2>
+              {MARKETING_COUNT} homes, six Colorado markets, one house in
+              Crested Butte
+            </h2>
             <p>
-              {OUR_UNITS.grandLodge} at The Grand Lodge,{" "}
-              {OUR_UNITS.mountaineerSquare} at The Lodge at Mountaineer Square
-              and {OUR_UNITS.plaza} at The Plaza. Same floorplans, same lifts,
-              same shoulder seasons, same weather.
+              That last part is deliberate. We manage {CB_PROPERTIES} properties
+              in this valley and almost all of them are condos at the base area
+              — so we are not going to claim we know your street. What we can
+              tell you is that the inspector is already out here this morning
+              and the overnight guest cover already exists, because{" "}
+              {CB_PROPERTIES} properties pay for both.
             </p>
             <p>
-              That is why the comparison is worth reading, and it is also why
-              the numbers work. The inspector is already in your building that
-              morning and the team already covers those guests overnight —
-              density is what lets us charge less for more attention.
+              The house-specific part comes from {WHOLE_HOMES} whole homes and
+              cabins we run in Leadville, Twin Lakes and Granby — colder than
+              here, older housing stock, the same frozen pipes and the same
+              plowing. Single-family homes in Crested Butte are where we are
+              deliberately growing, and the terms reflect that.
             </p>
           </div>
         </div>
       </section>
 
       {/* ── How it works ── */}
-      <section className="audit-band audit-band-alt" id="how">
+      <section className="audit-band" id="how">
         <div className="audit-shell">
           <h2>How it works</h2>
           <p className="audit-sub">
@@ -540,19 +650,19 @@ export default function ProjectionPage() {
       <section className="audit-midcta">
         <div className="audit-shell audit-midcta-inner">
           <div>
-            <h2>See the numbers for your condo</h2>
-            <p>Your building and your unit size. That&apos;s the whole ask.</p>
+            <h2>See the numbers for your home</h2>
+            <p>The area and the bedroom count. That&apos;s the whole ask.</p>
           </div>
-          <ProjectionLeadForm id="projection-mid" source="cb-pm-mid" />
+          <HomeLeadForm id="home-mid" source="cb-home-mid" />
         </div>
       </section>
 
       {/* ── What you get ── */}
-      <section className="audit-band" id="what-you-get">
+      <section className="audit-band audit-band-alt" id="what-you-get">
         <div className="audit-shell">
           <h2>What lands in your inbox</h2>
           <p className="audit-sub">
-            Written for someone who owns one condo, not a portfolio manager with
+            Written for someone who owns one house, not a portfolio manager with
             a spreadsheet.
           </p>
           <div className="proj-costs">
@@ -565,16 +675,16 @@ export default function ProjectionPage() {
             ))}
           </div>
           <p className="proj-disclaimer">
-            Every figure we send is an estimate based on comparable units, not a
-            guarantee of what your condo will earn. Your unit&apos;s condition,
-            floor, view, calendar and pricing all move the number, and we say so
-            in the write-up.
+            Every figure we send is an estimate based on market data and
+            comparable homes, not a guarantee of what your home will earn. Its
+            condition, location, access, amenities and calendar all move the
+            number, and we say so in the write-up.
           </p>
         </div>
       </section>
 
       {/* ── FAQ ── */}
-      <section className="audit-band audit-band-alt" id="faq">
+      <section className="audit-band" id="faq">
         <div className="audit-shell audit-faqwrap">
           <h2>Questions</h2>
           <dl className="audit-faq">
@@ -591,13 +701,13 @@ export default function ProjectionPage() {
       {/* ── Bottom CTA ── */}
       <section className="audit-final">
         <div className="audit-shell">
-          <h2>Find out what your condo should be earning.</h2>
+          <h2>Find out what your home should be earning.</h2>
           <p>
-            Free, sourced from real bookings in your building, back within one
-            business day.
+            And what this winter is doing to it. Free, written by a person, back
+            within one business day.
           </p>
           <div className="audit-formcard audit-formcard-dark">
-            <ProjectionLeadForm id="projection-bottom" source="cb-pm-footer" />
+            <HomeLeadForm id="home-bottom" source="cb-home-footer" />
           </div>
         </div>
       </section>
@@ -624,9 +734,9 @@ export default function ProjectionPage() {
           <p className="audit-footer-fine">
             © {new Date().getFullYear()} HALTAN LLC dba Traverse Hospitality ·
             Colorado short-term rental management · Crested Butte · Leadville ·
-            Vail · Avon · Granby · Twin Lakes. Comparison figures are
-            illustrative. Projections are estimates based on comparable units
-            and are not a guarantee of future earnings.
+            Vail · Avon · Granby · Twin Lakes. Reviews are estimates based on
+            market data and comparable homes and are not a guarantee of future
+            earnings.
           </p>
         </div>
       </footer>
